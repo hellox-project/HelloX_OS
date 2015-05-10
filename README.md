@@ -1,4 +1,5 @@
 **** CHINESE VERSION ****
+
 感谢试用HelloX V1.78测试版。
 在bin目录下，已经生成了一个虚拟硬盘vdisk.vhd，可以用这个虚拟硬盘直接引导虚拟机。
 如果希望通过USB来引导物理计算机，则运行bin目录下的make_usb_boot程序（运行前，先把USB盘插入计算机），格式化一个USB引导盘，再重新启动计算机即可。注意，制作USB启动盘之前，请先备份里面的数据。同时，需要设置计算机的引导顺序，确保USB引导优先。
@@ -15,6 +16,7 @@
 任何问题，欢迎加入QQ群讨论：38467832
 
 **** ENGLISH VERSION ****
+
 Welcome to use HelloX V1.78 beta version.
 A virtual hard disk image was created under the /bin directory,which can be used to load virtual machine directly.The main stream virtual machines can be well supported by HelloX,such as Microsoft Virtual PC 2007,WMWare workstation,Oracle VirtualBox,Microsoft Hyper-V.
 If you want to load actual PC through HelloX,please make a loadable USB stick by running make_usb_boot program under the /bin directory,then load PC.Please make sure the loading sequence of your PC is proper,so that USB stick is used before hard disk or other available loadable facilite.
