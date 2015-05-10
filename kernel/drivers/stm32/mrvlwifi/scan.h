@@ -1,0 +1,2 @@
+#define LBS_IOCTL_USER_SCAN_CHAN_MAX  50
+

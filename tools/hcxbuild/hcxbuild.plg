@@ -1,0 +1,42 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: hcxbuild - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x804 /fo"Release/hcxbuild.res" /d "NDEBUG" /d "_AFXDLL" "G:\I386\V175\tools\hcxbuild\hcxbuild.rc"" 
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSP8065.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp"Release/hcxbuild.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"G:\I386\V175\tools\hcxbuild\bitmap.cpp"
+"G:\I386\V175\tools\hcxbuild\hcxbuild.cpp"
+"G:\I386\V175\tools\hcxbuild\hcxbuildDlg.cpp"
+]
+Creating command line "cl.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSP8065.tmp" 
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSP8066.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp"Release/hcxbuild.pch" /Yc"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"G:\I386\V175\tools\hcxbuild\StdAfx.cpp"
+]
+Creating command line "cl.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSP8066.tmp" 
+Creating command line "link.exe /nologo /subsystem:windows /incremental:no /pdb:"Release/hcxbuild.pdb" /machine:I386 /out:"Release/hcxbuild.exe"  .\Release\bitmap.obj .\Release\hcxbuild.obj .\Release\hcxbuildDlg.obj .\Release\StdAfx.obj .\Release\hcxbuild.res "
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+bitmap.cpp
+hcxbuild.cpp
+hcxbuildDlg.cpp
+Generating Code...
+Linking...
+
+
+
+<h3>Results</h3>
+hcxbuild.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

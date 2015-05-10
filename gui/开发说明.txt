@@ -1,0 +1,2 @@
+编译链接，生成Release版的HCNGUI.DLL文件。然后拷贝到GUIMAKER目录下，运行GUIMAKER.BAT批处理程序，会生成HCNGUI.BIN文件，这个文件就是GUI模块的可加载文件。
+把HCNGUI.BIN文件拷贝到安装目录下，运行BATCH.BAT批处理程序，即可完成安装。

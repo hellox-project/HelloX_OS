@@ -1,0 +1,197 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: HCNGUI - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSP7681.tmp" with contents
+[
+/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "HCNGUI_EXPORTS" /FR"Release/" /Fp"Release/HCNGUI.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"G:\I386\V175\gui\WINDOW\CLIPZONE.CPP"
+"G:\I386\V175\gui\WINDOW\DEFWPROC.CPP"
+"G:\I386\V175\gui\WINDOW\GDI.CPP"
+"G:\I386\V175\gui\WINDOW\WNDMGR.CPP"
+"G:\I386\V175\gui\CTRL\bmpbtn.cpp"
+"G:\I386\V175\gui\CTRL\BUTTON.CPP"
+"G:\I386\V175\gui\CTRL\MSGBOX.CPP"
+"G:\I386\V175\gui\KAPI\KAPI.CPP"
+"G:\I386\V175\gui\KAPI\math.cpp"
+"G:\I386\V175\gui\KAPI\stdio.CPP"
+"G:\I386\V175\gui\KAPI\STRING.CPP"
+"G:\I386\V175\gui\KTHREAD\APPBAND.CPP"
+"G:\I386\V175\gui\KTHREAD\clend.cpp"
+"G:\I386\V175\gui\KTHREAD\clock.cpp"
+"G:\I386\V175\gui\KTHREAD\GUISHELL.CPP"
+"G:\I386\V175\gui\KTHREAD\GUIWPROC.CPP"
+"G:\I386\V175\gui\KTHREAD\launch.cpp"
+"G:\I386\V175\gui\KTHREAD\MOUSEMGR.CPP"
+"G:\I386\V175\gui\KTHREAD\RAWIT.CPP"
+"G:\I386\V175\gui\WORD\WordLib.CPP"
+"G:\I386\V175\gui\PICTURE\BMPAPI.cpp"
+"G:\I386\V175\gui\RES\data.cpp"
+"G:\I386\V175\gui\VIDEO\GLOBAL.CPP"
+"G:\I386\V175\gui\VIDEO\VIDEO.CPP"
+"G:\I386\V175\gui\APP\CLENDAR.CPP"
+"G:\I386\V175\gui\APP\HELLOW.CPP"
+"G:\I386\V175\gui\syscall\syscall.cpp"
+"G:\I386\V175\gui\GUIENTRY.CPP"
+]
+Creating command line "cl.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSP7681.tmp" 
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSP7682.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /base:"0x160000" /entry:"__init" /dll /incremental:no /pdb:"Release/HCNGUI.pdb" /machine:I386 /out:"Release/HCNGUI.dll" /implib:"Release/HCNGUI.lib" /ALIGN:16 
+.\Release\CLIPZONE.OBJ
+.\Release\DEFWPROC.OBJ
+.\Release\GDI.OBJ
+.\Release\WNDMGR.OBJ
+.\Release\bmpbtn.obj
+.\Release\BUTTON.OBJ
+.\Release\MSGBOX.OBJ
+.\Release\KAPI.OBJ
+.\Release\math.obj
+.\Release\stdio.obj
+.\Release\STRING.OBJ
+.\Release\APPBAND.OBJ
+.\Release\clend.obj
+.\Release\clock.obj
+.\Release\GUISHELL.OBJ
+.\Release\GUIWPROC.OBJ
+.\Release\launch.obj
+.\Release\MOUSEMGR.OBJ
+.\Release\RAWIT.OBJ
+.\Release\WordLib.obj
+.\Release\BMPAPI.obj
+.\Release\data.obj
+.\Release\GLOBAL.OBJ
+.\Release\VIDEO.OBJ
+.\Release\CLENDAR.OBJ
+.\Release\HELLOW.OBJ
+.\Release\syscall.obj
+.\Release\GUIENTRY.OBJ
+]
+Creating command line "link.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSP7682.tmp"
+<h3>Output Window</h3>
+Compiling...
+CLIPZONE.CPP
+DEFWPROC.CPP
+GDI.CPP
+WNDMGR.CPP
+G:\I386\V175\gui\WINDOW\WNDMGR.CPP(258) : warning C4018: '<=' : signed/unsigned mismatch
+G:\I386\V175\gui\WINDOW\WNDMGR.CPP(259) : warning C4018: '<=' : signed/unsigned mismatch
+G:\I386\V175\gui\WINDOW\WNDMGR.CPP(270) : warning C4018: '<=' : signed/unsigned mismatch
+bmpbtn.cpp
+G:\I386\V175\gui\CTRL\bmpbtn.cpp(272) : warning C4244: '=' : conversion from 'unsigned long' to 'unsigned short', possible loss of data
+BUTTON.CPP
+G:\I386\V175\gui\CTRL\BUTTON.CPP(172) : warning C4244: '=' : conversion from 'unsigned long' to 'unsigned short', possible loss of data
+MSGBOX.CPP
+KAPI.CPP
+G:\I386\V175\gui\KAPI\KAPI.CPP(276) : warning C4035: 'CreateKernelThread' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(286) : warning C4035: 'SetLastError' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(291) : warning C4035: 'GetLastError' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(296) : warning C4035: 'GetThreadID' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(301) : warning C4035: 'SetThreadPriority' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(306) : warning C4035: 'GetMessage' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(311) : warning C4035: 'SendMessage' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(316) : warning C4035: 'Sleep' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(330) : warning C4035: 'SetTimer' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(340) : warning C4035: 'CreateEvent' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(350) : warning C4035: 'SetEvent' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(355) : warning C4035: 'ResetEvent' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(360) : warning C4035: 'CreateMutex' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(370) : warning C4035: 'ReleaseMutex' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(375) : warning C4035: 'WaitForThisObject' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(381) : warning C4035: 'WaitForThisObjectEx' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(404) : warning C4035: 'ConnectInterrupt' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(423) : warning C4035: 'VirtualAlloc' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(440) : warning C4035: 'CreateFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(452) : warning C4035: 'ReadFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(464) : warning C4035: 'WriteFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(475) : warning C4035: 'CreateDirectory' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(480) : warning C4035: 'DeleteFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(488) : warning C4035: 'FindFirstFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(497) : warning C4035: 'FindNextFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(510) : warning C4035: 'GetFileAttributes' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(516) : warning C4035: 'GetFileSize' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(522) : warning C4035: 'RemoveDirectory' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(527) : warning C4035: 'SetEndOfFile' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(542) : warning C4035: 'IOControl' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(553) : warning C4035: 'SetFilePointer' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(559) : warning C4035: 'FlushFileBuffers' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(577) : warning C4035: 'CreateDevice' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(588) : warning C4035: 'KMemAlloc' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(617) : warning C4035: 'RegisterSystemCall' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(623) : warning C4035: 'ReplaceShell' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(629) : warning C4035: 'LoadDriver' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(634) : warning C4035: 'GetCurrentThread' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(639) : warning C4035: 'SwitchToGraphic' : no return value
+G:\I386\V175\gui\KAPI\KAPI.CPP(650) : warning C4035: 'SetFocusThread' : no return value
+math.cpp
+G:\I386\V175\gui\KAPI\math.cpp(25) : warning C4035: 'sin' : no return value
+G:\I386\V175\gui\KAPI\math.cpp(34) : warning C4035: 'cos' : no return value
+stdio.CPP
+STRING.CPP
+APPBAND.CPP
+clend.cpp
+clock.cpp
+GUISHELL.CPP
+GUIWPROC.CPP
+launch.cpp
+MOUSEMGR.CPP
+RAWIT.CPP
+WordLib.CPP
+BMPAPI.cpp
+data.cpp
+GLOBAL.CPP
+VIDEO.CPP
+CLENDAR.CPP
+HELLOW.CPP
+syscall.cpp
+GUIENTRY.CPP
+Linking...
+LINK : warning LNK4108: /ALIGN specified without /DRIVER or /VXD; image may not run
+Release/HCNGUI.dll : warning LNK4086: entrypoint "___init" is not __stdcall with 12 bytes of arguments; image may not run
+LINK : warning LNK4096: /BASE value "160000" is invalid for Windows 95; image may not run
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSP7C2E.tmp" with contents
+[
+/nologo /o"Release/HCNGUI.bsc" 
+.\Release\CLIPZONE.SBR
+.\Release\DEFWPROC.SBR
+.\Release\GDI.SBR
+.\Release\WNDMGR.SBR
+.\Release\bmpbtn.sbr
+.\Release\BUTTON.SBR
+.\Release\MSGBOX.SBR
+.\Release\KAPI.SBR
+.\Release\math.sbr
+.\Release\stdio.sbr
+.\Release\STRING.SBR
+.\Release\APPBAND.SBR
+.\Release\clend.sbr
+.\Release\clock.sbr
+.\Release\GUISHELL.SBR
+.\Release\GUIWPROC.SBR
+.\Release\launch.sbr
+.\Release\MOUSEMGR.SBR
+.\Release\RAWIT.SBR
+.\Release\WordLib.sbr
+.\Release\BMPAPI.sbr
+.\Release\data.sbr
+.\Release\GLOBAL.SBR
+.\Release\VIDEO.SBR
+.\Release\CLENDAR.SBR
+.\Release\HELLOW.SBR
+.\Release\syscall.sbr
+.\Release\GUIENTRY.SBR]
+Creating command line "bscmake.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSP7C2E.tmp"
+Creating browse info file...
+<h3>Output Window</h3>
+
+
+
+<h3>Results</h3>
+HCNGUI.dll - 0 error(s), 50 warning(s)
+</pre>
+</body>
+</html>

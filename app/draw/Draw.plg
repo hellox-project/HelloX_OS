@@ -1,0 +1,114 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: Draw - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSPA01B.tmp" with contents
+[
+/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DRAW_EXPORTS" /Fp"Release/Draw.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"G:\I386\V175\app\Draw\entry.cpp"
+"G:\I386\V175\app\Draw\KAPI.CPP"
+"G:\I386\V175\app\Draw\math.cpp"
+"G:\I386\V175\app\Draw\stdio.CPP"
+"G:\I386\V175\app\Draw\STRING.CPP"
+]
+Creating command line "cl.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSPA01B.tmp" 
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSPA01C.tmp" with contents
+[
+/nologo /base:"0x1E0000" /entry:"HCNMain" /dll /incremental:no /pdb:"Release/Draw.pdb" /machine:I386 /out:"Release/Draw.dll" /implib:"Release/Draw.lib" /ALIGN:16 
+.\Release\entry.obj
+.\Release\KAPI.OBJ
+.\Release\math.obj
+.\Release\stdio.obj
+.\Release\STRING.OBJ
+]
+Creating command line "link.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSPA01C.tmp"
+<h3>Output Window</h3>
+Compiling...
+entry.cpp
+KAPI.CPP
+G:\I386\V175\app\Draw\KAPI.CPP(276) : warning C4035: 'CreateKernelThread' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(286) : warning C4035: 'SetLastError' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(291) : warning C4035: 'GetLastError' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(296) : warning C4035: 'GetThreadID' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(301) : warning C4035: 'SetThreadPriority' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(306) : warning C4035: 'GetMessage' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(311) : warning C4035: 'SendMessage' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(316) : warning C4035: 'Sleep' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(330) : warning C4035: 'SetTimer' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(340) : warning C4035: 'CreateEvent' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(350) : warning C4035: 'SetEvent' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(355) : warning C4035: 'ResetEvent' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(360) : warning C4035: 'CreateMutex' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(370) : warning C4035: 'ReleaseMutex' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(375) : warning C4035: 'WaitForThisObject' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(381) : warning C4035: 'WaitForThisObjectEx' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(404) : warning C4035: 'ConnectInterrupt' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(423) : warning C4035: 'VirtualAlloc' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(440) : warning C4035: 'CreateFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(452) : warning C4035: 'ReadFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(464) : warning C4035: 'WriteFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(475) : warning C4035: 'CreateDirectory' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(480) : warning C4035: 'DeleteFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(488) : warning C4035: 'FindFirstFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(497) : warning C4035: 'FindNextFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(510) : warning C4035: 'GetFileAttributes' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(516) : warning C4035: 'GetFileSize' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(522) : warning C4035: 'RemoveDirectory' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(527) : warning C4035: 'SetEndOfFile' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(542) : warning C4035: 'IOControl' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(553) : warning C4035: 'SetFilePointer' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(559) : warning C4035: 'FlushFileBuffers' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(577) : warning C4035: 'CreateDevice' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(588) : warning C4035: 'KMemAlloc' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(617) : warning C4035: 'RegisterSystemCall' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(623) : warning C4035: 'ReplaceShell' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(629) : warning C4035: 'LoadDriver' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(634) : warning C4035: 'GetCurrentThread' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(639) : warning C4035: 'SwitchToGraphic' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(650) : warning C4035: 'SetFocusThread' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(747) : warning C4035: 'CreateWindow' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(782) : warning C4035: 'GetWindowDC' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(789) : warning C4035: 'GetClientDC' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(803) : warning C4035: 'GetWindowStatus' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(810) : warning C4035: 'GetWindowExtension' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(818) : warning C4035: 'SetWindowExtension' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(825) : warning C4035: 'GetParentWindow' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(834) : warning C4035: 'GetWindowRect' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(842) : warning C4035: 'IsChild' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(851) : warning C4035: 'HitTest' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(859) : warning C4035: 'SendWindowMessage' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(866) : warning C4035: 'DispatchWindowMessage' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(876) : warning C4035: 'DefWindowProc' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(894) : warning C4035: 'CreateFont' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(910) : warning C4035: 'GetTextMetric' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(918) : warning C4035: 'CreateBrush' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(934) : warning C4035: 'CreatePen' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(950) : warning C4035: 'PtInRect' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(960) : warning C4035: 'CreateDeviceContext' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(1027) : warning C4035: 'SelectPen' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(1035) : warning C4035: 'SelectBrush' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(1043) : warning C4035: 'SelectFont' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(1059) : warning C4035: 'CreateButton' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(1079) : warning C4035: 'CreateBitmapButton' : no return value
+G:\I386\V175\app\Draw\KAPI.CPP(1092) : warning C4035: 'MessageBox' : no return value
+math.cpp
+G:\I386\V175\app\Draw\math.cpp(25) : warning C4035: 'sin' : no return value
+G:\I386\V175\app\Draw\math.cpp(34) : warning C4035: 'cos' : no return value
+stdio.CPP
+STRING.CPP
+Linking...
+LINK : warning LNK4108: /ALIGN specified without /DRIVER or /VXD; image may not run
+Release/Draw.dll : warning LNK4086: entrypoint "_HCNMain" is not __stdcall with 12 bytes of arguments; image may not run
+LINK : warning LNK4096: /BASE value "1e0000" is invalid for Windows 95; image may not run
+
+
+
+<h3>Results</h3>
+Draw.dll - 0 error(s), 70 warning(s)
+</pre>
+</body>
+</html>

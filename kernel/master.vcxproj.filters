@@ -1,0 +1,919 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3c62db59-1473-4600-bbca-7098d36132b2}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Source Files\drivers">
+      <UniqueIdentifier>{ed0aa9f6-864b-42b6-900d-949394962601}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lib">
+      <UniqueIdentifier>{7a259e89-527e-4072-b29b-60aaeb1d95cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\arch">
+      <UniqueIdentifier>{31322fc7-009f-4f73-8181-474a3f27f813}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\fs">
+      <UniqueIdentifier>{596b7cd8-3669-4db3-b48a-003626923a87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shell">
+      <UniqueIdentifier>{aa171edc-07ea-4bcb-8a76-2ccc3e8160a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\osentry">
+      <UniqueIdentifier>{1ce50db2-8163-4f93-a138-53819420cac5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\kernel">
+      <UniqueIdentifier>{2ab20da3-fb06-4503-964c-7ae0e770da37}</UniqueIdentifier>
+      <Extensions>.cpp</Extensions>
+    </Filter>
+    <Filter Include="Source Files\network">
+      <UniqueIdentifier>{75a7017c-537e-49b1-b808-4bc8c3deaaec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{915b8425-b910-40ba-aced-7f47a9618512}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Header Files\include">
+      <UniqueIdentifier>{e5445e33-24fc-4e2a-b4e5-defd65703ce8}</UniqueIdentifier>
+      <Extensions>.h</Extensions>
+    </Filter>
+    <Filter Include="Header Files\drv_hdr">
+      <UniqueIdentifier>{d5276c28-085a-448b-bba1-94372e3f5298}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\arch_hdr">
+      <UniqueIdentifier>{33b63946-c624-4cf6-9673-b67db5b08c3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\kt_hdr">
+      <UniqueIdentifier>{4aaa7206-2dc6-40d1-87d0-06a36fc61738}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\fs_hdr">
+      <UniqueIdentifier>{5ff2f284-fd78-45b7-b739-739a6b262fa0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lib_hdr">
+      <UniqueIdentifier>{29e95421-1ea1-44f5-9f10-8cf786dae687}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shell_hdr">
+      <UniqueIdentifier>{6deae5da-9474-4b9a-b092-7a0a694ae8fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\config">
+      <UniqueIdentifier>{7b4d4319-ff66-4f08-aae8-99160a6344a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\nethdr">
+      <UniqueIdentifier>{a890e948-fd9d-4f30-bbb4-02baa24bacf6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{9d761576-26cf-4ef6-b103-ced7e0f1229c}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+    <Filter Include="Source Files\kthread">
+      <UniqueIdentifier>{c23b14ee-55b9-4861-9d6c-61f9897b5be2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\jvm">
+      <UniqueIdentifier>{6432b8a3-cf23-4f8e-8b60-d4dea4988f4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\jvm">
+      <UniqueIdentifier>{5d7e3cd5-2f3f-45d1-951e-314add1e05c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lib\sys">
+      <UniqueIdentifier>{9ae9ad86-fd74-45f5-952d-505cf8f4c52b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\jvm\OS">
+      <UniqueIdentifier>{9b2777b6-45f4-4178-871a-27eb7c63381e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="drivers\x86\com.c">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\IDEBASE.C">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\IDEHD.C">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\KEYBRD.C">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\MOUSE.C">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="kthread\idle.c">
+      <Filter>Source Files\kthread</Filter>
+    </ClCompile>
+    <ClCompile Include="kthread\logcat.c">
+      <Filter>Source Files\kthread</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\ARCH_X86.C">
+      <Filter>Source Files\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\BIOS.C">
+      <Filter>Source Files\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\HELLOCN.C">
+      <Filter>Source Files\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\FAT32.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\FAT322.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\FATMGR.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\FATMGR2.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\FATSTR.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\fsstr.c">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\NTFS.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\NTFS2.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\NTFSDRV.C">
+      <Filter>Source Files\fs</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\EXTCMD.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\FDISK.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\FDISK2.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\FIBONACCI.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\FS.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\HEDIT.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\HYPERTRM.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\IOCTRL_S.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\network.c">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\network2.c">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\SHELL.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\SHELL1.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\STAT_S.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\SYSD_S.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="osentry\DRVENTRY.C">
+      <Filter>Source Files\osentry</Filter>
+    </ClCompile>
+    <ClCompile Include="osentry\mem_scat.c">
+      <Filter>Source Files\osentry</Filter>
+    </ClCompile>
+    <ClCompile Include="osentry\OS_ENTRY.C">
+      <Filter>Source Files\osentry</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\COMQUEUE.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\console.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\debug.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\DEVMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\DIM.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\IOMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\IOMGR2.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\KAPI.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\KERMOD.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\KMEMMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\KTMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\KTMGR2.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\MEM_FBL.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\MEMMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\MODMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\OBJMGR.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\OBJQUEUE.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\PAGEIDX.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\PCI_DRV.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\PERF.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\STATCPU.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\SYNOBJ.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\synobj2.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\SYSCALL.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\SYSTEM.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\TYPES.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\VMM.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\api_lib.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\api_msg.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\autoip.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\def.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\dhcp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\dns.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\err.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\netif\etharp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\icmp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\igmp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\inet.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\inet_chksum.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\init.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\ip.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\ip_addr.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\ip_frag.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\mem.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\memp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\netbuf.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\netdb.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\netif.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\netifapi.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\pbuf.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\raw.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\sockets.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\stats.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\sys.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\arch\sys_arch.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\tcp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\tcp_in.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\tcp_out.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\api\tcpip.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\timers.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\core\udp.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\HISCMD .C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\SHELL_HELP.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\CharDisplay.C">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\BIOSVGA.C">
+      <Filter>Source Files\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="network\ethernet\ethentry.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\ethernet\ethif.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\atox.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\io.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\memory.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\pthread.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\pthread_mutex .c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\pthread_other.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\stdio.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\string.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\sysmem.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\time.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\sched.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\signal.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\process.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\jam.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\access.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\alloc.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\cast.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\class.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\dll.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\dll_ffi.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\excep.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\execute.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\frame.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\hash.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\hooks.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\jni.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\lock.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\natives.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\properties.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\reflect.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\resolve.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\shutdown.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\sig.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\symbol.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\thread.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\utf8.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\zip.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\interp\direct.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\interp\inlining.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\interp\engine\interp.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\interp\engine\interp2.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\math.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\errno.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\getenv.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\setjmp.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\jvm_str.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\jvm_init.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\jvm_time.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\os\HelloX\os.c">
+      <Filter>Source Files\jvm\OS</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\os\HelloX\i386\dll_md.c">
+      <Filter>Source Files\jvm\OS</Filter>
+    </ClCompile>
+    <ClCompile Include="jvm\os\HelloX\i386\os_init.c">
+      <Filter>Source Files\jvm\OS</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\ctype.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\stat.c">
+      <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\arch\bpstruct.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\BUFFMGR.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\COMMOBJ.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\COMQUEUE.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\console.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\debug.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\DEVMGR.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\dim.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\arch\epstruct.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\GLOBVAR.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\HEAP.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\HELLOCN.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\iomgr.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KAPI.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\KMEMMGR.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\KTMGR.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ktmgr2.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\KTMSG.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\MAILBOX.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\memmgr.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\MODMGR.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\OBJQUEUE.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\PAGEIDX.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\PCI_DRV.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\PERF.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\RINGBUFF.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\STATCPU.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\StdAfx.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\SYSCALL.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\sysnet.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\SYSTEM.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\TYPES.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\VMM.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\com.h">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\IDEBASE.H">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\IDEHD.H">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\KEYBRD.H">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\MOUSE.H">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\ARCH.H">
+      <Filter>Header Files\arch_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\BIOS.H">
+      <Filter>Header Files\arch_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\SYN_MECH.H">
+      <Filter>Header Files\arch_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="kthread\idle.h">
+      <Filter>Header Files\kt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="kthread\logcat.h">
+      <Filter>Header Files\kt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="fs\FAT32.H">
+      <Filter>Header Files\fs_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="fs\fsstr.h">
+      <Filter>Header Files\fs_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="fs\NTFS.H">
+      <Filter>Header Files\fs_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\EXTCMD.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\FDISK.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\FIBONACCI.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\FS.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\HEDIT.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\HYPERTRM.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\IOCTRL_S.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\network.h">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\SHELL.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\STAT_S.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\SYSD_S.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="config\config.h">
+      <Filter>Header Files\config</Filter>
+    </ClInclude>
+    <ClInclude Include="include\arch\cc.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="network\nicdrv\ethif.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwipopts.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwip\netif.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwip\opt.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\arch\perf.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwip\sockets.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwip\sys.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\arch\sys_arch.h">
+      <Filter>Header Files\nethdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CharDisplay.H">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="dispaly\BIOSVGA.H">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\BIOSVGA.H">
+      <Filter>Header Files\arch_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\io.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\pthread.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stddef.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stdint.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stdio.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stdlib.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\string.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\time.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\time_pri.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\signal.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\sched.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\unistd.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\sys\utsname.h">
+      <Filter>Source Files\lib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\process.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\alloc.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\class.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\config.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\excep.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\frame.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\hash.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\jam.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\jni.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\jni-internal.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\lock.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\natives.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\properties.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\reflect.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\sig.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\symbol.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\thread.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\zip.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\inlining.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\shared.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\engine\interp.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\engine\interp-direct.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\engine\interp-indirect.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\engine\interp-inlining.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\interp\engine\interp-threading.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\limits.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\ctype.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\setjmp.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\math.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\jvm_arch.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\arch\i386.h">
+      <Filter>Header Files\jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\errno.h">
+      <Filter>Header Files\lib_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\sys\types.h">
+      <Filter>Source Files\lib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\sys\stat.h">
+      <Filter>Source Files\lib\sys</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Authors.txt">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="README.md">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="revise.txt">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

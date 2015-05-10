@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4daa0709-041b-406f-9f80-bf2662c2ca74}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Source Files\WINDOW">
+      <UniqueIdentifier>{f6037e7b-386a-4722-8dc8-4f03cd00a5d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CTRL">
+      <UniqueIdentifier>{3f3f8f7b-825c-4366-b77c-46df3e608a51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\KAPI">
+      <UniqueIdentifier>{7b8d8bd1-de4c-43e4-8658-b2d984a1ea5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\KTHREAD">
+      <UniqueIdentifier>{6e16a32c-7bac-47e1-9d0c-72e46c6d434f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\WORD">
+      <UniqueIdentifier>{84809b29-be09-46df-b783-35dc7024fa28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\PICTURE">
+      <UniqueIdentifier>{0eb32e47-e74d-4834-be7c-9d1b1a05f8c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RES">
+      <UniqueIdentifier>{cb3aa370-cde9-474e-a2a5-9cb95be9c33a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VIDEO">
+      <UniqueIdentifier>{bf20fef3-aa8f-4f30-8f55-921e7a012181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\APP">
+      <UniqueIdentifier>{190d2137-f1f4-4b15-935c-a385db5e9879}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\syscall">
+      <UniqueIdentifier>{0afad00e-94cc-4d92-8de6-2fe710b14d8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{b10f2fc3-544f-428e-95c3-77cd7d09b2e8}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{2ec76440-9761-4af2-b16d-72e739bc9d84}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="WINDOW\CLIPZONE.CPP">
+      <Filter>Source Files\WINDOW</Filter>
+    </ClCompile>
+    <ClCompile Include="WINDOW\DEFWPROC.CPP">
+      <Filter>Source Files\WINDOW</Filter>
+    </ClCompile>
+    <ClCompile Include="WINDOW\GDI.CPP">
+      <Filter>Source Files\WINDOW</Filter>
+    </ClCompile>
+    <ClCompile Include="WINDOW\WNDMGR.CPP">
+      <Filter>Source Files\WINDOW</Filter>
+    </ClCompile>
+    <ClCompile Include="CTRL\bmpbtn.cpp">
+      <Filter>Source Files\CTRL</Filter>
+    </ClCompile>
+    <ClCompile Include="CTRL\BUTTON.CPP">
+      <Filter>Source Files\CTRL</Filter>
+    </ClCompile>
+    <ClCompile Include="CTRL\MSGBOX.CPP">
+      <Filter>Source Files\CTRL</Filter>
+    </ClCompile>
+    <ClCompile Include="KAPI\KAPI.CPP">
+      <Filter>Source Files\KAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="KAPI\math.cpp">
+      <Filter>Source Files\KAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="KAPI\stdio.CPP">
+      <Filter>Source Files\KAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="KAPI\STRING.CPP">
+      <Filter>Source Files\KAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\APPBAND.CPP">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\clend.cpp">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\clock.cpp">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\GUISHELL.CPP">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\GUIWPROC.CPP">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\launch.cpp">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\MOUSEMGR.CPP">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="KTHREAD\RAWIT.CPP">
+      <Filter>Source Files\KTHREAD</Filter>
+    </ClCompile>
+    <ClCompile Include="WORD\WordLib.CPP">
+      <Filter>Source Files\WORD</Filter>
+    </ClCompile>
+    <ClCompile Include="PICTURE\BMPAPI.cpp">
+      <Filter>Source Files\PICTURE</Filter>
+    </ClCompile>
+    <ClCompile Include="RES\data.cpp">
+      <Filter>Source Files\RES</Filter>
+    </ClCompile>
+    <ClCompile Include="VIDEO\GLOBAL.CPP">
+      <Filter>Source Files\VIDEO</Filter>
+    </ClCompile>
+    <ClCompile Include="VIDEO\VIDEO.CPP">
+      <Filter>Source Files\VIDEO</Filter>
+    </ClCompile>
+    <ClCompile Include="APP\CLENDAR.CPP">
+      <Filter>Source Files\APP</Filter>
+    </ClCompile>
+    <ClCompile Include="APP\HELLOW.CPP">
+      <Filter>Source Files\APP</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall\syscall.cpp">
+      <Filter>Source Files\syscall</Filter>
+    </ClCompile>
+    <ClCompile Include="GUIENTRY.CPP">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="APP\CLENDAR.H">
+      <Filter>Source Files\APP</Filter>
+    </ClInclude>
+    <ClInclude Include="APP\HELLOW.H">
+      <Filter>Source Files\APP</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\BMPAPI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\bmpbtn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\BUTTON.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KTHREAD\clend.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\CLIPZONE.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KTHREAD\clock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\GDI.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\GLOBAL.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\GUISHELL.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\KAPI.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\launch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KAPI\math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\MSGBOX.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\RAWIT.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\stdio.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall\syscall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\VESA.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\VIDEO.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\WNDMGR.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INCLUDE\WordLib.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

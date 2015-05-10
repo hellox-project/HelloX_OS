@@ -1,0 +1,439 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <SccProjectName />
+    <SccLocalPath />
+    <ProjectGuid>{156D873E-78D4-9A45-FEBE-A97A5EB779CB}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\Release\</OutDir>
+    <IntDir>.\Release\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+    <IncludePath>jvm;network;Lib</IncludePath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\Debug\</OutDir>
+    <IntDir>.\Debug\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MinSpace</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>.\include;.\arch\x86;.\jvm\arch;.\jvm\classlib\openjdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;MASTER_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\Release\master.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\Release\</ObjectFileName>
+      <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\Release\master.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Release\master.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <LinkDLL>true</LinkDLL>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <OutputFile>.\release\master.dll</OutputFile>
+      <ImportLibrary>.\Release\master.lib</ImportLibrary>
+      <AdditionalOptions> /ALIGN:32</AdditionalOptions>
+      <BaseAddress>0x110000</BaseAddress>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>__OS_Entry</EntryPointSymbol>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MASTER_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\Debug\master.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\Debug\</ObjectFileName>
+      <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\Debug\master.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Debug\master.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <LinkDLL>true</LinkDLL>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <OutputFile>.\Debug\master.dll</OutputFile>
+      <ImportLibrary>.\Debug\master.lib</ImportLibrary>
+      <AdditionalOptions> /ALIGN:16</AdditionalOptions>
+      <BaseAddress>0x110000</BaseAddress>
+      <EntryPointSymbol>?__init%40%40YAXXZ</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="arch\x86\BIOSVGA.C" />
+    <ClCompile Include="drivers\x86\com.c" />
+    <ClCompile Include="drivers\x86\IDEBASE.C" />
+    <ClCompile Include="drivers\x86\IDEHD.C" />
+    <ClCompile Include="drivers\x86\KEYBRD.C" />
+    <ClCompile Include="drivers\x86\MOUSE.C" />
+    <ClCompile Include="jvm\access.c" />
+    <ClCompile Include="jvm\alloc.c" />
+    <ClCompile Include="jvm\cast.c" />
+    <ClCompile Include="jvm\class.c" />
+    <ClCompile Include="jvm\dll.c" />
+    <ClCompile Include="jvm\dll_ffi.c" />
+    <ClCompile Include="jvm\excep.c" />
+    <ClCompile Include="jvm\execute.c" />
+    <ClCompile Include="jvm\frame.c" />
+    <ClCompile Include="jvm\hash.c" />
+    <ClCompile Include="jvm\hooks.c" />
+    <ClCompile Include="jvm\interp\direct.c" />
+    <ClCompile Include="jvm\interp\engine\interp.c" />
+    <ClCompile Include="jvm\interp\engine\interp2.c" />
+    <ClCompile Include="jvm\interp\inlining.c" />
+    <ClCompile Include="jvm\jam.c" />
+    <ClCompile Include="jvm\jni.c" />
+    <ClCompile Include="jvm\jvm_init.c" />
+    <ClCompile Include="jvm\jvm_str.c" />
+    <ClCompile Include="jvm\jvm_time.c" />
+    <ClCompile Include="jvm\lock.c" />
+    <ClCompile Include="jvm\natives.c" />
+    <ClCompile Include="jvm\os\HelloX\i386\dll_md.c" />
+    <ClCompile Include="jvm\os\HelloX\i386\os_init.c" />
+    <ClCompile Include="jvm\os\HelloX\os.c" />
+    <ClCompile Include="jvm\properties.c" />
+    <ClCompile Include="jvm\reflect.c" />
+    <ClCompile Include="jvm\resolve.c" />
+    <ClCompile Include="jvm\shutdown.c" />
+    <ClCompile Include="jvm\sig.c" />
+    <ClCompile Include="jvm\symbol.c" />
+    <ClCompile Include="jvm\thread.c" />
+    <ClCompile Include="jvm\utf8.c" />
+    <ClCompile Include="jvm\zip.c" />
+    <ClCompile Include="kernel\CharDisplay.C" />
+    <ClCompile Include="kernel\process.c" />
+    <ClCompile Include="kthread\idle.c" />
+    <ClCompile Include="kthread\logcat.c" />
+    <ClCompile Include="arch\x86\ARCH_X86.C" />
+    <ClCompile Include="arch\x86\BIOS.C" />
+    <ClCompile Include="arch\x86\HELLOCN.C" />
+    <ClCompile Include="fs\FAT32.C" />
+    <ClCompile Include="fs\FAT322.C" />
+    <ClCompile Include="fs\FATMGR.C" />
+    <ClCompile Include="fs\FATMGR2.C" />
+    <ClCompile Include="fs\FATSTR.C" />
+    <ClCompile Include="fs\fsstr.c" />
+    <ClCompile Include="fs\NTFS.C" />
+    <ClCompile Include="fs\NTFS2.C" />
+    <ClCompile Include="fs\NTFSDRV.C" />
+    <ClCompile Include="lib\atox.c" />
+    <ClCompile Include="lib\ctype.c" />
+    <ClCompile Include="lib\errno.c" />
+    <ClCompile Include="lib\getenv.c" />
+    <ClCompile Include="lib\io.c" />
+    <ClCompile Include="lib\math.c" />
+    <ClCompile Include="lib\memory.c" />
+    <ClCompile Include="lib\pthread.c" />
+    <ClCompile Include="lib\pthread_mutex .c" />
+    <ClCompile Include="lib\pthread_other.c" />
+    <ClCompile Include="lib\sched.c" />
+    <ClCompile Include="lib\setjmp.c" />
+    <ClCompile Include="lib\signal.c" />
+    <ClCompile Include="lib\stat.c" />
+    <ClCompile Include="lib\stdio.c" />
+    <ClCompile Include="lib\string.c" />
+    <ClCompile Include="lib\sysmem.c" />
+    <ClCompile Include="lib\time.c" />
+    <ClCompile Include="network\ethernet\ethentry.c" />
+    <ClCompile Include="network\ethernet\ethif.c" />
+    <ClCompile Include="shell\EXTCMD.C" />
+    <ClCompile Include="shell\FDISK.C" />
+    <ClCompile Include="shell\FDISK2.C" />
+    <ClCompile Include="shell\FIBONACCI.C" />
+    <ClCompile Include="shell\FS.C" />
+    <ClCompile Include="shell\HEDIT.C" />
+    <ClCompile Include="shell\HISCMD .C" />
+    <ClCompile Include="shell\HYPERTRM.C" />
+    <ClCompile Include="shell\IOCTRL_S.C" />
+    <ClCompile Include="shell\network.c" />
+    <ClCompile Include="shell\network2.c" />
+    <ClCompile Include="shell\SHELL.C" />
+    <ClCompile Include="shell\SHELL1.C" />
+    <ClCompile Include="shell\SHELL_HELP.C" />
+    <ClCompile Include="shell\STAT_S.C" />
+    <ClCompile Include="shell\SYSD_S.C" />
+    <ClCompile Include="osentry\DRVENTRY.C" />
+    <ClCompile Include="osentry\mem_scat.c" />
+    <ClCompile Include="osentry\OS_ENTRY.C" />
+    <ClCompile Include="kernel\COMQUEUE.C" />
+    <ClCompile Include="kernel\console.c" />
+    <ClCompile Include="kernel\debug.c" />
+    <ClCompile Include="kernel\DEVMGR.C" />
+    <ClCompile Include="kernel\DIM.C" />
+    <ClCompile Include="kernel\IOMGR.C" />
+    <ClCompile Include="kernel\IOMGR2.C" />
+    <ClCompile Include="kernel\KAPI.C" />
+    <ClCompile Include="kernel\KERMOD.C" />
+    <ClCompile Include="kernel\KMEMMGR.C" />
+    <ClCompile Include="kernel\KTMGR.C" />
+    <ClCompile Include="kernel\KTMGR2.C" />
+    <ClCompile Include="kernel\MEM_FBL.C" />
+    <ClCompile Include="kernel\MEMMGR.C" />
+    <ClCompile Include="kernel\MODMGR.C" />
+    <ClCompile Include="kernel\OBJMGR.C" />
+    <ClCompile Include="kernel\OBJQUEUE.C" />
+    <ClCompile Include="kernel\PAGEIDX.C" />
+    <ClCompile Include="kernel\PCI_DRV.C" />
+    <ClCompile Include="kernel\PERF.C" />
+    <ClCompile Include="kernel\STATCPU.C" />
+    <ClCompile Include="kernel\SYNOBJ.C" />
+    <ClCompile Include="kernel\synobj2.c" />
+    <ClCompile Include="kernel\SYSCALL.C" />
+    <ClCompile Include="kernel\SYSTEM.C" />
+    <ClCompile Include="kernel\TYPES.C" />
+    <ClCompile Include="kernel\VMM.C" />
+    <ClCompile Include="network\api\api_lib.c" />
+    <ClCompile Include="network\api\api_msg.c" />
+    <ClCompile Include="network\core\autoip.c" />
+    <ClCompile Include="network\core\def.c" />
+    <ClCompile Include="network\core\dhcp.c" />
+    <ClCompile Include="network\core\dns.c" />
+    <ClCompile Include="network\api\err.c" />
+    <ClCompile Include="network\netif\etharp.c" />
+    <ClCompile Include="network\core\icmp.c" />
+    <ClCompile Include="network\core\igmp.c" />
+    <ClCompile Include="network\core\inet.c" />
+    <ClCompile Include="network\core\inet_chksum.c" />
+    <ClCompile Include="network\core\init.c" />
+    <ClCompile Include="network\core\ip.c" />
+    <ClCompile Include="network\core\ip_addr.c" />
+    <ClCompile Include="network\core\ip_frag.c" />
+    <ClCompile Include="network\core\mem.c" />
+    <ClCompile Include="network\core\memp.c" />
+    <ClCompile Include="network\api\netbuf.c" />
+    <ClCompile Include="network\api\netdb.c" />
+    <ClCompile Include="network\core\netif.c" />
+    <ClCompile Include="network\api\netifapi.c" />
+    <ClCompile Include="network\core\pbuf.c" />
+    <ClCompile Include="network\core\raw.c" />
+    <ClCompile Include="network\api\sockets.c" />
+    <ClCompile Include="network\core\stats.c" />
+    <ClCompile Include="network\core\sys.c" />
+    <ClCompile Include="network\arch\sys_arch.c" />
+    <ClCompile Include="network\core\tcp.c" />
+    <ClCompile Include="network\core\tcp_in.c" />
+    <ClCompile Include="network\core\tcp_out.c" />
+    <ClCompile Include="network\api\tcpip.c" />
+    <ClCompile Include="network\core\timers.c" />
+    <ClCompile Include="network\core\udp.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="arch\x86\BIOSVGA.H" />
+    <ClInclude Include="dispaly\BIOSVGA.H" />
+    <ClInclude Include="include\arch\bpstruct.h" />
+    <ClInclude Include="INCLUDE\BUFFMGR.H" />
+    <ClInclude Include="include\CharDisplay.H" />
+    <ClInclude Include="INCLUDE\COMMOBJ.H" />
+    <ClInclude Include="INCLUDE\COMQUEUE.H" />
+    <ClInclude Include="include\console.h" />
+    <ClInclude Include="include\debug.h" />
+    <ClInclude Include="INCLUDE\DEVMGR.H" />
+    <ClInclude Include="INCLUDE\dim.h" />
+    <ClInclude Include="include\arch\epstruct.h" />
+    <ClInclude Include="INCLUDE\GLOBVAR.H" />
+    <ClInclude Include="INCLUDE\HEAP.H" />
+    <ClInclude Include="INCLUDE\HELLOCN.H" />
+    <ClInclude Include="INCLUDE\iomgr.h" />
+    <ClInclude Include="include\KAPI.H" />
+    <ClInclude Include="INCLUDE\KMEMMGR.H" />
+    <ClInclude Include="INCLUDE\KTMGR.H" />
+    <ClInclude Include="include\ktmgr2.h" />
+    <ClInclude Include="INCLUDE\KTMSG.H" />
+    <ClInclude Include="INCLUDE\MAILBOX.H" />
+    <ClInclude Include="INCLUDE\memmgr.h" />
+    <ClInclude Include="INCLUDE\MODMGR.H" />
+    <ClInclude Include="INCLUDE\OBJQUEUE.H" />
+    <ClInclude Include="INCLUDE\PAGEIDX.H" />
+    <ClInclude Include="INCLUDE\PCI_DRV.H" />
+    <ClInclude Include="INCLUDE\PERF.H" />
+    <ClInclude Include="include\process.h" />
+    <ClInclude Include="INCLUDE\RINGBUFF.H" />
+    <ClInclude Include="INCLUDE\STATCPU.H" />
+    <ClInclude Include="INCLUDE\StdAfx.h" />
+    <ClInclude Include="INCLUDE\SYSCALL.H" />
+    <ClInclude Include="include\sysnet.h" />
+    <ClInclude Include="INCLUDE\SYSTEM.H" />
+    <ClInclude Include="INCLUDE\TYPES.H" />
+    <ClInclude Include="INCLUDE\VMM.H" />
+    <ClInclude Include="drivers\x86\com.h" />
+    <ClInclude Include="drivers\x86\IDEBASE.H" />
+    <ClInclude Include="drivers\x86\IDEHD.H" />
+    <ClInclude Include="drivers\x86\KEYBRD.H" />
+    <ClInclude Include="drivers\x86\MOUSE.H" />
+    <ClInclude Include="arch\x86\ARCH.H" />
+    <ClInclude Include="arch\x86\BIOS.H" />
+    <ClInclude Include="arch\x86\SYN_MECH.H" />
+    <ClInclude Include="jvm\alloc.h" />
+    <ClInclude Include="jvm\arch\i386.h" />
+    <ClInclude Include="jvm\class.h" />
+    <ClInclude Include="jvm\config.h" />
+    <ClInclude Include="jvm\excep.h" />
+    <ClInclude Include="jvm\frame.h" />
+    <ClInclude Include="jvm\hash.h" />
+    <ClInclude Include="jvm\interp\engine\interp-direct.h" />
+    <ClInclude Include="jvm\interp\engine\interp-indirect.h" />
+    <ClInclude Include="jvm\interp\engine\interp-inlining.h" />
+    <ClInclude Include="jvm\interp\engine\interp-threading.h" />
+    <ClInclude Include="jvm\interp\engine\interp.h" />
+    <ClInclude Include="jvm\interp\inlining.h" />
+    <ClInclude Include="jvm\interp\shared.h" />
+    <ClInclude Include="jvm\jam.h" />
+    <ClInclude Include="jvm\jni-internal.h" />
+    <ClInclude Include="jvm\jni.h" />
+    <ClInclude Include="jvm\jvm_arch.h" />
+    <ClInclude Include="jvm\lock.h" />
+    <ClInclude Include="jvm\natives.h" />
+    <ClInclude Include="jvm\properties.h" />
+    <ClInclude Include="jvm\reflect.h" />
+    <ClInclude Include="jvm\sig.h" />
+    <ClInclude Include="jvm\symbol.h" />
+    <ClInclude Include="jvm\thread.h" />
+    <ClInclude Include="jvm\zip.h" />
+    <ClInclude Include="kthread\idle.h" />
+    <ClInclude Include="kthread\logcat.h" />
+    <ClInclude Include="fs\FAT32.H" />
+    <ClInclude Include="fs\fsstr.h" />
+    <ClInclude Include="fs\NTFS.H" />
+    <ClInclude Include="lib\ctype.h" />
+    <ClInclude Include="lib\errno.h" />
+    <ClInclude Include="lib\io.h" />
+    <ClInclude Include="lib\limits.h" />
+    <ClInclude Include="lib\math.h" />
+    <ClInclude Include="lib\pthread.h" />
+    <ClInclude Include="lib\sched.h" />
+    <ClInclude Include="lib\setjmp.h" />
+    <ClInclude Include="lib\signal.h" />
+    <ClInclude Include="lib\stddef.h" />
+    <ClInclude Include="lib\stdint.h" />
+    <ClInclude Include="lib\stdio.h" />
+    <ClInclude Include="lib\stdlib.h" />
+    <ClInclude Include="lib\string.h" />
+    <ClInclude Include="lib\sys\stat.h" />
+    <ClInclude Include="lib\sys\types.h" />
+    <ClInclude Include="lib\sys\utsname.h" />
+    <ClInclude Include="lib\time.h" />
+    <ClInclude Include="lib\time_pri.h" />
+    <ClInclude Include="lib\unistd.h" />
+    <ClInclude Include="shell\EXTCMD.H" />
+    <ClInclude Include="shell\FDISK.H" />
+    <ClInclude Include="shell\FIBONACCI.H" />
+    <ClInclude Include="shell\FS.H" />
+    <ClInclude Include="shell\HEDIT.H" />
+    <ClInclude Include="shell\HYPERTRM.H" />
+    <ClInclude Include="shell\IOCTRL_S.H" />
+    <ClInclude Include="shell\network.h" />
+    <ClInclude Include="shell\SHELL.H" />
+    <ClInclude Include="shell\STAT_S.H" />
+    <ClInclude Include="shell\SYSD_S.H" />
+    <ClInclude Include="config\config.h" />
+    <ClInclude Include="include\arch\cc.h" />
+    <ClInclude Include="network\nicdrv\ethif.h" />
+    <ClInclude Include="include\lwipopts.h" />
+    <ClInclude Include="include\lwip\netif.h" />
+    <ClInclude Include="include\lwip\opt.h" />
+    <ClInclude Include="include\arch\perf.h" />
+    <ClInclude Include="include\lwip\sockets.h" />
+    <ClInclude Include="include\lwip\sys.h" />
+    <ClInclude Include="include\arch\sys_arch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Authors.txt" />
+    <None Include="README.md" />
+    <None Include="revise.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

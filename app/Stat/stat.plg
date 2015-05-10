@@ -1,0 +1,31 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: stat - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\Users\ADMINI~1\AppData\Local\Temp\RSP6941.tmp" with contents
+[
+/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "STAT_EXPORTS" /Fp"Release/stat.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"G:\I386\V175\app\Stat\HCNMain.cpp"
+]
+Creating command line "cl.exe @C:\Users\ADMINI~1\AppData\Local\Temp\RSP6941.tmp" 
+Creating command line "link.exe sdklib.lib /nologo /base:"0x1E0000" /entry:"HCNMain" /dll /incremental:no /pdb:"Release/stat.pdb" /machine:I386 /nodefaultlib:"library" /out:"Release/stat.dll" /implib:"Release/stat.lib" /ALIGN:16  .\Release\HCNMain.obj "
+<h3>Output Window</h3>
+Compiling...
+HCNMain.cpp
+Linking...
+LINK : warning LNK4108: /ALIGN specified without /DRIVER or /VXD; image may not run
+LINK : warning LNK4098: defaultlib "LIBC" conflicts with use of other libs; use /NODEFAULTLIB:library
+Release/stat.dll : warning LNK4086: entrypoint "_HCNMain" is not __stdcall with 12 bytes of arguments; image may not run
+LINK : warning LNK4096: /BASE value "1e0000" is invalid for Windows 95; image may not run
+
+
+
+<h3>Results</h3>
+stat.dll - 0 error(s), 4 warning(s)
+</pre>
+</body>
+</html>
