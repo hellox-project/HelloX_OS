@@ -45,7 +45,15 @@ extern "C" {
 
 //Interrupt enable and disable operation.
 #ifdef __I386__
-#define __ENABLE_INTERRUPT() {__asm sti}
+	#define __ENABLE_INTERRUPT() \
+	{    \
+		__asm push eax    \
+		__asm mov al, 0x20    \
+		__asm out 0x20, al    \
+		__asm out 0xa0, al    \
+		__asm pop eax    \
+		__asm sti    \
+	}
 #else
 #define __ENABLE_INTERRUPT()
 #endif

@@ -39,9 +39,9 @@
 #endif
 
 //Welcome information.
-char* pszStartMsg1 = "Hello China is running now.If you have any question,";
+char* pszStartMsg1 = "HelloX is running now.If you have any question,";
 char* pszStartMsg2 = "please send email to : garryxin@yahoo.com.cn.";
-char* pszWelcome   = "Welcome to use Hello China!";
+char* pszWelcome   = "Welcome to use HelloX!";
 
 //Help information.
 char* pszHelpInfo = "Any help please press 'help' + return.";
@@ -415,6 +415,17 @@ void __OS_Entry()
 #endif
 
 	System.EndInitialize((__COMMON_OBJECT*)&System);
+	//For debugging.
+	//PrintLine("Begin to wait interrupt to start thread scheduling...");
+	/*while (TRUE)
+	{
+		dwIndex++;
+		if (0 == dwIndex % 2048)
+		{
+			_hx_sprintf(strInfo, "Interrupt waiting counter = %d.", dwIndex);
+			PrintLine(strInfo);
+		}
+	}*/
 	//Enter a dead loop to wait for the scheduling of kernel threads.
 	DeadLoop(FALSE);
 

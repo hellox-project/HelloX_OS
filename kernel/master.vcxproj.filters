@@ -915,5 +915,14 @@
     <None Include="revise.txt">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="arch\x86\BOOTSECT.ASM">
+      <Filter>Source Files\arch</Filter>
+    </None>
+    <None Include="arch\x86\MINIKER.ASM">
+      <Filter>Source Files\arch</Filter>
+    </None>
+    <None Include="arch\x86\REALINIT.ASM">
+      <Filter>Source Files\arch</Filter>
+    </None>
   </ItemGroup>
 </Project>

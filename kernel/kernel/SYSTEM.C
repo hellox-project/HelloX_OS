@@ -872,6 +872,18 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 {
 	System.bSysInitialized = TRUE;
 	__ENABLE_INTERRUPT();
+
+	//In process of PC's loading,there may one or several interrupt(s) occurs,
+	//which is not handled by OS since it's core data structure is not established
+	//yet,the interrupt(s) may pending on interrupt controller to acknowledge,
+	//and this may lead system halt.
+	//So we add more of enabling interrupt operations to dismiss the pending
+	//interrupt(s) here.
+#ifdef __I386__
+	__ENABLE_INTERRUPT();
+	__ENABLE_INTERRUPT();
+	__ENABLE_INTERRUPT();
+#endif
 	return TRUE;
 }
 
@@ -923,6 +935,13 @@ __SYSTEM System = {
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
 	UCHAR    ucVector = (BYTE)(dwVector);
+
+	//If the interrupt occurs in process of system initialization,we
+	//just ignore it.
+	if (IN_SYSINITIALIZATION())
+	{
+		return;
+	}
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
 	{

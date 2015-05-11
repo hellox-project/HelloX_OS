@@ -429,6 +429,9 @@
     <ClInclude Include="include\arch\sys_arch.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="arch\x86\BOOTSECT.ASM" />
+    <None Include="arch\x86\MINIKER.ASM" />
+    <None Include="arch\x86\REALINIT.ASM" />
     <None Include="Authors.txt" />
     <None Include="README.md" />
     <None Include="revise.txt" />
