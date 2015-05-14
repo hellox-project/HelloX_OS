@@ -415,17 +415,6 @@ void __OS_Entry()
 #endif
 
 	System.EndInitialize((__COMMON_OBJECT*)&System);
-	//For debugging.
-	//PrintLine("Begin to wait interrupt to start thread scheduling...");
-	/*while (TRUE)
-	{
-		dwIndex++;
-		if (0 == dwIndex % 2048)
-		{
-			_hx_sprintf(strInfo, "Interrupt waiting counter = %d.", dwIndex);
-			PrintLine(strInfo);
-		}
-	}*/
 	//Enter a dead loop to wait for the scheduling of kernel threads.
 	DeadLoop(FALSE);
 

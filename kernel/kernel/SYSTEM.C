@@ -547,16 +547,14 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 							  UCHAR ucVector)
 {
 	__INTERRUPT_OBJECT*    lpIntObject  = NULL;
-	__SYSTEM*              lpSystem     = NULL;
-	//CHAR                   strError[64];    //To print out the BUG information.
+	__SYSTEM*              lpSystem = (__SYSTEM*)lpThis;
+	CHAR                   strError[64];    //To print out the BUG information.
 
 	if((NULL == lpThis) || (NULL == lpEsp))
 	{
 		return;
 	}
 
-	lpSystem = (__SYSTEM*)lpThis;
-	
 	lpSystem->ucIntNestLevel += 1;    //Increment nesting level.
 	if(lpSystem->ucIntNestLevel <= 1)
 	{
@@ -584,8 +582,8 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 		BUG();
 #endif
 	}
-	lpIntObject = lpSystem->lpInterruptVector[ucVector];
 
+	lpIntObject = lpSystem->lpInterruptVector[ucVector];
 	if(NULL == lpIntObject)  //The current interrupt vector has not handler object.
 	{
 		DefaultIntHandler(lpEsp,ucVector);
@@ -606,8 +604,16 @@ __RETFROMINT:
 	lpSystem->ucIntNestLevel -= 1;    //Decrement interrupt nesting level.
 	if(0 == lpSystem->ucIntNestLevel)  //The outmost interrupt.
 	{
-		KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
-			lpEsp);  //Re-schedule kernel thread.
+		if (IN_SYSINITIALIZATION())  //It's a abnormal case.
+		{
+			_hx_sprintf(strError, "Warning: Interrupt[%d] raised in sys initialization.", ucVector);
+			PrintLine(strError);
+		}
+		else
+		{
+			KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
+				lpEsp);  //Re-schedule kernel thread.
+		}
 	}
 	else
 	{
@@ -935,13 +941,7 @@ __SYSTEM System = {
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
 	UCHAR    ucVector = (BYTE)(dwVector);
-
-	//If the interrupt occurs in process of system initialization,we
-	//just ignore it.
-	if (IN_SYSINITIALIZATION())
-	{
-		return;
-	}
+	char     strInfo[64];
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
 	{
