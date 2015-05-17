@@ -53,12 +53,12 @@ extern __DRIVER_ENTRY DriverEntryArray[];
 //A dead loop routine.
 static void DeadLoop(BOOL bDisableInt)
 {
-	DWORD dwFlags;
+	//DWORD dwFlags;
 	if (bDisableInt)
 	{
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 		while (TRUE);
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{

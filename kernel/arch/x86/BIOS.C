@@ -70,6 +70,53 @@ __BIOS_SUCCESS:   //BIOS call successed.
 	return TRUE;
 }
 
+//Write HD sector's entry point.
+BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
+{
+	DWORD i;
+
+	if((NULL == pBuffer) || (0 == nSectorNum))
+	{
+		return FALSE;
+	}
+
+	//Copy the buf data to  sector buf
+	for(i = 0;i < 512 * nSectorNum;i ++) 
+	{
+		((BYTE*)BIOS_HD_BUFFER)[i] = pBuffer[i];
+	}
+
+	__asm{
+		push ecx
+			push edx
+			push esi
+			push ebx
+			mov eax,BIOS_SERVICE_WRITESECTOR
+			mov ecx,nHdNum
+			mov edx,nStartSector
+			mov esi,nSectorNum
+			mov ebx,BIOS_ENTRY_ADDR
+			call ebx  //For debug...
+			pop ebx
+			pop esi
+			pop edx
+			pop ecx
+	}
+
+	__asm{
+		cmp eax,0x00
+			jz __BIOS_FAILED
+			jmp __BIOS_SUCCESS
+	}
+
+__BIOS_FAILED:    //BIOS call failed.
+	return FALSE;
+
+__BIOS_SUCCESS:   //BIOS call successed.
+
+	return TRUE;
+}
+
 //Reboot the system.
 VOID BIOSReboot()
 {

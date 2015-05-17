@@ -40,13 +40,16 @@ static BOOL InitMouse()
 	//Enable MOUSE channel of i8042 chip.
 	__outb(0xA8,MOUSE_CTRL_PORT);  //Enable MOUSE.
 	__outb(0xD4,MOUSE_CTRL_PORT);
-	__outb(0xF4,MOUSE_DATA_PORT);  //Enable mouse to send data to host.
+	
 	__inb(MOUSE_DATA_PORT);        //Consume the pendding data.
 	__inb(MOUSE_DATA_PORT);
 	__inb(MOUSE_DATA_PORT);
 	__inb(MOUSE_DATA_PORT);
 	__outb(0x60,MOUSE_CTRL_PORT);
 	__outb(0x47,MOUSE_DATA_PORT);  //Enable keyboard and mouse interrupt.
+
+	__outb(0xF4,MOUSE_DATA_PORT);  //Enable mouse to send data to host.
+
 	return TRUE;
 }
 
