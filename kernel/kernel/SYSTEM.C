@@ -941,7 +941,6 @@ __SYSTEM System = {
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
 	UCHAR    ucVector = (BYTE)(dwVector);
-	char     strInfo[64];
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
 	{

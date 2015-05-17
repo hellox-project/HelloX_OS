@@ -442,7 +442,7 @@ static unsigned char GetScanCode()
 //Acknowledge the key board controller.
 static void AckKeyBoard()
 {
-#ifdef __I386
+#ifdef __I386__
 	__asm{
 		in al,0x61
 		or al,0x80
