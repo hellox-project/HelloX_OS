@@ -6,11 +6,18 @@
  * Number of clock ticks per second. A clock tick is the unit by which
  * processor time is measured and is returned by 'clock'.
  */
+#ifdef 	_POSIX_
+typedef long long	 __int64;
+typedef	 __int64	 time_t;
+#endif
 
 #ifndef _TIME_T_DEFINED
 #define _TIME_T_DEFINED
+
 typedef	 __int64	 time_t;
+
 #endif
+
 
 typedef	 __int64     clock_t;
 typedef  __int64   __time64_t;
@@ -62,15 +69,15 @@ extern "C" {
 
  int gettimeofday(struct timeval* tv,void* ptr);
 
-#ifndef HAVE_STRUCT_TIMESPEC
-#define HAVE_STRUCT_TIMESPEC
+//#ifndef HAVE_STRUCT_TIMESPEC
+//#define HAVE_STRUCT_TIMESPEC
 
  //timespec object.
  struct timespec{
 	 long long tv_sec;
 	 long long tv_nsec;
  };
-#endif
+//#endif
 
 #ifdef	__cplusplus
 }

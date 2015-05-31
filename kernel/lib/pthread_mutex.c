@@ -32,6 +32,21 @@ LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
 	LONG result = 0;
 
 #ifdef __I386__
+
+#ifdef _POSIX_
+	__asm__ __volatile__(
+			".code32					;"
+			"PUSHL 		%%ecx			;"
+			"MOVL 		(%1),	%%ecx	;"
+			"MOVL 		(%2),	%%eax	;"
+			"XCHGL 		%%eax, 	(%%ecx)	;"
+			"MOVL 		%%eax, 	(%0)	;"
+			"POPL 		%%ecx			;"
+			:"=r"(result)
+			:"r"(location), "r"(value)
+			: "memory"
+	);
+#else
 	_asm {
 		PUSH         ecx
 		MOV          ecx,dword ptr [location]
@@ -41,13 +56,36 @@ LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
 		POP          ecx
 	}
 #endif
+
+#endif
+
 	return result;
 }
 
 PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG value,	PTW32_LONG comparand)
 {
 	PTW32_LONG result;
+
+
 #ifdef __I386__
+
+#ifdef _POSIX_
+	__asm__ __volatile__ (
+			".code32						;"
+			"PUSH %%ecx 					;"
+			"PUSH %%edx 					;"
+			"MOVL 	(%1),  		%%ecx		;"
+			"MOVL 	(%2),		%%edx		;"
+			"MOVL 	(%3),		%%eax		;"
+			"LOCK CMPXCHGL	%%edx, 	(%%ecx)	;"
+			"MOVL 			%%eax,	(%0)	;"
+			"POP 			%%edx			;"
+			"POP 			%%ecx			;"
+			: "=r"(result)
+			: "r"(location), "r"(value), "r"(comparand)
+			: "memory"
+			);
+#else
 	_asm {
 		PUSH         ecx
 		PUSH         edx
@@ -60,6 +98,9 @@ PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG 
 		POP          ecx
 	}
 #endif
+
+#endif
+
 	return result;
 }
 
@@ -161,6 +202,9 @@ int  pthread_mutex_unlock (pthread_mutex_t * mutex)
 	return S_OK;
 }
 
+/****
+ * gaojie
+ *
 int  pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abstime)
 {
 	DWORD waitTime = 0;
@@ -187,6 +231,7 @@ int  pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abst
 	}
 	return EINVAL;
 }
+*/
 
 int  pthread_mutex_trylock (pthread_mutex_t * mutex)
 {

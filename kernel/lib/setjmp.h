@@ -13,12 +13,12 @@
 *
 ****/
 
+#ifndef _INC_SETJMP
+#define _INC_SETJMP
+
 #if _MSC_VER > 1000
 #pragma once
 #endif  /* _MSC_VER > 1000 */
-
-#ifndef _INC_SETJMP
-#define _INC_SETJMP
 
 #ifdef _MSC_VER
 /*
@@ -101,12 +101,20 @@ typedef struct __JUMP_BUFFER {
 #ifdef __cplusplus
 extern "C"
 #endif  /* __cplusplus */
+
+#ifndef _POSIX_
 void __stdcall _NLG_Notify(unsigned long);
+#endif
 
 #ifdef __cplusplus
 extern "C"
 #endif  /* __cplusplus */
+
+#ifndef _POSIX_
 void __stdcall _NLG_Return();
+#endif
+
+
 #endif  /* _INTERNAL_IFSTRIP_ */
 
 

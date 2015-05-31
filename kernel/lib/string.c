@@ -13,7 +13,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include <stdafx.h>
+#include <StdAfx.h>
 #include <string.h>
 #include <limits.h>
 

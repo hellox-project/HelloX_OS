@@ -43,7 +43,7 @@
 #endif
 
 #ifndef __COMQUEUE_H__
-#include "COMQUEUE.H"
+#include "comqueue.h"
 #endif
 
 #ifndef __OBJQUEUE_H__

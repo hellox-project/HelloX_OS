@@ -29,11 +29,11 @@
 
 //Include configuration headers in advance any of other headers.
 #ifndef __CONFIG_H__
-#include "..\config\config.h"
+#include "../config/config.h"
 #endif
 
 #ifndef __TYPES_H__
-#include "TYPES.H"
+#include "types.h"
 #endif
 
 #ifndef __HELLO_CHINA__
@@ -45,7 +45,7 @@
 #endif
 
 #ifndef __PERF_H__
-#include "PERF.H"
+#include "perf.h"
 #endif
 
 #ifndef __COMMOBJ_H__
@@ -54,9 +54,9 @@
 
 #ifndef __SYN_MECH_H__
 #if defined(__I386__)
-#include "..\arch\x86\SYN_MECH.H"
+#include "../arch/x86/syn_mech.h"
 #elif defined(__STM32__)
-#include "..\arch\stm32\syn_mech.h"
+#include "../arch/stm32/syn_mech.h"
 #endif
 #endif
 
@@ -81,7 +81,7 @@
 #endif
 
 #ifndef __RINGBUFF_H__
-#include "RINGBUFF.H"
+#include "ringbuff.h"
 #endif
 
 #ifndef __SYSTEM_H__
@@ -146,9 +146,9 @@
 
 #ifndef __ARCH_H__
 #if defined(__I386__)
-#include "..\arch\x86\arch.h"
+#include "../arch/x86/arch.h"
 #elif defined(__STM32__)
-#include "..\arch\stm32\arch.h"
+#include "../arch/stm32/arch.h"
 #endif
 #endif
 

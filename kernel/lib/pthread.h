@@ -33,6 +33,7 @@
 #ifndef __PTHREAD_H__
 #define __PTHREAD_H__
 
+#include <time.h>
 /*
  * See the README file for an explanation of the pthreads-win32 version
  * numbering scheme and how the DLL is named etc.
@@ -43,6 +44,8 @@
 
 //#include <setjmp.h>
 //#include <limits.h>
+
+
 
 /*
  * Boolean values to make us independent of system includes.
@@ -340,6 +343,10 @@ typedef struct {
     unsigned int x;             /* Extra information - reuse count etc */
 } ptw32_handle_t;
 
+struct sched_param
+{
+  int __sched_priority;
+};
 
 struct pthread_mutex_t_
 {

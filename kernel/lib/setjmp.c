@@ -1,6 +1,6 @@
 //Implementation of setjmp,sigsetjmp,longjmp,siglongjmp.
 
-#include <stdafx.h>
+#include <StdAfx.h>
 #include <setjmp.h>
 
 #define OFS_EBP 0
@@ -11,8 +11,25 @@
 #define OFS_EIP 20
 
 //setjmp.
-__declspec(naked) int __setjmp(jmp_buf env)
+//__declspec(naked)
+int __setjmp(jmp_buf env)
 {
+#ifdef _POSIX_
+	//TODO gaojie
+	__asm__ __volatile__(
+			".code32;"
+			"movl 4(%%esp), 	%%edx			;"
+			"movl (%%esp),	 	%%eax			;"
+			"movl %%eax,		OFS_EIP(%%edx)	;"
+			"movl %%ebp,		OFS_EBP(%%edx)	;"
+			"movl %%ebx,		OFS_EBX(%%edx)	;"
+			"movl %%edi,		OFS_EDI(%%edx)	;"
+			"movl %%esi,		OFS_ESI(%%edx)	;"
+			"movl %%esp,		OFS_ESP(%%edx)	;"
+			"xorl %%eax,		%%eax			;"
+			"ret								;"
+			:::);
+#else
 	__asm{
 		mov edx,4[esp]
 		mov eax,[esp]
@@ -25,11 +42,30 @@ __declspec(naked) int __setjmp(jmp_buf env)
 		xor eax,eax
 		ret
 	}
+#endif
 }
 
 //longjmp.
-__declspec(naked) void __longjmp(jmp_buf env,int value)
+//__declspec(naked)
+void __longjmp(jmp_buf env,int value)
 {
+#ifdef _POSIX_
+	//TODO gaojie
+	__asm__ __volatile__(
+			".code32						;"
+			"movl 4(%%esp), 		%%edx	;"
+			"movl 8(%%esp), 		%%eax	;"
+			"movl OFS_ESP(%%edx),	%%esp	;"
+			"movl OFS_EIP(%%edx),	%%ebx	;"
+			"movl %%ebx,			(%%esp)	;"
+			"movl OFS_EBP(%%edx), 	%%ebp	;"
+			"movl OFS_EBX(%%edx), 	%%ebx	;"
+			"movl OFS_EDI(%%edx), 	%%edi	;"
+			"movl OFS_ESI(%%edx), 	%%esi	;"
+			"ret;"
+			:
+			::);
+#else
 	__asm{
 		mov edx,4[esp]
 		mov eax,8[esp]
@@ -45,6 +81,7 @@ __declspec(naked) void __longjmp(jmp_buf env,int value)
 
 		ret
 	}
+#endif
 }
 
 int sigsetjmp(sigjmp_buf env,int savesigs)
