@@ -1,0 +1,11 @@
+devmgr.o: devmgr.c /usr/include/stdc-predef.h \
+ ../../kernel/include/pci_drv.h ../../kernel/include/types.h \
+ ../../kernel/include/devmgr.h
+
+/usr/include/stdc-predef.h:
+
+../../kernel/include/pci_drv.h:
+
+../../kernel/include/types.h:
+
+../../kernel/include/devmgr.h:

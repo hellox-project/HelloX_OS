@@ -27,6 +27,10 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
 
+#include "perf.h"
+#include "ktmgr2.h"
+#include "kmemmgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

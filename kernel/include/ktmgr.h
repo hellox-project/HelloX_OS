@@ -21,9 +21,20 @@
 #ifndef __KTMGR_H__
 #define __KTMGR_H__
 
+#ifndef __TYPES_H__
+#include "types.h"
+#endif
+
+#include "commobj.h"
+#include "objqueue.h"
+
+#include "../config/config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 //
 //***********************************************************************
@@ -251,8 +262,8 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 
 	//Suspending flags and suspending counter,used to manage the suspending operations for kernel thread.
 	//The meanings of each bit as follows:
-	// bit0 - bit15:  Suspending counter,incremented by SuspendKernelThread routine and decremented by
-	//                ResumeKernelThread routine;
+	// bit0 - bit15:  Suspending counter,incremented by kSuspendKernelThread routine and decremented by
+	//                kResumeKernelThread routine;
 	// bit16 - bit31: Suspending flags,only the 31 bit is used,to indicate the suspending disable/enable
 	//                status.
 	// SUSPEND_FLAG_MASK is used to seperate these 2 parts.
@@ -330,7 +341,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 
 	BOOL                                     (*Initialize)(__COMMON_OBJECT* lpThis);
 
-	__KERNEL_THREAD_OBJECT*                  (*CreateKernelThread)(
+	__KERNEL_THREAD_OBJECT*                  (*kCreateKernelThread)(
 		                                      __COMMON_OBJECT*          lpThis,
 											  DWORD                     dwStackSize,
 											  DWORD                     dwStatus,
@@ -340,20 +351,20 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											  LPVOID                    lpOwnerProcess,
 											  LPSTR                     lpszName);
 
-	VOID                                     (*DestroyKernelThread)(__COMMON_OBJECT* lpThis,
+	VOID                                     (*kDestroyKernelThread)(__COMMON_OBJECT* lpThis,
 		                                     __COMMON_OBJECT*           lpKernelThread
 											 );
 
-	BOOL                                     (*EnableSuspend)(
+	BOOL                                     (*kEnableSuspend)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread,
 											 BOOL                       bSuspend);
 
-	BOOL                                     (*SuspendKernelThread)(
+	BOOL                                     (*kSuspendKernelThread)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread);
 
-	BOOL                                     (*ResumeKernelThread)(
+	BOOL                                     (*kResumeKernelThread)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread);
 
@@ -385,7 +396,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											 DWORD                      dwExitCode
 											 );
 
-	BOOL                                     (*Sleep)(
+	BOOL                                     (*kSleep)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 //__COMMON_OBJECT*           lpKernelThread,
 											 DWORD                      dwMilliSecond

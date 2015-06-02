@@ -97,17 +97,17 @@ am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
 libkernel_a_AR = $(AR) $(ARFLAGS)
 libkernel_a_LIBADD =
-am_libkernel_a_OBJECTS = CharDisplay.$(OBJEXT) console.$(OBJEXT) \
-	DIM.$(OBJEXT) IOMGR.$(OBJEXT) KMEMMGR.$(OBJEXT) \
-	MODMGR.$(OBJEXT) PAGEIDX.$(OBJEXT) process.$(OBJEXT) \
-	SYNOBJ.$(OBJEXT) TYPES.$(OBJEXT) CharDisplay.$(OBJEXT) \
-	debug.$(OBJEXT) HEAP.$(OBJEXT) KAPI.$(OBJEXT) KTMGR2.$(OBJEXT) \
-	MEM_FBL.$(OBJEXT) OBJMGR.$(OBJEXT) PCI_DRV.$(OBJEXT) \
-	STATCPU.$(OBJEXT) SYSCALL.$(OBJEXT) VMM.$(OBJEXT) \
-	COMQUEUE.$(OBJEXT) DEVMGR.$(OBJEXT) IOMGR2.$(OBJEXT) \
-	KERMOD.$(OBJEXT) KTMGR.$(OBJEXT) MEMMGR.$(OBJEXT) \
-	OBJQUEUE.$(OBJEXT) PERF.$(OBJEXT) synobj2.$(OBJEXT) \
-	SYSTEM.$(OBJEXT)
+am_libkernel_a_OBJECTS = chardisplay.$(OBJEXT) debug.$(OBJEXT) \
+	heap.$(OBJEXT) kapi.$(OBJEXT) ktmgr2.$(OBJEXT) \
+	memmgr.$(OBJEXT) objqueue.$(OBJEXT) perf.$(OBJEXT) \
+	synobj2.$(OBJEXT) system.$(OBJEXT) comqueue.$(OBJEXT) \
+	devmgr.$(OBJEXT) iomgr2.$(OBJEXT) kermod.$(OBJEXT) \
+	ktmgr.$(OBJEXT) modmgr.$(OBJEXT) pageidx.$(OBJEXT) \
+	process.$(OBJEXT) synobj.$(OBJEXT) types.$(OBJEXT) \
+	console.$(OBJEXT) dim.$(OBJEXT) iomgr.$(OBJEXT) \
+	kmemmgr.$(OBJEXT) mem_fbl.$(OBJEXT) objmgr.$(OBJEXT) \
+	pci_drv.$(OBJEXT) statcpu.$(OBJEXT) syscall.$(OBJEXT) \
+	vmm.$(OBJEXT)
 libkernel_a_OBJECTS = $(am_libkernel_a_OBJECTS)
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
@@ -125,30 +125,12 @@ DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CXXFLAGS) $(CXXFLAGS)
-AM_V_CXX = $(am__v_CXX_$(V))
-am__v_CXX_ = $(am__v_CXX_$(AM_DEFAULT_VERBOSITY))
-am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 = 
-CXXLD = $(CXX)
-CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CXXLD = $(am__v_CXXLD_$(V))
-am__v_CXXLD_ = $(am__v_CXXLD_$(AM_DEFAULT_VERBOSITY))
-am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 = 
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
@@ -316,12 +298,12 @@ top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
 noinst_LIBRARIES = libkernel.a
-libkernel_a_SOURCES = CharDisplay.C  console.c  DIM.C     IOMGR.C   KMEMMGR.C  Makefile.am  MODMGR.C    PAGEIDX.C  process.c  SYNOBJ.C   TYPES.C CharDisplay.C   debug.c    HEAP.C    KAPI.C    KTMGR2.C   MEM_FBL.C    OBJMGR.C    PCI_DRV.C  STATCPU.C  SYSCALL.C  VMM.C COMQUEUE.C      DEVMGR.C   IOMGR2.C  KERMOD.C  KTMGR.C    MEMMGR.C     OBJQUEUE.C  PERF.C     synobj2.c  SYSTEM.C
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/config -D__STDAFX_H__ -D__CFG_SYS_CONSOLE
+libkernel_a_SOURCES = chardisplay.c  debug.c   heap.c    kapi.c     ktmgr2.c   memmgr.c  objqueue.c  perf.c     synobj2.c  system.c comqueue.c     devmgr.c  iomgr2.c  kermod.c   ktmgr.c    modmgr.c  pageidx.c   process.c  synobj.c   types.c console.c      dim.c     iomgr.c   kmemmgr.c  mem_fbl.c  objmgr.c  pci_drv.c   statcpu.c  syscall.c  vmm.c
+AM_CPPFLAGS = -nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/config -D__STDAFX_H__ -D__CFG_SYS_CONSOLE
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .c .lo .o .obj
+.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -367,57 +349,36 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/COMQUEUE.Po
-include ./$(DEPDIR)/CharDisplay.Po
-include ./$(DEPDIR)/DEVMGR.Po
-include ./$(DEPDIR)/DIM.Po
-include ./$(DEPDIR)/HEAP.Po
-include ./$(DEPDIR)/IOMGR.Po
-include ./$(DEPDIR)/IOMGR2.Po
-include ./$(DEPDIR)/KAPI.Po
-include ./$(DEPDIR)/KERMOD.Po
-include ./$(DEPDIR)/KMEMMGR.Po
-include ./$(DEPDIR)/KTMGR.Po
-include ./$(DEPDIR)/KTMGR2.Po
-include ./$(DEPDIR)/MEMMGR.Po
-include ./$(DEPDIR)/MEM_FBL.Po
-include ./$(DEPDIR)/MODMGR.Po
-include ./$(DEPDIR)/OBJMGR.Po
-include ./$(DEPDIR)/OBJQUEUE.Po
-include ./$(DEPDIR)/PAGEIDX.Po
-include ./$(DEPDIR)/PCI_DRV.Po
-include ./$(DEPDIR)/PERF.Po
-include ./$(DEPDIR)/STATCPU.Po
-include ./$(DEPDIR)/SYNOBJ.Po
-include ./$(DEPDIR)/SYSCALL.Po
-include ./$(DEPDIR)/SYSTEM.Po
-include ./$(DEPDIR)/TYPES.Po
-include ./$(DEPDIR)/VMM.Po
+include ./$(DEPDIR)/chardisplay.Po
+include ./$(DEPDIR)/comqueue.Po
 include ./$(DEPDIR)/console.Po
 include ./$(DEPDIR)/debug.Po
+include ./$(DEPDIR)/devmgr.Po
+include ./$(DEPDIR)/dim.Po
+include ./$(DEPDIR)/heap.Po
+include ./$(DEPDIR)/iomgr.Po
+include ./$(DEPDIR)/iomgr2.Po
+include ./$(DEPDIR)/kapi.Po
+include ./$(DEPDIR)/kermod.Po
+include ./$(DEPDIR)/kmemmgr.Po
+include ./$(DEPDIR)/ktmgr.Po
+include ./$(DEPDIR)/ktmgr2.Po
+include ./$(DEPDIR)/mem_fbl.Po
+include ./$(DEPDIR)/memmgr.Po
+include ./$(DEPDIR)/modmgr.Po
+include ./$(DEPDIR)/objmgr.Po
+include ./$(DEPDIR)/objqueue.Po
+include ./$(DEPDIR)/pageidx.Po
+include ./$(DEPDIR)/pci_drv.Po
+include ./$(DEPDIR)/perf.Po
 include ./$(DEPDIR)/process.Po
+include ./$(DEPDIR)/statcpu.Po
+include ./$(DEPDIR)/synobj.Po
 include ./$(DEPDIR)/synobj2.Po
-
-.C.o:
-	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	$(AM_V_CXX)source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(AM_V_CXX_no)$(CXXCOMPILE) -c -o $@ $<
-
-.C.obj:
-	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	$(AM_V_CXX)source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(AM_V_CXX_no)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.C.lo:
-	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-#	$(AM_V_CXX)source='$<' object='$@' libtool=yes \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(AM_V_CXX_no)$(LTCXXCOMPILE) -c -o $@ $<
+include ./$(DEPDIR)/syscall.Po
+include ./$(DEPDIR)/system.Po
+include ./$(DEPDIR)/types.Po
+include ./$(DEPDIR)/vmm.Po
 
 .c.o:
 	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

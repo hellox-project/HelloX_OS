@@ -16,6 +16,11 @@
 #ifndef __PCI_DRV_H__
 #define __PCI_DRV_H__
 
+
+#include "types.h"
+
+#include "devmgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

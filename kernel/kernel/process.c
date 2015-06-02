@@ -32,6 +32,8 @@
 #include <StdAfx.h>
 #include <process.h>
 #include <stdio.h>
+#include <types.h>
+
 
 //WaitForProcessObject routine,wait the process run over.
 //We just wait on the main kernel thread,since it's life-cycle
@@ -193,7 +195,7 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT*                 lpThis,
 
 	//Create main kernel thread now,set it's status to SUSPENDED since the process's
 	//initialization is not over.And will resume the main kernel thread after init.
-	pProcessObject->lpMainKernelThread = KernelThreadManager.CreateKernelThread(
+	pProcessObject->lpMainKernelThread = KernelThreadManager.kCreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		dwMainThreadStackSize,
 		KERNEL_THREAD_STATUS_SUSPENDED,
@@ -228,7 +230,7 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT*                 lpThis,
 	pProcessObject->dwProcessStatus = PROCESS_STATUS_READY;
 
 	//Resume the main thread to run.
-	KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+	KernelThreadManager.kResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)pProcessObject->lpMainKernelThread);
 
 	bResult = TRUE;
@@ -239,7 +241,7 @@ __TERMINAL:
 		{
 			if(pProcessObject->lpMainKernelThread)
 			{
-				KernelThreadManager.DestroyKernelThread(
+				KernelThreadManager.kDestroyKernelThread(
 					(__COMMON_OBJECT*)&KernelThreadManager,
 					(__COMMON_OBJECT*)pProcessObject->lpMainKernelThread);
 			}
@@ -277,7 +279,7 @@ static VOID DestroyProcess(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpObject)
 	//Destroy the main kernel thread first.
 	if(pProcessObject->lpMainKernelThread)
 	{
-		KernelThreadManager.DestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+		KernelThreadManager.kDestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 			(__COMMON_OBJECT*)pProcessObject->lpMainKernelThread);
 	}
 

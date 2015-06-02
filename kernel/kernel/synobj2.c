@@ -23,8 +23,13 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "StdAfx.h"
+#include <StdAfx.h>
 #endif
+#include "system.h"
+#include "types.h"
+#include "ktmgr2.h"
+#include "commobj.h"
+#include <heap.h>
 
 //Change semaphore's default counter value.
 static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD dwCurrSem)

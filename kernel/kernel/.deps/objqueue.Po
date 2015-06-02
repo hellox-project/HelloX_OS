@@ -1,0 +1,16 @@
+objqueue.o: objqueue.c /usr/include/stdc-predef.h \
+ ../../kernel/include/types.h ../../kernel/include/commobj.h \
+ ../../kernel/include/types.h ../../kernel/include/kmemmgr.h \
+ ../../kernel/include/objqueue.h
+
+/usr/include/stdc-predef.h:
+
+../../kernel/include/types.h:
+
+../../kernel/include/commobj.h:
+
+../../kernel/include/types.h:
+
+../../kernel/include/kmemmgr.h:
+
+../../kernel/include/objqueue.h:

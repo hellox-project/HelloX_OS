@@ -19,7 +19,7 @@
 #define __KAPI_H__
 
 #ifndef __TYPES_H__
-#include "TYPES.H"
+#include "types.h"
 #endif
 
 #ifndef __CONFIG_H__
@@ -31,12 +31,12 @@
 #endif
 
 #ifndef __COMMOBJ_H__
-#include "COMMOBJ.H"
+#include "commobj.h"
 #endif
 
 #ifndef __SYN_MECH_H__
 #if defined(__I386__)
-#include "../arch/x86/SYN_MECH.H"
+#include "../arch/x86/syn_mech.h"
 #elif defined(__STM32__)
 #include "../arch/stm32/syn_mech.h"
 #endif
@@ -59,15 +59,15 @@
 #endif
 
 #ifndef __PERF_H__
-#include "PERF.H"
+#include "perf.h"
 #endif
 
 #ifndef __RINGBUFF_H__
-#include "RINGBUFF.H"
+#include "ringbuff.h"
 #endif
 
 #ifndef __SYSTEM_H__
-#include "SYSTEM.H"
+#include "system.h"
 #endif
 
 #ifndef __DIM_H__
@@ -79,11 +79,11 @@
 #endif
 
 #ifndef __PAGEIDX_H__
-#include "PAGEIDX.H"
+#include "pageidx.h"
 #endif
 
 #ifndef __VMM_H__
-#include "VMM.H"
+#include "vmm.h"
 #endif
 
 #ifndef __KMEMMGR__
@@ -99,7 +99,7 @@
 #endif
 
 #ifndef __IOMGR_H__
-#include "IOMGR.H"
+#include "iomgr.h"
 #endif
 
 #ifndef __DEBUG_H__

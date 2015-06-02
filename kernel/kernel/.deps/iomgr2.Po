@@ -1,0 +1,5 @@
+iomgr2.o: iomgr2.c /usr/include/stdc-predef.h ../../kernel/lib/stdio.h
+
+/usr/include/stdc-predef.h:
+
+../../kernel/lib/stdio.h:
