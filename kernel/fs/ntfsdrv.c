@@ -160,8 +160,8 @@ __TERMINAL:
 	return bResult;
 }
 
-//Implementation of FindFirstFile,it is only a wrapper of NtfsFindFirstFile routine.
-static DWORD FindFirstFile(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
+//Implementation of _FindFirstFile,it is only a wrapper of NtfsFindFirstFile routine.
+static DWORD _FindFirstFile(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
 {
 	WCHAR               dirName[NTFS_FILENAME_SIZE];
 	__NTFS_FILE_SYSTEM* pFileSystem = NULL;
@@ -181,8 +181,8 @@ static DWORD FindFirstFile(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* p
 	return 0;
 }
 
-//Implementation of FindNextFile.
-static DWORD FindNextFile(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
+//Implementation of _FindNextFile.
+static DWORD _FindNextFile(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
 {
 	if(NtfsFindNextFile((__NTFS_FIND_HANDLE*)pDrcb->lpInputBuffer,
 		(FS_FIND_DATA*)pDrcb->dwExtraParam2))
@@ -192,8 +192,8 @@ static DWORD FindNextFile(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pD
 	return 0;
 }
 
-//Implementation of FindClose routine.
-static DWORD FindClose(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
+//Implementation of _FindClose routine.
+static DWORD _FindClose(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
 {
 	NtfsCloseFind((__NTFS_FIND_HANDLE*)pDrcb->lpInputBuffer);
 	return 1;
@@ -316,7 +316,7 @@ static DWORD NtfsDeviceSeek(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* 
 }
 
 //Implementation of GetFileAttribute.
-static DWORD GetFileAttributes(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
+static DWORD _GetFileAttributes(__COMMON_OBJECT* pDrv,__COMMON_OBJECT* pDev,__DRCB* pDrcb)
 {
 	__NTFS_FILE_SYSTEM*   pFileSystem  = NULL;
 	__NTFS_FILE_OBJECT*   pFileObject  = NULL;
@@ -368,15 +368,15 @@ static DWORD NtfsDeviceCtrl(__COMMON_OBJECT* lpDrv,
 	case IOCONTROL_FS_CHECKPARTITION:
 		return CheckPartition(lpDev,(__COMMON_OBJECT*)lpDrcb->lpInputBuffer) ? 1 : 0;
 	case IOCONTROL_FS_FINDFIRSTFILE:
-		return FindFirstFile(lpDrv,lpDev,lpDrcb);
+		return _FindFirstFile(lpDrv,lpDev,lpDrcb);
 	case IOCONTROL_FS_FINDNEXTFILE:
-		return FindNextFile(lpDrv,lpDev,lpDrcb);
+		return _FindNextFile(lpDrv,lpDev,lpDrcb);
 	case IOCONTROL_FS_FINDCLOSE:
-		return FindClose(lpDrv,lpDev,lpDrcb);
+		return _FindClose(lpDrv,lpDev,lpDrcb);
 	case IOCONTROL_FS_CREATEDIR:
 		break;
 	case IOCONTROL_FS_GETFILEATTR:
-		return GetFileAttributes(lpDrv,lpDev,lpDrcb);
+		return _GetFileAttributes(lpDrv,lpDev,lpDrcb);
 	case IOCONTROL_FS_DELETEFILE:
 	case IOCONTROL_FS_REMOVEDIR:
 	default:

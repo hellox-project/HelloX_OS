@@ -7,7 +7,8 @@ debug.o: debug.c /usr/include/stdc-predef.h ../include/kapi.h \
  ../include/memmgr.h ../include/pageidx.h ../include/vmm.h \
  ../include/../arch/x86/arch.h ../include/iomgr.h \
  ../include/../include/debug.h ../../kernel/include/debug.h \
- ../../kernel/lib/stdio.h ../../kernel/lib/string.h
+ ../../kernel/lib/stdio.h ../../kernel/lib/string.h \
+ ../../kernel/include/types.h
 
 /usr/include/stdc-predef.h:
 
@@ -58,3 +59,5 @@ debug.o: debug.c /usr/include/stdc-predef.h ../include/kapi.h \
 ../../kernel/lib/stdio.h:
 
 ../../kernel/lib/string.h:
+
+../../kernel/include/types.h:

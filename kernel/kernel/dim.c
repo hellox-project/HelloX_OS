@@ -13,9 +13,11 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
+#include <StdAfx.h>
+#include "ktmgr.h"
+#include "commobj.h"
+#include "dim.h"
+#include "types.h"
 
 //
 //The implementation of Initialize routine.

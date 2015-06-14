@@ -5,7 +5,8 @@ system.o: system.c /usr/include/stdc-predef.h \
  ../../kernel/include/objqueue.h ../../kernel/include/../config/config.h \
  ../../kernel/include/comqueue.h ../../kernel/include/kmemmgr.h \
  ../../kernel/include/types.h ../../kernel/include/syscall.h \
- ../../kernel/lib/stdio.h ../../kernel/include/ktmsg.h ../arch/x86/bios.h
+ ../../kernel/include/iomgr.h ../../kernel/lib/stdio.h \
+ ../../kernel/include/ktmsg.h ../arch/x86/bios.h
 
 /usr/include/stdc-predef.h:
 
@@ -32,6 +33,8 @@ system.o: system.c /usr/include/stdc-predef.h \
 ../../kernel/include/types.h:
 
 ../../kernel/include/syscall.h:
+
+../../kernel/include/iomgr.h:
 
 ../../kernel/lib/stdio.h:
 

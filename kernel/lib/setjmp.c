@@ -18,16 +18,16 @@ int __setjmp(jmp_buf env)
 	//TODO gaojie
 	__asm__ __volatile__(
 			".code32;"
-			"movl 4(%%esp), 	%%edx			;"
-			"movl (%%esp),	 	%%eax			;"
-			"movl %%eax,		OFS_EIP(%%edx)	;"
-			"movl %%ebp,		OFS_EBP(%%edx)	;"
-			"movl %%ebx,		OFS_EBX(%%edx)	;"
-			"movl %%edi,		OFS_EDI(%%edx)	;"
-			"movl %%esi,		OFS_ESI(%%edx)	;"
-			"movl %%esp,		OFS_ESP(%%edx)	;"
-			"xorl %%eax,		%%eax			;"
-			"ret								;"
+			"movl 4(%%esp), 	%%edx			\n\t"
+			"movl (%%esp),	 	%%eax			\n\t"
+			"movl %%eax,		OFS_EIP(%%edx)	\n\t"
+			"movl %%ebp,		OFS_EBP(%%edx)	\n\t"
+			"movl %%ebx,		OFS_EBX(%%edx)	\n\t"
+			"movl %%edi,		OFS_EDI(%%edx)	\n\t"
+			"movl %%esi,		OFS_ESI(%%edx)	\n\t"
+			"movl %%esp,		OFS_ESP(%%edx)	\n\t"
+			"xorl %%eax,		%%eax			\n\t"
+			"ret								\n\t"
 			:::);
 #else
 	__asm{
@@ -52,17 +52,17 @@ void __longjmp(jmp_buf env,int value)
 #ifdef _POSIX_
 	//TODO gaojie
 	__asm__ __volatile__(
-			".code32						;"
-			"movl 4(%%esp), 		%%edx	;"
-			"movl 8(%%esp), 		%%eax	;"
-			"movl OFS_ESP(%%edx),	%%esp	;"
-			"movl OFS_EIP(%%edx),	%%ebx	;"
-			"movl %%ebx,			(%%esp)	;"
-			"movl OFS_EBP(%%edx), 	%%ebp	;"
-			"movl OFS_EBX(%%edx), 	%%ebx	;"
-			"movl OFS_EDI(%%edx), 	%%edi	;"
-			"movl OFS_ESI(%%edx), 	%%esi	;"
-			"ret;"
+			".code32						\n\t"
+			"movl 4(%%esp), 		%%edx	\n\t"
+			"movl 8(%%esp), 		%%eax	\n\t"
+			"movl OFS_ESP(%%edx),	%%esp	\n\t"
+			"movl OFS_EIP(%%edx),	%%ebx	\n\t"
+			"movl %%ebx,			(%%esp)	\n\t"
+			"movl OFS_EBP(%%edx), 	%%ebp	\n\t"
+			"movl OFS_EBX(%%edx), 	%%ebx	\n\t"
+			"movl OFS_EDI(%%edx), 	%%edi	\n\t"
+			"movl OFS_ESI(%%edx), 	%%esi	\n\t"
+			"ret\n\t"
 			:
 			::);
 #else

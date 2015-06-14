@@ -1,1 +1,13 @@
-# dummy
+pci_drv.o: pci_drv.c /usr/include/stdc-predef.h \
+ ../../kernel/include/pci_drv.h ../../kernel/include/types.h \
+ ../../kernel/include/devmgr.h ../../kernel/include/kmemmgr.h
+
+/usr/include/stdc-predef.h:
+
+../../kernel/include/pci_drv.h:
+
+../../kernel/include/types.h:
+
+../../kernel/include/devmgr.h:
+
+../../kernel/include/kmemmgr.h:

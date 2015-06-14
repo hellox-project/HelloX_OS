@@ -6,7 +6,8 @@ chardisplay.o: chardisplay.c /usr/include/stdc-predef.h ../include/kapi.h \
  ../include/ringbuff.h ../include/system.h ../include/dim.h \
  ../include/memmgr.h ../include/pageidx.h ../include/vmm.h \
  ../include/../arch/x86/arch.h ../include/iomgr.h \
- ../include/../include/debug.h ../include/console.h \
+ ../include/../include/debug.h ../include/console.h ../include/ktmsg.h \
+ ../include/process.h ../include/kapi.h ../include/syscall.h \
  ../include/chardisplay.h ../arch/x86/biosvga.h
 
 /usr/include/stdc-predef.h:
@@ -54,6 +55,14 @@ chardisplay.o: chardisplay.c /usr/include/stdc-predef.h ../include/kapi.h \
 ../include/../include/debug.h:
 
 ../include/console.h:
+
+../include/ktmsg.h:
+
+../include/process.h:
+
+../include/kapi.h:
+
+../include/syscall.h:
 
 ../include/chardisplay.h:
 

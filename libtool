@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # libtool - Provide generalized library-building support services.
-# Generated automatically by config.status (full-package-name) VERSION
+# Generated automatically by config.status (hellox) 1.78
 # Libtool was configured on host gaojie:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
@@ -317,7 +317,7 @@ pic_flag=" -fPIC -DPIC"
 wl="-Wl,"
 
 # Compiler flag to prevent dynamic linking.
-link_static_flag=""
+link_static_flag="-static"
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"

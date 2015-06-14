@@ -16,6 +16,10 @@
 #ifndef __STRING__
 #define __STRING__
 
+
+#include "types.h"
+
+
 #define MAX_STRING_LEN 512       //Max string length.
 
 BOOL StrCmp(LPSTR,LPSTR);      //String compare functions.

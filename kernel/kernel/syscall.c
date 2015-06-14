@@ -16,13 +16,16 @@
 #include "StdAfx.h"
 #endif
 
-#include "SYSCALL.H"
-#include "KAPI.H"
-#include "MODMGR.H"
+#include "syscall.h"
+#include "kapi.h"
+#include "modmgr.h"
 #include "stdio.h"
+//devmgr.h
+#include "devmgr.h"
+
 
 #ifdef __I386__
-#include "..\arch\x86\bios.h"
+#include "../arch/x86/bios.h"
 #endif
 
 //A static array to contain system call range.

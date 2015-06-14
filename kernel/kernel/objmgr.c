@@ -16,7 +16,11 @@
 #ifndef __STDAFX_H__
 #include "StdAfx.h"
 #endif
-
+#include "types.h"
+#include "ktmgr.h"
+#include <../config/config.h>
+#include "process.h"
+#include "kmemmgr.h"
 //
 //The following array is used by Object Manager to create object.
 //Once a new object type is defined,you must add one line in the

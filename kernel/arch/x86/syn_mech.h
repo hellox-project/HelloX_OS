@@ -21,50 +21,59 @@ extern "C" {
 
 //System level critical section operations definition.
 
-
 #ifdef __I386__
-#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags)
-#ifdef _POSIX_					\
-	__asm__ __volatile__(".code32; pushl %%eax; popl %%eax; movl %%eax,%0; popl %%eax; cli;" : :"r"(dwFlags): "memory");
-#else							\
-		__asm {					 \
-			push eax			 \
-			pushfd               \
-			pop eax              \
-			mov dwFlags,eax      \
-			pop eax              \
-			cli                  \
-		}
-#endif
+#ifdef _POSIX_
+	#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags)	\
+		__asm__ __volatile__ (		\
+			"pushl %%eax		\n\t"	\
+			"pushf				\n\t"	\
+			"popl %%eax			\n\t"	\
+			"movl %%eax, %0		\n\t"	\
+			"popl %%eax			\n\t"	\
+			"cli				\n\t"	\
+			: "=r"(dwFlags): )
 
-/***
- *
-        __asm push eax             \
-        __asm pushfd               \
-		__asm pop eax              \
-		__asm mov dwFlags,eax      \
-        __asm pop eax              \
-        __asm cli
- */
+#else
+
+#define __ENTER_CRITICAL_SECTION(lpObj, dwFlags) \
+			__asm {					 \
+				push eax			 \
+				pushfd               \
+				pop eax              \
+				mov dwFlags,eax      \
+				pop eax              \
+				cli                  \
+			}
+#endif
 
 #else
 #define __ENTER_CRITICAL_SECTION(lpObj,dwFlags) \
 	(dwFlags = 0);
 #endif
 
+
+
 #ifdef __I386__
-#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)
-#ifdef _POSIX_		\
-		__asm__ __volatile__ (".code32; pushl %0; popfd"::"r"(dwFlags):"memory");
+
+#ifdef _POSIX_
+#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)	\
+	__asm__ __volatile__(	\
+		".code32	\n\t"		\
+		"pushl %0	\n\t"		\
+		"popf		\n\t"		\
+			:				\
+			:"r"(dwFlags))
 #else
+
+#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags) \
     __asm {				\
 		push dwFlags 	\
 		popfd			\
 	}
 #endif
-
 #else
-#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags) \
+
+#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)
 	(dwFlags = 0);
 #endif
 

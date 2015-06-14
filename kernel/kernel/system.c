@@ -663,11 +663,11 @@ static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 #ifdef __I386__
 #ifdef _POSIX_
 			__asm__ __volatile__(
-					".code32		;"
-					"pushl	%%eax	;"
-					"movl	%%cr2,	%%eax	;"
-					"movl	%0,	%%eax		;"
-					"popl	%%eax			;"
+					".code32		\n\t"
+					"pushl	%%eax	\n\t"
+					"movl	%%cr2,	%%eax	\n\t"
+					"movl	%0,	%%eax		\n\t"
+					"popl	%%eax			\n\t"
 					: :"r"(excepAddr) : "memory");
 #else
 			__asm{

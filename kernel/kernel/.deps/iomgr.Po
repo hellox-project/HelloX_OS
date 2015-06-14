@@ -1,1 +1,8 @@
-# dummy
+iomgr.o: iomgr.c /usr/include/stdc-predef.h ../../kernel/lib/string.h \
+ ../../kernel/include/types.h
+
+/usr/include/stdc-predef.h:
+
+../../kernel/lib/string.h:
+
+../../kernel/include/types.h:

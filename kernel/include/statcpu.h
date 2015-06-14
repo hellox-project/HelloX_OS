@@ -16,6 +16,13 @@
 #ifndef __STATCPU_H__
 #define __STATCPU_H__
 
+
+#include "types.h"
+#include "ktmgr.h"
+#include "kmemmgr.h"
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

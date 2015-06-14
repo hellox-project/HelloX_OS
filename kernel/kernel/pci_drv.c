@@ -18,8 +18,10 @@
 #endif
 
 #ifndef __PCI_DRV_H__
-#include "PCI_DRV.H"
+#include "pci_drv.h"
 #endif
+
+#include "kmemmgr.h"
 
 static BOOL PciBusProbe()    //Probe if there is(are) PCI bus(es).
 {

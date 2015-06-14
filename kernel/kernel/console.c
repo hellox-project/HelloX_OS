@@ -19,7 +19,13 @@
 #include <stm32f10x.h>                       /* STM32F10x definitions         */
 #endif
 
+#include "types.h"
 #include "console.h"
+#include "hellocn.h"
+
+#include "iomgr.h"
+#include "ktmgr.h"
+
 
 //Available when and only when the __CFG_SYS_CONSOLE macro is defined.
 #ifdef __CFG_SYS_CONSOLE
@@ -176,7 +182,7 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 	pConsole->nColNum      = CON_MAX_COLNUM;
 
 	//Create console read thread to process COM interface input message.
-	pConsole->hConThread = KernelThreadManager.CreateKernelThread(
+	pConsole->hConThread = KernelThreadManager.kCreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -212,7 +218,7 @@ static VOID ConUninitialize(__CONSOLE* pConsole)
 	//Destroy console read thread.
 	if(NULL != pConsole->hConThread)
 	{
-		KernelThreadManager.DestroyKernelThread(
+		KernelThreadManager.kDestroyKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			(__COMMON_OBJECT*)pConsole->hConThread);
 	}

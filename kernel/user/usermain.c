@@ -1,6 +1,7 @@
 #include <stm32f10x.h>                       /* STM32F10x definitions         */
+
 #ifndef __STDAFX_H__
-#include "..\include\StdAfx.h"
+#include "StdAfx.h"
 #endif
 #include <stdio.h>
 

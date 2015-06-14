@@ -33,6 +33,29 @@ VOID u64Add(__U64* lpu64_1,__U64* lpu64_2,__U64* lpu64_result)
 	}
 
 #ifdef __I386__  //Use asmble language to accelate speed.
+#ifdef _POSIX_
+	__asm__ __volatile__(
+			".code32				\n\t"
+			"pushl		%%eax		\n\t"
+			"pushl		%%ebx		\n\t"
+			"pushl		%%ecx		\n\t"
+			"pushl		%%edx		\n\t"
+			"movl	%1,		%%eax	\n\t"
+			"movl	%2,		%%ebx	\n\t"
+			"movl	%0,		%%ecx	\n\t"
+			"movl	(%%eax),	%%edx	\n\t"
+			"addl	(%%ebx),	%%edx	\n\t"
+			"movl	%%edx,		(%%ecx)	\n\t"
+			"movl	4(%%eax),	%%edx	\n\t"
+			"adcl	4(%%ebx),	%%edx	\n\t"
+			"movl	%%edx,		4(%%ecx)\n\t"
+			"popl	%%edx				\n\t"
+			"popl	%%ecx				\n\t"
+			"popl	%%ebx				\n\t"
+			"popl	%%eax				\n\t"
+			:"=r"(lpu64_result): "r"(lpu64_1), "r"(lpu64_2): "memory"
+	);
+#else
 	__asm{
 		push eax
         push ebx
@@ -52,6 +75,7 @@ VOID u64Add(__U64* lpu64_1,__U64* lpu64_2,__U64* lpu64_result)
         pop ebx
         pop eax
 	}
+#endif
 #else
 	  lpu64_result->dwLowPart = lpu64_1->dwLowPart + lpu64_2->dwLowPart;
 	  if((lpu64_result->dwLowPart < lpu64_1->dwLowPart) || (lpu64_result->dwLowPart < lpu64_2->dwLowPart))
@@ -73,6 +97,29 @@ VOID u64Sub(__U64* lpu64_1,__U64* lpu64_2,__U64* lpu64_result)
 	   return;
 
 #ifdef __I386__
+#ifdef _POSIX_
+	__asm__ __volatile__(
+			".code32			\n\t"
+			"pushl	%%eax		\n\t"
+			"pushl	%%ebx		\n\t"
+			"pushl	%%ecx		\n\t"
+			"pushl	%%edx		\n\t"
+			"movl	%1,		%%eax	\n\t"
+			"movl	%2,		%%ebx	\n\t"
+			"movl	%0,		%%ecx	\n\t"
+			"movl	(%%eax),	%%edx	\n\t"
+			"subl	(%%ebx),	%%edx	\n\t"
+			"movl	%%edx,		(%%ecx)	\n\t"
+			"movl	4(%%eax),	%%edx	\n\t"
+			"sbbl	4(%%ebx),	%%edx	\n\t"
+			"movl	%%edx,		4(%%ecx)\n\t"
+			"popl	%%edx				\n\t"
+			"popl	%%ecx				\n\t"
+			"popl	%%ebx				\n\t"
+			"popl	%%eax				\n\t"
+			:"=r"(lpu64_result) :"r"(lpu64_1), "r"(lpu64_2): "memory"
+			);
+#else
 	__asm{
         push eax
         push ebx
@@ -92,6 +139,7 @@ VOID u64Sub(__U64* lpu64_1,__U64* lpu64_2,__U64* lpu64_result)
         pop ebx
         pop eax
     }
+#endif
 #else
 #endif
 }
@@ -145,6 +193,23 @@ VOID u64RotateLeft(__U64* lpu64_1,DWORD dwTimes)   //Shift dwTimes bit(s) of lpu
 		return;
 
 #ifdef __I386__
+#ifdef _POSIX_
+__asm__ __volatile__(
+			".code32			\n\t"
+			"pushl	%%eax		\n\t"
+			"pushl	%%ebx		\n\t"
+			"pushl	%%ecx		\n\t"
+			"movl	%0,		%%eax	\n\t"
+			"movl	%1,		%%ecx	\n\t"
+			"_2_BEGIN:				\n\t"
+			"shll	$1,		(%%eax)	\n\t"
+			"rcll	$1,		4(%%eax)\n\t"
+			"loop	_2_BEGIN		\n\t"
+			"popl	%%ecx			\n\t"
+			"popl	%%ebx			\n\t"
+			"popl	%%eax			\n\t"
+			::"r"(lpu64_1),"r"(dwTimes):"memory");
+#else
 	__asm{
 		push eax
         push ebx
@@ -159,6 +224,8 @@ __BEGIN:
         pop ebx
         pop eax
 	}
+#endif
+
 #else
 #endif
 }
@@ -168,6 +235,21 @@ VOID u64RotateRight(__U64* lpu64_1,DWORD dwTimes)  //Shift dwTimes bit(s) of lpu
 	if((NULL == lpu64_1) || (0 == dwTimes))  //Parameters check.
 		return;
 #ifdef __I386__
+#ifdef _POSIX_
+	__asm__ __volatile__(
+			".code32					\n\t"
+			"pushl	%%eax				\n\t"
+			"pushl	%%ecx				\n\t"
+			"movl 	%0,	%%eax			\n\t"
+			"movl	%1,	%%ecx			\n\t"
+			"_0_BEGIN:					\n\t"
+			"shrl 	$1, 4(%%eax)			\n\t"
+			"rcrl	$1,	(%%eax)				\n\t"
+			"loop	_0_BEGIN				\n\t"
+			"popl	%%ecx					\n\t"
+			"popl	%%eax					\n\t"
+			::"r"(lpu64_1),"r"(dwTimes):"memory");
+#else
 	__asm{
 		push eax
         push ecx
@@ -180,6 +262,7 @@ __BEGIN:
         pop ecx
         pop eax
 	}
+#endif
 #else
 #endif
 }
@@ -192,6 +275,57 @@ __BEGIN:
 VOID u64Div(__U64* lpu64_1,__U64* lpu64_2,__U64* lpResult,__U64* lpRemainder)
 {
 #ifdef __I386__
+#ifdef _POSIX_
+__asm__ __volatile__ (
+			".code32						\n\t"
+			"pushl					%%eax	\n\t"
+			"pushl					%%ebx	\n\t"
+			"pushl					%%ecx	\n\t"
+			"pushl					%%edx	\n\t"
+			"pushl					%%esi	\n\t"
+			"pushl 					%%edi	\n\t"
+			"pushl					%%ebp	\n\t"
+			"movl 0x08(%%ebp),		%%esi	\n\t"
+			"movl (%%esi),			%%eax	\n\t"
+			"movl 0x04(%%esi),		%%edx	\n\t"
+			"movl 0x0c(%%ebp),		%%esi	\n\t"
+			"movl (%%esi),			%%ebx	\n\t"
+			"movl 0x04(%%esi),		%%ecx	\n\t"
+			"xorl %%esi,			%%esi	\n\t"
+			"xorl %%edi,			%%edi	\n\t"
+			"movl $64,				%%ebp	\n\t"
+			"_1_BEGIN:						\n\t"
+			"shll	$1,				%%eax	\n\t"
+			"rcll	$1,				%%edx	\n\t"
+			"rcll	$1,				%%edi	\n\t"
+			"rcll	$1,				%%esi	\n\t"
+			"cmpl	%%ecx,			%%esi	\n\t"
+			"ja		__GOESINTO				\n\t"
+			"ja		__TRYNEXT				\n\t"
+			"cmpl 	%%ebx,			%%edi	\n\t"
+			"jb __TRYNEXT					\n\t"
+			"__GOESINTO:					\n\t"
+			"subl 	%%ebx,			%%edi	\n\t"
+			"sbbl 	%%ecx,			%%esi	\n\t"
+			"incl 	%%eax					\n\t"
+			"__TRYNEXT:						\n\t"
+			"decl 	%%ebp					\n\t"
+			"jne _1_BEGIN					\n\t"
+			"popl %%ebp						\n\t"
+			"movl 0x10(%%ebp),		%%ebx	\n\t"
+			"movl %%eax,				(%%ebx)	\n\t"
+			"movl %%edx,			0x04(%%ebx)	\n\t"
+			"movl 0x14(%%ebp),		%%ebx		\n\t"
+			"movl %%edi,			(%%ebx)		\n\t"
+			"movl %%esi,			0x04(%%ebx)	\n\t"
+			"popl %%edi		\n\t"
+			"popl %%esi		\n\t"
+			"popl %%edx		\n\t"
+			"popl %%ecx		\n\t"
+			"popl %%ebx		\n\t"
+			"popl %%eax		\n\t"
+			:::"memory");
+#else
 	__asm
 	{
 		push eax
@@ -227,7 +361,6 @@ __GOESINTO:
 __TRYNEXT:
 		dec ebp
 		jne __BEGIN
-
 		pop ebp
 		mov ebx,dword ptr [ebp + 0x10]
 		mov dword ptr [ebx],eax
@@ -242,6 +375,7 @@ __TRYNEXT:
 		pop ebx
 		pop eax
 	}
+#endif
 #else
 #endif
 }

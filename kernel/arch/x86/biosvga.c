@@ -12,8 +12,10 @@
 #endif
 
 #include "chardisplay.h"
-#include "BIOSVGA.H"
-#include "../lib/stdio.h"
+#include "biosvga.h"
+#include <stdio.h>
+
+__asm__ (".code32");
 
 #define  BIOS_VGABUF_ADDR    0xB8000
 #define  BIOS_VGABUF_LEN     4000
@@ -107,8 +109,29 @@ BOOL  VGA_SetCursorPos(WORD CursorX,WORD CursorY)
 	cursor_h       = (cursor_index>>8)&0xFF;
 	cursor_l       = cursor_index&0xFF;
 
+#ifdef _POSIX_
+	__asm__ volatile (
+	"movw %0,	%%dx                              \n\t"
+	"movb $14,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	"movw %1,	%%dx                              \n\t"
+	"movb %2,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	"movw %3,	%%dx                              \n\t"
+	"movb $15,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	"movw %4,	%%dx                              \n\t"
+	"movb %5,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	:
+	:"i"(DEF_INDEX_PORT),"i"(DEF_VALUE_PORT),"r"(cursor_h),
+	 "i"(DEF_INDEX_PORT),"i"(DEF_VALUE_PORT),"i"(DEF_VALUE_PORT),
+	 "r"(cursor_l)
+	 :
+	);
+#else
 	__asm{
-		mov dx,DEF_INDEX_PORT
+			mov dx,DEF_INDEX_PORT
 			mov al,14
 			out dx,al
 
@@ -123,7 +146,8 @@ BOOL  VGA_SetCursorPos(WORD CursorX,WORD CursorY)
 			mov dx,DEF_VALUE_PORT
 			mov al,cursor_l
 			out dx,al
-		}
+	}
+#endif
 	
 	return TRUE;
 }

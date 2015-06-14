@@ -33,7 +33,7 @@
 #include "fat32.h"
 #endif
 
-#include "../lib/stdio.h"
+#include "stdio.h"
 
 //This module will be available if and only if DDF is enabled.
 #ifdef __CFG_SYS_DDF
@@ -464,7 +464,7 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 	pFileObject = (__FAT32_FILE*)pDeviceObject->lpDevExtension;
 	pFat32Fs    = pFileObject->pFileSystem;
 	//Delete the fat32 file object from file system.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION(NULL, _dwFlags);
 	if((pFileObject->pPrev == NULL) && (pFileObject->pNext == NULL))
 	{
 		pFat32Fs->pFileList = NULL;
@@ -498,8 +498,8 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 	return 0;
 }
 
-//Implementation of DeleteFile routine.
-static BOOL DeleteFile(__COMMON_OBJECT* lpDev,
+//Implementation of _DeleteFile routine.
+static BOOL _DeleteFile(__COMMON_OBJECT* lpDev,
 		               LPSTR pszFileName)       //Delete a file.
 {
 	__FAT32_FS*        pFat32Fs   = NULL;
@@ -512,8 +512,8 @@ static BOOL DeleteFile(__COMMON_OBJECT* lpDev,
 	return DeleteFatFile(pFat32Fs,pszFileName);
 }
 
-//Implementation of FindClose routine.
-static BOOL FindClose(__COMMON_OBJECT* lpThis,
+//Implementation of _FindClose routine.
+static BOOL _FindClose(__COMMON_OBJECT* lpThis,
 		              __COMMON_OBJECT* pHandle)  //Close find handle.
 {
 	__FAT32_FIND_HANDLE*  pFindHandle = (__FAT32_FIND_HANDLE*)pHandle;
@@ -709,8 +709,8 @@ __FIND:
 	return bResult;
 }
 
-//Implementation of FindFirstFile.
-static __COMMON_OBJECT* FindFirstFile(__COMMON_OBJECT* lpThis,
+//Implementation of _FindFirstFile.
+static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
 		                              CHAR*  pszFileName,
 		                              FS_FIND_DATA* pFindData)
 {
@@ -734,8 +734,8 @@ static __COMMON_OBJECT* FindFirstFile(__COMMON_OBJECT* lpThis,
 	return (__COMMON_OBJECT*)pFindHandle;
 }
 
-//Implementation of FindNextFile.
-static BOOL FindNextFile(__COMMON_OBJECT* lpThis,
+//Implementation of _FindNextFile.
+static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
 		                 __COMMON_OBJECT* pFindHandle,
 		                 FS_FIND_DATA* pFindData)
 {
@@ -754,8 +754,8 @@ static DWORD FatDeviceFlush(__COMMON_OBJECT* lpDrv,
 	return FALSE;
 }
 
-//Implementation of GetFileAttributes.
-static DWORD GetFileAttributes(__COMMON_OBJECT* lpDev,
+//Implementation of _GetFileAttributes.
+static DWORD _GetFileAttributes(__COMMON_OBJECT* lpDev,
 		                       LPCTSTR  pszFileName)  //Get file's attribute.
 {
 	__FAT32_FS*         pFat32Fs      = NULL;
@@ -773,7 +773,7 @@ static DWORD GetFileAttributes(__COMMON_OBJECT* lpDev,
 	ToCapital(FileName);
 	if(!GetDirEntry(pFat32Fs,&FileName[0],&ShortEntry,NULL,NULL))
 	{
-		PrintLine("  In GetFileAttributes: Can not get directory entry.");
+		PrintLine("  In _GetFileAttributes: Can not get directory entry.");
 		PrintLine((LPSTR)pszFileName);
 		goto __TERMINAL;
 	}
@@ -795,8 +795,8 @@ __TERMINAL:
 	return pFat32Fs->pFileList->dwFileSize;
 }*/
 
-//Implementation of RemoveDirectory.
-static BOOL RemoveDirectory(__COMMON_OBJECT* lpDev,
+//Implementation of _RemoveDirectory.
+static BOOL _RemoveDirectory(__COMMON_OBJECT* lpDev,
 		                    LPSTR            pszFileName)
 {
 	__FAT32_FS*             pFat32Fs         = NULL;
@@ -809,8 +809,8 @@ static BOOL RemoveDirectory(__COMMON_OBJECT* lpDev,
 	return DeleteFatDir(pFat32Fs,pszFileName);
 }
 
-//Implementation of SetEndOfFile.
-static BOOL SetEndOfFile( __COMMON_OBJECT* lpDev)
+//Implementation of _SetEndOfFile.
+static BOOL _SetEndOfFile( __COMMON_OBJECT* lpDev)
 {
 	__FAT32_FS*             pFat32Fs      = NULL;
 	__FAT32_FILE*           pFat32File    = NULL;	
@@ -845,7 +845,7 @@ static BOOL SetEndOfFile( __COMMON_OBJECT* lpDev)
 	}
 	pfse = (__FAT32_SHORTENTRY*)(pClusBuffer + pFat32File->dwParentOffset);
 
-	//ÎÄ¼þ´óÐ¡Îªµ±Ç°Î»ÖÃ
+	//ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Îªï¿½ï¿½Ç°Î»ï¿½ï¿½
 	pFat32File->dwFileSize = pFat32File->dwCurrPos;
 	pfse->dwFileSize       = pFat32File->dwFileSize;
 
@@ -854,7 +854,7 @@ static BOOL SetEndOfFile( __COMMON_OBJECT* lpDev)
 		pFat32Fs->SectorPerClus,
 		pClusBuffer);
 
-	//ÊÍ·ÅÊ£ÓàµÄ¿Õ¼ä
+	//ï¿½Í·ï¿½Ê£ï¿½ï¿½Ä¿Õ¼ï¿½
 	if(pFat32File->dwCurrPos < pFat32Fs->dwClusterSize )
 	{
 		dwNextCluster = 1;
@@ -926,13 +926,13 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 			}
 		}
 		
-		//Î»ÖÃÊÇ·ñÒç³ö
+		//Î»ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
 		if(pFatFile->dwCurrPos > pFatFile->dwFileSize)
 		{
 			pFatFile->dwCurrPos = pFatFile->dwFileSize;		
 		}
 
-		//È·ÈÏ Cluster ¸öÊý
+		//È·ï¿½ï¿½ Cluster ï¿½ï¿½ï¿½ï¿½
 		if(pFatFile->dwCurrPos < pFatFs->dwClusterSize )
 		{
 			dwClusterNum = 1;
@@ -946,7 +946,7 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 			}
 		}	
 								
-		//¸ù¾ÝCluster¸öÊý ¼ÆËã³ö ÎÄ¼þCluster Êµ¼ÊÎ»ÖÃ
+		//ï¿½ï¿½ï¿½ï¿½Clusterï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ä¼ï¿½Cluster Êµï¿½ï¿½Î»ï¿½ï¿½
 		pFatFile->dwCurrClusNum = pFatFile->dwStartClusNum;
 		for(i=0; i< (dwClusterNum-1); i++)
 		{
@@ -960,7 +960,7 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 			pFatFile->dwCurrClusNum = dwNextNum;
 		}
 
-		//¼ÆËã Cluster ÄÚÆ«ÒÆ
+		//ï¿½ï¿½ï¿½ï¿½ Cluster ï¿½ï¿½Æ«ï¿½ï¿½
 		pFatFile->dwClusOffset = pFatFile->dwCurrPos % pFatFs->dwClusterSize;
 		dwSeekRet              = pFatFile->dwCurrPos;
 	}
@@ -983,7 +983,7 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 	case IOCONTROL_FS_CHECKPARTITION:
 		return CheckPartition(lpDev,(__COMMON_OBJECT*)lpDrcb->lpInputBuffer) ? 1 : 0;
 	case IOCONTROL_FS_FINDFIRSTFILE:
-		pFindHandle = FindFirstFile((__COMMON_OBJECT*)lpDev,
+		pFindHandle = _FindFirstFile((__COMMON_OBJECT*)lpDev,
 			(CHAR*)lpDrcb->dwExtraParam1,
 			(FS_FIND_DATA*)lpDrcb->dwExtraParam2);
 		if(NULL == pFindHandle)  //Can not start the iterate.
@@ -993,11 +993,11 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 		lpDrcb->lpOutputBuffer = (LPVOID)pFindHandle;
 		return 1;
 	case IOCONTROL_FS_FINDNEXTFILE:
-		return FindNextFile((__COMMON_OBJECT*)lpDev,
+		return _FindNextFile((__COMMON_OBJECT*)lpDev,
 			(__COMMON_OBJECT*)lpDrcb->lpInputBuffer,
 			(FS_FIND_DATA*)lpDrcb->dwExtraParam2) ? 1 : 0;
 	case IOCONTROL_FS_FINDCLOSE:
-		FindClose((__COMMON_OBJECT*)lpDev,
+		_FindClose((__COMMON_OBJECT*)lpDev,
 			(__COMMON_OBJECT*)lpDrcb->lpInputBuffer);
 		break;
 	case IOCONTROL_FS_CREATEDIR:
@@ -1015,14 +1015,14 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 		}
 		break;
 	case IOCONTROL_FS_GETFILEATTR:
-		lpDrcb->dwExtraParam2 = GetFileAttributes(
+		lpDrcb->dwExtraParam2 = _GetFileAttributes(
 			lpDev,
 			(LPCTSTR)lpDrcb->dwExtraParam1);
 		lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
 		return 1;
 		break;
 	case IOCONTROL_FS_DELETEFILE:
-		if(DeleteFile(lpDev,
+		if(_DeleteFile(lpDev,
 			(LPSTR)lpDrcb->lpInputBuffer))
 		{
 			lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
@@ -1035,7 +1035,7 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 		}
 		break;
 	case IOCONTROL_FS_REMOVEDIR:
-		if(RemoveDirectory(lpDev,
+		if(_RemoveDirectory(lpDev,
 			(LPSTR)lpDrcb->lpInputBuffer))
 		{
 			lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
@@ -1049,7 +1049,7 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 		break;
 	case IOCONTROL_FS_SETENDFILE:
 		{
-		if(SetEndOfFile(lpDev))
+		if(_SetEndOfFile(lpDev))
 			{
 				lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
 				return 1;

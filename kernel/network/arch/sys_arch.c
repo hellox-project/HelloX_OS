@@ -12,14 +12,16 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "StdAfx.h"
+#include <StdAfx.h>
 #endif
 
-#include "lwip\opt.h"
-#include "lwip\sys.h"
-#include "lwip\tcpip.h"
-#include "arch\cc.h"
-#include "arch\sys_arch.h"
+#include "ktmgr.h"
+#include "heap.h"
+#include "lwip/opt.h"
+#include "lwip/sys.h"
+#include "lwip/tcpip.h"
+#include "arch/cc.h"
+#include "arch/sys_arch.h"
 
 //Light protection mechanism used by lwIP,it's critical section actually
 //in HelloX.
@@ -38,7 +40,7 @@ void sys_arch_unprotect(sys_prot_t val)
 //Create a new thread.
 sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg,int stacksize,int prio)
 {
-	return KernelThreadManager.CreateKernelThread(
+	return KernelThreadManager.kCreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,

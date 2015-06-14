@@ -14,15 +14,15 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\..\INCLUDE\StdAfx.h"
+#include "StdAfx.h"
 #endif
 
 #ifndef __BIOS_H__
-#include "BIOS.H"
+#include "bios.h"
 #endif
 
-#include "..\..\INCLUDE\KAPI.H"
-#include "..\..\lib\stdio.h"
+#include "kapi.h"
+#include "stdio.h"
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
@@ -36,6 +36,39 @@ BOOL BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer
 		return FALSE;
 	}
 
+#ifdef _POSIX_
+	__asm__ (
+			".code32		\n\t"
+			"pushl %%ecx                        \n\t"
+			"pushl %%edx                        \n\t"
+			"pushl %%esi                        \n\t"
+			"pushl %%ebx                        \n\t"
+			"movl %0,	%%eax    				\n\t"
+			"movl %1,	%%ecx           		\n\t"
+			"movl %2,	%%edx           		\n\t"
+			"movl %3,	%%esi           		\n\t"
+			"movl %4,	%%ebx           		\n\t"
+			"calll %%ebx				        \n\t"
+			"popl %%ebx                         \n\t"
+			"popl %%esi                         \n\t"
+			"popl %%edx                         \n\t"
+			"popl %%ecx                         \n\t"
+			:
+			:"r"(BIOS_SERVICE_READSECTOR),"r"(nHdNum),
+			 "r"(nStartSector),"r"(nSectorNum),"r"(BIOS_ENTRY_ADDR)
+			);
+
+	__asm__ goto (
+	    "cmpl $0x00,	%%eax   				\n\t"
+	    "jz  %l[__BIOS_FAILED]                 	\n\t"
+	    "jmp %l[__BIOS_SUCCESS] 				\n\t"
+	    :
+		:
+		:
+		:__BIOS_FAILED, __BIOS_SUCCESS
+	);
+
+#else
 	__asm{
 		push ecx
 		push edx
@@ -58,6 +91,7 @@ BOOL BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer
 	    jz __BIOS_FAILED
 	    jmp __BIOS_SUCCESS
 	}
+#endif
 
 __BIOS_FAILED:    //BIOS call failed.
 	return FALSE;
@@ -85,9 +119,39 @@ BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffe
 	{
 		((BYTE*)BIOS_HD_BUFFER)[i] = pBuffer[i];
 	}
+#ifdef _POSIX_
+	__asm__ (
+	"pushl %%ecx              \n\t"
+	"pushl %%edx              \n\t"
+	"pushl %%esi              \n\t"
+	"pushl %%ebx              \n\t"
+	"movl %0, 	%%eax     	  \n\t"
+	"movl %1,	%%ecx         \n\t"
+	"movl %2,	%%edx         \n\t"
+	"movl %3,	%%esi         \n\t"
+	"movl %4,	%%ebx         \n\t"
+	"call %%ebx          	  \n\t"
+	"popl %%ebx               \n\t"
+	"popl %%esi               \n\t"
+	"popl %%edx               \n\t"
+	"popl %%ecx               \n\t"
+	:
+	:"r"(BIOS_SERVICE_WRITESECTOR), "r"(nHdNum), "r"(nStartSector),
+	 "r"(nSectorNum),"r"(BIOS_ENTRY_ADDR)
+	);
 
+
+	__asm__ goto (
+			"cmpl 	$0x00, %%eax		\n\t"
+			"jz		%l[__BIOS_FAILED]	\n\t"
+			"jmp	%l[__BIOS_SUCCESS]	\n\t"
+			:::
+			:__BIOS_FAILED,__BIOS_SUCCESS
+			);
+
+#else
 	__asm{
-		push ecx
+			push ecx
 			push edx
 			push esi
 			push ebx
@@ -104,10 +168,11 @@ BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffe
 	}
 
 	__asm{
-		cmp eax,0x00
+			cmp eax,0x00
 			jz __BIOS_FAILED
 			jmp __BIOS_SUCCESS
 	}
+#endif
 
 __BIOS_FAILED:    //BIOS call failed.
 	return FALSE;
@@ -120,6 +185,18 @@ __BIOS_SUCCESS:   //BIOS call successed.
 //Reboot the system.
 VOID BIOSReboot()
 {
+#ifdef _POSIX_
+	__asm__(
+		"pushl	%%ebx	;"
+		"movl	%0,	%%eax	;"
+		"movl	%1,	%%ebx	;"
+		"calll	%%ebx		;"
+		"popl	%%ebx		;"
+		:
+		:"r"(BIOS_SERVICE_REBOOT), "r"(BIOS_ENTRY_ADDR)
+	);
+
+#else
 	__asm{
 		push ebx
 		mov eax,BIOS_SERVICE_REBOOT
@@ -127,11 +204,24 @@ VOID BIOSReboot()
 		call ebx  //For debug...
 		pop ebx
 	}
+#endif
 }
 
 //Power off the system.
 VOID BIOSPoweroff()
 {
+#ifdef _POSIX_
+	__asm__(
+		"pushl	%%ebx		\n\t"
+		"movl	%0,	%%eax	\n\t"
+		"movl	%1,	%%ebx	\n\t"
+		"calll	%%ebx		\n\t"
+		"popl	%%ebx		\n\t"
+			:
+			:"r"(BIOS_SERVICE_POWEROFF),"r"(BIOS_ENTRY_ADDR)
+	);
+
+#else
 	__asm{
 		push ebx
 		mov eax,BIOS_SERVICE_POWEROFF
@@ -139,23 +229,48 @@ VOID BIOSPoweroff()
 		call ebx  //For debug...
 		pop ebx
 	}
+#endif
 }
 
 //Switch current display mode to graphic.
 BOOL SwitchToGraphic()
 {
-		__asm{
+#ifdef _POSIX_
+	__asm__(
+		"pushl %%eax	\n\t"
+		"movl	%0,	%%eax	\n\t"
+		"movl	%1,	%%ebx	\n\t"
+		"calll	%%ebx		\n\t"
+		"popl	%%ebx		\n\t"
+			::"r"(BIOS_SERVICE_TOGRAPHIC),"r"(BIOS_ENTRY_ADDR)
+	);
+
+#else
+	__asm{
 		push ebx
 		mov eax,BIOS_SERVICE_TOGRAPHIC
 		mov ebx,BIOS_ENTRY_ADDR
 		call ebx  //For debug...
 		pop ebx
 	}
+#endif
 }
 
 //Switch display mode to text.
 VOID SwitchToText()
 {
+#ifdef _POSIX_
+	__asm__(
+			"pushl	%%ebx	\n\t"
+			"movl	%0, %%eax	\n\t"
+			"movl	%1,	%%ebx	\n\t"
+			"calll	%%ebx		\n\t"
+			"popl	%%ebx		\n\t"
+			:
+			:"r"(BIOS_SERVICE_TOTEXT),"r"(BIOS_ENTRY_ADDR)
+	);
+
+#else
 	__asm{
 		push ebx
 		mov eax,BIOS_SERVICE_TOTEXT
@@ -163,6 +278,7 @@ VOID SwitchToText()
 		call ebx  //For debug...
 		pop ebx
 	}
+#endif
 }
 
 #endif  //__I386__

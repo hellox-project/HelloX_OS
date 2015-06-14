@@ -2,10 +2,12 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
-AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign])
+AC_INIT([HelloX], [1.78], [BUG-REPORT-ADDRESS])
+AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign subdir-objects])
 AC_CONFIG_SRCDIR([gui/CTRL/bmpbtn.cpp])
 AC_CONFIG_HEADERS([config.h])
+
+# AUTOMAKE_OPTIONS([subdir-objects])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -14,9 +16,16 @@ AM_PROG_AS
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
 
-AM_CONDITIONAL([COMPILE_TIME_RELOC_CHECKS], [true])
-
 AC_USE_SYSTEM_EXTENSIONS
+
+AM_CONDITIONAL([COMPILE_TIME_RELOC_CHECKS],[AC_COMPILE_IFELSE], [true])
+
+
+AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+
+CFLAGS==-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+
+# AC_USE_SYSTEM_EXTENSIONS
 # Checks for libraries.
 
 # Checks for header files.
@@ -88,5 +97,14 @@ AC_CONFIG_FILES([kernel/jvm/Makefile
                  kernel/jvm/os/solaris/x86/Makefile
                  kernel/kernel/Makefile
                  kernel/fs/Makefile
-                 kernel/lib/Makefile])
+                 kernel/kapi/Makefile
+                 kernel/drivers/x86/Makefile
+                 kernel/kthread/Makefile
+                 kernel/network/Makefile
+                 kernel/osentry/Makefile
+                 kernel/shell/Makefile
+                 kernel/lib/Makefile
+                 kernel/user/Makefile
+                 kernel/arch/x86/Makefile
+                 kernel/Makefile])
 AC_OUTPUT

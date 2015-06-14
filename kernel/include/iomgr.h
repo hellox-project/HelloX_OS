@@ -17,6 +17,10 @@
 #ifndef __IOMGR_H__
 #define __IOMGR_H__
 
+
+#include "commobj.h"
+#include "ktmgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
