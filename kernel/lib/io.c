@@ -7,6 +7,7 @@
 #include "io.h"
 
 #define  JVM_ROOT_PATH  "C:\\JVM\\"
+#define  FILE_ROOT_PATH  "C:\\"
 
 int remove (const char* name)
 {
@@ -155,18 +156,20 @@ int     open (const char* name , int oflag, ...)
 	DWORD              dwFlage     = FILE_ACCESS_READ;
 	DWORD              dwMode      = FILE_OPEN_EXISTING;
 
+	
 	if(name == NULL || strlen(name) >= FILENAME_MAX)
 	{
+		printf("open err 1\n");
 		return -1;
 	}
 	
 	p = filename;	
 	if(!strstr(name,":")) 
 	{
-		strcpy(filename,JVM_ROOT_PATH);	
-		p += strlen(JVM_ROOT_PATH);
+		strcpy(filename,FILE_ROOT_PATH);	
+		p += strlen(FILE_ROOT_PATH);
 	}
-	strcpy(p,name);
+	strcpy(p,name+2);
 	
 	while(*p)	
 	{
@@ -176,11 +179,13 @@ int     open (const char* name , int oflag, ...)
 		}
 		p ++;
 	}
-
+	
 
 	va_start(ap, oflag);
 	mode = va_arg(ap, int);
 	va_end(ap);
+
+	printf("open name=%s,oflag=%d,mode=%d \n",filename,oflag,mode);
 
 	//设置访问模式
 	switch(oflag&0x4)
@@ -220,6 +225,8 @@ int     open (const char* name , int oflag, ...)
 	pFileHandle = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,(LPSTR)filename,dwFlage,dwMode,NULL);
 	if(NULL == pFileHandle)
 	{
+		printf("open err 2\n");
+
 		return -1;
 	}
 	
@@ -229,7 +236,7 @@ int     open (const char* name , int oflag, ...)
 		IOManager.SetEndOfFile((__COMMON_OBJECT*)&IOManager,pFileHandle);
 	}
 
-	return (pFileHandle)?-1:(int)pFileHandle;
+	return (pFileHandle)?(int)pFileHandle:-1;
 }
 
 long  lseek (int fd, long p , int w)
@@ -286,8 +293,11 @@ int   sopen (const char* name, int d1, int d2, ...)
 
 long    tell (int fd )
 {
+	printf("tell fd =%d\n",fd);
+
 	if(fd <= 0)
 	{
+		
 		return -1;
 	}
 
