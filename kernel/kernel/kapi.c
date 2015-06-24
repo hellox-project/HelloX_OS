@@ -57,13 +57,13 @@ DWORD GetLastError()
 
 DWORD GetThreadID(HANDLE hThread)
 {
-	return KernelThreadManager.GetThreadID(
+	return KernelThreadManager.kGetThreadID(
 		hThread);
 }
 
 DWORD SetThreadPriority(HANDLE hThread,DWORD dwPriority)
 {
-	return KernelThreadManager.SetThreadPriority(
+	return KernelThreadManager.kSetThreadPriority(
 		hThread,
 		dwPriority);
 }

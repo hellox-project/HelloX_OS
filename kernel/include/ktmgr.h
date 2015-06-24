@@ -381,7 +381,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 		                                     __COMMON_OBJECT*           lpThis,
 											 LPVOID                     lpESP);
 
-	DWORD                                    (*SetThreadPriority)(
+	DWORD                                    (*kSetThreadPriority)(
 											 __COMMON_OBJECT*           lpKernelThread,
 											 DWORD                      dwNewPriority
 											 );
@@ -425,7 +425,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											 DWORD                      dwNewError
 											 );
 
-	DWORD                                    (*GetThreadID)(
+	DWORD                                    (*kGetThreadID)(
 		                                     __COMMON_OBJECT*           lpKernelThread
 											 );
 

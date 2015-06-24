@@ -33,7 +33,14 @@
 #include "stdio.h"
 #include "ktmsg.h"
 
+#include "hellocn.h"
+#include "kapi.h"
+
+#ifdef __I386__
 #include "../arch/x86/bios.h"
+#endif
+
+
 
 
 __PERF_RECORDER  TimerIntPr = {
@@ -207,13 +214,13 @@ __TERMINAL:
 
 
 //
-//The implementation of ConnectInterrupt routine of Interrupt Object.
+//The implementation of kConnectInterrupt routine of Interrupt Object.
 //The routine do the following:
 // 1. Insert the current object into interrupt object array(maintenanced by system object);
 // 2. Set the object's data members correctly.
 //
 
-static __COMMON_OBJECT* ConnectInterrupt(__COMMON_OBJECT*     lpThis,
+static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT*     lpThis,
 							 __INTERRUPT_HANDLER  lpInterruptHandler,
 							 LPVOID               lpHandlerParam,
 							 UCHAR                ucVector,
@@ -274,10 +281,10 @@ static __COMMON_OBJECT* ConnectInterrupt(__COMMON_OBJECT*     lpThis,
 }
 
 //
-//The implementation of DisconnectInterrupt.
+//The implementation of kDiskConnectInterrupt.
 //
 
-static VOID DisconnectInterrupt(__COMMON_OBJECT* lpThis,
+static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,
 								__COMMON_OBJECT* lpInterrupt)
 {
 	__INTERRUPT_OBJECT*   lpIntObject    = NULL;
@@ -722,14 +729,14 @@ static VOID DispatchException(__COMMON_OBJECT* lpThis,
 }
 
 //
-//SetTimer.
+//kSetTimer.
 //The routine do the following:
 // 1. Create a timer object;
 // 2. Initialize the timer object;
 // 3. Insert into the timer object into timer queue of system object;
 // 4. Return the timer object's base address if all successfully.
 //
-static __COMMON_OBJECT* SetTimer(__COMMON_OBJECT* lpThis,
+static __COMMON_OBJECT* kSetTimer(__COMMON_OBJECT* lpThis,
 								 __KERNEL_THREAD_OBJECT* lpKernelThread,
 					             DWORD  dwTimerID,
 								 DWORD  dwTimeSpan,
@@ -816,10 +823,10 @@ __TERMINAL:
 }
 
 //
-//CancelTimer implementation.
+//kCancelTimer implementation.
 //This routine is used to cancel timer.
 //
-static VOID CancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
+static VOID kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 {
 	__SYSTEM*                  lpSystem       = NULL;
 	DWORD                      dwPriority     = 0;
@@ -933,10 +940,10 @@ __SYSTEM System = {
 	GetPhysicalMemorySize,    //GetPhysicalMemorySize routine.
 	DispatchInterrupt,        //DispatchInterrupt routine.
 	DispatchException,        //DispatchException routine.
-	ConnectInterrupt,         //ConnectInterrupt.
-	DisconnectInterrupt,      //DisconnectInterrupt.
-	SetTimer,                 //SetTimerRoutine.
-	CancelTimer
+	kConnectInterrupt,         //kConnectInterrupt.
+	kDiskConnectInterrupt,      //kDiskConnectInterrupt.
+	kSetTimer,                 //kSetTimerRoutine.
+	kCancelTimer
 };
 
 //***************************************************************************************

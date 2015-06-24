@@ -123,7 +123,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 libcore_la_DEPENDENCIES = interp/libinterp.la \
-	os/@os@/@arch@/libnative.la os/@os@/libos.la
+	os/HelloX/i386/libnative.la os/HelloX/libos.la
 am_libcore_la_OBJECTS = alloc.lo cast.lo class.lo dll.lo excep.lo \
 	execute.lo hash.lo jni.lo lock.lo natives.lo reflect.lo \
 	resolve.lo string.lo thread.lo utf8.lo zip.lo properties.lo \
@@ -328,6 +328,7 @@ am__leading_dot = .
 am__quote = 
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
+arch = i386
 bindir = ${exec_prefix}/bin
 build = x86_64-unknown-linux-gnu
 build_alias = 
@@ -356,6 +357,7 @@ localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
+os = HelloX
 pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
@@ -385,7 +387,7 @@ jamvm_SOURCES = jam.c
 libjvm_la_SOURCES = 
 jamvm_LDADD = libcore.la
 libjvm_la_LIBADD = libcore.la
-libcore_la_LIBADD = interp/libinterp.la os/@os@/@arch@/libnative.la os/@os@/libos.la
+libcore_la_LIBADD = interp/libinterp.la os/HelloX/i386/libnative.la os/HelloX/libos.la
 AM_CPPFLAGS = -I$(top_srcdir)/src/interp/engine
 DISTCLEANFILES = arch.h
 all: all-recursive

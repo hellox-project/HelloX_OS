@@ -31,7 +31,7 @@ extern "C" {
 			"movl %%eax, %0		\n\t"	\
 			"popl %%eax			\n\t"	\
 			"cli				\n\t"	\
-			: "=r"(dwFlags): )
+			: "=r"(dwFlags): );
 
 #else
 
@@ -79,21 +79,41 @@ extern "C" {
 
 //Interrupt enable and disable operation.
 #ifdef __I386__
-	#define __ENABLE_INTERRUPT() \
-	{    \
-		__asm push eax    \
-		__asm mov al, 0x20    \
-		__asm out 0x20, al    \
-		__asm out 0xa0, al    \
-		__asm pop eax    \
-		__asm sti    \
+#ifdef _POSIX_
+
+#define __ENABLE_INTERRUPT() 	\
+{    							\
+	__asm__("pushl %%eax	\n\t"::);			\
+	__asm__("movb $0x20, %%al	\n\t"::);		\
+	__asm__("outb %%al, $0x20	\n\t"::);		\
+	__asm__("outb %%al, $0xa0	\n\t"::);		\
+	__asm__("popl %%eax			\n\t"::);		\
+	__asm__("sti	\n\t"::);					\
+}
+
+#else
+	#define __ENABLE_INTERRUPT() 	\
+	{    							\
+		__asm push eax    			\
+		__asm mov al, 0x20    		\
+		__asm out 0x20, al    		\
+		__asm out 0xa0, al    		\
+		__asm pop eax    			\
+		__asm sti    				\
 	}
+#endif
 #else
 #define __ENABLE_INTERRUPT()
 #endif
 
 #ifdef __I386__
+#ifdef _POSIX_
+#define __DISABLE_INTERRUPT() {		\
+		__asm__ ("cli \n\t" : :);	\
+	}
+#else
 #define __DISABLE_INTERRUPT() {__asm cli}
+#endif
 #else
 #define __DISABLE_INTERRUPT()
 #endif

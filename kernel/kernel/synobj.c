@@ -31,6 +31,9 @@
 #include "commobj.h"
 #include "ktmgr.h"
 #include "system.h"
+#include "hellocn.h"
+#include "kapi.h"
+
 
 //Timer handler routine for all synchronous object.
 static DWORD WaitingTimerHandler(LPVOID lpData)
@@ -149,10 +152,10 @@ DWORD TimeOutWaiting(__COMMON_OBJECT* lpSynObject,      //Synchronous object.
 //
 //Routines pre-declaration.
 //
-static DWORD WaitForEventObject(__COMMON_OBJECT*);
-static DWORD SetEvent(__COMMON_OBJECT*);
-static DWORD ResetEvent(__COMMON_OBJECT*);
-static DWORD WaitForEventObjectEx(__COMMON_OBJECT*,DWORD);
+static DWORD kWaitForEventObject(__COMMON_OBJECT*);
+static DWORD kSetEvent(__COMMON_OBJECT*);
+static DWORD kResetEvent(__COMMON_OBJECT*);
+static DWORD kWaitForEventObjectEx(__COMMON_OBJECT*,DWORD);
 
 //---------------------------------------------------------------------------------
 //
@@ -191,10 +194,10 @@ BOOL EventInitialize(__COMMON_OBJECT* lpThis)
 
 	lpEvent->lpWaitingQueue      = lpPriorityQueue;
 	lpEvent->dwEventStatus       = EVENT_STATUS_OCCUPIED;
-	lpEvent->SetEvent            = SetEvent;
-	lpEvent->ResetEvent          = ResetEvent;
-	lpEvent->WaitForThisObjectEx = WaitForEventObjectEx;
-	lpEvent->WaitForThisObject   = WaitForEventObject;
+	lpEvent->SetEvent            = kSetEvent;
+	lpEvent->ResetEvent          = kResetEvent;
+	lpEvent->WaitForThisObjectEx = kWaitForEventObjectEx;
+	lpEvent->WaitForThisObject   = kWaitForEventObject;
 	lpEvent->dwObjectSignature   = KERNEL_OBJECT_SIGNATURE;
 	bResult                      = TRUE;
 
@@ -269,7 +272,8 @@ VOID EventUninitialize(__COMMON_OBJECT* lpThis)
 // 3. Wakes up all kernel thread(s) in it's waiting queue.
 // 4. Returns the previous status.
 //
-static DWORD SetEvent(__COMMON_OBJECT* lpThis)
+//static
+DWORD kSetEvent(__COMMON_OBJECT* lpThis)
 {
 	DWORD                     dwPreviousStatus     = EVENT_STATUS_OCCUPIED;
 	__EVENT*                  lpEvent              = NULL;
@@ -320,7 +324,8 @@ static DWORD SetEvent(__COMMON_OBJECT* lpThis)
 //The implementation of ResetEvent.
 //
 
-static DWORD ResetEvent(__COMMON_OBJECT* lpThis)
+static
+DWORD kResetEvent(__COMMON_OBJECT* lpThis)
 {
 	__EVENT*          lpEvent          = (__EVENT*)lpThis;
 	DWORD             dwPreviousStatus = 0;
@@ -343,7 +348,8 @@ static DWORD ResetEvent(__COMMON_OBJECT* lpThis)
 //The implementation of WaitForEventObject.
 //
 
-static DWORD WaitForEventObject(__COMMON_OBJECT* lpThis)
+//static
+DWORD kWaitForEventObject(__COMMON_OBJECT* lpThis)
 {
 	__EVENT*                      lpEvent             = (__EVENT*)lpThis;
 	__KERNEL_THREAD_OBJECT*       lpKernelThread      = NULL;
@@ -380,7 +386,8 @@ static DWORD WaitForEventObject(__COMMON_OBJECT* lpThis)
 //
 //WaitForEventObjectEx's implementation.
 //
-static DWORD WaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
+//static
+DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
 {
 	__EVENT*                      lpEvent         = (__EVENT*)lpObject;
 	__KERNEL_THREAD_OBJECT*       lpKernelThread  = NULL;
@@ -457,7 +464,8 @@ static DWORD WaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecon
 //
 //The implementation of ReleaseMutex.
 //
-static DWORD ReleaseMutex(__COMMON_OBJECT* lpThis)
+static
+DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread   = NULL;
 	__MUTEX*                    lpMutex          = NULL;
@@ -648,7 +656,7 @@ BOOL MutexInitialize(__COMMON_OBJECT* lpThis)
 	lpMutex->lpWaitingQueue    = lpQueue;
 	lpMutex->WaitForThisObject = WaitForMutexObject;
 	lpMutex->dwWaitingNum      = 0;
-	lpMutex->ReleaseMutex      = ReleaseMutex;
+	lpMutex->ReleaseMutex      = kReleaseMutex;
 	lpMutex->WaitForThisObjectEx = WaitForMutexObjectEx;
 	lpMutex->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
 	bResult = TRUE;    //Successful to initialize the mutex object.

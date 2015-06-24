@@ -24,15 +24,18 @@
 #include <StdAfx.h>
 #endif
 
-#include "../include/statcpu.h"
+#include "statcpu.h"
+#include "modmgr.h"
+#include "console.h"
+#include "lwip/tcpip.h"
+#include "stdio.h"
+#include "buffmgr.h"
+
 #include "../shell/shell.h"
 #include "../shell/stat_s.h"
 #include "../kthread/idle.h"
-#include "../include/modmgr.h"
-#include "../include/console.h"
-#include "lwip/tcpip.h"
 #include "../network/ethernet/ethif.h"
-#include "../lib/stdio.h"
+
 
 #ifdef __I386__
 #include "../arch/x86/biosvga.h"
@@ -85,6 +88,7 @@ extern DWORD _HCNMain(LPVOID);
 
 void __OS_Entry()
 {
+
 	__KERNEL_THREAD_OBJECT*       lpIdleThread     = NULL;
 	__KERNEL_THREAD_OBJECT*       lpShellThread    = NULL;
 #ifdef __CFG_USE_EOS
@@ -93,6 +97,7 @@ void __OS_Entry()
 	DWORD                         dwIndex          = 0;
 	CHAR                          strInfo[64];
 	char*                         pszErrorMsg      = "INIT: OK,everything is done.";
+
 
 	//Initialize display device under PC architecture,since the rest output will rely on this.
 #ifdef __I386__
@@ -122,6 +127,7 @@ void __OS_Entry()
 
 	//Initialize memory management object.This object must be initialized before any other
 	//system level objects since it's function maybe required by them.
+
 	if(!AnySizeBuffer.Initialize(&AnySizeBuffer))
 	{
 		pszErrorMsg = "INIT ERROR: Failed to initialize AnySizeBuffer object.";

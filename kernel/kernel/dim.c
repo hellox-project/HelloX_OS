@@ -18,7 +18,8 @@
 #include "commobj.h"
 #include "dim.h"
 #include "types.h"
-
+#include "hellocn.h"
+#include "kapi.h"
 //
 //The implementation of Initialize routine.
 //

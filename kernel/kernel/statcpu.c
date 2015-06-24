@@ -19,7 +19,8 @@
 
 #include "statcpu.h"
 #include "stdio.h"
-
+#include "hellocn.h"
+#include "kapi.h"
 
 
 

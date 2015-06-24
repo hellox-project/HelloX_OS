@@ -42,25 +42,6 @@
 static __DRIVER_OBJECT*    g_Fat32Driver  = NULL;
 static __DEVICE_OBJECT*    g_Fat32Object  = NULL;
 
-//A helper routine used to convert a string from lowercase to capital.
-//The string should be terminated by a zero,i.e,a C string.
-//static
-VOID ToCapital(LPSTR lpszString)
-{
-	int nIndex = 0;
-
-	if(NULL == lpszString)
-	{
-		return;
-	}
-	while(lpszString[nIndex++])
-	{
-		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
-		{
-			lpszString[nIndex] += 'A' - 'a';
-		}
-	}
-}
 
 //A helper routine to dump out a FAT32 file system's global information.
 static VOID DumpFat32(__FAT32_FS* pFat32Fs)

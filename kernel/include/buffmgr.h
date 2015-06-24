@@ -16,9 +16,9 @@
 #ifndef __BUFFMGR_H__
 #define __BUFFMGR_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 //
 //Basic concepts:
@@ -74,7 +74,7 @@ typedef struct tag__BUFFER_CONTROL_BLOCK{
 	DWORD    (*GetBufferFlag)(struct tag__BUFFER_CONTROL_BLOCK*,LPVOID);
 	BOOL     (*SetBufferFlag)(struct tag__BUFFER_CONTROL_BLOCK*,LPVOID,DWORD);
 	VOID     (*DestroyBuffer)(struct tag__BUFFER_CONTROL_BLOCK*);
-}__BUFFER_CONTROL_BLOCK;
+} __BUFFER_CONTROL_BLOCK;
 
 //
 //Free buffer's control header.
@@ -110,10 +110,14 @@ typedef struct{
 //Global object for memory management.Memory allocations routine,such as
 //KMemAlloc or KMemFree will call this object's member functions to achieve
 //memory management.
-extern __BUFFER_CONTROL_BLOCK AnySizeBuffer;
 
-#ifdef __cplusplus
-}
-#endif
+
+extern __BUFFER_CONTROL_BLOCK AnySizeBuffer;
+//typedef __BUFFER_CONTROL_BLOCK AnySizeBuffer;
+
+
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif //End of buffmgr.h

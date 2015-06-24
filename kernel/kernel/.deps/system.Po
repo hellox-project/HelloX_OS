@@ -6,7 +6,12 @@ system.o: system.c /usr/include/stdc-predef.h \
  ../../kernel/include/comqueue.h ../../kernel/include/kmemmgr.h \
  ../../kernel/include/types.h ../../kernel/include/syscall.h \
  ../../kernel/include/iomgr.h ../../kernel/lib/stdio.h \
- ../../kernel/include/ktmsg.h ../arch/x86/bios.h
+ ../../kernel/include/ktmsg.h ../../kernel/include/hellocn.h \
+ ../../kernel/include/kapi.h ../../kernel/include/../arch/x86/syn_mech.h \
+ ../../kernel/include/ringbuff.h ../../kernel/include/dim.h \
+ ../../kernel/include/memmgr.h ../../kernel/include/pageidx.h \
+ ../../kernel/include/vmm.h ../../kernel/include/../arch/x86/arch.h \
+ ../../kernel/include/../include/debug.h ../arch/x86/bios.h
 
 /usr/include/stdc-predef.h:
 
@@ -39,5 +44,25 @@ system.o: system.c /usr/include/stdc-predef.h \
 ../../kernel/lib/stdio.h:
 
 ../../kernel/include/ktmsg.h:
+
+../../kernel/include/hellocn.h:
+
+../../kernel/include/kapi.h:
+
+../../kernel/include/../arch/x86/syn_mech.h:
+
+../../kernel/include/ringbuff.h:
+
+../../kernel/include/dim.h:
+
+../../kernel/include/memmgr.h:
+
+../../kernel/include/pageidx.h:
+
+../../kernel/include/vmm.h:
+
+../../kernel/include/../arch/x86/arch.h:
+
+../../kernel/include/../include/debug.h:
 
 ../arch/x86/bios.h:

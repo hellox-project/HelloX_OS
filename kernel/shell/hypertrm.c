@@ -19,8 +19,8 @@
 #include "shell.h"
 #include "hypertrm.h"
 
-#include "../include/kapi.h"
-#include "../lib/stdio.h"
+#include "kapi.h"
+#include "stdio.h"
 
 /*------------------------------------------------------------------------
     The poll mode COM IO application,named HYPERTRM.

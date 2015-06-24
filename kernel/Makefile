@@ -80,8 +80,7 @@ build_triplet = x86_64-unknown-linux-gnu
 host_triplet = x86_64-unknown-linux-gnu
 bin_PROGRAMS = hellox_kerel$(EXEEXT)
 subdir = kernel
-DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(top_srcdir)/depcomp
+DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -92,16 +91,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__dirstamp = $(am__leading_dot)dirstamp
-am_hellox_kerel_OBJECTS = osentry/hellox_kerel-drventry.$(OBJEXT) \
-	osentry/hellox_kerel-mem_scat.$(OBJEXT) \
-	osentry/hellox_kerel-os_entry.$(OBJEXT)
+am_hellox_kerel_OBJECTS =
 hellox_kerel_OBJECTS = $(am_hellox_kerel_OBJECTS)
 hellox_kerel_DEPENDENCIES = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+hellox_kerel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(hellox_kerel_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
 am__v_P_0 = false
@@ -115,9 +114,6 @@ am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 = 
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
-depcomp = $(SHELL) $(top_srcdir)/depcomp
-am__depfiles_maybe = depfiles
-am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -288,6 +284,7 @@ am__leading_dot = .
 am__quote = 
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
+arch = i386
 bindir = ${exec_prefix}/bin
 build = x86_64-unknown-linux-gnu
 build_alias = 
@@ -316,6 +313,7 @@ localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
+os = HelloX
 pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
@@ -331,23 +329,25 @@ top_srcdir = ..
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = kernel kapi kthread network shell drivers/x86 lib osentry fs
-HX_FLAGS = -D_POSIX_ -D_TIME_T_DEFINED -D_M_IX86 -nostdlib -nostdinc \
-	-m32 $(HX_INCLUDES) -Wall
 HX_INCLUDES = -I$(top_srcdir)/kernel/include \
 	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys \
 	-I$(top_srcdir)/kernel/lib
-LDADD = ./lib/libhellolib.a ./drivers/x86/libdrivers.a \
-	./shell/libshell.a ./network/libnetwork.a \
-	./kthread/libkthread.a ./arch/x86/libarch.a ./fs/libfs.a \
-	./kernel/libkernel.a ./kapi/libkapi.a
+HX_FLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D_TIME_T_DEFINED \
+	-D_M_IX86 $(HX_INCLUDES) -Wall
+HXLDFLAGS = -nostdlib -nostdinc -m32 -e__OS_Entry $(HX_FLAGS)
+LDADD = ./osentry/libosentry.a ./lib/libhellolib.a \
+	./drivers/x86/libdrivers.a ./shell/libshell.a \
+	./network/libnetwork.a ./kthread/libkthread.a \
+	./arch/x86/libarch.a ./fs/libfs.a ./kernel/libkernel.a \
+	./kapi/libkapi.a
 AM_CPPFLAGS = $(HX_FLAGS)
-hellox_kerel_SOURCES = osentry/drventry.c	osentry/mem_scat.c osentry/os_entry.c
-hellox_kerel_CPPFLAGS = $(AM_CPPFLAGS)
+hellox_kerel_SOURCES = 
+#hellox_kerel_CPPFLAGS = $(AM_CPPFLAGS)
+hellox_kerel_LDFLAGS = $(HXLDFLAGS)
 hellox_kerel_LDADD = $(LDADD)
 all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -427,99 +427,16 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-osentry/$(am__dirstamp):
-	@$(MKDIR_P) osentry
-	@: > osentry/$(am__dirstamp)
-osentry/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) osentry/$(DEPDIR)
-	@: > osentry/$(DEPDIR)/$(am__dirstamp)
-osentry/hellox_kerel-drventry.$(OBJEXT): osentry/$(am__dirstamp) \
-	osentry/$(DEPDIR)/$(am__dirstamp)
-osentry/hellox_kerel-mem_scat.$(OBJEXT): osentry/$(am__dirstamp) \
-	osentry/$(DEPDIR)/$(am__dirstamp)
-osentry/hellox_kerel-os_entry.$(OBJEXT): osentry/$(am__dirstamp) \
-	osentry/$(DEPDIR)/$(am__dirstamp)
 
 hellox_kerel$(EXEEXT): $(hellox_kerel_OBJECTS) $(hellox_kerel_DEPENDENCIES) $(EXTRA_hellox_kerel_DEPENDENCIES) 
 	@rm -f hellox_kerel$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(hellox_kerel_OBJECTS) $(hellox_kerel_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(hellox_kerel_LINK) $(hellox_kerel_OBJECTS) $(hellox_kerel_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f osentry/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
-
-include osentry/$(DEPDIR)/hellox_kerel-drventry.Po
-include osentry/$(DEPDIR)/hellox_kerel-mem_scat.Po
-include osentry/$(DEPDIR)/hellox_kerel-os_entry.Po
-
-.c.o:
-	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-	$(am__mv) $$depbase.Tpo $$depbase.Po
-#	$(AM_V_CC)source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-	$(am__mv) $$depbase.Tpo $$depbase.Po
-#	$(AM_V_CC)source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.lo:
-	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-	$(am__mv) $$depbase.Tpo $$depbase.Plo
-#	$(AM_V_CC)source='$<' object='$@' libtool=yes \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(LTCOMPILE) -c -o $@ $<
-
-osentry/hellox_kerel-drventry.o: osentry/drventry.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT osentry/hellox_kerel-drventry.o -MD -MP -MF osentry/$(DEPDIR)/hellox_kerel-drventry.Tpo -c -o osentry/hellox_kerel-drventry.o `test -f 'osentry/drventry.c' || echo '$(srcdir)/'`osentry/drventry.c
-	$(AM_V_at)$(am__mv) osentry/$(DEPDIR)/hellox_kerel-drventry.Tpo osentry/$(DEPDIR)/hellox_kerel-drventry.Po
-#	$(AM_V_CC)source='osentry/drventry.c' object='osentry/hellox_kerel-drventry.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o osentry/hellox_kerel-drventry.o `test -f 'osentry/drventry.c' || echo '$(srcdir)/'`osentry/drventry.c
-
-osentry/hellox_kerel-drventry.obj: osentry/drventry.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT osentry/hellox_kerel-drventry.obj -MD -MP -MF osentry/$(DEPDIR)/hellox_kerel-drventry.Tpo -c -o osentry/hellox_kerel-drventry.obj `if test -f 'osentry/drventry.c'; then $(CYGPATH_W) 'osentry/drventry.c'; else $(CYGPATH_W) '$(srcdir)/osentry/drventry.c'; fi`
-	$(AM_V_at)$(am__mv) osentry/$(DEPDIR)/hellox_kerel-drventry.Tpo osentry/$(DEPDIR)/hellox_kerel-drventry.Po
-#	$(AM_V_CC)source='osentry/drventry.c' object='osentry/hellox_kerel-drventry.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o osentry/hellox_kerel-drventry.obj `if test -f 'osentry/drventry.c'; then $(CYGPATH_W) 'osentry/drventry.c'; else $(CYGPATH_W) '$(srcdir)/osentry/drventry.c'; fi`
-
-osentry/hellox_kerel-mem_scat.o: osentry/mem_scat.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT osentry/hellox_kerel-mem_scat.o -MD -MP -MF osentry/$(DEPDIR)/hellox_kerel-mem_scat.Tpo -c -o osentry/hellox_kerel-mem_scat.o `test -f 'osentry/mem_scat.c' || echo '$(srcdir)/'`osentry/mem_scat.c
-	$(AM_V_at)$(am__mv) osentry/$(DEPDIR)/hellox_kerel-mem_scat.Tpo osentry/$(DEPDIR)/hellox_kerel-mem_scat.Po
-#	$(AM_V_CC)source='osentry/mem_scat.c' object='osentry/hellox_kerel-mem_scat.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o osentry/hellox_kerel-mem_scat.o `test -f 'osentry/mem_scat.c' || echo '$(srcdir)/'`osentry/mem_scat.c
-
-osentry/hellox_kerel-mem_scat.obj: osentry/mem_scat.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT osentry/hellox_kerel-mem_scat.obj -MD -MP -MF osentry/$(DEPDIR)/hellox_kerel-mem_scat.Tpo -c -o osentry/hellox_kerel-mem_scat.obj `if test -f 'osentry/mem_scat.c'; then $(CYGPATH_W) 'osentry/mem_scat.c'; else $(CYGPATH_W) '$(srcdir)/osentry/mem_scat.c'; fi`
-	$(AM_V_at)$(am__mv) osentry/$(DEPDIR)/hellox_kerel-mem_scat.Tpo osentry/$(DEPDIR)/hellox_kerel-mem_scat.Po
-#	$(AM_V_CC)source='osentry/mem_scat.c' object='osentry/hellox_kerel-mem_scat.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o osentry/hellox_kerel-mem_scat.obj `if test -f 'osentry/mem_scat.c'; then $(CYGPATH_W) 'osentry/mem_scat.c'; else $(CYGPATH_W) '$(srcdir)/osentry/mem_scat.c'; fi`
-
-osentry/hellox_kerel-os_entry.o: osentry/os_entry.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT osentry/hellox_kerel-os_entry.o -MD -MP -MF osentry/$(DEPDIR)/hellox_kerel-os_entry.Tpo -c -o osentry/hellox_kerel-os_entry.o `test -f 'osentry/os_entry.c' || echo '$(srcdir)/'`osentry/os_entry.c
-	$(AM_V_at)$(am__mv) osentry/$(DEPDIR)/hellox_kerel-os_entry.Tpo osentry/$(DEPDIR)/hellox_kerel-os_entry.Po
-#	$(AM_V_CC)source='osentry/os_entry.c' object='osentry/hellox_kerel-os_entry.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o osentry/hellox_kerel-os_entry.o `test -f 'osentry/os_entry.c' || echo '$(srcdir)/'`osentry/os_entry.c
-
-osentry/hellox_kerel-os_entry.obj: osentry/os_entry.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT osentry/hellox_kerel-os_entry.obj -MD -MP -MF osentry/$(DEPDIR)/hellox_kerel-os_entry.Tpo -c -o osentry/hellox_kerel-os_entry.obj `if test -f 'osentry/os_entry.c'; then $(CYGPATH_W) 'osentry/os_entry.c'; else $(CYGPATH_W) '$(srcdir)/osentry/os_entry.c'; fi`
-	$(AM_V_at)$(am__mv) osentry/$(DEPDIR)/hellox_kerel-os_entry.Tpo osentry/$(DEPDIR)/hellox_kerel-os_entry.Po
-#	$(AM_V_CC)source='osentry/os_entry.c' object='osentry/hellox_kerel-os_entry.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hellox_kerel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o osentry/hellox_kerel-os_entry.obj `if test -f 'osentry/os_entry.c'; then $(CYGPATH_W) 'osentry/os_entry.c'; else $(CYGPATH_W) '$(srcdir)/osentry/os_entry.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -715,8 +632,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f osentry/$(DEPDIR)/$(am__dirstamp)
-	-rm -f osentry/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -726,7 +641,6 @@ clean: clean-recursive
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf osentry/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -772,7 +686,6 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf osentry/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

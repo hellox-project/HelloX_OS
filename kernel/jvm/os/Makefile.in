@@ -250,6 +250,7 @@ am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+arch = @arch@
 bindir = @bindir@
 build = @build@
 build_alias = @build_alias@
@@ -278,6 +279,7 @@ localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
+os = @os@
 pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -291,7 +293,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = @os@
-DIST_SUBDIRS = linux darwin bsd solaris
+DIST_SUBDIRS = linux darwin bsd solaris HelloX
 all: all-recursive
 
 .SUFFIXES:

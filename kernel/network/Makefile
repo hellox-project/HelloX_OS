@@ -268,6 +268,7 @@ am__leading_dot = .
 am__quote = 
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
+arch = i386
 bindir = ${exec_prefix}/bin
 build = x86_64-unknown-linux-gnu
 build_alias = 
@@ -296,6 +297,7 @@ localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
+os = HelloX
 pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
@@ -348,9 +350,12 @@ libnetwork_a_SOURCES = ./netif/ethernetif.c \
 ./api/sockets.c                              \
 ./api/netifapi.c                             \
 ./ethernet/ethentry.c                        \
-./ethernet/ethif.c                           
+./ethernet/ethif.c
 
-AM_CPPFLAGS = -nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+AM_CPPFLAGS = -nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include \
+	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib \
+	-I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86 \
+	-DMEM_LIBC_MALLOC
 all: all-am
 
 .SUFFIXES:

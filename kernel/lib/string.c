@@ -331,24 +331,6 @@ INT FormString(LPSTR lpszBuff,LPSTR lpszFmt,LPVOID* lppParam)
 	return (lpszTmp - lpszBuff);
 }
 
-//A helper routine used to convert a string from lowercase to capital.
-//The string should be terminated by a zero,i.e,a C string.
-VOID ToCapital(LPSTR lpszString)
-{
-	int nIndex = 0;
-
-	if(NULL == lpszString)
-	{
-		return;
-	}
-	while(lpszString[nIndex++])
-	{
-		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
-		{
-			lpszString[nIndex] += 'A' - 'a';
-		}
-	}
-}
 
 //string comparation code.
 int strcmp (
@@ -426,7 +408,7 @@ void strtrim(char * dst,int flag)
 			i   ++;
 		}
 
-		//È«ÊÇ¿Õ¸ñ
+		//È«ï¿½Ç¿Õ¸ï¿½
 		if(len == i)
 		{
 			dst[0] = 0;
@@ -545,10 +527,10 @@ int strtol(const char *nptr, char **endptr, int base)
    int sign = 0, flag, LimitRemainder;
   
    /*
-      Ìø¹ýÇ°Ãæ¶àÓàµÄ¿Õ¸ñ£¬²¢ÅÐ¶ÏÕý¸º·ûºÅ¡£
-      Èç¹ûbaseÊÇ0£¬ÔÊÐíÒÔ0x¿ªÍ·µÄÊ®Áù½øÖÆÊý£¬
-      ÒÔ0¿ªÍ·µÄ8½øÖÆÊý¡£
-      Èç¹ûbaseÊÇ16£¬ÔòÍ¬Ê±Ò²ÔÊÐíÒÔ0x¿ªÍ·¡£
+      ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Õ¸ñ£¬²ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å¡ï¿½
+      ï¿½ï¿½ï¿½baseï¿½ï¿½0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0xï¿½ï¿½Í·ï¿½ï¿½Ê®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+      ï¿½ï¿½0ï¿½ï¿½Í·ï¿½ï¿½8ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+      ï¿½ï¿½ï¿½baseï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½Í¬Ê±Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0xï¿½ï¿½Í·ï¿½ï¿½
  
    */
    do
@@ -579,7 +561,7 @@ int strtol(const char *nptr, char **endptr, int base)
  
    for (ret = 0, flag = 0;; ch = *p++)
    {
-      /*°Ñµ±Ç°×Ö·û×ª»»ÎªÏàÓ¦ÔËËãÖÐÐèÒªµÄÖµ¡£*/
+      /*ï¿½Ñµï¿½Ç°ï¿½Ö·ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Öµï¿½ï¿½*/
       if (isdigit(ch))
         ch -= '0';
       else if (isalpha(ch))
@@ -589,7 +571,7 @@ int strtol(const char *nptr, char **endptr, int base)
       if (ch >= base)
         break;
  
-      /*Èç¹û²úÉúÒç³ö£¬ÔòÖÃ±êÖ¾Î»£¬ÒÔºó²»ÔÙ×ö¼ÆËã¡£*/
+      /*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã±ï¿½Ö¾Î»ï¿½ï¿½ï¿½Ôºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã¡£*/
       if (flag < 0 || ret > Overflow || (ret == Overflow && ch > LimitRemainder))
         flag = -1;
       else
@@ -601,8 +583,8 @@ int strtol(const char *nptr, char **endptr, int base)
    }
  
    /*
-      Èç¹ûÒç³ö£¬Ôò·µ»ØÏàÓ¦µÄOverflowµÄ·åÖµ¡£
-      Ã»ÓÐÒç³ö£¬ÈçÊÇ·ûºÅÎ»Îª¸º£¬Ôò×ª»»Îª¸ºÊý¡£
+      ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½Overflowï¿½Ä·ï¿½Öµï¿½ï¿½
+      Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Î»Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
    */
    if (flag < 0)
       ret = sign ? LONG_MIN : LONG_MAX;
@@ -610,8 +592,8 @@ int strtol(const char *nptr, char **endptr, int base)
       ret = -ret;
   
    /*
-      Èç×Ö·û´®²»Îª¿Õ£¬Ôò*endptrµÈÓÚÖ¸Ïònptr½áÊø
-      ·ûµÄÖ¸ÕëÖµ£»·ñÔò*endptrµÈÓÚnptrµÄÊ×µØÖ·¡£
+      ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Õ£ï¿½ï¿½ï¿½*endptrï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½nptrï¿½ï¿½ï¿½ï¿½
+      ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*endptrï¿½ï¿½ï¿½ï¿½nptrï¿½ï¿½ï¿½×µï¿½Ö·ï¿½ï¿½
    */
    if (endptr != 0)
       *endptr = (char *)(flag ?(p - 1) : nptr);

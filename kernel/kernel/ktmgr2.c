@@ -26,7 +26,8 @@
 #endif
 
 #include "ktmgr2.h"
-
+#include "hellocn.h"
+#include "kapi.h"
 
 
 //A helper routine,to check if a given kernel thread should be suspended.

@@ -1,0 +1,3 @@
+os_init.lo: os_init.c /usr/include/stdc-predef.h
+
+/usr/include/stdc-predef.h:

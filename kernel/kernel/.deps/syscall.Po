@@ -13,7 +13,7 @@ syscall.o: syscall.c /usr/include/stdc-predef.h \
  ../../kernel/include/../arch/x86/arch.h \
  ../../kernel/include/../include/debug.h ../../kernel/include/modmgr.h \
  ../../kernel/lib/stdio.h ../../kernel/include/devmgr.h \
- ../arch/x86/bios.h
+ ../../kernel/include/iomgr.h ../arch/x86/bios.h
 
 /usr/include/stdc-predef.h:
 
@@ -66,5 +66,7 @@ syscall.o: syscall.c /usr/include/stdc-predef.h \
 ../../kernel/lib/stdio.h:
 
 ../../kernel/include/devmgr.h:
+
+../../kernel/include/iomgr.h:
 
 ../arch/x86/bios.h:

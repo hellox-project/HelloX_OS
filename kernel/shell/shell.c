@@ -25,6 +25,8 @@
 #include "console.h"
 #include "stdio.h"
 #include "string.h"
+#include <buffmgr.h>
+
 
 #if defined(__I386__)
 #ifndef __BIOS_H__
@@ -409,10 +411,10 @@ DWORD FileModifyTest(__CMD_PARA_OBJ* pCmdParaObj)
 		return S_OK;
 	}
 
-	//ÒÆ¶¯ÎÄ¼þ
+	//ï¿½Æ¶ï¿½ï¿½Ä¼ï¿½
 	SetFilePointer(hFileObj,&dwFilePos,&dwFilePos,FILE_FROM_CURRENT);
 
-	//½Ø¶Ï
+	//ï¿½Ø¶ï¿½
 	SetEndOfFile(hFileObj);
 
 	CloseFile(hFileObj);
@@ -453,7 +455,7 @@ DWORD FileWriteTest(__CMD_PARA_OBJ* pCmdParaObj)
 		return S_OK;
 	}
 
-	//ÒÆ¶¯µ½ÎÄ¼þÎ²
+	//ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Î²
 	SetFilePointer(hFileObj,&dwFilePos,&dwFilePos,FILE_FROM_END);
 
 	//	_hx_printf("start write \r\n");

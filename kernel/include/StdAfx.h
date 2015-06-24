@@ -36,10 +36,6 @@
 #include "types.h"
 #endif
 
-#ifndef __HELLO_CHINA__
-#include "hellocn.h"
-#endif
-
 #ifndef __STRING__
 #include "../lib/string.h"    //Different folder.
 #endif

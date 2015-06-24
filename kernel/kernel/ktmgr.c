@@ -1015,7 +1015,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 
 //SetThreadPriority.
 //static
- DWORD SetThreadPriority(__COMMON_OBJECT* lpKernelThread,DWORD dwPriority)
+ DWORD kSetThreadPriority(__COMMON_OBJECT* lpKernelThread,DWORD dwPriority)
 {
 	__KERNEL_THREAD_OBJECT*    lpThread = NULL;
 	DWORD                      dwOldPri = PRIORITY_LEVEL_IDLE;
@@ -1153,7 +1153,7 @@ static
 
 //SetLastError.
 //static
-DWORD SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError)
+DWORD _SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError)
 {
 	DWORD  dwOldError = 0;
 
@@ -1164,14 +1164,14 @@ DWORD SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError)
 
 //GetLastError.
 //static
-DWORD GetLastError(/*__COMMON_OBJECT* lpKernelThread*/)
+DWORD _GetLastError(/*__COMMON_OBJECT* lpKernelThread*/)
 {
 	return KernelThreadManager.lpCurrentKernelThread->dwLastError;
 }
 
-//GetThreadID.
+//kGetThreadID.
 //static
-DWORD GetThreadID(__COMMON_OBJECT* lpKernelThread)
+DWORD kGetThreadID(__COMMON_OBJECT* lpKernelThread)
 {
 	if(NULL == lpKernelThread)  //Return current kernel thread's ID.
 	{

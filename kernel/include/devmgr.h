@@ -16,9 +16,6 @@
 #ifndef __DEVMGR_H__
 #define __DEVMGR_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define MAX_BUS_NUM        16    //The maximal bus number supported by Hello China currently.
 #define MAX_RESOURCE_NUM    7    //Maximal resource records one device can have.
@@ -178,9 +175,5 @@ typedef struct tag__DEVICE_MANAGER{
 //
 
 extern __DEVICE_MANAGER DeviceManager;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //__DEVMGR_H__

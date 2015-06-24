@@ -22,7 +22,7 @@
 #include "stdio.h"
 //devmgr.h
 #include "devmgr.h"
-
+#include "iomgr.h"
 
 #ifdef __I386__
 #include "../arch/x86/bios.h"

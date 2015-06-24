@@ -8,17 +8,9 @@
  */
 #ifdef 	_POSIX_
 typedef long long	 __int64;
-typedef	 __int64	 time_t;
 #endif
 
-#ifndef _TIME_T_DEFINED
-#define _TIME_T_DEFINED
-
 typedef	 __int64	 time_t;
-
-#endif
-
-
 typedef	 __int64     clock_t;
 typedef  __int64   __time64_t;
 

@@ -7,7 +7,11 @@ AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign subdir-objects])
 AC_CONFIG_SRCDIR([gui/CTRL/bmpbtn.cpp])
 AC_CONFIG_HEADERS([config.h])
 
+AC_USE_SYSTEM_EXTENSIONS
+
+
 # AUTOMAKE_OPTIONS([subdir-objects])
+
 
 # Checks for programs.
 AC_PROG_CXX
@@ -20,12 +24,17 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AM_CONDITIONAL([COMPILE_TIME_RELOC_CHECKS],[AC_COMPILE_IFELSE], [true])
 
+os=HelloX
+arch=i386
 
-AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+AC_SUBST(os)
+AC_SUBST(arch)
+
+##AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
 CFLAGS==-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
-# AC_USE_SYSTEM_EXTENSIONS
+
 # Checks for libraries.
 
 # Checks for header files.
@@ -58,44 +67,47 @@ AC_FUNC_STRERROR_R
 AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([dup2 floor getcwd getpagesize gettimeofday inet_ntoa memchr memmove memset mkdir modf munmap rmdir setlocale strchr strrchr strstr strtol strtoumax uname])
 
-AC_CONFIG_FILES([kernel/jvm/Makefile
-                 kernel/jvm/arch/Makefile
-                 kernel/jvm/interp/Makefile
-                 kernel/jvm/interp/engine/Makefile
-                 kernel/jvm/lib/Makefile
-                 kernel/jvm/lib/gnu/Makefile
-                 kernel/jvm/lib/gnu/classpath/Makefile
-                 kernel/jvm/lib/jamvm/Makefile
-                 kernel/jvm/lib/jamvm/java/Makefile
-                 kernel/jvm/lib/jamvm/java/lang/Makefile
-                 kernel/jvm/lib/java/Makefile
-                 kernel/jvm/lib/java/lang/Makefile
-                 kernel/jvm/lib/java/lang/reflect/Makefile
-                 kernel/jvm/lib/java/security/Makefile
-                 kernel/jvm/lib/sun/Makefile
-                 kernel/jvm/lib/sun/reflect/Makefile
-                 kernel/jvm/lib/sun/reflect/annotation/Makefile
-                 kernel/jvm/os/Makefile
-                 kernel/jvm/os/bsd/Makefile
-                 kernel/jvm/os/bsd/arm/Makefile
-                 kernel/jvm/os/bsd/i386/Makefile
-                 kernel/jvm/os/bsd/powerpc/Makefile
-                 kernel/jvm/os/bsd/sparc/Makefile
-                 kernel/jvm/os/bsd/x86_64/Makefile
-                 kernel/jvm/os/darwin/Makefile
-                 kernel/jvm/os/darwin/arm/Makefile
-                 kernel/jvm/os/darwin/i386/Makefile
-                 kernel/jvm/os/darwin/powerpc/Makefile
-                 kernel/jvm/os/linux/Makefile
-                 kernel/jvm/os/linux/arm/Makefile
-                 kernel/jvm/os/linux/i386/Makefile
-                 kernel/jvm/os/linux/mips/Makefile
-                 kernel/jvm/os/linux/parisc/Makefile
-                 kernel/jvm/os/linux/powerpc/Makefile
-                 kernel/jvm/os/linux/x86_64/Makefile
-                 kernel/jvm/os/solaris/Makefile
-                 kernel/jvm/os/solaris/x86/Makefile
-                 kernel/kernel/Makefile
+				#kernel/jvm/Makefile
+                 #kernel/jvm/arch/Makefile
+                 #kernel/jvm/interp/Makefile
+                 #kernel/jvm/interp/engine/Makefile
+                 #kernel/jvm/lib/Makefile
+                 #kernel/jvm/lib/gnu/Makefile
+                 #kernel/jvm/lib/gnu/classpath/Makefile
+                 #kernel/jvm/lib/jamvm/Makefile
+                 #kernel/jvm/lib/jamvm/java/Makefile
+                 #kernel/jvm/lib/jamvm/java/lang/Makefile
+                 #kernel/jvm/lib/java/Makefile
+                 #kernel/jvm/lib/java/lang/Makefile
+                 #kernel/jvm/lib/java/lang/reflect/Makefile
+                 #kernel/jvm/lib/java/security/Makefile
+                 #kernel/jvm/lib/sun/Makefile
+                 #kernel/jvm/lib/sun/reflect/Makefile
+                 #kernel/jvm/lib/sun/reflect/annotation/Makefile
+                 #kernel/jvm/os/Makefile
+                 #kernel/jvm/os/bsd/Makefile
+                 #kernel/jvm/os/bsd/arm/Makefile
+                 #kernel/jvm/os/bsd/i386/Makefile
+                 #kernel/jvm/os/bsd/powerpc/Makefile
+                 #kernel/jvm/os/bsd/sparc/Makefile
+                 #kernel/jvm/os/bsd/x86_64/Makefile
+                 #kernel/jvm/os/darwin/Makefile
+                 #kernel/jvm/os/darwin/arm/Makefile
+                 #kernel/jvm/os/darwin/i386/Makefile
+                 #kernel/jvm/os/darwin/powerpc/Makefile
+                 #kernel/jvm/os/linux/Makefile
+                 #kernel/jvm/os/linux/arm/Makefile
+                 #kernel/jvm/os/linux/i386/Makefile
+                 #kernel/jvm/os/linux/mips/Makefile
+                 #kernel/jvm/os/linux/parisc/Makefile
+                 #kernel/jvm/os/linux/powerpc/Makefile
+                 #kernel/jvm/os/linux/x86_64/Makefile
+                 #kernel/jvm/os/solaris/Makefile
+                 #kernel/jvm/os/solaris/x86/Makefile
+                 #kernel/jvm/os/HelloX/Makefile
+                 #kernel/jvm/os/HelloX/i386/Makefile
+                 
+AC_CONFIG_FILES([kernel/kernel/Makefile
                  kernel/fs/Makefile
                  kernel/kapi/Makefile
                  kernel/drivers/x86/Makefile

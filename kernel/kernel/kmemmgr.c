@@ -18,7 +18,7 @@
 #endif
 #include <types.h>
 #include <kmemmgr.h>
-#include <buffmgr.h>
+#include "buffmgr.h"
 #include "types.h"
 #include "ktmgr.h"
 #include <../config/config.h>

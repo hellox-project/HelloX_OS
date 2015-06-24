@@ -1,12 +1,12 @@
 hedit.o: hedit.c ../include/StdAfx.h ../include/../config/config.h \
- ../include/types.h ../include/hellocn.h ../include/../lib/string.h \
+ ../include/types.h ../include/../lib/string.h \
  ../../kernel/include/types.h ../include/perf.h ../include/commobj.h \
  ../include/../arch/x86/syn_mech.h ../include/objqueue.h \
  ../include/ktmgr.h ../include/ktmgr2.h ../include/comqueue.h \
  ../include/kmemmgr.h ../include/process.h ../include/kapi.h \
- ../include/ringbuff.h ../include/system.h ../include/dim.h \
- ../include/memmgr.h ../include/pageidx.h ../include/vmm.h \
- ../include/../arch/x86/arch.h ../include/iomgr.h \
+ ../include/hellocn.h ../include/ringbuff.h ../include/system.h \
+ ../include/dim.h ../include/memmgr.h ../include/pageidx.h \
+ ../include/vmm.h ../include/../arch/x86/arch.h ../include/iomgr.h \
  ../include/../include/debug.h ../include/syscall.h ../include/devmgr.h \
  ../include/mailbox.h ../include/heap.h ../include/buffmgr.h \
  ../include/ktmsg.h ../include/sysnet.h ../include/globvar.h \
@@ -17,8 +17,6 @@ hedit.o: hedit.c ../include/StdAfx.h ../include/../config/config.h \
 ../include/../config/config.h:
 
 ../include/types.h:
-
-../include/hellocn.h:
 
 ../include/../lib/string.h:
 
@@ -43,6 +41,8 @@ hedit.o: hedit.c ../include/StdAfx.h ../include/../config/config.h \
 ../include/process.h:
 
 ../include/kapi.h:
+
+../include/hellocn.h:
 
 ../include/ringbuff.h:
 

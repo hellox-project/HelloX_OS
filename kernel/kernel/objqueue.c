@@ -22,6 +22,9 @@
 #include "commobj.h"
 #include "kmemmgr.h"
 #include "objqueue.h"
+#include "hellocn.h"
+#include "kapi.h"
+
 //
 //Insert an element into Priority Queue.
 //This routine insert an common object into priority queue,it's position in the queue is

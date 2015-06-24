@@ -12,7 +12,8 @@ objmgr.o: objmgr.c /usr/include/stdc-predef.h \
  ../../kernel/include/memmgr.h ../../kernel/include/pageidx.h \
  ../../kernel/include/vmm.h ../../kernel/include/../arch/x86/arch.h \
  ../../kernel/include/iomgr.h ../../kernel/include/../include/debug.h \
- ../../kernel/include/syscall.h ../../kernel/include/kmemmgr.h
+ ../../kernel/include/syscall.h ../../kernel/include/kmemmgr.h \
+ ../../kernel/include/iomgr.h
 
 /usr/include/stdc-predef.h:
 
@@ -69,3 +70,5 @@ objmgr.o: objmgr.c /usr/include/stdc-predef.h \
 ../../kernel/include/syscall.h:
 
 ../../kernel/include/kmemmgr.h:
+
+../../kernel/include/iomgr.h:

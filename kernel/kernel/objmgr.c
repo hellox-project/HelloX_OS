@@ -21,6 +21,7 @@
 #include <../config/config.h>
 #include "process.h"
 #include "kmemmgr.h"
+#include "iomgr.h"
 //
 //The following array is used by Object Manager to create object.
 //Once a new object type is defined,you must add one line in the
