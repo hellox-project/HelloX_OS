@@ -1,16 +1,13 @@
-chardisplay.o: chardisplay.c /usr/include/stdc-predef.h ../include/kapi.h \
- ../include/types.h ../include/../config/config.h ../include/hellocn.h \
- ../include/commobj.h ../include/../arch/x86/syn_mech.h \
- ../include/comqueue.h ../include/kmemmgr.h ../include/objqueue.h \
- ../include/ktmgr.h ../include/ktmgr2.h ../include/perf.h \
- ../include/ringbuff.h ../include/system.h ../include/dim.h \
- ../include/memmgr.h ../include/pageidx.h ../include/vmm.h \
- ../include/../arch/x86/arch.h ../include/iomgr.h \
- ../include/../include/debug.h ../include/console.h ../include/ktmsg.h \
- ../include/process.h ../include/kapi.h ../include/syscall.h \
- ../include/chardisplay.h ../arch/x86/biosvga.h
-
-/usr/include/stdc-predef.h:
+chardisplay.o: chardisplay.c ../include/kapi.h ../include/types.h \
+ ../include/../config/config.h ../include/hellocn.h ../include/commobj.h \
+ ../include/../arch/x86/syn_mech.h ../include/comqueue.h \
+ ../include/kmemmgr.h ../include/objqueue.h ../include/ktmgr.h \
+ ../include/ktmgr2.h ../include/perf.h ../include/ringbuff.h \
+ ../include/system.h ../include/dim.h ../include/memmgr.h \
+ ../include/pageidx.h ../include/vmm.h ../include/../arch/x86/arch.h \
+ ../include/iomgr.h ../include/../include/debug.h ../include/console.h \
+ ../include/ktmsg.h ../include/process.h ../include/kapi.h \
+ ../include/syscall.h ../include/chardisplay.h ../arch/x86/biosvga.h
 
 ../include/kapi.h:
 

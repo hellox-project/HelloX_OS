@@ -19,6 +19,9 @@
 #include "StdAfx.h"
 #endif
 
+#include "types.h"
+#include "buffmgr.h"
+
 //Only __CFG_SYS_MMFBL switch is defined the following code is available.
 #ifdef __CFG_SYS_MMFBL
 

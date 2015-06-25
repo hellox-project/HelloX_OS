@@ -1,6 +1,6 @@
 mouse.o: mouse.c /usr/include/stdc-predef.h \
  ../../../kernel/include/StdAfx.h \
- ../../../kernel/include/../config/config.h \
+ ../../../kernel/include/../config/config.h ../../../kernel/config.h \
  ../../../kernel/include/types.h ../../../kernel/include/../lib/string.h \
  ../../../kernel/include/types.h ../../../kernel/include/perf.h \
  ../../../kernel/include/commobj.h \
@@ -27,6 +27,8 @@ mouse.o: mouse.c /usr/include/stdc-predef.h \
 ../../../kernel/include/StdAfx.h:
 
 ../../../kernel/include/../config/config.h:
+
+../../../kernel/config.h:
 
 ../../../kernel/include/types.h:
 

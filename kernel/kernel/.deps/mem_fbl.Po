@@ -1,3 +1,6 @@
-mem_fbl.o: mem_fbl.c /usr/include/stdc-predef.h
+mem_fbl.o: mem_fbl.c ../../kernel/include/types.h \
+ ../../kernel/include/buffmgr.h
 
-/usr/include/stdc-predef.h:
+../../kernel/include/types.h:
+
+../../kernel/include/buffmgr.h:

@@ -19,6 +19,7 @@
 #endif
 
 #include "stdio.h"
+#include "kapi.h"
 
 //Only Device Driver Framework is enabled the following code will be included
 //in OS kernel.

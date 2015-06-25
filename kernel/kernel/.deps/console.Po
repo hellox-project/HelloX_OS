@@ -1,11 +1,10 @@
-console.o: console.c /usr/include/stdc-predef.h \
- ../../kernel/include/types.h ../../kernel/include/console.h \
- ../../kernel/include/commobj.h ../../kernel/include/types.h \
- ../../kernel/include/dim.h ../../kernel/include/ktmgr.h \
- ../../kernel/include/objqueue.h ../../kernel/include/../config/config.h \
- ../../kernel/include/hellocn.h ../../kernel/include/ktmsg.h \
- ../../kernel/include/process.h ../../kernel/include/kapi.h \
- ../../kernel/include/../arch/x86/syn_mech.h \
+console.o: console.c ../../kernel/include/types.h \
+ ../../kernel/include/console.h ../../kernel/include/commobj.h \
+ ../../kernel/include/types.h ../../kernel/include/dim.h \
+ ../../kernel/include/ktmgr.h ../../kernel/include/objqueue.h \
+ ../../kernel/include/../config/config.h ../../kernel/include/hellocn.h \
+ ../../kernel/include/ktmsg.h ../../kernel/include/process.h \
+ ../../kernel/include/kapi.h ../../kernel/include/../arch/x86/syn_mech.h \
  ../../kernel/include/comqueue.h ../../kernel/include/kmemmgr.h \
  ../../kernel/include/ktmgr2.h ../../kernel/include/perf.h \
  ../../kernel/include/ringbuff.h ../../kernel/include/system.h \
@@ -14,8 +13,6 @@ console.o: console.c /usr/include/stdc-predef.h \
  ../../kernel/include/iomgr.h ../../kernel/include/../include/debug.h \
  ../../kernel/include/syscall.h ../../kernel/include/hellocn.h \
  ../../kernel/include/iomgr.h ../../kernel/include/ktmgr.h
-
-/usr/include/stdc-predef.h:
 
 ../../kernel/include/types.h:
 

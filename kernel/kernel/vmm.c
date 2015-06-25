@@ -13,9 +13,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
 
 //Virtual memory management function only available when this flag is defined.
 #ifdef __CFG_SYS_VMM

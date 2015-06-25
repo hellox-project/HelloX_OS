@@ -20,7 +20,10 @@
 
 //Page Frame functions only available when VMM function is enabled.
 #ifdef __CFG_SYS_VMM
-
+#include "types.h"
+#include "commobj.h"
+#include "kapi.h"
+#include "memmgr.h"
 //------------------------------------------------------------------------
 //
 //    The implementation code of Page Frame Manager.

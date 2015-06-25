@@ -1,8 +1,8 @@
 drventry.o: drventry.c /usr/include/stdc-predef.h \
  ../../kernel/include/StdAfx.h ../../kernel/include/../config/config.h \
- ../../kernel/include/types.h ../../kernel/include/../lib/string.h \
- ../../kernel/include/types.h ../../kernel/include/perf.h \
- ../../kernel/include/commobj.h \
+ ../../kernel/config.h ../../kernel/include/types.h \
+ ../../kernel/include/../lib/string.h ../../kernel/include/types.h \
+ ../../kernel/include/perf.h ../../kernel/include/commobj.h \
  ../../kernel/include/../arch/x86/syn_mech.h \
  ../../kernel/include/objqueue.h ../../kernel/include/ktmgr.h \
  ../../kernel/include/ktmgr2.h ../../kernel/include/comqueue.h \
@@ -25,6 +25,8 @@ drventry.o: drventry.c /usr/include/stdc-predef.h \
 ../../kernel/include/StdAfx.h:
 
 ../../kernel/include/../config/config.h:
+
+../../kernel/config.h:
 
 ../../kernel/include/types.h:
 

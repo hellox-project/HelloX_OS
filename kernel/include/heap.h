@@ -16,6 +16,7 @@
 #ifndef __HEAP_H__
 #define __HEAP_H__
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,7 +32,7 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_AREA_NODE)
 //struct __VIRTUAL_AREA_NODE{
     LPVOID                lpStartAddress;    //The start address.
     DWORD                 dwAreaSize;        //Virtual area's size.
-	struct tag__VIRTUAL_AREA_NODE*  lpNext;            //Pointing to next node.
+	struct VIRTUAL_AREA_NODE*  lpNext;            //Pointing to next node.
 END_DEFINE_OBJECT(__VIRTUAL_AREA_NODE)
 //};
 

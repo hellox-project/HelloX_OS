@@ -12,17 +12,22 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
+//#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
+//#endif
+
+#include "types.h"
+#include "commobj.h"
+
+#include "kapi.h"
+#include "heap.h"
+
 
 //If and only if the VMM function is enabled,heap function is available since
 //it's reley on the VMM mechanism.
 #ifdef __CFG_SYS_VMM
 
-//#ifndef __HEAP_H__
-//#include "HEAP.H"
-//#endif
+
 
 //
 //The implementation of CreateHeap routine.
@@ -35,6 +40,7 @@
 // 6. Insert the heap object into kernel thread's list;
 // 7. If all successful,return the help object's base address.
 //
+
 static __HEAP_OBJECT* CreateHeap(DWORD dwInitSize)
 {
 	__HEAP_OBJECT*              lpHeapObject   = NULL;

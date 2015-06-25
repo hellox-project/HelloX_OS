@@ -106,7 +106,7 @@
 //#define __CFG_SYS_INTNEST
 
 //Include thread heap functions.
-//#define __CFG_SYS_HEAP
+#define __CFG_SYS_HEAP
 
 //Include bus management code.
 #define __CFG_SYS_BM

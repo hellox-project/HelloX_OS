@@ -1,5 +1,3 @@
-pageidx.o: pageidx.c /usr/include/stdc-predef.h ../../kernel/lib/stdio.h
-
-/usr/include/stdc-predef.h:
+pageidx.o: pageidx.c ../../kernel/lib/stdio.h
 
 ../../kernel/lib/stdio.h:

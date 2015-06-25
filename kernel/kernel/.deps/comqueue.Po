@@ -1,9 +1,6 @@
-comqueue.o: comqueue.c /usr/include/stdc-predef.h \
- ../../kernel/include/comqueue.h ../../kernel/include/types.h \
- ../../kernel/include/commobj.h ../../kernel/include/comqueue.h \
- ../../kernel/include/kmemmgr.h
-
-/usr/include/stdc-predef.h:
+comqueue.o: comqueue.c ../../kernel/include/comqueue.h \
+ ../../kernel/include/types.h ../../kernel/include/commobj.h \
+ ../../kernel/include/comqueue.h ../../kernel/include/kmemmgr.h
 
 ../../kernel/include/comqueue.h:
 

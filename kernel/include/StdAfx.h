@@ -28,13 +28,15 @@
 #endif
 
 //Include configuration headers in advance any of other headers.
-#ifndef __CONFIG_H__
-#include "../config/config.h"
-#endif
+//#ifndef __CONFIG_H__
+//#include "../config/config.h"
+//#endif
 
-#ifndef __TYPES_H__
+
+
+//#ifndef __TYPES_H__
 #include "types.h"
-#endif
+//#endif
 
 #ifndef __STRING__
 #include "../lib/string.h"    //Different folder.
@@ -112,9 +114,9 @@
 #include "heap.h"
 #endif
 
-#ifndef __IOMGR_H__
+//#ifndef __IOMGR_H__
 #include "iomgr.h"
-#endif
+//#endif
 
 #ifndef __BUFFMGR_H__
 #include "buffmgr.h"
@@ -146,6 +148,10 @@
 #elif defined(__STM32__)
 #include "../arch/stm32/arch.h"
 #endif
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

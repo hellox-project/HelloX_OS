@@ -17,6 +17,8 @@
 #include "StdAfx.h"
 #endif
 
+#include "iomgr.h"
+#include "commobj.h"
 #include "string.h"
 
 //Only Device Driver Framework is enabled the following code is included in the
@@ -52,7 +54,8 @@ extern BOOL _RemoveDirectory(__COMMON_OBJECT* lpThis,LPCTSTR lpszFileName);
 
 //A helper routine used to convert a string from lowercase to capital.
 //The string should be terminated by a zero,i.e,a C string.
-static VOID ToCapital(LPSTR lpszString)
+/**
+VOID ToCapital(LPSTR lpszString)
 {
 	int nIndex = 0;
 
@@ -69,7 +72,7 @@ static VOID ToCapital(LPSTR lpszString)
 		nIndex ++;
 	}
 }
-
+*/
 //RegisterFileSystem,this routine add one file system controller into system.
 static BOOL RegisterFileSystem(__COMMON_OBJECT* lpThis,
 							   __COMMON_OBJECT* pFileSystem)

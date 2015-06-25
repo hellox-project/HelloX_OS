@@ -1,7 +1,5 @@
-perf.o: perf.c /usr/include/stdc-predef.h ../../kernel/include/commobj.h \
+perf.o: perf.c ../../kernel/include/commobj.h \
  ../../kernel/include/types.h ../../kernel/include/perf.h
-
-/usr/include/stdc-predef.h:
 
 ../../kernel/include/commobj.h:
 

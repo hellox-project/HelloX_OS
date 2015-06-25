@@ -1,5 +1,5 @@
 fibonacci.o: fibonacci.c ../include/StdAfx.h \
- ../include/../config/config.h ../include/types.h \
+ ../include/../config/config.h ../../kernel/config.h ../include/types.h \
  ../include/../lib/string.h ../../kernel/include/types.h \
  ../include/perf.h ../include/commobj.h ../include/../arch/x86/syn_mech.h \
  ../include/objqueue.h ../include/ktmgr.h ../include/ktmgr2.h \
@@ -15,6 +15,8 @@ fibonacci.o: fibonacci.c ../include/StdAfx.h \
 ../include/StdAfx.h:
 
 ../include/../config/config.h:
+
+../../kernel/config.h:
 
 ../include/types.h:
 

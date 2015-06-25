@@ -19,6 +19,7 @@
 #endif
 
 #include "pci_drv.h"
+#include "kapi.h"
 
 
 //Only DDF(Device Driver Framework) is enabled the following code

@@ -86,7 +86,7 @@ am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/config.h
+CONFIG_HEADER = $(top_builddir)/kernel/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LIBRARIES = $(noinst_LIBRARIES)
@@ -121,7 +121,7 @@ AM_V_at = $(am__v_at_$(V))
 am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I. -I$(top_builddir)
+DEFAULT_INCLUDES = -I. -I$(top_builddir)/kernel
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -301,7 +301,11 @@ top_builddir = ../..
 top_srcdir = ../..
 noinst_LIBRARIES = libkernel.a
 libkernel_a_SOURCES = chardisplay.c  debug.c   heap.c    kapi.c     ktmgr2.c   memmgr.c  objqueue.c  perf.c     synobj2.c  system.c comqueue.c     devmgr.c  iomgr2.c  kermod.c   ktmgr.c    modmgr.c  pageidx.c   process.c  synobj.c   types.c console.c      dim.c     iomgr.c   kmemmgr.c  mem_fbl.c  objmgr.c  pci_drv.c   statcpu.c  syscall.c  vmm.c
-AM_CPPFLAGS = -nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/config -D__STDAFX_H__ -D__CFG_SYS_CONSOLE
+AM_CPPFLAGS = -nostdlib -nostdinc -m32 -I$(top_srcdir)/kernel/config \
+	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib \
+	-I$(top_srcdir)/kernel/config -D__STDAFX_H__ \
+	-D__CFG_SYS_CONSOLE -D__CFG_SYS_HEAP -D__CFG_SYS_VMM -D_POSIX_ \
+	-D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
 all: all-am
 
 .SUFFIXES:

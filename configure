@@ -3250,7 +3250,7 @@ END
   fi
 fi
 
-ac_config_headers="$ac_config_headers config.h"
+ac_config_headers="$ac_config_headers kernel/config.h"
 
 
 DEPDIR="${am__leading_dot}deps"
@@ -16417,7 +16417,7 @@ arch=i386
 
 ##AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
-CFLAGS==-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+CFLAGS==-nostdlib -m32 -D__CONFIG_H__ -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
 
 # Checks for libraries.
@@ -18638,7 +18638,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+    "kernel/config.h") CONFIG_HEADERS="$CONFIG_HEADERS kernel/config.h" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "kernel/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/kernel/Makefile" ;;
