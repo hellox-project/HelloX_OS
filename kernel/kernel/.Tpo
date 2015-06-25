@@ -1,0 +1,6 @@
+pageidx.o: pageidx.c ../../kernel/include/StdAfx.h \
+ ../../kernel/lib/stdio.h
+
+../../kernel/include/StdAfx.h:
+
+../../kernel/lib/stdio.h:

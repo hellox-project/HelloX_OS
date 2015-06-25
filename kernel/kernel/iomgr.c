@@ -315,7 +315,7 @@ static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object
 //
 //Implementation of IOControl.Through this routine user can issue some uncommon
 //commands related to specific device.
-static BOOL IOControl(__COMMON_OBJECT* lpThis,          //IOManager itself.
+static BOOL kIOControl(__COMMON_OBJECT* lpThis,          //IOManager itself.
 					  __COMMON_OBJECT* lpFileObject,    //Target file object.
 					  DWORD            dwCommand,       //Command to do.
 					  DWORD            dwInputLen,      //Input buffer's length.
@@ -880,7 +880,7 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
 // 3. Allocates a block of memory as device object's extension;
 // 4. Inserts the device object into device object's list.
 //
-static __DEVICE_OBJECT* CreateDevice(__COMMON_OBJECT*  lpThis,
+static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 									 LPSTR             lpszDevName,
 									 DWORD             dwAttribute,
 									 DWORD             dwBlockSize,
@@ -1008,7 +1008,7 @@ __CONTINUE:
 }
 
 //Implementation of DestroyDevice routine.
-static VOID DestroyDevice(__COMMON_OBJECT* lpThis,
+static VOID kDestroyDevice(__COMMON_OBJECT* lpThis,
 						  __DEVICE_OBJECT* lpDeviceObject)
 {
 	//When destroy a device,do not forget to clear the signature of device.For
@@ -1255,12 +1255,12 @@ __IO_MANAGER IOManager = {
 	_GetFileSize,        //GetFileSize,
 	_RemoveDirectory,        //RemoveDirectory,
 	_SetEndOfFile,        //SetEndOfFile,
-	IOControl,   //IOControl,
+	kIOControl,   //IOControl,
 	_SetFilePointer,    //SetFilePointer,
 	_FlushFileBuffers,  //FlushFileBuffers,
 
-	CreateDevice,                           //CreateDevice.
-	DestroyDevice,        //DestroyDevice,                          //DestroyDevice.
+	kCreateDevice,                           //CreateDevice.
+	kDestroyDevice,        //kDestroyDevice,                          //DestroyDevice.
 	ReserveResource,        //ReserveResource,                        //ReserveResource.
 	LoadDriver,
 	AddFileSystem,

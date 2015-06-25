@@ -17,12 +17,13 @@
 #include "StdAfx.h"
 #endif
 
+
+#include "kapi.h"
+#include "string.h"
+#include "stdio.h"
+
 #include "shell.h"
 #include "fdisk.h"
-
-#include "../include/kapi.h"
-#include "../lib/string.h"
-#include "../lib/stdio.h"
 
 #define  FDISK_PROMPT_STR   "[fdisk_view]"
 

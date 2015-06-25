@@ -526,13 +526,6 @@ int strtol(const char *nptr, char **endptr, int base)
    unsigned long Overflow;
    int sign = 0, flag, LimitRemainder;
   
-   /*
-      ����ǰ�����Ŀո񣬲��ж��������š�
-      ���base��0��������0x��ͷ��ʮ����������
-      ��0��ͷ��8��������
-      ���base��16����ͬʱҲ������0x��ͷ��
- 
-   */
    do
    {
       ch = *p++;
@@ -561,7 +554,6 @@ int strtol(const char *nptr, char **endptr, int base)
  
    for (ret = 0, flag = 0;; ch = *p++)
    {
-      /*�ѵ�ǰ�ַ�ת��Ϊ��Ӧ��������Ҫ��ֵ��*/
       if (isdigit(ch))
         ch -= '0';
       else if (isalpha(ch))
@@ -571,7 +563,6 @@ int strtol(const char *nptr, char **endptr, int base)
       if (ch >= base)
         break;
  
-      /*���������������ñ�־λ���Ժ��������㡣*/
       if (flag < 0 || ret > Overflow || (ret == Overflow && ch > LimitRemainder))
         flag = -1;
       else
@@ -582,10 +573,6 @@ int strtol(const char *nptr, char **endptr, int base)
       }
    }
  
-   /*
-      ���������򷵻���Ӧ��Overflow�ķ�ֵ��
-      û����������Ƿ���λΪ������ת��Ϊ������
-   */
    if (flag < 0)
       ret = sign ? LONG_MIN : LONG_MAX;
    else if (sign)

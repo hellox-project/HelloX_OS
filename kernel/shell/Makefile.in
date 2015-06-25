@@ -102,8 +102,7 @@ am_libshell_a_OBJECTS = extcmd.$(OBJEXT) fdisk.$(OBJEXT) fs.$(OBJEXT) \
 	shell.$(OBJEXT) shell_help.$(OBJEXT) stat_s.$(OBJEXT) \
 	fdisk2.$(OBJEXT) fibonacci.$(OBJEXT) hedit.$(OBJEXT) \
 	hypertrm.$(OBJEXT) network2.$(OBJEXT) shell1.$(OBJEXT) \
-	shell_help_.$(OBJEXT) shell_help_smt32.$(OBJEXT) \
-	sysd_s.$(OBJEXT)
+	shell_help_smt32.$(OBJEXT) sysd_s.$(OBJEXT)
 libshell_a_OBJECTS = $(am_libshell_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -296,8 +295,11 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libshell.a
-libshell_a_SOURCES = extcmd.c fdisk.c fs.c hiscmd.c ioctrl_s.c network.c shell.c shell_help.c stat_s.c fdisk2.c fibonacci.c hedit.c hypertrm.c  network2.c shell1.c   shell_help_.c  shell_help_smt32.c  sysd_s.c
-AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D__CFG_SYS_MMFBL -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+libshell_a_SOURCES = extcmd.c fdisk.c fs.c hiscmd.c ioctrl_s.c network.c shell.c shell_help.c stat_s.c fdisk2.c fibonacci.c hedit.c hypertrm.c  network2.c shell1.c  shell_help_smt32.c  sysd_s.c
+AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D_TIME_T_DEFINED \
+	-D_M_IX86 -I$(top_srcdir)/kernel/lib \
+	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config \
+	-I$(top_srcdir)/kernel/lib/sys
 all: all-am
 
 .SUFFIXES:
@@ -361,7 +363,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shell.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shell1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shell_help.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shell_help_.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shell_help_smt32.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stat_s.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sysd_s.Po@am__quote@

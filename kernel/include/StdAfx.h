@@ -34,9 +34,9 @@
 
 
 
-//#ifndef __TYPES_H__
+#ifndef __TYPES_H__
 #include "types.h"
-//#endif
+#endif
 
 #ifndef __STRING__
 #include "../lib/string.h"    //Different folder.

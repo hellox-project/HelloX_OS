@@ -222,5 +222,5 @@
 //************************************************************************
 
 //Enable or disable Java virtual machine in system.
-#define __CFG_APP_JVM
+//#define __CFG_APP_JVM
 

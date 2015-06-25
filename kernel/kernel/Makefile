@@ -174,15 +174,15 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing aclocal-1.14
+ACLOCAL = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing aclocal-1.14
 ALLOCA = 
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-AUTOCONF = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing autoconf
-AUTOHEADER = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing autoheader
-AUTOMAKE = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing automake-1.14
-AWK = gawk
+AUTOCONF = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing autoconf
+AUTOHEADER = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing autoheader
+AUTOMAKE = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing automake-1.14
+AWK = mawk
 CC = gcc
 CCAS = gcc
 CCASDEPMODE = depmode=gcc3
@@ -204,10 +204,10 @@ DUMPBIN =
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /usr/bin/grep -E
+EGREP = /bin/grep -E
 EXEEXT = 
-FGREP = /usr/bin/grep -F
-GREP = /usr/bin/grep
+FGREP = /bin/grep -F
+GREP = /bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -221,9 +221,9 @@ LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing makeinfo
+MAKEINFO = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing makeinfo
 MANIFEST_TOOL = :
-MKDIR_P = /usr/bin/mkdir -p
+MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
 OBJDUMP = objdump
@@ -239,15 +239,15 @@ PACKAGE_URL =
 PACKAGE_VERSION = 1.78
 PATH_SEPARATOR = :
 RANLIB = ranlib
-SED = /usr/bin/sed
+SED = /bin/sed
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 STRIP = strip
 VERSION = 1.78
-abs_builddir = /media/gaojie/Dev/hellox/HelloX_OS/kernel/kernel
-abs_srcdir = /media/gaojie/Dev/hellox/HelloX_OS/kernel/kernel
-abs_top_builddir = /media/gaojie/Dev/hellox/HelloX_OS
-abs_top_srcdir = /media/gaojie/Dev/hellox/HelloX_OS
+abs_builddir = /media/gaojie/jdev/helloX/git/HelloX_OS/kernel/kernel
+abs_srcdir = /media/gaojie/jdev/helloX/git/HelloX_OS/kernel/kernel
+abs_top_builddir = /media/gaojie/jdev/helloX/git/HelloX_OS
+abs_top_srcdir = /media/gaojie/jdev/helloX/git/HelloX_OS
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -278,7 +278,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/install-sh
+install_sh = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -303,9 +303,7 @@ noinst_LIBRARIES = libkernel.a
 libkernel_a_SOURCES = chardisplay.c  debug.c   heap.c    kapi.c     ktmgr2.c   memmgr.c  objqueue.c  perf.c     synobj2.c  system.c comqueue.c     devmgr.c  iomgr2.c  kermod.c   ktmgr.c    modmgr.c  pageidx.c   process.c  synobj.c   types.c console.c      dim.c     iomgr.c   kmemmgr.c  mem_fbl.c  objmgr.c  pci_drv.c   statcpu.c  syscall.c  vmm.c
 AM_CPPFLAGS = -nostdlib -nostdinc -m32 -I$(top_srcdir)/kernel/config \
 	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib \
-	-I$(top_srcdir)/kernel/config -D__STDAFX_H__ \
-	-D__CFG_SYS_CONSOLE -D__CFG_SYS_HEAP -D__CFG_SYS_VMM -D_POSIX_ \
-	-D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
+	-I$(top_srcdir)/kernel/config -D__CFG_SYS_CONSOLE -D_POSIX_
 all: all-am
 
 .SUFFIXES:

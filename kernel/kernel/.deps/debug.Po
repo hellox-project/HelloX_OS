@@ -1,37 +1,47 @@
-debug.o: debug.c ../include/kapi.h ../include/types.h \
- ../include/../config/config.h ../include/hellocn.h ../include/commobj.h \
- ../include/../arch/x86/syn_mech.h ../include/comqueue.h \
- ../include/kmemmgr.h ../include/objqueue.h ../include/ktmgr.h \
- ../include/ktmgr2.h ../include/perf.h ../include/ringbuff.h \
+debug.o: debug.c ../include/StdAfx.h ../include/types.h \
+ ../include/../lib/string.h ../include/perf.h ../include/commobj.h \
+ ../include/objqueue.h ../include/ktmgr.h ../include/../config/config.h \
+ ../include/ktmgr2.h ../include/comqueue.h ../include/kmemmgr.h \
+ ../include/process.h ../include/kapi.h ../include/hellocn.h \
+ ../include/../arch/x86/syn_mech.h ../include/ringbuff.h \
  ../include/system.h ../include/dim.h ../include/memmgr.h \
  ../include/pageidx.h ../include/vmm.h ../include/../arch/x86/arch.h \
- ../include/iomgr.h ../include/../include/debug.h \
+ ../include/iomgr.h ../include/../include/debug.h ../include/syscall.h \
+ ../include/devmgr.h ../include/mailbox.h ../include/heap.h \
+ ../include/buffmgr.h ../include/ktmsg.h ../include/sysnet.h \
+ ../include/globvar.h ../include/chardisplay.h ../../kernel/config.h \
  ../../kernel/include/debug.h ../../kernel/lib/stdio.h \
- ../../kernel/lib/string.h ../../kernel/include/types.h
+ ../../kernel/lib/string.h
 
-../include/kapi.h:
+../include/StdAfx.h:
 
 ../include/types.h:
 
-../include/../config/config.h:
+../include/../lib/string.h:
 
-../include/hellocn.h:
+../include/perf.h:
 
 ../include/commobj.h:
-
-../include/../arch/x86/syn_mech.h:
-
-../include/comqueue.h:
-
-../include/kmemmgr.h:
 
 ../include/objqueue.h:
 
 ../include/ktmgr.h:
 
+../include/../config/config.h:
+
 ../include/ktmgr2.h:
 
-../include/perf.h:
+../include/comqueue.h:
+
+../include/kmemmgr.h:
+
+../include/process.h:
+
+../include/kapi.h:
+
+../include/hellocn.h:
+
+../include/../arch/x86/syn_mech.h:
 
 ../include/ringbuff.h:
 
@@ -51,10 +61,28 @@ debug.o: debug.c ../include/kapi.h ../include/types.h \
 
 ../include/../include/debug.h:
 
+../include/syscall.h:
+
+../include/devmgr.h:
+
+../include/mailbox.h:
+
+../include/heap.h:
+
+../include/buffmgr.h:
+
+../include/ktmsg.h:
+
+../include/sysnet.h:
+
+../include/globvar.h:
+
+../include/chardisplay.h:
+
+../../kernel/config.h:
+
 ../../kernel/include/debug.h:
 
 ../../kernel/lib/stdio.h:
 
 ../../kernel/lib/string.h:
-
-../../kernel/include/types.h:

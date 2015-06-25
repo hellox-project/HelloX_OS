@@ -102,8 +102,7 @@ am_libshell_a_OBJECTS = extcmd.$(OBJEXT) fdisk.$(OBJEXT) fs.$(OBJEXT) \
 	shell.$(OBJEXT) shell_help.$(OBJEXT) stat_s.$(OBJEXT) \
 	fdisk2.$(OBJEXT) fibonacci.$(OBJEXT) hedit.$(OBJEXT) \
 	hypertrm.$(OBJEXT) network2.$(OBJEXT) shell1.$(OBJEXT) \
-	shell_help_.$(OBJEXT) shell_help_smt32.$(OBJEXT) \
-	sysd_s.$(OBJEXT)
+	shell_help_smt32.$(OBJEXT) sysd_s.$(OBJEXT)
 libshell_a_OBJECTS = $(am_libshell_a_OBJECTS)
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
@@ -170,15 +169,15 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing aclocal-1.14
+ACLOCAL = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing aclocal-1.14
 ALLOCA = 
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-AUTOCONF = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing autoconf
-AUTOHEADER = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing autoheader
-AUTOMAKE = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing automake-1.14
-AWK = gawk
+AUTOCONF = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing autoconf
+AUTOHEADER = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing autoheader
+AUTOMAKE = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing automake-1.14
+AWK = mawk
 CC = gcc
 CCAS = gcc
 CCASDEPMODE = depmode=gcc3
@@ -200,10 +199,10 @@ DUMPBIN =
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /usr/bin/grep -E
+EGREP = /bin/grep -E
 EXEEXT = 
-FGREP = /usr/bin/grep -F
-GREP = /usr/bin/grep
+FGREP = /bin/grep -F
+GREP = /bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -217,9 +216,9 @@ LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/missing makeinfo
+MAKEINFO = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing makeinfo
 MANIFEST_TOOL = :
-MKDIR_P = /usr/bin/mkdir -p
+MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
 OBJDUMP = objdump
@@ -235,15 +234,15 @@ PACKAGE_URL =
 PACKAGE_VERSION = 1.78
 PATH_SEPARATOR = :
 RANLIB = ranlib
-SED = /usr/bin/sed
+SED = /bin/sed
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 STRIP = strip
 VERSION = 1.78
-abs_builddir = /media/gaojie/Dev/hellox/HelloX_OS/kernel/shell
-abs_srcdir = /media/gaojie/Dev/hellox/HelloX_OS/kernel/shell
-abs_top_builddir = /media/gaojie/Dev/hellox/HelloX_OS
-abs_top_srcdir = /media/gaojie/Dev/hellox/HelloX_OS
+abs_builddir = /media/gaojie/jdev/helloX/git/HelloX_OS/kernel/shell
+abs_srcdir = /media/gaojie/jdev/helloX/git/HelloX_OS/kernel/shell
+abs_top_builddir = /media/gaojie/jdev/helloX/git/HelloX_OS
+abs_top_srcdir = /media/gaojie/jdev/helloX/git/HelloX_OS
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -274,7 +273,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /media/gaojie/Dev/hellox/HelloX_OS/install-sh
+install_sh = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -296,8 +295,11 @@ top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
 noinst_LIBRARIES = libshell.a
-libshell_a_SOURCES = extcmd.c fdisk.c fs.c hiscmd.c ioctrl_s.c network.c shell.c shell_help.c stat_s.c fdisk2.c fibonacci.c hedit.c hypertrm.c  network2.c shell1.c   shell_help_.c  shell_help_smt32.c  sysd_s.c
-AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D__CFG_SYS_MMFBL -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+libshell_a_SOURCES = extcmd.c fdisk.c fs.c hiscmd.c ioctrl_s.c network.c shell.c shell_help.c stat_s.c fdisk2.c fibonacci.c hedit.c hypertrm.c  network2.c shell1.c  shell_help_smt32.c  sysd_s.c
+AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D_TIME_T_DEFINED \
+	-D_M_IX86 -I$(top_srcdir)/kernel/lib \
+	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config \
+	-I$(top_srcdir)/kernel/lib/sys
 all: all-am
 
 .SUFFIXES:
@@ -361,7 +363,6 @@ include ./$(DEPDIR)/network2.Po
 include ./$(DEPDIR)/shell.Po
 include ./$(DEPDIR)/shell1.Po
 include ./$(DEPDIR)/shell_help.Po
-include ./$(DEPDIR)/shell_help_.Po
 include ./$(DEPDIR)/shell_help_smt32.Po
 include ./$(DEPDIR)/stat_s.Po
 include ./$(DEPDIR)/sysd_s.Po

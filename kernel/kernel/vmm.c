@@ -52,9 +52,9 @@ VOID PrintVirtualArea(__VIRTUAL_MEMORY_MANAGER* lpMemMgr)
 //Declaration for member routines.
 //
 
-static LPVOID VirtualAlloc(__COMMON_OBJECT*,LPVOID,DWORD,DWORD,DWORD,UCHAR*,LPVOID);
+static LPVOID kVirtualAlloc(__COMMON_OBJECT*,LPVOID,DWORD,DWORD,DWORD,UCHAR*,LPVOID);
 static LPVOID GetPdAddress(__COMMON_OBJECT*);
-static VOID   VirtualFree(__COMMON_OBJECT*,LPVOID);
+static VOID   kVirtualFree(__COMMON_OBJECT*,LPVOID);
 static VOID InsertIntoList(__COMMON_OBJECT*,__VIRTUAL_AREA_DESCRIPTOR*);
 
 //
@@ -74,8 +74,8 @@ BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 	}
 
 	lpManager = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
-	lpManager->VirtualAlloc     = VirtualAlloc;
-	lpManager->VirtualFree      = VirtualFree;
+	lpManager->VirtualAlloc     = kVirtualAlloc;
+	lpManager->VirtualFree      = kVirtualFree;
 	lpManager->GetPdAddress     = GetPdAddress;
 	lpManager->dwVirtualAreaNum = 0;
 
@@ -809,7 +809,7 @@ __TERMINAL:
 //The implementation of VirtualAlloc routine.
 //
 
-static LPVOID VirtualAlloc(__COMMON_OBJECT* lpThis,
+static LPVOID kVirtualAlloc(__COMMON_OBJECT* lpThis,
 						   LPVOID           lpDesiredAddr,
 						   DWORD            dwSize,
 						   DWORD            dwAllocFlags,
@@ -979,7 +979,7 @@ static VOID ReleaseIoMap(__COMMON_OBJECT* lpThis,__VIRTUAL_AREA_DESCRIPTOR* lpVa
 //area object.
 //
 
-static VOID VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
+static VOID kVirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 {
 	__VIRTUAL_MEMORY_MANAGER*            lpMemMgr   = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
 	__VIRTUAL_AREA_DESCRIPTOR*           lpVad      = NULL;

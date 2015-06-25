@@ -1,14 +1,13 @@
 idehd.o: idehd.c /usr/include/stdc-predef.h \
- ../../../kernel/include/StdAfx.h \
- ../../../kernel/include/../config/config.h ../../../kernel/config.h \
- ../../../kernel/include/types.h ../../../kernel/include/../lib/string.h \
- ../../../kernel/include/types.h ../../../kernel/include/perf.h \
- ../../../kernel/include/commobj.h \
- ../../../kernel/include/../arch/x86/syn_mech.h \
- ../../../kernel/include/objqueue.h ../../../kernel/include/ktmgr.h \
+ ../../../kernel/include/StdAfx.h ../../../kernel/include/types.h \
+ ../../../kernel/include/../lib/string.h ../../../kernel/include/perf.h \
+ ../../../kernel/include/commobj.h ../../../kernel/include/objqueue.h \
+ ../../../kernel/include/ktmgr.h \
+ ../../../kernel/include/../config/config.h \
  ../../../kernel/include/ktmgr2.h ../../../kernel/include/comqueue.h \
  ../../../kernel/include/kmemmgr.h ../../../kernel/include/process.h \
  ../../../kernel/include/kapi.h ../../../kernel/include/hellocn.h \
+ ../../../kernel/include/../arch/x86/syn_mech.h \
  ../../../kernel/include/ringbuff.h ../../../kernel/include/system.h \
  ../../../kernel/include/dim.h ../../../kernel/include/memmgr.h \
  ../../../kernel/include/pageidx.h ../../../kernel/include/vmm.h \
@@ -19,32 +18,27 @@ idehd.o: idehd.c /usr/include/stdc-predef.h \
  ../../../kernel/include/mailbox.h ../../../kernel/include/heap.h \
  ../../../kernel/include/buffmgr.h ../../../kernel/include/ktmsg.h \
  ../../../kernel/include/sysnet.h ../../../kernel/include/globvar.h \
- ../../../kernel/include/chardisplay.h ../../../kernel/include/kapi.h \
- idehd.h idebase.h ../../../kernel/lib/stdio.h
+ ../../../kernel/include/chardisplay.h ../../../kernel/config.h \
+ ../../../kernel/include/kapi.h idehd.h idebase.h \
+ ../../../kernel/lib/stdio.h
 
 /usr/include/stdc-predef.h:
 
 ../../../kernel/include/StdAfx.h:
 
-../../../kernel/include/../config/config.h:
-
-../../../kernel/config.h:
-
 ../../../kernel/include/types.h:
 
 ../../../kernel/include/../lib/string.h:
-
-../../../kernel/include/types.h:
 
 ../../../kernel/include/perf.h:
 
 ../../../kernel/include/commobj.h:
 
-../../../kernel/include/../arch/x86/syn_mech.h:
-
 ../../../kernel/include/objqueue.h:
 
 ../../../kernel/include/ktmgr.h:
+
+../../../kernel/include/../config/config.h:
 
 ../../../kernel/include/ktmgr2.h:
 
@@ -57,6 +51,8 @@ idehd.o: idehd.c /usr/include/stdc-predef.h \
 ../../../kernel/include/kapi.h:
 
 ../../../kernel/include/hellocn.h:
+
+../../../kernel/include/../arch/x86/syn_mech.h:
 
 ../../../kernel/include/ringbuff.h:
 
@@ -93,6 +89,8 @@ idehd.o: idehd.c /usr/include/stdc-predef.h \
 ../../../kernel/include/globvar.h:
 
 ../../../kernel/include/chardisplay.h:
+
+../../../kernel/config.h:
 
 ../../../kernel/include/kapi.h:
 

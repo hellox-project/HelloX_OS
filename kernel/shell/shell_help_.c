@@ -159,7 +159,6 @@ static INT OnExecCommand(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 	INT    nExecCount            = 1;
 	INT    i                     = 0;
 	
-
 	strcpy(szCmdBuf,pCmdBuf);
 
 	//get exec count 
@@ -261,7 +260,7 @@ static INT OnKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE   bt )
 			WORD   CursorX                  = 0;
 			WORD   CursorY                  = 0;
 
-			//µÃµ½ÃüÁîÊäÈë´®
+			//ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë´®
 			CD_GetCursorPos(&CursorX,&CursorY);		
 			CD_GetString(strlen(pShellInfo->pPrompt),CursorY,szCmdBuffer,sizeof(szCmdBuffer));
 			strtrim(szCmdBuffer,TRIM_LEFT|TRIM_RIGHT);
@@ -326,17 +325,17 @@ static BOOL OnAutoName(SHELL_MSG_INFO*  pShellInfo)
 	WORD   CursorX                  = 0;
 	WORD   CursorY                  = 0;
 
-	//µÃµ½ÃüÁîÊäÈë´®
+	//ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë´®
 	CD_GetCursorPos(&CursorX,&CursorY);		
 	CD_GetString(strlen(pShellInfo->pPrompt),CursorY,szUserInput,sizeof(szUserInput));
 
-	//¼ì²éÊÇ·ñÓÐÆ¥ÅäÏî
+	//ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½
 	if(strlen(szUserInput) > 0 && pShellInfo->pNameQuery)
 	{	
-		//Çå¿Õ
+		//ï¿½ï¿½ï¿½
 		pShellInfo->pNameQuery(NULL,0);
 
-		//Öð¸öÑ¯ÎÊÆ¥Åä
+		//ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½Æ¥ï¿½ï¿½
 		while(TRUE)
 		{
 			CHAR  szCmdNmae[CMD_MAX_LEN] = {0};
@@ -442,7 +441,7 @@ static BOOL OnVkKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE bt)
 	return TRUE;
 }
 
-//shell ÊäÈë Ñ­»·´¦Àí
+//shell ï¿½ï¿½ï¿½ï¿½ Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_NAMEQUERY_HANDLER pNameQuery)
 {
 	SHELL_MSG_INFO*  pShellInfo = NULL;
@@ -511,7 +510,7 @@ __TERMINAL:
 	return 0;
 }
 
-//shell ÊäÈë Ñ­»·´¦Àí
+//shell ï¿½ï¿½ï¿½ï¿½ Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 DWORD Shell_Msg_Loop(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_NAMEQUERY_HANDLER pNameQuery)
 {
 	return Shell_Msg_Loop2(pPrompt,pCmdRoute,pNameQuery);	

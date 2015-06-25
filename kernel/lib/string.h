@@ -17,9 +17,6 @@
 #define __STRING__
 
 
-#include "types.h"
-
-
 #define MAX_STRING_LEN 512       //Max string length.
 
 BOOL StrCmp(LPSTR,LPSTR);      //String compare functions.
@@ -55,7 +52,7 @@ void *memmove(void *dst,const void *src,int n);
 //Standard C Lib string operations.
 char* strcat(char* dst,const char* src);
 char* strcpy(char* dst,const char* src);
-char* strchr(const char* string,int ch);
+//char* strchr(const char* string,int ch);
 int strcmp(const char* src,const char* dst);
 int strlen(const char* s);
 char * strrchr(const char * str,int ch);
