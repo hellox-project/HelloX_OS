@@ -1,4 +1,4 @@
-sched.o: sched.c /usr/include/stdc-predef.h ../../kernel/include/StdAfx.h \
+sched.o: sched.c ../../kernel/include/StdAfx.h \
  ../../kernel/include/types.h ../../kernel/include/../lib/string.h \
  ../../kernel/include/perf.h ../../kernel/include/commobj.h \
  ../../kernel/include/objqueue.h ../../kernel/include/ktmgr.h \
@@ -17,8 +17,6 @@ sched.o: sched.c /usr/include/stdc-predef.h ../../kernel/include/StdAfx.h \
  ../../kernel/include/ktmsg.h ../../kernel/include/sysnet.h \
  ../../kernel/include/globvar.h ../../kernel/include/chardisplay.h \
  ../../kernel/config.h sched.h
-
-/usr/include/stdc-predef.h:
 
 ../../kernel/include/StdAfx.h:
 

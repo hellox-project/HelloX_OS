@@ -1,5 +1,3 @@
-math.o: math.c /usr/include/stdc-predef.h math.h
-
-/usr/include/stdc-predef.h:
+math.o: math.c math.h
 
 math.h:

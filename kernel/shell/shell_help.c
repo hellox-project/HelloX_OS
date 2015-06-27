@@ -13,8 +13,9 @@
 //***********************************************************************/
 
 #include "StdAfx.h"
-#include "kapi.h"
 #include "stdlib.h"
+#include "kapi.h"
+#include "string.h"
 #include "shell.h"
 
 

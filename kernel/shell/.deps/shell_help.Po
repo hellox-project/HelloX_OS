@@ -16,8 +16,9 @@ shell_help.o: shell_help.c ../../kernel/include/StdAfx.h \
  ../../kernel/include/heap.h ../../kernel/include/buffmgr.h \
  ../../kernel/include/ktmsg.h ../../kernel/include/sysnet.h \
  ../../kernel/include/globvar.h ../../kernel/include/chardisplay.h \
- ../../kernel/config.h ../../kernel/include/kapi.h \
- ../../kernel/lib/stdlib.h ../../kernel/lib/stddef.h shell.h
+ ../../kernel/config.h ../../kernel/lib/stdlib.h \
+ ../../kernel/lib/stddef.h ../../kernel/include/kapi.h \
+ ../../kernel/lib/string.h shell.h
 
 ../../kernel/include/StdAfx.h:
 
@@ -87,10 +88,12 @@ shell_help.o: shell_help.c ../../kernel/include/StdAfx.h \
 
 ../../kernel/config.h:
 
-../../kernel/include/kapi.h:
-
 ../../kernel/lib/stdlib.h:
 
 ../../kernel/lib/stddef.h:
+
+../../kernel/include/kapi.h:
+
+../../kernel/lib/string.h:
 
 shell.h:

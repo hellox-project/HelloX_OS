@@ -53,10 +53,13 @@ void *memmove(void *dst,const void *src,int n);
 char* strcat(char* dst,const char* src);
 char* strcpy(char* dst,const char* src);
 //char* strchr(const char* string,int ch);
-int strcmp(const char* src,const char* dst);
-int strlen(const char* s);
+
+char * strchr (const char *s, int c_in);
 char * strrchr(const char * str,int ch);
 char * strstr(const char *s1,const char *s2);
+
+int strcmp(const char* src,const char* dst);
+int strlen(const char* s);
 
 //Array bound guaranteed string operations.
 char* strncpy(char *dest,char *src,unsigned int n);
@@ -69,8 +72,6 @@ int strncmp ( char * s1, char * s2, size_t n);
 //Trim space in a string.
 void strtrim(char * dst,int flag);
 
-long atol(const char* nptr);
-int atoi(const char* nptr);
 int strtol(const char *nptr, char **endptr, int base);
 
 void ToCapital(LPSTR lpszString);
