@@ -1585,7 +1585,7 @@ configure:17476: gcc -o conftest -g -O2   conftest.c  >&5
 conftest.c:82:6: warning: conflicting types for built-in function 'floor'
  char floor ();
       ^
-/tmp/cclFUm2R.o: In function `main':
+/tmp/cc9KekCo.o: In function `main':
 /media/gaojie/jdev/helloX/git/HelloX_OS/conftest.c:93: undefined reference to `floor'
 collect2: error: ld returned 1 exit status
 configure:17476: $? = 1
@@ -1810,6 +1810,7 @@ config.status:1218: creating kernel/user/Makefile
 config.status:1218: creating kernel/arch/x86/Makefile
 config.status:1218: creating kernel/Makefile
 config.status:1218: creating kernel/config.h
+config.status:1399: kernel/config.h is unchanged
 config.status:1447: executing depfiles commands
 config.status:1447: executing libtool commands
 
