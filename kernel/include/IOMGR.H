@@ -74,6 +74,7 @@ BEGIN_DEFINE_OBJECT(FS_FIND_DATA)
 	DWORD              nFileSizeLow;
 	DWORD              dwReserved0;
 	DWORD              dwReserved1;
+	BOOL               bGetLongName;
 	CHAR               cFileName[MAX_FILE_NAME_LEN];
 	CHAR               cAlternateFileName[13];
 END_DEFINE_OBJECT(FS_FIND_DATA)
