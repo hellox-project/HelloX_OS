@@ -141,7 +141,7 @@ BOOL GetSubDirectory(CHAR* pFullName,DWORD dwLevel,CHAR* pSubDir)
 BOOL GetPathName(CHAR* pFullName,CHAR* pDir,CHAR* pFileName)
 {
 	BYTE        DirName[MAX_FILE_NAME_LEN];
-	BYTE        FileName[13];
+	BYTE        FileName[MAX_FILE_NAME_LEN];
 	BYTE        tmp;
 	int         i = 0;
 	int         j = 0;

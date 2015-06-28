@@ -80,6 +80,26 @@ typedef struct FAT32_SHORTENTRY{
 	DWORD      dwFileSize;
 }__FAT32_SHORTENTRY;
 
+//Definition for FAT32 directory long entry.
+typedef struct FAT32_LONGENTRY
+{
+	BYTE       LongNum[1];
+	BYTE       szName1[10];
+	BYTE       LongFlage;
+	BYTE       Rsved1;
+	BYTE       Checksum;
+	BYTE       szName2[12];
+	WORD       Rsved2;
+	BYTE       szName3[4];
+
+}__FAT32_LONGENTRY;
+
+#define  FAT32_SHORTDIR_FILENAME_LEN   11     //Fat32 short entry file name len .        
+#define  FAT32_SHORTDIR_PREFIX_LEN      6     //Fat32 short entry file name len no include ext  .       
+#define  FAT32_LONGDIR_FILENAME_LEN    13     //Fat32 long  entry  file name len .        
+#define  FAT32_STANDARDEXT_NAME_LEN    3      //Fat32 file Standard extension name len .  
+
+       
 //FAT32 file object.
 struct FAT32_FS;
 typedef struct FAT32_FILE{
@@ -120,6 +140,7 @@ typedef struct FAT32_FS{
 	WORD                wReservedSector; //Reserved sector number.
 	WORD                wFatInfoSector;  //FAT information sector number.
 	DWORD               dwBytePerSector; //Byte number per sector.
+	DWORD               dwPartitionSatrt; //Partition start sector
 	DWORD               dwClusterSize;   //Byte number of one cluster.
 	DWORD               dwDataSectorStart;          //Start sector number of data.
 	DWORD               dwRootDirClusStart;         //Start cluster number of root dir.
@@ -158,14 +179,18 @@ BOOL Fat32Init(__FAT32_FS* pFatFs,BYTE* pSector0);       //Initialize FAT32 file
 
 BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster);  //Get next cluster given current 1.
 
+VOID  CombinLongFileName(__FAT32_LONGENTRY** plongEntry,INT nLongEntryNum, CHAR* pFileFullName);//combin file long name to full name
+
 //Get one free cluster and mark the cluster as used.
 //If find,TRUE will be returned and the cluster number will be set in pdwFreeCluster,
 //else FALSE will be returned without any changing to pdwFreeCluster.
 BOOL GetFreeCluster(__FAT32_FS* pFat32Fs, DWORD dwStartToFind, DWORD* pdwFreeCluster);
 
 DWORD GetClusterSector(__FAT32_FS* pFat32Fs,DWORD dwCluster); //Get cluster's start sector no.
-BOOL ConvertName(__FAT32_SHORTENTRY* pfse,BYTE* pResult);     //Convert to regular file name string.
-BOOL GetShortEntry(__FAT32_FS* pFat32Fs,
+BOOL  ConvertName(__FAT32_SHORTENTRY* pfse,BYTE* pResult);     //Convert to regular file name string.
+
+VOID  AddSpace(CHAR* pStrBuf,INT nCount);                      // add string end space 
+BOOL  GetShortEntry(__FAT32_FS* pFat32Fs,
 				   DWORD dwStartCluster,
 				   CHAR* pFileName,
 				   __FAT32_SHORTENTRY* pShortEntry,
