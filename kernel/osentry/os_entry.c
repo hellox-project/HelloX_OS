@@ -88,7 +88,6 @@ extern DWORD _HCNMain(LPVOID);
 
 void __OS_Entry()
 {
-
 	__KERNEL_THREAD_OBJECT*       lpIdleThread     = NULL;
 	__KERNEL_THREAD_OBJECT*       lpShellThread    = NULL;
 #ifdef __CFG_USE_EOS

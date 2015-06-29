@@ -32,7 +32,7 @@
 		"int		$0x7F	\n\t"   \
 		"popl		%%eax	\n\t"   \
 		"popl		%%eax	\n\t"   \
-		: :"r"(num): );            \
+		: :"r"(num): );             \
 	}
 
 #define SYSCALL_PARAM_1(num,p1) 		\

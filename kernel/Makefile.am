@@ -18,9 +18,8 @@ HX_FLAGS += $(HX_INCLUDES)
 HX_FLAGS += -Wall
 
 HXLDFLAGS =
-HXLDFLAGS += -nostdlib -nostdinc -m32 -e__OS_Entry
+HXLDFLAGS += -nostdlib -nostdinc -m32 -e__OS_Entry -Ttext 0x110000
 HXLDFLAGS += $(HX_FLAGS)
-
 
 LDADD = 
 LDADD += ./osentry/libosentry.a
@@ -37,10 +36,8 @@ LDADD += ./kapi/libkapi.a
 
 AM_CPPFLAGS=$(HX_FLAGS)
 
-bin_PROGRAMS = hellox_kerel
-hellox_kerel_SOURCES = 
-#hellox_kerel_CPPFLAGS = $(AM_CPPFLAGS)
-hellox_kerel_LDFLAGS = $(HXLDFLAGS)
-hellox_kerel_LDADD = $(LDADD)
-
-
+bin_PROGRAMS = hellox_kernel
+hellox_kernel_SOURCES = 
+#hellox_kernel_CPPFLAGS = $(AM_CPPFLAGS)
+hellox_kernel_LDFLAGS = $(HXLDFLAGS)
+hellox_kernel_LDADD = $(LDADD)

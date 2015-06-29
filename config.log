@@ -1585,7 +1585,7 @@ configure:17476: gcc -o conftest -g -O2   conftest.c  >&5
 conftest.c:82:6: warning: conflicting types for built-in function 'floor'
  char floor ();
       ^
-/tmp/cc9KekCo.o: In function `main':
+/tmp/ccOqt9FC.o: In function `main':
 /media/gaojie/jdev/helloX/git/HelloX_OS/conftest.c:93: undefined reference to `floor'
 collect2: error: ld returned 1 exit status
 configure:17476: $? = 1

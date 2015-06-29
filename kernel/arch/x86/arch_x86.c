@@ -20,17 +20,10 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
-
-#ifndef __ARCH_H__
-#include "arch.h"
-#endif
-
-#ifndef __UTSNAME_H__
+#include <StdAfx.h>
+#include <arch.h>
 #include <sys/utsname.h>
-#endif
+
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 

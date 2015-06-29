@@ -78,7 +78,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = hellox_kerel$(EXEEXT)
+bin_PROGRAMS = hellox_kernel$(EXEEXT)
 subdir = kernel
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/config.h.in
@@ -92,16 +92,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_hellox_kerel_OBJECTS =
-hellox_kerel_OBJECTS = $(am_hellox_kerel_OBJECTS)
-hellox_kerel_DEPENDENCIES = $(LDADD)
+am_hellox_kernel_OBJECTS =
+hellox_kernel_OBJECTS = $(am_hellox_kernel_OBJECTS)
+hellox_kernel_DEPENDENCIES = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-hellox_kerel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+hellox_kernel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(hellox_kerel_LDFLAGS) $(LDFLAGS) -o $@
+	$(hellox_kernel_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -133,8 +133,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(hellox_kerel_SOURCES)
-DIST_SOURCES = $(hellox_kerel_SOURCES)
+SOURCES = $(hellox_kernel_SOURCES)
+DIST_SOURCES = $(hellox_kernel_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -337,17 +337,18 @@ HX_INCLUDES = -I$(top_srcdir)/kernel/include \
 HX_FLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D_TIME_T_DEFINED \
 	-D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF \
 	$(HX_INCLUDES) -Wall
-HXLDFLAGS = -nostdlib -nostdinc -m32 -e__OS_Entry $(HX_FLAGS)
+HXLDFLAGS = -nostdlib -nostdinc -m32 -e__OS_Entry -Ttext 0x110000 \
+	$(HX_FLAGS)
 LDADD = ./osentry/libosentry.a ./lib/libhellolib.a \
 	./drivers/x86/libdrivers.a ./shell/libshell.a \
 	./network/libnetwork.a ./kthread/libkthread.a \
 	./arch/x86/libarch.a ./fs/libfs.a ./kernel/libkernel.a \
 	./kapi/libkapi.a
 AM_CPPFLAGS = $(HX_FLAGS)
-hellox_kerel_SOURCES = 
-#hellox_kerel_CPPFLAGS = $(AM_CPPFLAGS)
-hellox_kerel_LDFLAGS = $(HXLDFLAGS)
-hellox_kerel_LDADD = $(LDADD)
+hellox_kernel_SOURCES = 
+#hellox_kernel_CPPFLAGS = $(AM_CPPFLAGS)
+hellox_kernel_LDFLAGS = $(HXLDFLAGS)
+hellox_kernel_LDADD = $(LDADD)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -447,9 +448,9 @@ clean-binPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-hellox_kerel$(EXEEXT): $(hellox_kerel_OBJECTS) $(hellox_kerel_DEPENDENCIES) $(EXTRA_hellox_kerel_DEPENDENCIES) 
-	@rm -f hellox_kerel$(EXEEXT)
-	$(AM_V_CCLD)$(hellox_kerel_LINK) $(hellox_kerel_OBJECTS) $(hellox_kerel_LDADD) $(LIBS)
+hellox_kernel$(EXEEXT): $(hellox_kernel_OBJECTS) $(hellox_kernel_DEPENDENCIES) $(EXTRA_hellox_kernel_DEPENDENCIES) 
+	@rm -f hellox_kernel$(EXEEXT)
+	$(AM_V_CCLD)$(hellox_kernel_LINK) $(hellox_kernel_OBJECTS) $(hellox_kernel_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
