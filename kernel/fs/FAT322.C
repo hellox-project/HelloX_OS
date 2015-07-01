@@ -35,24 +35,6 @@
 #ifdef __CFG_SYS_DDF
 
 
-//A helper routine used to convert a string from lowercase to capital.
-//The string should be terminated by a zero,i.e,a C string.
-static VOID ToCapital(LPSTR lpszString)
-{
-	int nIndex = 0;
-
-	if(NULL == lpszString)
-	{
-		return;
-	}
-	while(lpszString[nIndex++])
-	{
-		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
-		{
-			lpszString[nIndex] += 'A' - 'a';
-		}
-	}
-}
 
 //Create a new file in the specified directory.
 //Input of lpDrcb:
@@ -148,7 +130,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 	pBuffer      = (BYTE*)lpDrcb->lpInputBuffer;
 	pBufferEnd   = pBuffer + dwWriteSize;
 
-	pClusBuffer  = (BYTE*)KMemAlloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pClusBuffer  = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
 	if(NULL == pClusBuffer)  //Can not allocate buffer.
 	{
 		goto __TERMINAL;
@@ -334,7 +316,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 	{
 		dwToRead = (pFatFile->dwFileSize - pFatFile->dwCurrPos);
 	}
-	pBuffer = (BYTE*)KMemAlloc(pFatFs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFatFs->dwClusterSize);
 	if(NULL == pBuffer)  //Can not allocate memory.
 	{
 		_hx_printf("FatDeviceRead times:ClusterSize=%d",(INT)pFatFs->dwClusterSize);		
@@ -441,10 +423,10 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 		}
 	}
 __TERMINAL:
-	if(pBuffer)
-	{
-		RELEASE_OBJECT(pBuffer);
-	}
+
+	
+	FatMem_Free(pBuffer);
+
 	return dwTotalRead;
 }
 
