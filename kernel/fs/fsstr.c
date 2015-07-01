@@ -83,10 +83,11 @@ BOOL GetFullNameLevel(CHAR* pFullName,DWORD* pdwLevel)
 BOOL GetSubDirectory(CHAR* pFullName,DWORD dwLevel,CHAR* pSubDir)
 {
 	BOOL       bResult         = FALSE;
+	BYTE       buffer[256]     = {0};  //Contain sub-directory name temporary.
 	DWORD      dwTotalLevel    = 0;
 	DWORD      i = 0;
 	DWORD      j = 0;
-	BYTE       buffer[16];  //Contain sub-directory name temporary.
+	
 
 	if((NULL == pFullName) || (NULL == pSubDir) || (0 == dwLevel))  //Level shoud not be zero.
 	{

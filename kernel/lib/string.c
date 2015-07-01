@@ -341,12 +341,14 @@ VOID ToCapital(LPSTR lpszString)
 	{
 		return;
 	}
-	while(lpszString[nIndex++])
+	while(lpszString[nIndex])
 	{
 		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
 		{
 			lpszString[nIndex] += 'A' - 'a';
 		}
+
+		nIndex ++;
 	}
 }
 
