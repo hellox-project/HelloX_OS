@@ -143,7 +143,7 @@
 //************************************************************************
 
 //Include IDE driver in OS.
-#define __CFG_DRV_IDE
+//#define __CFG_DRV_IDE
 
 //Include COM driver in OS.
 #define __CFG_DRV_COM

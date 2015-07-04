@@ -303,18 +303,15 @@ void __OS_Entry()
 	dwIndex = 0;
 	while(DriverEntryArray[dwIndex])
 	{
-		PrintStr("IOManager.LoadDriver-");
-		PrintStr(dwIndex);
+		_hx_sprintf(strInfo, "IOManager.LoadDriver-%d", dwIndex);
+		PrintLine(strInfo);
 		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex])) //Failed to load.
 		{
-			_hx_sprintf(strInfo,"Failed to load the %dth driver.",dwIndex); //Show an error.
+			_hx_sprintf(strInfo,"Failed to load the %dth driver.", dwIndex); //Show an error.
 			PrintLine(strInfo);
 		}
 		dwIndex++;  //Continue to load.
-
-		PrintStr("ok");
-		GotoHome();
-		ChangeLine();
+		PrintLine("ok");
 	}
 #endif
 
@@ -486,9 +483,6 @@ void __OS_Entry()
 	GotoHome();
 	ChangeLine();
 
-
-
-	DebugManager.Initialize(&DebugManager);
 	lpLogcatDaemonThread = KernelThreadManager.kCreateKernelThread(   //Create logcat daemon thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
