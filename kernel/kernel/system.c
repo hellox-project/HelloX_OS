@@ -47,7 +47,8 @@ __PERF_RECORDER  TimerIntPr = {
 	U64_ZERO,
 	U64_ZERO,
 	U64_ZERO,
-	U64_ZERO};                  //Performance recorder object used to mesure
+	U64_ZERO
+};                  //Performance recorder object used to mesure
                                 //the performance of timer interrupt.
 
 //
@@ -68,6 +69,7 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 	__KERNEL_THREAD_OBJECT*   lpKernelThread    = NULL;
 	DWORD                     dwFlags           = 0;
 
+	PrintStr("TimerInterruptHandler");
 	if(NULL == lpEsp)    //Parameter check.
 	{
 		return TRUE;
@@ -961,6 +963,8 @@ __SYSTEM System = {
 
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
+	PrintStr("=======GeneralIntHandler=========");
+	PrintLine("=======GeneralIntHandler======="); 
 	UCHAR    ucVector = (BYTE)(dwVector);
 
 	if(IS_EXCEPTION(ucVector))  //Exception.

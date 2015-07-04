@@ -32,7 +32,8 @@ os_entry.o: os_entry.c /usr/include/stdc-predef.h \
  ../../kernel/include/lwip/netbuf.h ../../kernel/include/lwip/netifapi.h \
  ../../kernel/include/lwip/timers.h ../../kernel/include/buffmgr.h \
  ../shell/shell.h ../shell/stat_s.h ../kthread/idle.h \
- ../network/ethernet/ethif.h ../arch/x86/biosvga.h
+ ../network/ethernet/ethif.h ../kthread/logcat.h \
+ ../../kernel/include/ktmgr.h ../arch/x86/biosvga.h
 
 /usr/include/stdc-predef.h:
 
@@ -169,5 +170,9 @@ os_entry.o: os_entry.c /usr/include/stdc-predef.h \
 ../kthread/idle.h:
 
 ../network/ethernet/ethif.h:
+
+../kthread/logcat.h:
+
+../../kernel/include/ktmgr.h:
 
 ../arch/x86/biosvga.h:

@@ -36,6 +36,8 @@
 #include "../kthread/idle.h"
 #include "../network/ethernet/ethif.h"
 
+#include "../kthread/logcat.h"
+#include "ktmgr.h"
 
 #ifdef __I386__
 #include "../arch/x86/biosvga.h"
@@ -90,6 +92,7 @@ void __OS_Entry()
 {
 	__KERNEL_THREAD_OBJECT*       lpIdleThread     = NULL;
 	__KERNEL_THREAD_OBJECT*       lpShellThread    = NULL;
+	__KERNEL_THREAD_OBJECT*		lpLogcatDaemonThread = NULL;
 #ifdef __CFG_USE_EOS
 	__KERNEL_THREAD_OBJECT*       lpUserThread     = NULL;
 #endif
@@ -118,6 +121,11 @@ void __OS_Entry()
 
 	//Prepare the OS initialization environment.It's worth noting that even the System
 	//object self is not initialized yet.
+
+
+	PrintStr("System.BeginInitialize");
+	GotoHome();
+	ChangeLine();
 	if(!System.BeginInitialize((__COMMON_OBJECT*)&System))
 	{
 		pszErrorMsg = "INIT ERROR: System.BeginInitialization routine failed.";
@@ -126,7 +134,9 @@ void __OS_Entry()
 
 	//Initialize memory management object.This object must be initialized before any other
 	//system level objects since it's function maybe required by them.
-
+	PrintStr("AntSize.Buffer.initialize");
+	GotoHome();
+	ChangeLine();
 	if(!AnySizeBuffer.Initialize(&AnySizeBuffer))
 	{
 		pszErrorMsg = "INIT ERROR: Failed to initialize AnySizeBuffer object.";
@@ -145,6 +155,10 @@ void __OS_Entry()
 	//********************************************************************************
 
 #ifdef __CFG_SYS_VMM    //Should enable virtual memory model.
+	PrintStr("__CFG_SYS_VMM ObjectManager.CreateObject");
+	GotoHome();
+	ChangeLine();
+
 	lpVirtualMemoryMgr = (__VIRTUAL_MEMORY_MANAGER*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_VIRTUAL_MEMORY_MANAGER);    //Create virtual memory manager object.
@@ -161,7 +175,11 @@ void __OS_Entry()
 	}
 #endif
 
+
 	//Initialize the process manager object.
+	PrintStr("ProcessManager.Initialize");
+	GotoHome();
+	ChangeLine();
 	if(!ProcessManager.Initialize((__COMMON_OBJECT*)&ProcessManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize ProcessManager object.";
@@ -169,6 +187,11 @@ void __OS_Entry()
 	}
 
 	//Initialize Kernel Thread Manager object.
+	//Initialize the process manager object.
+	PrintStr("KernelThreadManager.Initialize");
+	GotoHome();
+	ChangeLine();
+
 	if(!KernelThreadManager.Initialize((__COMMON_OBJECT*)&KernelThreadManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize KernelThreadManager object.";
@@ -176,6 +199,9 @@ void __OS_Entry()
 	}
 
 	//Initialize System object.
+	PrintStr("System.Initialize");
+	GotoHome();
+	ChangeLine();
 	if(!System.Initialize((__COMMON_OBJECT*)&System))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize System object.";
@@ -187,10 +213,18 @@ void __OS_Entry()
 	//This routine must be called earlier than any modules who will use
 	//system call.
 #ifdef __I386__
+	PrintStr("SetGeneralIntHandler");
+	GotoHome();
+	ChangeLine();
+
 	SetGeneralIntHandler(GeneralIntHandler);
 #endif
 
 #ifdef __CFG_SYS_VMM
+	PrintStr("PageFrameManager.Initialize");
+	GotoHome();
+	ChangeLine();
+
 	//Initialize PageFrmaeManager object.
 	if(!PageFrameManager.Initialize((__COMMON_OBJECT*)&PageFrameManager,
 		(LPVOID)0x02000000,
@@ -203,6 +237,10 @@ void __OS_Entry()
 
 	//Device Driver Framework related global functions.
 #ifdef __CFG_SYS_DDF
+
+	PrintStr("IOManager.Initialize");
+	GotoHome();
+	ChangeLine();
 	//Initialize IOManager object.
 	if(!IOManager.Initialize((__COMMON_OBJECT*)&IOManager))
 	{
@@ -211,6 +249,9 @@ void __OS_Entry()
 	}
 
 	//Initialize DeviceManager object.
+	PrintStr("DeviceManager.Initialize");
+	GotoHome();
+	ChangeLine();
 	if(!DeviceManager.Initialize(&DeviceManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize DeviceManager object.";
@@ -220,6 +261,9 @@ void __OS_Entry()
 
 	//Initialize CPU statistics object.
 #ifdef __CFG_SYS_CPUSTAT
+	PrintStr("StatCpuObject.Initialize");
+	GotoHome();
+	ChangeLine();
 	if(!StatCpuObject.Initialize(&StatCpuObject))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize StatCpuObject.";
@@ -229,11 +273,19 @@ void __OS_Entry()
 
 	//Enable the virtual memory management mechanism if __CFG_SYS_VMM flag is defined.
 #ifdef __CFG_SYS_VMM
+
+	PrintStr("EnableVMM");
+	GotoHome();
+	ChangeLine();
 	EnableVMM();
 #endif
 
 	//Initialize Ethernet Manager if it is enabled.
 #ifdef __CFG_NET_ETHMGR
+	PrintStr("EthernetManager.Initialize");
+	GotoHome();
+	ChangeLine();
+	EnableVMM();
 	if(!EthernetManager.Initialize(&EthernetManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Ethernet Manager.\r\n";
@@ -251,17 +303,27 @@ void __OS_Entry()
 	dwIndex = 0;
 	while(DriverEntryArray[dwIndex])
 	{
+		PrintStr("IOManager.LoadDriver-");
+		PrintStr(dwIndex);
 		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex])) //Failed to load.
 		{
 			_hx_sprintf(strInfo,"Failed to load the %dth driver.",dwIndex); //Show an error.
 			PrintLine(strInfo);
 		}
-		dwIndex ++;  //Continue to load.
+		dwIndex++;  //Continue to load.
+
+		PrintStr("ok");
+		GotoHome();
+		ChangeLine();
 	}
 #endif
 
 	//Initialize Console object if necessary.
 #ifdef __CFG_SYS_CONSOLE
+	PrintStr("Console.Initialize");
+	GotoHome();
+	ChangeLine();
+
 	if(!Console.Initialize(&Console))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Console object.";
@@ -279,6 +341,10 @@ void __OS_Entry()
 	//so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
 	//Also need to mention that this thread is mandatory and without any switch to turn off
 	//it.
+	PrintStr("KernelThreadManager.kCreateKernelThread");
+		GotoHome();
+		ChangeLine();
+
 	lpIdleThread = KernelThreadManager.kCreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -294,12 +360,19 @@ void __OS_Entry()
 		goto __TERMINAL;
 	}
 	//Disable suspend on this kernel thread,since it may lead system crash.
+	PrintStr("KernelThreadManager.kEnableSuspend");
+		GotoHome();
+		ChangeLine();
 	KernelThreadManager.kEnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIdleThread,
 		FALSE);
 
 	//Create statistics kernel thread.
 #ifdef __CFG_SYS_CPUSTAT
+	PrintStr("__CFG_SYS_CPUSTAT");
+			GotoHome();
+			ChangeLine();
+
 	lpStatKernelThread = KernelThreadManager.kCreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -321,6 +394,10 @@ void __OS_Entry()
 #ifdef __CFG_SYS_SHELL  //Shell can be eleminated by turn off this switch.
 	if(NULL == ModuleMgr.ShellEntry)  //Use default shell.
 	{
+		PrintStr("__CFG_SYS_SHELL ShellEntry");
+		GotoHome();
+		ChangeLine();
+
 		lpShellThread = KernelThreadManager.kCreateKernelThread(   //Create shell thread.
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
@@ -338,6 +415,11 @@ void __OS_Entry()
 	}
 	else    //Use other kernel module specified shell.
 	{
+		PrintStr("__CFG_SYS_SHELL");
+		GotoHome();
+		ChangeLine();
+
+
 		lpShellThread = KernelThreadManager.kCreateKernelThread(   //Create shell thread.
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
@@ -359,6 +441,9 @@ void __OS_Entry()
 #endif
 
 	//Initialize DeviceInputManager object.
+		PrintStr("DeviceInputManager.Initialize");
+		GotoHome();
+		ChangeLine();
 	if(!DeviceInputManager.Initialize((__COMMON_OBJECT*)&DeviceInputManager,
 		NULL,
 		(__COMMON_OBJECT*)lpShellThread))
@@ -375,6 +460,10 @@ void __OS_Entry()
 
 	//Create user kernel thread.
 #ifdef __CFG_USE_EOS
+	PrintStr("__CFG_USE_EOS");
+	GotoHome();
+	ChangeLine();
+
 	lpUserThread = KernelThreadManager.kCreateKernelThread(   //Create shell thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -393,6 +482,12 @@ void __OS_Entry()
 
 	//If log debugging functions is enabled.
 #ifdef __CFG_SYS_LOGCAT
+	PrintStr("__CFG_SYS_LOGCAT");
+	GotoHome();
+	ChangeLine();
+
+
+
 	DebugManager.Initialize(&DebugManager);
 	lpLogcatDaemonThread = KernelThreadManager.kCreateKernelThread(   //Create logcat daemon thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
@@ -412,12 +507,20 @@ void __OS_Entry()
 #endif  //__CFG_SYS_LOGCAT.
 
 #ifdef __CFG_NET_IPv4  //IPv4 network protocol is enabled.
+	PrintStr("__CFG_NET_IPv4");
+		GotoHome();
+		ChangeLine();
+
 	if(!IPv4_Entry(NULL))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize IPv4 protocol function.";
 		goto __TERMINAL;
 	}
 #endif
+
+	PrintStr("System.EndInitialize");
+	GotoHome();
+	ChangeLine();
 
 	System.EndInitialize((__COMMON_OBJECT*)&System);
 	//Enter a dead loop to wait for the scheduling of kernel threads.

@@ -25,7 +25,7 @@
 
 #include "iomgr.h"
 #include "ktmgr.h"
-
+#include <chardisplay.h>
 
 //Available when and only when the __CFG_SYS_CONSOLE macro is defined.
 #ifdef __CFG_SYS_CONSOLE
@@ -160,6 +160,10 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 {
 	__COMMON_OBJECT* hCom1  = NULL;
 
+	PrintStr("pConsole=");
+	PrintStr(pConsole);
+	GotoHome();
+
 	if(NULL == pConsole)
 	{
 		return FALSE;
@@ -172,10 +176,17 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 		0,
 		0,
 		NULL);
+
+	//debug
+	PrintStr("hCom1=");
+	PrintStr(hCom1);
+	GotoHome();
+
 	if(NULL == hCom1)
 	{
 		return FALSE;
 	}
+
 	pConsole->hComInt      = hCom1;
 	pConsole->bInitialized = TRUE;
 	pConsole->nRowNum      = CON_MAX_ROWNUM;
@@ -191,6 +202,11 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 		NULL,
 		NULL,
 		CON_THREAD_NAME);
+
+	PrintStr("pConsole=");
+	PrintStr(pConsole);
+	GotoHome();
+
 	if(NULL == pConsole->hConThread)  //Failed to create thread.
 	{
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,pConsole->hComInt);

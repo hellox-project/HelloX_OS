@@ -18,7 +18,8 @@ console.o: console.c ../../kernel/include/StdAfx.h \
  ../../kernel/include/globvar.h ../../kernel/include/chardisplay.h \
  ../../kernel/config.h ../../kernel/include/types.h \
  ../../kernel/include/console.h ../../kernel/include/hellocn.h \
- ../../kernel/include/iomgr.h ../../kernel/include/ktmgr.h
+ ../../kernel/include/iomgr.h ../../kernel/include/ktmgr.h \
+ ../../kernel/include/chardisplay.h
 
 ../../kernel/include/StdAfx.h:
 
@@ -97,3 +98,5 @@ console.o: console.c ../../kernel/include/StdAfx.h \
 ../../kernel/include/iomgr.h:
 
 ../../kernel/include/ktmgr.h:
+
+../../kernel/include/chardisplay.h:

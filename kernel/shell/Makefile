@@ -177,7 +177,7 @@ AR = ar
 AUTOCONF = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing autoconf
 AUTOHEADER = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing autoheader
 AUTOMAKE = ${SHELL} /media/gaojie/jdev/helloX/git/HelloX_OS/missing automake-1.14
-AWK = mawk
+AWK = gawk
 CC = gcc
 CCAS = gcc
 CCASDEPMODE = depmode=gcc3
@@ -296,10 +296,9 @@ top_builddir = ../..
 top_srcdir = ../..
 noinst_LIBRARIES = libshell.a
 libshell_a_SOURCES = extcmd.c fdisk.c fs.c hiscmd.c ioctrl_s.c network.c shell.c shell_help.c stat_s.c fdisk2.c fibonacci.c hedit.c hypertrm.c  network2.c shell1.c  shell_help_smt32.c  sysd_s.c
-AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_POSIX_ -D_TIME_T_DEFINED \
-	-D_M_IX86 -I$(top_srcdir)/kernel/lib \
-	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config \
-	-I$(top_srcdir)/kernel/lib/sys
+AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_M_IX86 \
+	-I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/include \
+	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys
 all: all-am
 
 .SUFFIXES:
