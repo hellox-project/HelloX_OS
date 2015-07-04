@@ -17,7 +17,7 @@ drventry.o: drventry.c /usr/include/stdc-predef.h \
  ../../kernel/include/ktmsg.h ../../kernel/include/sysnet.h \
  ../../kernel/include/globvar.h ../../kernel/include/chardisplay.h \
  ../../kernel/config.h ../drivers/x86/keybrd.h ../fs/fat32.h \
- ../drivers/x86/idehd.h ../drivers/x86/mouse.h ../drivers/x86/com.h
+ ../drivers/x86/mouse.h ../drivers/x86/com.h
 
 /usr/include/stdc-predef.h:
 
@@ -92,8 +92,6 @@ drventry.o: drventry.c /usr/include/stdc-predef.h \
 ../drivers/x86/keybrd.h:
 
 ../fs/fat32.h:
-
-../drivers/x86/idehd.h:
 
 ../drivers/x86/mouse.h:
 
