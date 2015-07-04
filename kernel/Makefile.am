@@ -13,7 +13,7 @@ HX_INCLUDES += -I$(top_srcdir)/kernel/lib/sys -I$(top_srcdir)/kernel/lib
 
 HX_FLAGS =
 HX_FLAGS += -nostdlib -nostdinc -m32 
-HX_FLAGS += -D_POSIX_  -D_TIME_T_DEFINED -D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
+HX_FLAGS +=   -D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
 HX_FLAGS += $(HX_INCLUDES)
 HX_FLAGS += -Wall
 

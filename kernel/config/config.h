@@ -146,7 +146,7 @@
 #define __CFG_DRV_IDE
 
 //Include COM driver in OS.
-//#define __CFG_DRV_COM
+#define __CFG_DRV_COM
 
 //Include USART driver in OS,specific for STM32 or ARM platform.
 //#define __CFG_DRV_USART
@@ -222,4 +222,7 @@
 
 //Enable or disable Java virtual machine in system.
 //#define __CFG_APP_JVM
+
+#define _TIME_T_DEFINED
+#define _POSIX_
 

@@ -16,8 +16,9 @@ logcat.o: logcat.c /usr/include/stdc-predef.h \
  ../../kernel/include/heap.h ../../kernel/include/buffmgr.h \
  ../../kernel/include/ktmsg.h ../../kernel/include/sysnet.h \
  ../../kernel/include/globvar.h ../../kernel/include/chardisplay.h \
- ../../kernel/config.h ../../kernel/include/debug.h \
- ../../kernel/include/console.h ../../kernel/include/kapi.h
+ ../../kernel/config.h ../../kernel/include/kapi.h \
+ ../../kernel/include/debug.h ../../kernel/include/console.h \
+ ../../kernel/include/ktmgr.h
 
 /usr/include/stdc-predef.h:
 
@@ -89,8 +90,10 @@ logcat.o: logcat.c /usr/include/stdc-predef.h \
 
 ../../kernel/config.h:
 
+../../kernel/include/kapi.h:
+
 ../../kernel/include/debug.h:
 
 ../../kernel/include/console.h:
 
-../../kernel/include/kapi.h:
+../../kernel/include/ktmgr.h:

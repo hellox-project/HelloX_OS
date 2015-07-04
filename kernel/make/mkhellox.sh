@@ -25,8 +25,9 @@ REALINIT_BIN=realinit.bin
 MINIKER_BIN=miniker.bin
 
 
-KERNEL_BIN=kernel.bin
-#KERNEL_BIN=master.bin
+#KERNEL_BIN=kernel.bin
+KERNEL_BIN=master.bin
+MASTER_BIN=$KERNEL_BIN
 
 ##拷贝上页输出内核
 cp ../$KERNEL_ELF .
@@ -34,6 +35,12 @@ cp ../$KERNEL_ELF .
 #将内核elf文件中二进制提取到bin
 objcopy -O binary -j .rodata -j .text -j .data -j .bss  -S -g $KERNEL_ELF $KERNEL_BIN
 echo "$KERNEL_BIN"
+
+echo "cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN"
+cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN
+exit 1
+
+rm -rf $HELLOX_IMG
 
 echo "生成空白软盘镜像文件"
 dd if=/dev/zero of=$HELLOX_IMG bs=512 count=2880 
@@ -48,6 +55,9 @@ echo "写入$MINIKER_BIN"
 dd if=$MINIKER_BIN of=$HELLOX_IMG bs=512 seek=10 conv=notrunc
 
 echo "写入$KERNEL_BIN"
-dd if=$KERNEL_BIN of=$HELLOX_IMG  bs=512 seek=264 conv=notrunc
+dd if=$KERNEL_BIN of=$HELLOX_IMG  bs=512 seek=264 count=6 conv=notrunc
+dd if=$KERNEL_BIN of=$HELLOX_IMG  bs=512 skip=6 seek=288 count=300 conv=notrunc
+dd if=$KERNEL_BIN of=$HELLOX_IMG  bs=512 skip=306 seek=302 conv=notrunc
+
 
 echo "写入完毕:$HELLOX_IMG"

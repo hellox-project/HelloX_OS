@@ -4,4 +4,4 @@ libkernel_a_SOURCES = chardisplay.c  debug.c   heap.c    kapi.c     ktmgr2.c   m
 AM_CPPFLAGS = -nostdlib -nostdinc -m32 
 AM_CPPFLAGS += -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/config 
 
-AM_CPPFLAGS += -D__CFG_SYS_CONSOLE -D_POSIX_
+AM_CPPFLAGS +=

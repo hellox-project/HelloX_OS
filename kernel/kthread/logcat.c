@@ -18,9 +18,10 @@
 #include <StdAfx.h>
 #endif
 
+#include <kapi.h>
 #include <debug.h>
 #include <console.h>
-#include <kapi.h>
+#include <ktmgr.h>
 
 
 //Only available when logging service is enabled.
@@ -39,7 +40,7 @@ DWORD LogcatDaemon(LPVOID pData)
 				Console.PrintLine(buf);
 			}
 		}
-		KernelThreadManager.Sleep((__COMMON_OBJECT *)&KernelThreadManager, 500);
+		KernelThreadManager.kSleep((__COMMON_OBJECT *)&KernelThreadManager, 500);
 	}
 
 }
