@@ -60,22 +60,22 @@ extern __DRIVER_ENTRY DriverEntryArray[];
 static void DeadLoop(BOOL bDisableInt)
 {
 	//DWORD dwFlags;
-
+	PrintLine("loop..."); GotoHome();
 	if (bDisableInt)
 	{
 		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 		while (TRUE){
-			PrintLine("loop TRUE"); GotoHome();
+			//PrintLine("loop TRUE"); GotoHome();
 		}
 		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{
 		while (TRUE){
-			PrintLine("loop FALSE"); GotoHome();
+			//PrintLine("loop FALSE"); GotoHome();
 		}
 	}
-	PrintLine("loop");
+	//PrintLine("loop");
 }
 
 //User entry point if used as EOS.

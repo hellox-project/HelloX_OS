@@ -22,13 +22,15 @@
 
 INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 {
+	PrintLine("SetGeneralIntHandler\n");
 #ifdef _POSIX_
 	__asm__ (
-	"pushl	%%ebx	\n\t"
-	"pushl	%%ecx	\n\t"
-	"movl 	%0,	%%ebx	\n\t"
-	"movl 	%1,	%%eax			\n\t"
+	"pushl	%%ebx							\n\t"
+	"pushl	%%ecx							\n\t"
+	"movl 	%0,	%%ebx						\n\t"
+	"movl 	%1,	%%eax						\n\t"
 	"movl (%%ebx),			%%ecx			\n\t"
+	"movl %%eax,			(%%ebx)			\n\t"
 	"movl %%ecx,			%%eax			\n\t"
 	"popl	%%ecx							\n\t"
 	"popl	%%ebx							\n\t"

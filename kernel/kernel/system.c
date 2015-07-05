@@ -963,8 +963,7 @@ __SYSTEM System = {
 
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
-	PrintStr("=======GeneralIntHandler=========");
-	PrintLine("=======GeneralIntHandler======="); 
+	PrintStr("=======GeneralIntHandler=========\n");
 	UCHAR    ucVector = (BYTE)(dwVector);
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
