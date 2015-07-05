@@ -16,7 +16,7 @@ cd $LPWD
 
 fi
 
-echo "制作软盘中。。。"
+echo "编译完成"
 
 KERNEL_ELF=hellox_kernel
 HELLOX_IMG=hellox.img

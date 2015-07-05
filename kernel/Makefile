@@ -330,13 +330,14 @@ top_builddir = ..
 top_srcdir = ..
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = kernel kapi kthread network shell drivers/x86 lib osentry fs
+SUBDIRS = kernel kapi kthread network shell drivers/x86 lib osentry fs arch/x86
 HX_INCLUDES = -I$(top_srcdir)/kernel/include \
 	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys \
 	-I$(top_srcdir)/kernel/lib
-HX_FLAGS = -nostdlib -nostdinc -m32 -D_M_IX86 -DHAVE_CONFIG_H \
-	-D__CFG_SYS_MMFBL -D__CFG_SYS_DDF $(HX_INCLUDES) -Wall
-HXLDFLAGS = -nostdlib -nostdinc -m32 -e__OS_Entry -Ttext 0x110000 \
+HX_FLAGS = -nostdlib -nostdinc -fno-stack-protector -fno-builtin -m32 \
+	-D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF \
+	$(HX_INCLUDES) -Wall
+HXLDFLAGS = -e__OS_Entry -Ttext 0x110000 -nostdlib -nostdinc -m32 \
 	$(HX_FLAGS)
 LDADD = ./osentry/libosentry.a ./lib/libhellolib.a \
 	./drivers/x86/libdrivers.a ./shell/libshell.a \
