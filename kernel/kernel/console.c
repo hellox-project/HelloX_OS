@@ -159,11 +159,6 @@ static DWORD ConReadThread(LPVOID pData)
 static BOOL ConInitialize(__CONSOLE* pConsole)
 {
 	__COMMON_OBJECT* hCom1  = NULL;
-
-	PrintStr("pConsole=");
-	PrintStr(pConsole);
-	GotoHome();
-
 	if(NULL == pConsole)
 	{
 		return FALSE;
@@ -178,9 +173,7 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 		NULL);
 
 	//debug
-	PrintStr("hCom1=");
-	PrintStr(hCom1);
-	GotoHome();
+	PrintLine("hCom1="); PrintLine(hCom1);
 
 	if(NULL == hCom1)
 	{

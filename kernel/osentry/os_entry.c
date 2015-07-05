@@ -56,19 +56,26 @@ char* pszHelpInfo = "Any help please press 'help' + return.";
 extern __DRIVER_ENTRY DriverEntryArray[];
 
 //A dead loop routine.
+//static
 static void DeadLoop(BOOL bDisableInt)
 {
 	//DWORD dwFlags;
+
 	if (bDisableInt)
 	{
 		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
-		while (TRUE);
+		while (TRUE){
+			PrintLine("loop TRUE"); GotoHome();
+		}
 		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{
-		while (TRUE);
+		while (TRUE){
+			PrintLine("loop FALSE"); GotoHome();
+		}
 	}
+	PrintLine("loop");
 }
 
 //User entry point if used as EOS.
@@ -307,7 +314,7 @@ void __OS_Entry()
 		PrintLine(strInfo);
 		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex])) //Failed to load.
 		{
-			_hx_sprintf(strInfo,"Failed to load the %dth driver.", dwIndex); //Show an error.
+			_hx_sprintf(strInfo,"Failed to load the %d th driver.", dwIndex); //Show an error.
 			PrintLine(strInfo);
 		}
 		dwIndex++;  //Continue to load.
