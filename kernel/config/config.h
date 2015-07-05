@@ -167,7 +167,7 @@
 //************************************************************************
 
 //Include FAT32 file system function in OS.
-#define __CFG_FS_FAT32
+//#define __CFG_FS_FAT32
 
 //Include NTFS file system function in OS.
 //#define __CFG_FS_NTFS
