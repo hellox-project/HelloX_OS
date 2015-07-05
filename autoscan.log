@@ -1,3 +1,0 @@
-autoscan: warning: missing AC_PROG_RANLIB wanted by: 
-	ltmain.sh:2455
-	kernel/kernel/makefile.in:259
