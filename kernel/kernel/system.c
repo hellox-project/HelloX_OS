@@ -596,6 +596,8 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 	}
 
 	lpIntObject = lpSystem->lpInterruptVector[ucVector];
+	_hx_printf("lpIntObject=%p\n", lpIntObject);
+
 	if(NULL == lpIntObject)  //The current interrupt vector has not handler object.
 	{
 		DefaultIntHandler(lpEsp,ucVector);
@@ -963,7 +965,7 @@ __SYSTEM System = {
 
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
-	PrintStr("=======GeneralIntHandler=========\n");
+	//PrintLine("GeneralIntHandler");
 	UCHAR    ucVector = (BYTE)(dwVector);
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
