@@ -509,8 +509,8 @@ void __OS_Entry()
 
 #ifdef __CFG_NET_IPv4  //IPv4 network protocol is enabled.
 	PrintStr("__CFG_NET_IPv4");
-		GotoHome();
-		ChangeLine();
+	GotoHome();
+	ChangeLine();
 
 	if(!IPv4_Entry(NULL))
 	{
