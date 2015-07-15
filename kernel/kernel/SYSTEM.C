@@ -630,52 +630,41 @@ __RETFROMINT:
 }
 
 //Default handler of Exception.
-static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
+static VOID DefaultExcepHandler(LPVOID pESP, UCHAR ucVector)
+
 {
-	CHAR Buff[64];
-	static DWORD totalExcepNum = 0;
-#ifdef __I386__
-	DWORD excepAddr = 0;
-#endif
 	__KERNEL_THREAD_OBJECT* pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	DWORD dwFlags;
+	static DWORD totalExcepNum = 0;
 
 	//Switch to text mode,because the exception maybe caused in GUI mode.
 #ifdef __I386__
 	SwitchToText();
 #endif
-	_hx_sprintf(Buff,"  Unknown exception occured: excep number = %d",ucVector);
-	PrintLine(Buff);
-	totalExcepNum ++;
-	if(totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
+	_hx_printf("Exception occured: #%d.\r\n", ucVector);
+	totalExcepNum++;  //Increase total exception number.
+
+	//Show kernel thread information which lead the exception.
+	if (pKernelThread)
 	{
-		PrintLine("  Fatal error : total unhandled exception number reached maximal value!");
-		PrintLine("  Please power off the system and reboot it.");
-		if(pKernelThread)
-		{
-			_hx_sprintf(Buff,"  Exception thread ID = %d.",pKernelThread->dwThreadID);
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  Exception thread name : %s.",pKernelThread->KernelThreadName);
-			PrintLine(Buff);
-			//Get the exception address try to access.
-#ifdef __I386__
-			__asm{
-				push eax
-				mov eax,cr2
-				mov excepAddr,eax
-				pop eax
-			}
-			_hx_sprintf(Buff,"  Exception memaddr = 0x%X.",excepAddr);
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  EIP    = 0x%X.",*((DWORD*)pESP + 8));
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  CS     = 0x%X.",*((DWORD*)pESP + 9));
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  EFlags = 0x%X.",*((DWORD*)pESP + 10));
-			PrintLine(Buff);
-#else
-#endif
-		}
-		while(1); //Make a dead loop.
+		_hx_printf("\tCurrent kthread ID: %d.\r\n", pKernelThread->dwThreadID);
+		_hx_printf("\tCurrent kthread name: %s.\r\n", pKernelThread->KernelThreadName);
+	}
+	else //In process of system initialization.
+	{
+		_hx_printf("\tException occured in process of initialization.\r\n");
+	}
+
+	//Call processor specific exception handler.
+	PSExcepHandler(pESP, ucVector);
+
+	if (totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
+	{
+		_hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n", totalExcepNum);
+		_hx_printf("Please power off the system and reboot it.\r\n");
+		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		while (1); //Make a dead loop.
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	return;
 }
