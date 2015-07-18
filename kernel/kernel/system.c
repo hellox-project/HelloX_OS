@@ -628,7 +628,6 @@ __RETFROMINT:
 		}
 		else
 		{
-			_hx_printf("schedule interrupt");
 			KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
 				lpEsp);  //Re-schedule kernel thread.
 		}

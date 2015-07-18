@@ -112,8 +112,8 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 	"xorl	%%eax,	%%eax     				\n\t"
 	"movw	%%cs,	%%ax          				\n\t"
 	"pushl	%%eax           				\n\t"
-	"pushl	%4      						\n\t"
-	"pushl  %5      						\n\t"
+	"pushl	%3      						\n\t"
+	"pushl  %4      						\n\t"
 	"pushl %%ebx                          	\n\t"
 	"pushl %%ecx                          	\n\t"
 	"pushl %%edx                          	\n\t"
@@ -121,7 +121,7 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 	"pushl %%edi                          	\n\t"
 	"pushl %%ebp                          	\n\t"
 	"             	                     	\n\t"
-	"movl %4, %%ebp                  		\n\t"
+	"movl %5, %%ebp                  		\n\t"
 	"movl 0x04(%%ebp),	%%ebx				\n\t"
 	"movl %%esp,	(%%ebx)					\n\t"
 	"                                     	\n\t"
@@ -135,8 +135,8 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 	"popl %%ebx         					\n\t"
     "popl %%eax							\n\t"
     "iret"
-	:"=m"(dwTmpEbp),"=m"(dwTmpEip),"=m"(dwTmpEax),"=m"(dwTmpEbp)
-	:"m"(dwTmpEip),"m"(dwTmpEax)
+	:"=m"(dwTmpEbp),"=m"(dwTmpEip),"=m"(dwTmpEax)
+	:"m"(dwTmpEip),"m"(dwTmpEax),"m"(dwTmpEbp)
 	);
 #else
 	__asm{
@@ -269,6 +269,8 @@ VOID __GetTsc(__U64* lpResult)
 #ifdef _POSIX_
 	__asm__(
 		".code32		\n\t"
+		"pushl	%%ebp	\n\t"
+		"movl	%%esp,	%%ebp	\n\t"
 		"pushl 	%%eax	\n\t"
 		"pushl	%%edx	\n\t"
 		"pushl	%%ebx	\n\t"
@@ -279,6 +281,8 @@ VOID __GetTsc(__U64* lpResult)
 		"popl	%%ebx	\n\t"
 		"popl	%%edx	\n\t"
 		"popl	%%eax	\n\t"
+		"popl	%%ebp	\n\t"
+		"ret			\n\t"
 			::
 	);
 #else
