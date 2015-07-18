@@ -24,15 +24,7 @@ extern "C" {
 #ifdef __I386__
 #ifdef _POSIX_
 	#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags)	\
-		__asm__ __volatile__ (			\
-			"pushl %%eax		\n\t"	\
-			"pushfl				\n\t"	\
-			"popl %%eax			\n\t"	\
-			"movl %%eax, %0		\n\t"	\
-			"popl %%eax			\n\t"	\
-			"cli				\n\t"	\
-			: "=r"(dwFlags): );
-
+		__asm__ __volatile__("pushfl; popl %0 ; cli" : "=g" (dwFlags): /* no input */ :"memory");
 #else
 
 	#define __ENTER_CRITICAL_SECTION(lpObj, dwFlags) \
@@ -57,14 +49,8 @@ extern "C" {
 
 #ifdef _POSIX_
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)	\
-	__asm__ __volatile__(		\
-		".code32	\n\t"		\
-		"pushl %0	\n\t"		\
-		"popfl		\n\t"		\
-			:					\
-			:"r"(dwFlags));
+	__asm__ __volatile__("pushl %0; popf " :	 : "g"(dwFlags): "memory")
 #else
-
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags) \
     __asm {				\
 		push dwFlags 	\
@@ -87,7 +73,7 @@ extern "C" {
 		__asm__("outb %%al, $0x20	\n\t"::);		\
 		__asm__("outb %%al, $0xa0	\n\t"::);		\
 		__asm__("popl %%eax			\n\t"::);		\
-		__asm__("sti	\n\t":::"memory");					\
+		__asm__("sti	\n\t"	:::	"memory");					\
 	}
 #else
 	#define __ENABLE_INTERRUPT() 	\

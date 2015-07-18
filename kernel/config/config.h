@@ -99,7 +99,7 @@
 #define __CFG_SYS_IS
 
 //Include virtual memory management functions in OS.
-//#define __CFG_SYS_VMM
+#define __CFG_SYS_VMM
 
 //Enable or disable interrupt nest.It should be disabled under x86 platform,
 //and maybe enabled on ARM platform.
