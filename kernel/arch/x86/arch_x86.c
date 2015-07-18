@@ -112,8 +112,8 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 	"xorl	%%eax,	%%eax     				\n\t"
 	"movw	%%cs,	%%ax          				\n\t"
 	"pushl	%%eax           				\n\t"
-	"pushl	%3      				\n\t"
-	"pushl %4      				\n\t"
+	"pushl	%4      						\n\t"
+	"pushl  %5      						\n\t"
 	"pushl %%ebx                          	\n\t"
 	"pushl %%ecx                          	\n\t"
 	"pushl %%edx                          	\n\t"
@@ -121,10 +121,10 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 	"pushl %%edi                          	\n\t"
 	"pushl %%ebp                          	\n\t"
 	"             	                     	\n\t"
-	"movl %%ebp,%5                  		\n\t"
+	"movl %4, %%ebp                  		\n\t"
 	"movl 0x04(%%ebp),	%%ebx				\n\t"
 	"movl %%esp,	(%%ebx)					\n\t"
-	"                                     \n\t"
+	"                                     	\n\t"
 	"movl 0x08(%%ebp),	%%ebx				\n\t"
 	"movl (%%ebx),		%%esp   			  \n\t"
 	"popl %%ebp                              \n\t"
@@ -135,8 +135,8 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 	"popl %%ebx         					\n\t"
     "popl %%eax							\n\t"
     "iret"
-	:"=m"(dwTmpEbp),"=m"(dwTmpEip),"=m"(dwTmpEax)
-	:"m"(dwTmpEip),"m"(dwTmpEax),"m"(dwTmpEbp)
+	:"=m"(dwTmpEbp),"=m"(dwTmpEip),"=m"(dwTmpEax),"=m"(dwTmpEbp)
+	:"m"(dwTmpEip),"m"(dwTmpEax)
 	);
 #else
 	__asm{
@@ -309,14 +309,12 @@ static
 	"movl	%%esp,	%%ebp	\n\t"
 	"pushl	%%ebx			\n\t"
 	"pushl	%%edx			\n\t"
-
 	"movl	0x08(%%ebp),%%ebx	\n\t"
 	"xorw	%%ax,	%%ax	\n\t"
-	"movb	%0,	%%al	\n\t"
+	"movb	%0,	%%al		\n\t"
 	"outb	%%al,	$0x70	\n\t"
 	"inb	$0x71,	%%al	\n\t"
 	"movw	%%ax,	(%%ebx)	\n\t"
-
 	"popl	%%edx			\n\t"
 	"popl	%%ebx			\n\t"
 	"leave					\n\t"
@@ -395,18 +393,8 @@ VOID __MicroDelay(DWORD dwmSeconds)
 VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 {
 #ifdef _POSIX_
-	__asm__ (
-		".code32		\n\t"
-		"pushl	%%eax	\n\t"
-		"pushl	%%edx	\n\t"
-		"movw	%0,	%%dx	\n\t"
-		"movl	%1,	%%eax	\n\t"
-		"outw	%%eax,	%%dx	\n\t"
-		"popl	%%edx	\n\t"
-		"popl	%%eax	\n\t"
-		:
-		:"r"(wPort), "r"(dwVal)
-	);
+	asm volatile("outl %0,%1" : : "a" (dwVal), "dN" (wPort));
+
 #else
 	__asm{
 		push eax
@@ -424,18 +412,7 @@ DWORD __ind(WORD wPort)    //Read one double word from a port.
 {
 	DWORD    dwRet       = 0;
 #ifdef _POSIX_
-	__asm__(
-	".code32	\n\t"
-	"pushl	%%eax	\n\t"
-	"pushl	%%edx	\n\t"
-	"movb	%1,	%%dx	\n\t"
-	"inw	%%dx,	%%eax	\n\t"
-	"movl	%%eax,	%0	\n\t"
-	"popl	%%edx	\n\t"
-	"popl	%%eax	\n\t"
-	:"=r"(dwRet)
-	:"r"(wPort)
-	);
+	asm volatile("inl %1,%0" : "=a" (dwRet) : "dN" (wPort));
 #else
 	__asm{
 		push eax
@@ -453,18 +430,8 @@ DWORD __ind(WORD wPort)    //Read one double word from a port.
 VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 {
 #ifdef _POSIX_
-	__asm__(
-	".code32		    \n\t"
-	"pushl %%eax		\n\t"
-	"pushl %%edx        \n\t"
-	"movb %0, %%al      \n\t"
-	"movw %1, %%dx      \n\t"
-	"outb %%al, %%dx    \n\t"
-	"popl %%edx 	    \n\t"
-	"popl %%eax			\n\t"
-	:
-	:"r"(_bt),"r"(_port)
-	);
+	asm volatile("outb %0,%1" : : "a" (_bt), "dN" (_port));
+
 #else
 	__asm{
 		push eax
@@ -482,17 +449,8 @@ UCHAR __inb(WORD _port)  //Receive a byte from port.
 {
 	UCHAR uRet;
 #ifdef _POSIX_
-	__asm__ __volatile__(
-		".code32				\n\t"
-		"xorl 	%%eax,	%%eax 	\n\t"
-		"pushl 	%%edx    		\n\t"
-		"movw 	%1,		%%dx	\n\t"
-		"inb 	%%dx,	%%al    \n\t"
-		"popl	%%edx     		\n\t"
-		"movb 	%%al,	%0 		\n\t"
-			:"=c"(uRet)
-			:"r"(_port)
-	);
+	asm volatile("inb %1,%0" : "=a" (uRet) : "dN" (_port));
+
 #else
 	asm{
 		xor eax,eax
@@ -510,18 +468,7 @@ WORD __inw(WORD wPort)
 {
 	WORD    wRet       = 0;
 #ifdef _POSIX_
-	__asm__ (
-			".code32					\n\t"
-			"pushl %%eax				\n\t"
-			"pushl %%edx				\n\t"
-			"movw %1,%%dx				\n\t"
-			"inb %%dx,%%ax				\n\t"
-			"movb %%ax,%0				\n\t"
-			"popl %%edx					\n\t"
-			"popl %%eax					\n\t"
-			:"=r"(wRet)
-			:"r"(wPort)
-	);
+	asm volatile("inw %1,%0" : "=a" (wRet) : "dN" (wPort));
 #else
 	__asm{
 		push eax
@@ -539,20 +486,8 @@ WORD __inw(WORD wPort)
 VOID __outw(WORD wVal,WORD wPort)
 {
 #ifdef _POSIX_
-	__asm__(
-		".code32	\n\t"
-		"pushl %%eax				\n\t\
-		pushl 	%%edx             	\n\t\
-		movl %0,	%%ax          	\n\t\
-		movl %0,	%%dx         	\n\t\
-		outw %%ax, 	%%dx           	\n\t\
-		popl %%edx				 	\n\t\
-		popl %%eax					\n\t"
-			:
-			:"r"(wVal),"r"(wPort)
-	);
-
-	#else
+	asm volatile("outw %0,%1" : : "a" (wVal), "dN" (wPort));
+#else
 	__asm{
 		push eax
 		push edx
@@ -632,8 +567,8 @@ VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 	" popl %%esi                            \n\t"
 	" popl %%edx                            \n\t"
 	" popl %%ecx                            \n\t"
-	" leave                              \n\t"
-	" ret			                \n\t"	//retn
+	" leave                             \n\t"
+	" ret			                	\n\t"	//retn
 			::
 	);
 

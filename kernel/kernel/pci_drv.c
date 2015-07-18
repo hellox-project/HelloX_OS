@@ -26,8 +26,13 @@
 static BOOL PciBusProbe()    //Probe if there is(are) PCI bus(es).
 {
 	DWORD   dwInit     = 0x80000000;
+
+	_hx_printf("outd CONFIG_REGISTER=%d\n", dwInit);
 	__outd(CONFIG_REGISTER,dwInit);
+
 	dwInit = __ind(DATA_REGISTER);
+	_hx_printf("intd DATA_REGISTER=%d\n", dwInit);
+
 	if(dwInit == 0xFFFFFFFF)    //The HOST-PCI bridge is not exist.
 		return FALSE;
 	return TRUE;
@@ -162,14 +167,17 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	//DWORD                                 dwLoop         = 0;
 	DWORD                                 dwTmp          = 0;
 
+	_hx_printf("PciAddDevice=%p\n", lpSysBus);
 	if((0 == dwConfigReg) || (NULL == lpSysBus)) //Invalid parameters.
 		return;
-	lpPhyDev = (__PHYSICAL_DEVICE*)KMemAlloc(sizeof(__PHYSICAL_DEVICE),
-		KMEM_SIZE_TYPE_ANY);  //Create physical device.
+
+	_hx_printf("KMemAlloc lpPhyDev\n");
+	lpPhyDev = (__PHYSICAL_DEVICE*)KMemAlloc(sizeof(__PHYSICAL_DEVICE), KMEM_SIZE_TYPE_ANY);  //Create physical device.
 	if(NULL == lpPhyDev)
 		goto __TERMINAL;
-	lpDevInfo = (__PCI_DEVICE_INFO*)KMemAlloc(sizeof(__PCI_DEVICE_INFO),
-		KMEM_SIZE_TYPE_ANY);
+	_hx_printf("KMemAlloc lpPhyDev ok\n");
+
+	lpDevInfo = (__PCI_DEVICE_INFO*)KMemAlloc(sizeof(__PCI_DEVICE_INFO), KMEM_SIZE_TYPE_ANY);
 	if(NULL == lpDevInfo)  //Can not allocate information structure.
 		goto __TERMINAL;
 	
@@ -180,6 +188,8 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	//
 	//The following code initializes identifier member of physical device.
 	//
+
+	_hx_printf("Read vendor ID and device ID\n");
 	dwConfigReg &= 0xFFFFFF00;    //Clear offset part.
 	dwConfigReg += PCI_CONFIG_OFFSET_VENDOR;
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -190,6 +200,9 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wVendor  = (WORD)dwTmp;
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wDevice  = (WORD)(dwTmp >> 16);
 
+
+
+	_hx_printf("Get revision ID and class code\n");
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_REVISION;  //Get revision ID and class code.
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -198,6 +211,8 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.dwClass = dwTmp;
 	lpDevInfo->dwClassCode                 = dwTmp;  //Save to information struct also.
 
+
+	_hx_printf("Get header type\n");
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_CACHELINESZ;    //Get header type.
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -282,8 +297,10 @@ static VOID PciScanDevices(__SYSTEM_BUS* lpSysBus)
 		dwConfigReg &= 0xFFFF0000;
 		dwConfigReg += (dwLoop << 8);  //Now,dwConfigReg countains the bus number,device number,
 		                               //and function number.
+
 		__outd(CONFIG_REGISTER,dwConfigReg);
 		dwTmp = __ind(DATA_REGISTER);
+
 		if(0xFFFFFFFF == dwTmp)        //The device or function does not exist.
 			continue;
 		/*
@@ -307,7 +324,9 @@ static VOID PciScanDevices(__SYSTEM_BUS* lpSysBus)
 			PciAddDevice(dwConfigReg,lpSysBus);
 			dwLoop += 7;                     //Skip all other functions of current device.
 		}*/
+		_hx_printf("begin addDevice=:%p\n", lpSysBus);
 		PciAddDevice(dwConfigReg,lpSysBus);  //Add to system device.
+		_hx_printf("end addDevice=:%p\n", lpSysBus);
 	}
 	return;
 }
@@ -318,7 +337,7 @@ static VOID PciScanDevices(__SYSTEM_BUS* lpSysBus)
 //This routine returns the largest bus number in this bus tree,if failed,returns MAX_DWORD_VALUE,
 //which is 0xFFFFFFFF currently.
 //
-static DWORD PciScanBus(__DEVICE_MANAGER* lpDevMgr,__PHYSICAL_DEVICE* lpBridge,DWORD dwBusNum)
+static DWORD PciScanBus(__DEVICE_MANAGER* lpDevMgr, __PHYSICAL_DEVICE* lpBridge, DWORD dwBusNum)
 {
 	DWORD               dwLoop                     = 0;
 	DWORD               dwFlags                    = 0;
@@ -353,7 +372,7 @@ static DWORD PciScanBus(__DEVICE_MANAGER* lpDevMgr,__PHYSICAL_DEVICE* lpBridge,D
 	//
 	lpDevMgr->SystemBus[dwLoop].dwBusType      = BUS_TYPE_PCI;
 	lpDevMgr->SystemBus[dwLoop].dwBusNum       = dwBusNum;
-	lpDevMgr->SystemBus[dwLoop].lpHomeBridge = lpBridge;
+	lpDevMgr->SystemBus[dwLoop].lpHomeBridge   = lpBridge;
 	if(lpBridge)    //If the current bus is not root bus.
 	{
 		lpDevMgr->SystemBus[dwLoop].lpParentBus = lpBridge->lpHomeBus;
@@ -403,6 +422,8 @@ BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr)
 	//
 	//Now,should scan all PCI devices.
 	//
+	_hx_printf("begin PciScanBus\n");
 	PciScanBus(lpDevMgr,NULL,0);
+	_hx_printf("end PciScanBus\n");
 	return TRUE;
 }

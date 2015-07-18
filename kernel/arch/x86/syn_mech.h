@@ -24,9 +24,9 @@ extern "C" {
 #ifdef __I386__
 #ifdef _POSIX_
 	#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags)	\
-		__asm__ __volatile__ (		\
+		__asm__ __volatile__ (			\
 			"pushl %%eax		\n\t"	\
-			"pushf				\n\t"	\
+			"pushfl				\n\t"	\
 			"popl %%eax			\n\t"	\
 			"movl %%eax, %0		\n\t"	\
 			"popl %%eax			\n\t"	\
@@ -35,15 +35,15 @@ extern "C" {
 
 #else
 
-#define __ENTER_CRITICAL_SECTION(lpObj, dwFlags) \
-			__asm {					 \
-				push eax			 \
-				pushfd               \
-				pop eax              \
-				mov dwFlags,eax      \
-				pop eax              \
-				cli                  \
-			}
+	#define __ENTER_CRITICAL_SECTION(lpObj, dwFlags) \
+		__asm {					 \
+			push eax			 \
+			pushfd               \
+			pop eax              \
+			mov dwFlags,eax      \
+			pop eax              \
+			cli                  \
+		}
 #endif
 
 #else
@@ -57,12 +57,12 @@ extern "C" {
 
 #ifdef _POSIX_
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)	\
-	__asm__ __volatile__(	\
+	__asm__ __volatile__(		\
 		".code32	\n\t"		\
 		"pushl %0	\n\t"		\
-		"popf		\n\t"		\
-			:				\
-			:"r"(dwFlags))
+		"popfl		\n\t"		\
+			:					\
+			:"r"(dwFlags));
 #else
 
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags) \
@@ -80,17 +80,15 @@ extern "C" {
 //Interrupt enable and disable operation.
 #ifdef __I386__
 #ifdef _POSIX_
-
-#define __ENABLE_INTERRUPT() 	\
-{    							\
-	__asm__("pushl %%eax	\n\t"::);			\
-	__asm__("movb $0x20, %%al	\n\t"::);		\
-	__asm__("outb %%al, $0x20	\n\t"::);		\
-	__asm__("outb %%al, $0xa0	\n\t"::);		\
-	__asm__("popl %%eax			\n\t"::);		\
-	__asm__("sti	\n\t"::);					\
-}
-
+	#define __ENABLE_INTERRUPT() 	\
+	{    							\
+		__asm__("pushl %%eax	\n\t"::);			\
+		__asm__("movb $0x20, %%al	\n\t"::);		\
+		__asm__("outb %%al, $0x20	\n\t"::);		\
+		__asm__("outb %%al, $0xa0	\n\t"::);		\
+		__asm__("popl %%eax			\n\t"::);		\
+		__asm__("sti	\n\t":::"memory");					\
+	}
 #else
 	#define __ENABLE_INTERRUPT() 	\
 	{    							\
@@ -102,28 +100,30 @@ extern "C" {
 		__asm sti    				\
 	}
 #endif
+
 #else
 #define __ENABLE_INTERRUPT()
 #endif
 
 #ifdef __I386__
-#ifdef _POSIX_
-#define __DISABLE_INTERRUPT() {		\
-		__asm__ ("cli \n\t" : :);	\
-	}
+	#ifdef _POSIX_
+		#define __DISABLE_INTERRUPT() {__asm__("cli" : : :"memory"); }
+	#else
+		#define __DISABLE_INTERRUPT() {__asm cli}
+	#endif
 #else
-#define __DISABLE_INTERRUPT() {__asm cli}
-#endif
-#else
-#define __DISABLE_INTERRUPT()
+	#define __DISABLE_INTERRUPT()
 #endif
 
 //
 //This macros is used to flush cache's content to memory.
 //
 #ifdef __I386__
-#define FLUSH_CACHE()  \
-	__asm wbinvd
+#ifdef _POSIX_
+	#define FLUSH_CACHE()  {__asm__ ("wbinvd \n\t"::);}
+#else
+	#define FLUSH_CACHE()  {__asm wbinvd}
+#endif
 #else
 #define FLUSH_CACHE
 #endif
@@ -144,9 +144,13 @@ extern "C" {
 //writing operations into device immediately,the following macro must be called.
 //
 #ifdef __I386__
-#define BARRIER() \
-	__asm LOCK add dword ptr [esp],0
+#ifdef _POSIX_
+	#define BARRIER() __asm__("LOCK addl $0, (%%esp) \n\t"::);
 #else
+	#define BARRIER() __asm LOCK add dword ptr [esp],0
+#endif
+
+	#else
 #define BARRIER()
 #endif
 

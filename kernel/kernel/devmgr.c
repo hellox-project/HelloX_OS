@@ -56,6 +56,8 @@ static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 
 	//lpRes = (__RESOURCE*)malloc(sizeof(__RESOURCE));
 	lpRes = (__RESOURCE*)KMemAlloc(sizeof(__RESOURCE),KMEM_SIZE_TYPE_ANY);
+	_hx_printf("lpRes=%p\n", lpRes);
+
 	if(NULL == lpRes)    //Can not allocate memory.
 	{
 		return FALSE;
@@ -93,9 +95,12 @@ static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 	//
 	//Load system bus drivers here.
 	//
-#ifdef __CFG_SYS_BM
-	PciBusDriver(lpDevMgr);
-#endif
+
+	#ifdef __CFG_SYS_BM
+		_hx_printf("begin PciBusDriver\n");
+		PciBusDriver(lpDevMgr);
+		_hx_printf("end PciBusDriver\n");
+	#endif
 
 	return TRUE;
 }

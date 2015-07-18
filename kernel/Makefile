@@ -336,7 +336,7 @@ HX_INCLUDES = -I$(top_srcdir)/kernel/include \
 	-I$(top_srcdir)/kernel/lib
 HX_FLAGS = -nostdlib -nostdinc -fno-stack-protector -fno-builtin -m32 \
 	-D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF \
-	$(HX_INCLUDES) -Wall
+	$(HX_INCLUDES) -Wall -O2
 HXLDFLAGS = -e__OS_Entry -Ttext 0x110000 -nostdlib -nostdinc -m32 \
 	$(HX_FLAGS)
 LDADD = ./osentry/libosentry.a ./lib/libhellolib.a \
@@ -344,7 +344,7 @@ LDADD = ./osentry/libosentry.a ./lib/libhellolib.a \
 	./network/libnetwork.a ./kthread/libkthread.a \
 	./arch/x86/libarch.a ./fs/libfs.a ./kernel/libkernel.a \
 	./kapi/libkapi.a
-AM_CPPFLAGS = $(HX_FLAGS)
+AM_CFLAGS = $(HX_FLAGS)
 hellox_kernel_SOURCES = 
 #hellox_kernel_CPPFLAGS = $(AM_CPPFLAGS)
 hellox_kernel_LDFLAGS = $(HXLDFLAGS)
