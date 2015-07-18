@@ -123,7 +123,7 @@
 #define __CFG_SYS_DDF
 
 //Include CPU statistics functions in OS.
-#define __CFG_SYS_CPUSTAT
+//#define __CFG_SYS_CPUSTAT
 
 //Include the default user shell thread in OS,only enable it when character
 //output device is ready.

@@ -450,21 +450,29 @@ static BOOL InitKeyBoard()
 }
 
 //Get scan code from key board data register.
-static unsigned char GetScanCode()
+//static
+unsigned char GetScanCode()
 {
 #ifdef __I386__
 #ifdef _POSIX_
-	asm (
+	unsigned char code = 0;
+	asm volatile ("inb $0x60, %%al; movb %%al, %0" : "=m"(code) : );
+	/**
+	asm volatile (
 	".code32			;"
+	"xor %%eax, %%eax	;"
 	"inb $0x60, %%al	;"
-	:
-	:
-	);
+	"movb %%al, %0		;"
+	:"=m"(code)
+	: );
+	*/
+	return code;
+
+
 #else
-	__asm{
-		in al,0x60
-	};
+	asm { in al,0x60 };
 #endif
+
 #endif
 }
 
