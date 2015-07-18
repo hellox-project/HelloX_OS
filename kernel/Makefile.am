@@ -15,7 +15,7 @@ HX_FLAGS =
 HX_FLAGS += -nostdlib  -nostdinc -fno-stack-protector -fno-builtin -m32 
 HX_FLAGS += -D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
 HX_FLAGS += $(HX_INCLUDES)
-HX_FLAGS += -Wall
+HX_FLAGS += -Wall -O2
 
 
 HXLDFLAGS = -e__OS_Entry -Ttext 0x110000
@@ -35,7 +35,7 @@ LDADD += ./kernel/libkernel.a
 LDADD += ./kapi/libkapi.a
 
 
-AM_CPPFLAGS=$(HX_FLAGS)
+AM_CFLAGS=$(HX_FLAGS)
 
 bin_PROGRAMS = hellox_kernel
 hellox_kernel_SOURCES = 

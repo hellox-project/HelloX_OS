@@ -40,7 +40,8 @@ echo "$KERNEL_BIN"
 
 echo "cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN"
 cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN
-exit 1
+
+exit 0
 
 rm -rf $HELLOX_IMG
 

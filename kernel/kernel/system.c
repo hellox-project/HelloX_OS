@@ -69,7 +69,8 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 	__KERNEL_THREAD_OBJECT*   lpKernelThread    = NULL;
 	DWORD                     dwFlags           = 0;
 
-	PrintStr("TimerInterruptHandler");
+	//PrintStr("TimerInterruptHandler"); GotoHome();
+
 	if(NULL == lpEsp)    //Parameter check.
 	{
 		return TRUE;
@@ -596,7 +597,7 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 	}
 
 	lpIntObject = lpSystem->lpInterruptVector[ucVector];
-	_hx_printf("lpIntObject=%p\n", lpIntObject);
+	//_hx_printf("lpIntObject=%p\n", lpIntObject);
 
 	if(NULL == lpIntObject)  //The current interrupt vector has not handler object.
 	{
@@ -620,11 +621,14 @@ __RETFROMINT:
 	{
 		if (IN_SYSINITIALIZATION())  //It's a abnormal case.
 		{
+
 			_hx_sprintf(strError, "Warning: Interrupt[%d] raised in sys initialization.", ucVector);
-			PrintLine(strError);
+			PrintStr(strError);
+			//GotoHome();
 		}
 		else
 		{
+			_hx_printf("schedule interrupt");
 			KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
 				lpEsp);  //Re-schedule kernel thread.
 		}
@@ -643,67 +647,133 @@ __RETFROMINT:
 	return;
 }
 
+//Exception table.
+typedef struct{
+         char*  description;
+         BOOL   bErrorCode;
+}__EXCEPTION_TABLE;
+
+#define MAX_EXCEP_TABLE_SIZE 20  //Maximal exceptions available under current processor.
+
+static __EXCEPTION_TABLE __ExcepTable[MAX_EXCEP_TABLE_SIZE] = {
+         {"Divide Error(#DE)",FALSE},
+         {"Reserved(#DB)",FALSE},
+         {"NMI Interrupt",FALSE},
+         {"Breakpoint(#BP)",FALSE},
+         {"Overflow(#OF)",FALSE},
+         {"Bound Range Exceed(#BR)",FALSE},
+         {"Invalid Opcode(#UD)",FALSE},
+         {"Device Not Available(#NM)",FALSE},
+         {"Double Fault(#DF)",TRUE},
+         {"Coprocessor Segment Overrun",FALSE},
+         {"Invalid TSS(#TS)",TRUE},
+         {"Segment Not Present(#NP)",TRUE},
+         {"Stack Segment Fault(#SS)",TRUE},
+         {"General Protection(#GP)",TRUE},
+         {"Page Fault(#PF)",TRUE},
+         {"Internal reserved",FALSE},
+         {"x87 Floating point error(#MF)",FALSE},
+         {"Alignment check(#AC)",TRUE},
+         {"Machine Check(#MC)",FALSE},
+         {"SIMD Floating-Point Exception(#XM)",FALSE}
+};
+
+//Exception specific operations.
+static VOID ExcepSpecificOps(LPVOID pESP,UCHAR ucVector)
+{
+         DWORD excepAddr;
+
+         if(14 == ucVector)  //Page fault.
+         {
+#ifdef _POSIX_
+                            __asm__ __volatile__(
+                                               ".code32            \n\t"
+                                               "pushl       %%eax     \n\t"
+                                               "movl        %%cr2,     %%eax     \n\t"
+                                               "movl        %0,  %%eax              \n\t"
+                                               "popl         %%eax                       \n\t"
+                                               : :"r"(excepAddr) : "memory");
+#else
+                            __asm{
+                                     push eax
+                                     mov eax,cr2
+                                     mov excepAddr,eax
+                                     pop eax
+                            }
+#endif
+                            _hx_printf("\tException addr: 0x%X.\r\n",excepAddr);
+         }
+}
+
+//Processor specified exception handler,for x86.
+VOID PSExcepHandler(LPVOID pESP,UCHAR ucVector)
+{
+         if(ucVector >= MAX_EXCEP_TABLE_SIZE)  //Invalid exception number.
+         {
+                   _hx_printf("\tInvalid exception number(#%d) for x86.\r\n",ucVector);
+                   return;
+         }
+         //Show detail information about the exception.
+         _hx_printf("\tException Desc: %s.\r\n",__ExcepTable[ucVector].description);
+         if(__ExcepTable[ucVector].bErrorCode)
+         {
+                   _hx_printf("\tError Code: 0x%X.\r\n",*((DWORD*)pESP + 7));
+                   _hx_printf("\tEIP: 0x%X.\r\n",*((DWORD*)pESP + 8));
+                   _hx_printf("\tCS: 0x%X.\r\n",*((DWORD*)pESP + 9));
+                   _hx_printf("\tEFlags: 0x%X.\r\n",*((DWORD*)pESP + 10));
+         }
+         else  //Without error code pushed in stack.
+         {
+                   _hx_printf("\tEIP: 0x%X.\r\n",*((DWORD*)pESP + 7));
+                   _hx_printf("\tCS: 0x%X.\r\n",*((DWORD*)pESP + 8));
+                   _hx_printf("\tEFlags: 0x%X.\r\n",*((DWORD*)pESP + 9));
+         }
+
+         //Check if specific operation exists for the exception.
+         ExcepSpecificOps(pESP,ucVector);
+         return;
+}
+
 //Default handler of Exception.
 static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 {
-	CHAR Buff[64];
-	static DWORD totalExcepNum = 0;
-#ifdef __I386__
-	DWORD excepAddr = 0;
-#endif
-	__KERNEL_THREAD_OBJECT* pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+         __KERNEL_THREAD_OBJECT* pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+         DWORD dwFlags;
+         static DWORD totalExcepNum = 0;
 
-	//Switch to text mode,because the exception maybe caused in GUI mode.
+         //Switch to text mode,because the exception maybe caused in GUI mode.
 #ifdef __I386__
-	SwitchToText();
+         SwitchToText();
 #endif
-	_hx_sprintf(Buff,"  Unknown exception occured: excep number = %d",ucVector);
-	PrintLine(Buff);
-	totalExcepNum ++;
-	if(totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
-	{
-		PrintLine("  Fatal error : total unhandled exception number reached maximal value!");
-		PrintLine("  Please power off the system and reboot it.");
-		if(pKernelThread)
-		{
-			_hx_sprintf(Buff,"  Exception thread ID = %d.",pKernelThread->dwThreadID);
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  Exception thread name : %s.",pKernelThread->KernelThreadName);
-			PrintLine(Buff);
-			//Get the exception address try to access.
-#ifdef __I386__
-#ifdef _POSIX_
-			__asm__ __volatile__(
-					".code32				\n\t"
-					"pushl	%%eax			\n\t"
-					"movl	%%cr2,	%%eax	\n\t"
-					"movl	%%eax,  %0		\n\t"
-					"popl	%%eax			\n\t"
-					: "=r"(excepAddr) : : "memory");
-#else
-			__asm{
-				push eax
-				mov eax,cr2
-				mov excepAddr,eax
-				pop eax
-			}
-#endif
-			_hx_sprintf(Buff,"  Exception memaddr = 0x%X.",excepAddr);
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  EIP    = 0x%X.",*((DWORD*)pESP + 8));
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  CS     = 0x%X.",*((DWORD*)pESP + 9));
-			PrintLine(Buff);
-			_hx_sprintf(Buff,"  EFlags = 0x%X.",*((DWORD*)pESP + 10));
-			PrintLine(Buff);
+         _hx_printf("Exception occured: #%d.\r\n",ucVector);
+         totalExcepNum ++;  //Increase total exception number.
 
-#else
-#endif
-		}
-		while(1); //Make a dead loop.
-	}
-	return;
+         //Show kernel thread information which lead the exception.
+         if(pKernelThread)
+         {
+                   _hx_printf("\tCurrent kthread ID: %d.\r\n",pKernelThread->dwThreadID);
+                   _hx_printf("\tCurrent kthread name: %s.\r\n",pKernelThread->KernelThreadName);
+         }
+         else //In process of system initialization.
+         {
+                   _hx_printf("\tException occured in process of initialization.\r\n");
+         }
+
+         //Call processor specific exception handler.
+         PSExcepHandler(pESP,ucVector);
+
+         if(totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
+         {
+                   _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
+                   _hx_printf("Please power off the system and reboot it.\r\n");
+                   __ENTER_CRITICAL_SECTION(NULL,dwFlags);
+                   while(1); //Make a dead loop.
+                   __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+         }
+         return;
 }
+
+
 
 //DispatchException,called by GeneralIntHandler to handle exception,include
 //system call.
@@ -910,11 +980,7 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 	//and this may lead system halt.
 	//So we add more of enabling interrupt operations to dismiss the pending
 	//interrupt(s) here.
-#ifdef __I386__
-	__ENABLE_INTERRUPT();
-	__ENABLE_INTERRUPT();
-	__ENABLE_INTERRUPT();
-#endif
+
 	return TRUE;
 }
 
