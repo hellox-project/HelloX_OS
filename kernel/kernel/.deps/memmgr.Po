@@ -16,7 +16,9 @@ memmgr.o: memmgr.c ../../kernel/include/StdAfx.h \
  ../../kernel/include/heap.h ../../kernel/include/buffmgr.h \
  ../../kernel/include/ktmsg.h ../../kernel/include/sysnet.h \
  ../../kernel/include/globvar.h ../../kernel/include/chardisplay.h \
- ../../kernel/config.h
+ ../../kernel/config.h ../../kernel/include/types.h \
+ ../../kernel/include/commobj.h ../../kernel/include/kapi.h \
+ ../../kernel/include/memmgr.h
 
 ../../kernel/include/StdAfx.h:
 
@@ -85,3 +87,11 @@ memmgr.o: memmgr.c ../../kernel/include/StdAfx.h \
 ../../kernel/include/chardisplay.h:
 
 ../../kernel/config.h:
+
+../../kernel/include/types.h:
+
+../../kernel/include/commobj.h:
+
+../../kernel/include/kapi.h:
+
+../../kernel/include/memmgr.h:

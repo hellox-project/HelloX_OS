@@ -292,7 +292,7 @@ void __OS_Entry()
 	PrintStr("EthernetManager.Initialize");
 	GotoHome();
 	ChangeLine();
-	EnableVMM();
+
 	if(!EthernetManager.Initialize(&EthernetManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Ethernet Manager.\r\n";

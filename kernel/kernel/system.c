@@ -742,9 +742,9 @@ static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
          static DWORD totalExcepNum = 0;
 
          //Switch to text mode,because the exception maybe caused in GUI mode.
-#ifdef __I386__
-         SwitchToText();
-#endif
+//#ifdef __I386__
+//         SwitchToText();
+//#endif
          _hx_printf("Exception occured: #%d.\r\n",ucVector);
          totalExcepNum ++;  //Increase total exception number.
 
