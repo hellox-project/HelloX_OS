@@ -1255,7 +1255,7 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 	//
 	//If in kernel thread context,then re-schedule kernel thread.
 	//
-	if(IN_KERNELTHREAD())  //---- !!!!!!!! PROBLEM CAUSED !!!!!!!! ----
+	if(IN_KERNELTHREAD())  //---- !!!!pe!!!! PROBLEM CAUSED !!!!!!!! ----
 	{
 		KernelThreadManager.ScheduleFromProc(NULL);
 	}
