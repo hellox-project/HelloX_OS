@@ -1,9 +1,16 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+# AC_PREREQ([2.0])
 AC_INIT([HelloX], [1.78], [BUG-REPORT-ADDRESS])
 AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign subdir-objects])
+
+
+AC_SUBST(os, "HelloX")
+AC_SUBST(hx_arch, "arch/x86")
+AC_SUBST(hx_drivers, "drivers/x86")
+
+
 AC_CONFIG_SRCDIR([gui/CTRL/bmpbtn.cpp])
 AC_CONFIG_HEADERS([kernel/config.h])
 
@@ -24,11 +31,6 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AM_CONDITIONAL([COMPILE_TIME_RELOC_CHECKS],[AC_COMPILE_IFELSE], [true])
 
-os=HelloX
-arch=i386
-
-AC_SUBST(os)
-AC_SUBST(arch)
 
 ##AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 

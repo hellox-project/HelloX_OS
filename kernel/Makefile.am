@@ -1,7 +1,7 @@
-ACLOCAL_AMFLAGS = -I m4
+SUBDIRS = kernel kapi kthread network shell lib osentry fs @hx_arch@ @hx_drivers@
 
+ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = kernel kapi kthread network shell drivers/x86 lib osentry fs arch/x86
 
 
 
@@ -15,7 +15,7 @@ HX_FLAGS =
 HX_FLAGS += -nostdlib  -nostdinc -fno-stack-protector -fno-builtin -m32 
 HX_FLAGS += -D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
 HX_FLAGS += $(HX_INCLUDES)
-HX_FLAGS += -Wall -O2
+HX_FLAGS += -Wall
 
 
 HXLDFLAGS = -e__OS_Entry -Ttext 0x110000
