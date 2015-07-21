@@ -48,7 +48,10 @@ AC_FUNC_REALLOC
 AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([dup2 floor getcwd getpagesize gettimeofday inet_ntoa memchr memmove memset mkdir modf munmap rmdir setlocale strchr strrchr strstr strtol strtoumax uname])
 
-AC_CONFIG_FILES([kernel/fs/Makefile
+AC_CONFIG_FILES([kernel/Makefile
+                 kernel/arch/x86/Makefile
+                 kernel/drivers/x86/Makefile
+                 kernel/fs/Makefile
                  kernel/jvm/Makefile
                  kernel/jvm/arch/Makefile
                  kernel/jvm/interp/Makefile
@@ -66,6 +69,8 @@ AC_CONFIG_FILES([kernel/fs/Makefile
                  kernel/jvm/lib/sun/Makefile
                  kernel/jvm/lib/sun/reflect/Makefile
                  kernel/jvm/lib/sun/reflect/annotation/Makefile
+                 kernel/jvm/os/HelloX/Makefile
+                 kernel/jvm/os/HelloX/i386/Makefile
                  kernel/jvm/os/Makefile
                  kernel/jvm/os/bsd/Makefile
                  kernel/jvm/os/bsd/arm/Makefile
@@ -86,7 +91,13 @@ AC_CONFIG_FILES([kernel/fs/Makefile
                  kernel/jvm/os/linux/x86_64/Makefile
                  kernel/jvm/os/solaris/Makefile
                  kernel/jvm/os/solaris/x86/Makefile
+                 kernel/kapi/Makefile
                  kernel/kernel/Makefile
                  kernel/kernel/makefile
-                 kernel/lib/Makefile])
+                 kernel/kthread/Makefile
+                 kernel/lib/Makefile
+                 kernel/network/Makefile
+                 kernel/osentry/Makefile
+                 kernel/shell/Makefile
+                 kernel/user/Makefile])
 AC_OUTPUT

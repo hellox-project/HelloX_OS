@@ -1,42 +1,81 @@
 #!/bin/bash
 
-#编译内核
-
-if [ ! -z $1 ]; then
-LPWD=`pwd`
-cd ../; make clean && make
-MAKE_RETVAL=$?
-echo "$MAKE_RETVAL"
-
-if [ ! $MAKE_RETVAL -eq 0 ]; then
-	echo "编译失败"
-	exit
-fi
-cd $LPWD
-
-fi
-
-echo "编译完成"
-
 KERNEL_ELF=hellox_kernel
 HELLOX_IMG=hellox.img
 BOOT_BIN=bootsect.bin  
 REALINIT_BIN=realinit.bin
 MINIKER_BIN=miniker.bin
 
-
-#KERNEL_BIN=kernel.bin
 KERNEL_BIN=master.bin
 MASTER_BIN=$KERNEL_BIN
 
-##拷贝上页输出内核
-cp ../$KERNEL_ELF .
+##编译内核
+make_kernel(){
+    cd ..
+    make
+}
 
-#将内核elf文件中二进制提取到bin
-#objcopy -O binary -j .rodata -j .text -j .data -j .bss  -S -g $KERNEL_ELF $KERNEL_BIN
-objcopy -O binary -j .rodata -j .text -j .data -j .bss $KERNEL_ELF $KERNEL_BIN
+clean_kernel(){
+    cd ..
+    make clean
+}
 
-echo "$KERNEL_BIN"
+##制作内核bin文件
+make_kernel_bin(){
+    ##拷贝上页输出内核
+    KERNEL_ELF_FILE=$KERNEL_ELF
+    test -f  $KERNEL_ELF_FILE || (file -b $KERNEL_ELF_FILE; exit 1) 
+    
+    #将内核elf文件中二进制提取到bin
+    #objcopy -O binary -j .rodata -j .text -j .data -j .bss  -S -g $KERNEL_ELF $KERNEL_BIN
+    objcopy -O binary -j .rodata -j .text -j .data -j .bss $KERNEL_ELF_FILE $KERNEL_BIN
+
+    echo "$KERNEL_ELF_FILE=>$KERNEL_BIN"
+}
+
+main(){
+if [ -z $1 ]; then
+    echo "Usage $0  make     编译内核代码
+                    clean    清理内核代码"
+    exit 1;
+fi
+
+    LPWD=`pwd`
+
+    if [ $1 == "make" ]; then
+        ## 编译内核
+        make_kernel
+        MAKE_RETVAL=$?
+        echo "make retval:$MAKE_RETVAL"
+        if [ ! $MAKE_RETVAL -eq 0 ]; then
+	        echo "编译失败"
+	        exit 1
+        fi
+
+        ## 输出bin文件
+        make_kernel_bin
+        MAKE_RETVAL=$?
+
+        if [ ! $MAKE_RETVAL -eq 0 ]; then
+            echo "制作bin文件失败"
+        fi
+    fi
+   
+    if [ $1 == "clean" ]; then
+        clean_kernel
+        return 1;
+    fi
+    cd $LPWD
+}
+
+main $@
+
+if [ ! $? -eq 0 ]; then
+
+    exit 0;
+fi
+
+
 
 echo "cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN"
 cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN
