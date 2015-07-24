@@ -312,6 +312,3 @@
 /* Define to the type of an unsigned integer type of width exactly 8 bits if
    such a type exists and the standard includes do not define it. */
 /* #undef uint8_t */
-
-#define _TIME_T_DEFINED
-#define _POSIX_

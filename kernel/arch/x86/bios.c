@@ -36,7 +36,7 @@ BOOL BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer
 		return FALSE;
 	}
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ (
 			".code32		\n\t"
 			"pushl %%ecx                        \n\t"
@@ -119,7 +119,7 @@ BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffe
 	{
 		((BYTE*)BIOS_HD_BUFFER)[i] = pBuffer[i];
 	}
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ (
 	"pushl %%ecx              \n\t"
 	"pushl %%edx              \n\t"
@@ -185,7 +185,7 @@ __BIOS_SUCCESS:   //BIOS call successed.
 //Reboot the system.
 VOID BIOSReboot()
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 		"pushl	%%ebx	;"
 		"movl	%0,	%%eax	;"
@@ -210,7 +210,7 @@ VOID BIOSReboot()
 //Power off the system.
 VOID BIOSPoweroff()
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 		"pushl	%%ebx		\n\t"
 		"movl	%0,	%%eax	\n\t"
@@ -235,7 +235,7 @@ VOID BIOSPoweroff()
 //Switch current display mode to graphic.
 BOOL SwitchToGraphic()
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 		"pushl %%eax	\n\t"
 		"movl	%0,	%%eax	\n\t"
@@ -259,7 +259,7 @@ BOOL SwitchToGraphic()
 //Switch display mode to text.
 VOID SwitchToText()
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 			"pushl	%%ebx	\n\t"
 			"movl	%0, %%eax	\n\t"

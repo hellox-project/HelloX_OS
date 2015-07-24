@@ -139,16 +139,16 @@ extern "C"
  * either indicates that sysconf(), which is not implemented, may be used at
  * runtime to check the status of the option.
  *
- * _POSIX_THREADS (== 200112L)
+ * _GCC_THREADS (== 200112L)
  *                      If == 200112L, you can use threads
  *
- * _POSIX_THREAD_ATTR_STACKSIZE (== 200112L)
+ * _GCC_THREAD_ATTR_STACKSIZE (== 200112L)
  *                      If == 200112L, you can control the size of a thread's
  *                      stack
  *                              pthread_attr_getstacksize
  *                              pthread_attr_setstacksize
  *
- * _POSIX_THREAD_ATTR_STACKADDR (== -1)
+ * _GCC_THREAD_ATTR_STACKADDR (== -1)
  *                      If == 200112L, you can allocate and control a thread's
  *                      stack. If not supported, the following functions
  *                      will return ENOSYS, indicating they are not
@@ -156,20 +156,20 @@ extern "C"
  *                              pthread_attr_getstackaddr
  *                              pthread_attr_setstackaddr
  *
- * _POSIX_THREAD_PRIORITY_SCHEDULING (== -1)
+ * _GCC_THREAD_PRIORITY_SCHEDULING (== -1)
  *                      If == 200112L, you can use realtime scheduling.
  *                      This option indicates that the behaviour of some
  *                      implemented functions conforms to the additional TPS
  *                      requirements in the standard. E.g. rwlocks favour
  *                      writers over readers when threads have equal priority.
  *
- * _POSIX_THREAD_PRIO_INHERIT (== -1)
+ * _GCC_THREAD_PRIO_INHERIT (== -1)
  *                      If == 200112L, you can create priority inheritance
  *                      mutexes.
  *                              pthread_mutexattr_getprotocol +
  *                              pthread_mutexattr_setprotocol +
  *
- * _POSIX_THREAD_PRIO_PROTECT (== -1)
+ * _GCC_THREAD_PRIO_PROTECT (== -1)
  *                      If == 200112L, you can create priority ceiling mutexes
  *                      Indicates the availability of:
  *                              pthread_mutex_getprioceiling
@@ -179,7 +179,7 @@ extern "C"
  *                              pthread_mutexattr_setprioceiling
  *                              pthread_mutexattr_setprotocol     +
  *
- * _POSIX_THREAD_PROCESS_SHARED (== -1)
+ * _GCC_THREAD_PROCESS_SHARED (== -1)
  *                      If set, you can create mutexes and condition
  *                      variables that can be shared with another
  *                      process.If set, indicates the availability
@@ -189,17 +189,17 @@ extern "C"
  *                              pthread_condattr_getpshared
  *                              pthread_condattr_setpshared
  *
- * _POSIX_THREAD_SAFE_FUNCTIONS (== 200112L)
+ * _GCC_THREAD_SAFE_FUNCTIONS (== 200112L)
  *                      If == 200112L you can use the special *_r library
  *                      functions that provide thread-safe behaviour
  *
- * _POSIX_READER_WRITER_LOCKS (== 200112L)
+ * _GCC_READER_WRITER_LOCKS (== 200112L)
  *                      If == 200112L, you can use read/write locks
  *
- * _POSIX_SPIN_LOCKS (== 200112L)
+ * _GCC_SPIN_LOCKS (== 200112L)
  *                      If == 200112L, you can use spin locks
  *
- * _POSIX_BARRIERS (== 200112L)
+ * _GCC_BARRIERS (== 200112L)
  *                      If == 200112L, you can use barriers
  *
  *      + These functions provide both 'inherit' and/or
@@ -212,42 +212,42 @@ extern "C"
 /*
  * POSIX Options
  */
-#undef _POSIX_THREADS
-#define _POSIX_THREADS 200112L
+#undef _GCC_THREADS
+#define _GCC_THREADS 200112L
 
-#undef _POSIX_READER_WRITER_LOCKS
-#define _POSIX_READER_WRITER_LOCKS 200112L
+#undef _GCC_READER_WRITER_LOCKS
+#define _GCC_READER_WRITER_LOCKS 200112L
 
-#undef _POSIX_SPIN_LOCKS
-#define _POSIX_SPIN_LOCKS 200112L
+#undef _GCC_SPIN_LOCKS
+#define _GCC_SPIN_LOCKS 200112L
 
-#undef _POSIX_BARRIERS
-#define _POSIX_BARRIERS 200112L
+#undef _GCC_BARRIERS
+#define _GCC_BARRIERS 200112L
 
-#undef _POSIX_THREAD_SAFE_FUNCTIONS
-#define _POSIX_THREAD_SAFE_FUNCTIONS 200112L
+#undef _GCC_THREAD_SAFE_FUNCTIONS
+#define _GCC_THREAD_SAFE_FUNCTIONS 200112L
 
-#undef _POSIX_THREAD_ATTR_STACKSIZE
-#define _POSIX_THREAD_ATTR_STACKSIZE 200112L
+#undef _GCC_THREAD_ATTR_STACKSIZE
+#define _GCC_THREAD_ATTR_STACKSIZE 200112L
 
 /*
  * The following options are not supported
  */
-#undef _POSIX_THREAD_ATTR_STACKADDR
-#define _POSIX_THREAD_ATTR_STACKADDR -1
+#undef _GCC_THREAD_ATTR_STACKADDR
+#define _GCC_THREAD_ATTR_STACKADDR -1
 
-#undef _POSIX_THREAD_PRIO_INHERIT
-#define _POSIX_THREAD_PRIO_INHERIT -1
+#undef _GCC_THREAD_PRIO_INHERIT
+#define _GCC_THREAD_PRIO_INHERIT -1
 
-#undef _POSIX_THREAD_PRIO_PROTECT
-#define _POSIX_THREAD_PRIO_PROTECT -1
+#undef _GCC_THREAD_PRIO_PROTECT
+#define _GCC_THREAD_PRIO_PROTECT -1
 
 /* TPS is not fully supported.  */
-#undef _POSIX_THREAD_PRIORITY_SCHEDULING
-#define _POSIX_THREAD_PRIORITY_SCHEDULING -1
+#undef _GCC_THREAD_PRIORITY_SCHEDULING
+#define _GCC_THREAD_PRIORITY_SCHEDULING -1
 
-#undef _POSIX_THREAD_PROCESS_SHARED
-#define _POSIX_THREAD_PROCESS_SHARED -1
+#undef _GCC_THREAD_PROCESS_SHARED
+#define _GCC_THREAD_PROCESS_SHARED -1
 
 
 /*
@@ -282,37 +282,37 @@ extern "C"
  *                      (must be at least 32767)
  *
  */
-#undef _POSIX_THREAD_DESTRUCTOR_ITERATIONS
-#define _POSIX_THREAD_DESTRUCTOR_ITERATIONS     4
+#undef _GCC_THREAD_DESTRUCTOR_ITERATIONS
+#define _GCC_THREAD_DESTRUCTOR_ITERATIONS     4
 
 #undef PTHREAD_DESTRUCTOR_ITERATIONS
-#define PTHREAD_DESTRUCTOR_ITERATIONS           _POSIX_THREAD_DESTRUCTOR_ITERATIONS
+#define PTHREAD_DESTRUCTOR_ITERATIONS           _GCC_THREAD_DESTRUCTOR_ITERATIONS
 
-#undef _POSIX_THREAD_KEYS_MAX
-#define _POSIX_THREAD_KEYS_MAX                  128
+#undef _GCC_THREAD_KEYS_MAX
+#define _GCC_THREAD_KEYS_MAX                  128
 
 #undef PTHREAD_KEYS_MAX
-#define PTHREAD_KEYS_MAX                        _POSIX_THREAD_KEYS_MAX
+#define PTHREAD_KEYS_MAX                        _GCC_THREAD_KEYS_MAX
 
 #undef PTHREAD_STACK_MIN
 #define PTHREAD_STACK_MIN                       0
 
-#undef _POSIX_THREAD_THREADS_MAX
-#define _POSIX_THREAD_THREADS_MAX               64
+#undef _GCC_THREAD_THREADS_MAX
+#define _GCC_THREAD_THREADS_MAX               64
 
   /* Arbitrary value */
 #undef PTHREAD_THREADS_MAX
 #define PTHREAD_THREADS_MAX                     2019
 
-#undef _POSIX_SEM_NSEMS_MAX
-#define _POSIX_SEM_NSEMS_MAX                    256
+#undef _GCC_SEM_NSEMS_MAX
+#define _GCC_SEM_NSEMS_MAX                    256
 
   /* Arbitrary value */
 #undef SEM_NSEMS_MAX
 #define SEM_NSEMS_MAX                           1024
 
-#undef _POSIX_SEM_VALUE_MAX
-#define _POSIX_SEM_VALUE_MAX                    32767
+#undef _GCC_SEM_VALUE_MAX
+#define _GCC_SEM_VALUE_MAX                    32767
 
 #undef SEM_VALUE_MAX
 #define SEM_VALUE_MAX                           INT_MAX

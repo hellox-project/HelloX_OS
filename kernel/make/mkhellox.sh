@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KERNEL_ELF=hellox_kernel
+KERNEL_ELF=kernel.elf
 HELLOX_IMG=hellox.img
 BOOT_BIN=bootsect.bin  
 REALINIT_BIN=realinit.bin
@@ -28,9 +28,7 @@ make_kernel_bin(){
     
     #将内核elf文件中二进制提取到bin
     #objcopy -O binary -j .rodata -j .text -j .data -j .bss  -S -g $KERNEL_ELF $KERNEL_BIN
-    objcopy -O binary -j .rodata -j .text -j .data -j .bss $KERNEL_ELF_FILE $KERNEL_BIN
-
-    echo "$KERNEL_ELF_FILE=>$KERNEL_BIN"
+    objcopy -v -O binary -j .rodata -j .text -j .data -j .bss $KERNEL_ELF_FILE $KERNEL_BIN
 }
 
 main(){
@@ -69,16 +67,13 @@ fi
 }
 
 main $@
-
-if [ ! $? -eq 0 ]; then
-
-    exit 0;
+RETVAL=$?
+if [ ! $RETVAL -eq 0 ]; then
+    echo "出现错误"
+    exit $RETVAL;
 fi
 
-
-
-echo "cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN"
-cp $KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN
+cp -v ../$KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN
 
 exit 0
 
