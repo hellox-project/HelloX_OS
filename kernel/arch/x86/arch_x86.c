@@ -44,7 +44,7 @@ BOOL HardwareInitialize()
 //__declspec(naked)
 VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ (
 	".code32						\n\t "
 	"pushl 	%%ebp					\n\t"
@@ -102,7 +102,7 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 									   __KERNEL_THREAD_CONTEXT** lppNewContext)
 {
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 	".code32								\n\t"
 	"movl	%%esp,	%0                  	\n\t"
@@ -182,7 +182,7 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 //
 VOID EnableVMM()
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ (
 	".code32			\n\t"
 	"pushl	%%eax		\n\t"
@@ -212,7 +212,7 @@ VOID EnableVMM()
 //Halt current CPU in case of IDLE,it will be called by IDLE thread.
 VOID HaltSystem()
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ __volatile__ ("hlt	\n\t");
 #else
 	__asm{
@@ -266,7 +266,7 @@ VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 //Get time stamp counter.
 VOID __GetTsc(__U64* lpResult)
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 		".code32		\n\t"
 		"pushl	%%ebp	\n\t"
@@ -306,7 +306,7 @@ static
 //_declspec(naked)
 		ReadCmosData(WORD* pData,BYTE nPort)
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__(
 	".code32				\n\t"
 	"pushl	%%ebp			\n\t"
@@ -396,7 +396,7 @@ VOID __MicroDelay(DWORD dwmSeconds)
 
 VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm volatile("outl %0,%1" : : "a" (dwVal), "dN" (wPort));
 
 #else
@@ -415,7 +415,7 @@ VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 DWORD __ind(WORD wPort)    //Read one double word from a port.
 {
 	DWORD    dwRet       = 0;
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm volatile("inl %1,%0" : "=a" (dwRet) : "dN" (wPort));
 #else
 	__asm{
@@ -433,7 +433,7 @@ DWORD __ind(WORD wPort)    //Read one double word from a port.
 
 VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm volatile("outb %0,%1" : : "a" (_bt), "dN" (_port));
 
 #else
@@ -452,7 +452,7 @@ VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 UCHAR __inb(WORD _port)  //Receive a byte from port.
 {
 	UCHAR uRet;
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm volatile("inb %1,%0" : "=a" (uRet) : "dN" (_port));
 
 #else
@@ -471,7 +471,7 @@ UCHAR __inb(WORD _port)  //Receive a byte from port.
 WORD __inw(WORD wPort)
 {
 	WORD    wRet       = 0;
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm volatile("inw %1,%0" : "=a" (wRet) : "dN" (wPort));
 #else
 	__asm{
@@ -489,7 +489,7 @@ WORD __inw(WORD wPort)
 
 VOID __outw(WORD wVal,WORD wPort)
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm volatile("outw %0,%1" : : "a" (wVal), "dN" (wPort));
 #else
 	__asm{
@@ -509,7 +509,7 @@ VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 {
 #ifdef __I386__
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ (
 	"	.code32								\n\t"
 	"	pushl 	%%ebp                                      \n\t"
@@ -558,7 +558,7 @@ VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 {
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ (
 	".code32			  				\n\t"
 	" pushl %%ebp                        \n\t"

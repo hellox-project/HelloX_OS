@@ -224,5 +224,5 @@
 //#define __CFG_APP_JVM
 
 #define _TIME_T_DEFINED
-#define _POSIX_
 
+//#define _GCC_

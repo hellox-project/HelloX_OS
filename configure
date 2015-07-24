@@ -3259,6 +3259,10 @@ hx_arch="arch/x86"
 hx_drivers="drivers/x86"
 
 
+##AM_CPPFLAGS =-nostdlib -m32  -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+#HX_CFLAGS = -nostdlib -m32 -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys
+#AC_SUBST(HX_FLAGS, "-nostdlib -m32 -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys");
+#AC_DEFINE(_GCC_, [true], "GCC")
 
 
 ac_config_headers="$ac_config_headers kernel/config.h"
@@ -16423,9 +16427,7 @@ fi
 
 
 
-##AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
-AM_CFLAGS==-nostdlib -m32 -D__CONFIG_H__ -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
 
 # Checks for libraries.

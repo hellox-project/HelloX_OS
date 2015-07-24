@@ -33,7 +33,7 @@ LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
 
 #ifdef __I386__
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ __volatile__(
 			".code32					;"
 			"PUSHL 		%%ecx			;"
@@ -69,7 +69,7 @@ PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG 
 
 #ifdef __I386__
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ __volatile__ (
 			".code32						;"
 			"PUSH %%ecx 					;"

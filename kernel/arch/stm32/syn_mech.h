@@ -42,7 +42,7 @@ extern void DisableInterrupt(void);
 //Interrupt enable and disable operation.
 #ifdef __I386__
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	#define __ENABLE_INTERRUPT() {__asm__("sti \n\t"::);}
 #else
 	#define __ENABLE_INTERRUPT() {__asm sti};
@@ -54,7 +54,7 @@ extern void DisableInterrupt(void);
 
 #ifdef __I386__
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	#define __DISABLE_INTERRUPT() { __asm__ ("cli \n\t"::); }
 #else
 	#define __DISABLE_INTERRUPT() {__asm cli}

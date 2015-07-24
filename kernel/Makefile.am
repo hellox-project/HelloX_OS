@@ -25,11 +25,11 @@ HXLDFLAGS += $(HX_FLAGS)
 LDADD = 
 LDADD += ./osentry/libosentry.a
 LDADD += ./lib/libhellolib.a
-LDADD += ./drivers/x86/libdrivers.a
+LDADD += ./$(hx_drivers)/libdrivers.a
 LDADD += ./shell/libshell.a
 LDADD += ./network/libnetwork.a
 LDADD += ./kthread/libkthread.a
-LDADD += ./arch/x86/libarch.a
+LDADD += ./$(hx_arch)/libarch.a
 LDADD += ./fs/libfs.a
 LDADD += ./kernel/libkernel.a
 LDADD += ./kapi/libkapi.a
@@ -37,8 +37,8 @@ LDADD += ./kapi/libkapi.a
 
 AM_CFLAGS=$(HX_FLAGS)
 
-bin_PROGRAMS = hellox_kernel
-hellox_kernel_SOURCES = 
-#hellox_kernel_CPPFLAGS = $(AM_CPPFLAGS)
-hellox_kernel_LDFLAGS = $(HXLDFLAGS)
-hellox_kernel_LDADD = $(LDADD)
+bin_PROGRAMS = kernel.elf
+kernel_elf_SOURCES = 
+#kernel_elf_CPPFLAGS = $(AM_CPPFLAGS)
+kernel_elf_LDFLAGS = $(HXLDFLAGS)
+kernel_elf_LDADD = $(LDADD)

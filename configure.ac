@@ -10,6 +10,10 @@ AC_SUBST(os, "HelloX")
 AC_SUBST(hx_arch, "arch/x86")
 AC_SUBST(hx_drivers, "drivers/x86")
 
+##AM_CPPFLAGS =-nostdlib -m32  -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
+#HX_CFLAGS = -nostdlib -m32 -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys
+#AC_SUBST(HX_FLAGS, "-nostdlib -m32 -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys");
+#AC_DEFINE(_GCC_, [true], "GCC")
 
 AC_CONFIG_SRCDIR([gui/CTRL/bmpbtn.cpp])
 AC_CONFIG_HEADERS([kernel/config.h])
@@ -32,9 +36,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AM_CONDITIONAL([COMPILE_TIME_RELOC_CHECKS],[AC_COMPILE_IFELSE], [true])
 
 
-##AM_CPPFLAGS =-nostdlib -m32 -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
-AM_CFLAGS==-nostdlib -m32 -D__CONFIG_H__ -D_POSIX_ -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 
 
 # Checks for libraries.

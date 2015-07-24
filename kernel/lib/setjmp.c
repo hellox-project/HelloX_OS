@@ -14,7 +14,7 @@
 //__declspec(naked)
 int __setjmp(jmp_buf env)
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	//TODO gaojie
 	__asm__ __volatile__(
 			".code32;"
@@ -49,7 +49,7 @@ int __setjmp(jmp_buf env)
 //__declspec(naked)
 void __longjmp(jmp_buf env,int value)
 {
-#ifdef _POSIX_
+#ifdef _GCC_
 	//TODO gaojie
 	__asm__ __volatile__(
 			".code32						\n\t"

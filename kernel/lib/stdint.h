@@ -34,7 +34,7 @@
 
     /* 7.18.1.1 */
 
-#ifdef _POSIX_
+#ifdef _GCC_
           typedef long int		__int64;
 #endif
 

@@ -108,7 +108,7 @@ VOID SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	DWORD sysContext[11] = {0};
 	DWORD bt;
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm __volatile__ (
 			".code32			;"
 			"pusha				;"

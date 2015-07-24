@@ -78,7 +78,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = x86_64-unknown-linux-gnu
 host_triplet = x86_64-unknown-linux-gnu
-bin_PROGRAMS = hellox_kernel$(EXEEXT)
+bin_PROGRAMS = kernel.elf$(EXEEXT)
 subdir = kernel
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/config.h.in
@@ -92,16 +92,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_hellox_kernel_OBJECTS =
-hellox_kernel_OBJECTS = $(am_hellox_kernel_OBJECTS)
-hellox_kernel_DEPENDENCIES = $(LDADD)
+am_kernel_elf_OBJECTS =
+kernel_elf_OBJECTS = $(am_kernel_elf_OBJECTS)
+kernel_elf_DEPENDENCIES = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-hellox_kernel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+kernel_elf_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(hellox_kernel_LDFLAGS) $(LDFLAGS) -o $@
+	$(kernel_elf_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
 am__v_P_0 = false
@@ -133,8 +133,8 @@ AM_V_CCLD = $(am__v_CCLD_$(V))
 am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(hellox_kernel_SOURCES)
-DIST_SOURCES = $(hellox_kernel_SOURCES)
+SOURCES = $(kernel_elf_SOURCES)
+DIST_SOURCES = $(kernel_elf_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -203,14 +203,14 @@ am__relativize = \
     dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
   done; \
   reldir="$$dir2"
-ACLOCAL = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing aclocal-1.14
+ACLOCAL = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing aclocal-1.14
 ALLOCA = 
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-AUTOCONF = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing autoconf
-AUTOHEADER = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing autoheader
-AUTOMAKE = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing automake-1.14
+AUTOCONF = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing autoconf
+AUTOHEADER = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing autoheader
+AUTOMAKE = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing automake-1.14
 AWK = gawk
 CC = gcc
 CCAS = gcc
@@ -250,7 +250,7 @@ LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing makeinfo
+MAKEINFO = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -273,10 +273,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = strip
 VERSION = 1.78
-abs_builddir = /media/gaojie/Java/hellox/HelloX_OS/kernel
-abs_srcdir = /media/gaojie/Java/hellox/HelloX_OS/kernel
-abs_top_builddir = /media/gaojie/Java/hellox/HelloX_OS
-abs_top_srcdir = /media/gaojie/Java/hellox/HelloX_OS
+abs_builddir = /home/gaojie/media/Java/hellox/HelloX_OS/kernel
+abs_srcdir = /home/gaojie/media/Java/hellox/HelloX_OS/kernel
+abs_top_builddir = /home/gaojie/media/Java/hellox/HelloX_OS
+abs_top_srcdir = /home/gaojie/media/Java/hellox/HelloX_OS
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -308,7 +308,7 @@ hx_arch = arch/x86
 hx_drivers = drivers/x86
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/install-sh
+install_sh = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -341,15 +341,15 @@ HX_FLAGS = -nostdlib -nostdinc -fno-stack-protector -fno-builtin -m32 \
 HXLDFLAGS = -e__OS_Entry -Ttext 0x110000 -nostdlib -nostdinc -m32 \
 	$(HX_FLAGS)
 LDADD = ./osentry/libosentry.a ./lib/libhellolib.a \
-	./drivers/x86/libdrivers.a ./shell/libshell.a \
+	./$(hx_drivers)/libdrivers.a ./shell/libshell.a \
 	./network/libnetwork.a ./kthread/libkthread.a \
-	./arch/x86/libarch.a ./fs/libfs.a ./kernel/libkernel.a \
+	./$(hx_arch)/libarch.a ./fs/libfs.a ./kernel/libkernel.a \
 	./kapi/libkapi.a
 AM_CFLAGS = $(HX_FLAGS)
-hellox_kernel_SOURCES = 
-#hellox_kernel_CPPFLAGS = $(AM_CPPFLAGS)
-hellox_kernel_LDFLAGS = $(HXLDFLAGS)
-hellox_kernel_LDADD = $(LDADD)
+kernel_elf_SOURCES = 
+#kernel_elf_CPPFLAGS = $(AM_CPPFLAGS)
+kernel_elf_LDFLAGS = $(HXLDFLAGS)
+kernel_elf_LDADD = $(LDADD)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -449,9 +449,9 @@ clean-binPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-hellox_kernel$(EXEEXT): $(hellox_kernel_OBJECTS) $(hellox_kernel_DEPENDENCIES) $(EXTRA_hellox_kernel_DEPENDENCIES) 
-	@rm -f hellox_kernel$(EXEEXT)
-	$(AM_V_CCLD)$(hellox_kernel_LINK) $(hellox_kernel_OBJECTS) $(hellox_kernel_LDADD) $(LIBS)
+kernel.elf$(EXEEXT): $(kernel_elf_OBJECTS) $(kernel_elf_DEPENDENCIES) $(EXTRA_kernel_elf_DEPENDENCIES) 
+	@rm -f kernel.elf$(EXEEXT)
+	$(AM_V_CCLD)$(kernel_elf_LINK) $(kernel_elf_OBJECTS) $(kernel_elf_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

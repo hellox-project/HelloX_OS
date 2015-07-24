@@ -684,7 +684,7 @@ static VOID ExcepSpecificOps(LPVOID pESP,UCHAR ucVector)
 
          if(14 == ucVector)  //Page fault.
          {
-#ifdef _POSIX_
+#ifdef _GCC_
                             __asm__ __volatile__(
                                                ".code32            \n\t"
                                                "pushl       %%eax     \n\t"

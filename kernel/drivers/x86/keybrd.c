@@ -186,7 +186,7 @@ static void LightOrQuench()
 		cmd |= 0x02;
 	}
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm (
 	".code32		;"
 	"pushl 	%%eax	;"
@@ -454,7 +454,7 @@ static BOOL InitKeyBoard()
 unsigned char GetScanCode()
 {
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 	unsigned char code = 0;
 	asm volatile ("inb $0x60, %%al; movb %%al, %0" : "=m"(code) : );
 	/**
@@ -480,7 +480,7 @@ unsigned char GetScanCode()
 static void AckKeyBoard()
 {
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 	asm (
 		".code32				;"
 		"inb	$0x61,	%%al	;"

@@ -109,7 +109,7 @@ BOOL  VGA_SetCursorPos(WORD CursorX,WORD CursorY)
 	cursor_h       = (cursor_index>>8)&0xFF;
 	cursor_l       = cursor_index&0xFF;
 
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ volatile (
 	"movw %0,	%%dx                              \n\t"
 	"movb $14,	%%al                              \n\t"

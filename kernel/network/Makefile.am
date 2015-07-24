@@ -1,8 +1,7 @@
 # AUTOMAKE_OPTIONS = subdir-objects
+include $(top_srcdir)/kernel/kernel.mk
 
 noinst_LIBRARIES = libnetwork.a
-
-# SUBDIRS = api arch	core	ethernet	netif ssl
 
 libnetwork_a_SOURCES = ./netif/ethernetif.c \
 ./netif/slipif.c                             \
@@ -42,7 +41,3 @@ libnetwork_a_SOURCES = ./netif/ethernetif.c \
 ./api/netifapi.c                             \
 ./ethernet/ethentry.c                        \
 ./ethernet/ethif.c
-                           
-AM_CPPFLAGS =
-AM_CPPFLAGS +=-nostdlib -m32 -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys 
-AM_CPPFLAGS += -D_M_IX86 -DMEM_LIBC_MALLOC

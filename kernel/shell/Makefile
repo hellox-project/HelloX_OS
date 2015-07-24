@@ -78,9 +78,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = x86_64-unknown-linux-gnu
 host_triplet = x86_64-unknown-linux-gnu
+DIST_COMMON = $(top_srcdir)/kernel/kernel.mk $(srcdir)/Makefile.in \
+	$(srcdir)/Makefile.am $(top_srcdir)/depcomp
 subdir = kernel/shell
-DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -169,14 +169,14 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing aclocal-1.14
+ACLOCAL = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing aclocal-1.14
 ALLOCA = 
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-AUTOCONF = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing autoconf
-AUTOHEADER = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing autoheader
-AUTOMAKE = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing automake-1.14
+AUTOCONF = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing autoconf
+AUTOHEADER = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing autoheader
+AUTOMAKE = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing automake-1.14
 AWK = gawk
 CC = gcc
 CCAS = gcc
@@ -216,7 +216,7 @@ LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/missing makeinfo
+MAKEINFO = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -239,10 +239,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = strip
 VERSION = 1.78
-abs_builddir = /media/gaojie/Java/hellox/HelloX_OS/kernel/shell
-abs_srcdir = /media/gaojie/Java/hellox/HelloX_OS/kernel/shell
-abs_top_builddir = /media/gaojie/Java/hellox/HelloX_OS
-abs_top_srcdir = /media/gaojie/Java/hellox/HelloX_OS
+abs_builddir = /home/gaojie/media/Java/hellox/HelloX_OS/kernel/shell
+abs_srcdir = /home/gaojie/media/Java/hellox/HelloX_OS/kernel/shell
+abs_top_builddir = /home/gaojie/media/Java/hellox/HelloX_OS
+abs_top_srcdir = /home/gaojie/media/Java/hellox/HelloX_OS
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -274,7 +274,7 @@ hx_arch = arch/x86
 hx_drivers = drivers/x86
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/install-sh
+install_sh = ${SHELL} /home/gaojie/media/Java/hellox/HelloX_OS/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -297,14 +297,15 @@ top_builddir = ../..
 top_srcdir = ../..
 noinst_LIBRARIES = libshell.a
 libshell_a_SOURCES = extcmd.c fdisk.c fs.c hiscmd.c ioctrl_s.c network.c shell.c shell_help.c stat_s.c fdisk2.c fibonacci.c hedit.c hypertrm.c  network2.c shell1.c  shell_help_smt32.c  sysd_s.c
-AM_CPPFLAGS = -nostdlib -nostdinc -m32 -D_M_IX86 \
-	-I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/include \
-	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys
+AM_CFLAGS = -nostdlib -nostdinc -m32 -fno-builtin -D_GCC_ -D_POSIX_ \
+	-D_M_IX86 -DMEM_LIBC_MALLOC -I$(top_srcdir)/kernel/include \
+	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys \
+	-I$(top_srcdir)/kernel/lib
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/kernel/kernel.mk $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -325,6 +326,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
 	esac;
+$(top_srcdir)/kernel/kernel.mk:
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh

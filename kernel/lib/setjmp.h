@@ -102,7 +102,7 @@ typedef struct __JUMP_BUFFER {
 extern "C"
 #endif  /* __cplusplus */
 
-#ifndef _POSIX_
+#ifndef _GCC_
 void __stdcall _NLG_Notify(unsigned long);
 #endif
 
@@ -110,7 +110,7 @@ void __stdcall _NLG_Notify(unsigned long);
 extern "C"
 #endif  /* __cplusplus */
 
-#ifndef _POSIX_
+#ifndef _GCC_
 void __stdcall _NLG_Return();
 #endif
 

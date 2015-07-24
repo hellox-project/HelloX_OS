@@ -33,7 +33,7 @@ VOID u64Add(__U64* lpu64_1,__U64* lpu64_2,__U64* lpu64_result)
 	}
 
 #ifdef __I386__  //Use asmble language to accelate speed.
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ __volatile__(
 			".code32				\n\t"
 			"pushl		%%eax		\n\t"
@@ -97,7 +97,7 @@ VOID u64Sub(__U64* lpu64_1,__U64* lpu64_2,__U64* lpu64_result)
 	   return;
 
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ __volatile__(
 			".code32			\n\t"
 			"pushl	%%eax		\n\t"
@@ -193,7 +193,7 @@ VOID u64RotateLeft(__U64* lpu64_1,DWORD dwTimes)   //Shift dwTimes bit(s) of lpu
 		return;
 
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 __asm__ __volatile__(
 			".code32			\n\t"
 			"pushl	%%eax		\n\t"
@@ -235,7 +235,7 @@ VOID u64RotateRight(__U64* lpu64_1,DWORD dwTimes)  //Shift dwTimes bit(s) of lpu
 	if((NULL == lpu64_1) || (0 == dwTimes))  //Parameters check.
 		return;
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 	__asm__ __volatile__(
 			".code32					\n\t"
 			"pushl	%%eax				\n\t"
@@ -275,7 +275,7 @@ __BEGIN:
 VOID u64Div(__U64* lpu64_1,__U64* lpu64_2,__U64* lpResult,__U64* lpRemainder)
 {
 #ifdef __I386__
-#ifdef _POSIX_
+#ifdef _GCC_
 __asm__ __volatile__ (
 			".code32						\n\t"
 			"pushl					%%eax	\n\t"
