@@ -68,9 +68,7 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 	__PRIORITY_QUEUE*         lpSleepingQueue   = NULL;
 	__KERNEL_THREAD_OBJECT*   lpKernelThread    = NULL;
 	DWORD                     dwFlags           = 0;
-
-	//PrintStr("TimerInterruptHandler"); GotoHome();
-
+	
 	if(NULL == lpEsp)    //Parameter check.
 	{
 		return TRUE;
@@ -624,7 +622,6 @@ __RETFROMINT:
 
 			_hx_sprintf(strError, "Warning: Interrupt[%d] raised in sys initialization.", ucVector);
 			PrintStr(strError);
-			//GotoHome();
 		}
 		else
 		{
@@ -979,7 +976,11 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 	//and this may lead system halt.
 	//So we add more of enabling interrupt operations to dismiss the pending
 	//interrupt(s) here.
-
+#ifdef __I386__
+	__ENABLE_INTERRUPT();
+	__ENABLE_INTERRUPT();
+	__ENABLE_INTERRUPT();
+#endif
 	return TRUE;
 }
 

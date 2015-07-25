@@ -332,7 +332,6 @@ INT FormString(LPSTR lpszBuff,LPSTR lpszFmt,LPVOID* lppParam)
 	return (lpszTmp - lpszBuff);
 }
 
-
 //string comparation code.
 int strcmp (
         const char * src,

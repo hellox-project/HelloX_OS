@@ -35,6 +35,7 @@
 #ifdef __CFG_SYS_DDF
 
 
+
 //A helper routine used to convert a string from lowercase to capital.
 //The string should be terminated by a zero,i.e,a C string.
 //static
@@ -66,17 +67,15 @@ VOID ToCapital(LPSTR lpszString)
 //Output if failed:
 //  dwStatus       :     DRCB_STATUS_FAIL.
 //
-DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv,
-					  __COMMON_OBJECT* lpDev,
-					  __DRCB*          lpDrcb)
+DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB*          lpDrcb)
 {
-	CHAR                DirName[MAX_FILE_NAME_LEN];
-	CHAR                FileName[MAX_FILE_NAME_LEN];
-	CHAR*               pszFileName       = NULL;
-	__DEVICE_OBJECT*    pFatDevice        = (__DEVICE_OBJECT*)lpDev;
-	__FAT32_SHORTENTRY  DirShortEntry;
-	DWORD               dwDirCluster      = 0;
-	DWORD               dwResult          = 0;
+	CHAR                DirName[MAX_FILE_NAME_LEN]  = {0};
+	CHAR                FileName[MAX_FILE_NAME_LEN] = {0};
+	CHAR*               pszFileName                 = NULL;
+	__DEVICE_OBJECT*    pFatDevice                  = (__DEVICE_OBJECT*)lpDev;
+	__FAT32_SHORTENTRY  DirShortEntry               = {0};
+	DWORD               dwDirCluster                = 0;
+	DWORD               dwResult                    = 0;
 
 	if((NULL == lpDev) || (NULL == lpDrcb))
 	{
@@ -96,8 +95,7 @@ DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv,
 		return FALSE;
 	}
 	//Try to open the parent directory.
-	if(!GetDirEntry((__FAT32_FS*)pFatDevice->lpDevExtension,
-		DirName,&DirShortEntry,NULL,NULL))
+	if(!GetDirEntry((__FAT32_FS*)pFatDevice->lpDevExtension,	DirName,&DirShortEntry,NULL,NULL))
 	{
 		PrintLine("Can not get directory entry of parent dir.");
 		return FALSE;
@@ -111,24 +109,18 @@ DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv,
 	dwDirCluster <<= 16;
 	dwDirCluster +=  DirShortEntry.wFirstClusLow;
 
-	if(!CreateFatFile((__FAT32_FS*)pFatDevice->lpDevExtension,
-		dwDirCluster,
-		FileName,
-		0))
-	{
-		PrintLine("In FatDeviceCreate: Call CreateFatFile failed.");
+	if(!CreateFatFile((__FAT32_FS*)pFatDevice->lpDevExtension,dwDirCluster,FileName,	0))
+	{		
 		goto __TERMINAL;
 	}
-	PrintLine("CreateFatFile call");
+		
 	dwResult = 1;
 __TERMINAL:
 	return dwResult;
 }
 
 //Implementation of DeviceWrite routine.
-DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
-		                    __COMMON_OBJECT* lpDev,
-					        __DRCB* lpDrcb)
+DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
 {
 	__FAT32_FS*             pFat32Fs       = NULL;
 	__FAT32_FILE*           pFat32File     = NULL;
@@ -150,13 +142,14 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 	{
 		goto __TERMINAL;
 	}
+
 	pFat32File   = (__FAT32_FILE*)(((__DEVICE_OBJECT*)lpDev)->lpDevExtension);
 	pFat32Fs     = pFat32File->pFileSystem;
 	dwWriteSize  = lpDrcb->dwInputLen;
 	pBuffer      = (BYTE*)lpDrcb->lpInputBuffer;
 	pBufferEnd   = pBuffer + dwWriteSize;
 
-	pClusBuffer  = (BYTE*)KMemAlloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pClusBuffer  = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
 	if(NULL == pClusBuffer)  //Can not allocate buffer.
 	{
 		goto __TERMINAL;
@@ -164,7 +157,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 	dwCurrPos  = pFat32File->dwCurrPos;
 	dwNextClus = pFat32File->dwCurrClusNum;
 
-	//if file null£¬first alloc a Cluster
+	//if file nullï¿½ï¿½first alloc a Cluster
 	if(dwNextClus == 0 && GetFreeCluster(pFat32Fs,0,&dwNextClus))
 	{
 		pFat32File->dwCurrClusNum  = dwNextClus;
@@ -177,13 +170,10 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 	{		
 		goto __TERMINAL;
 	}
+
 	//Read the current cluster.
-	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-		dwSector,
-		pFat32Fs->SectorPerClus,
-		pClusBuffer))
-	{
-	
+	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,	dwSector,pFat32Fs->SectorPerClus,pClusBuffer))
+	{	
 		goto __TERMINAL;
 	}
 
@@ -195,6 +185,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 		{
 			dwOnceSize = dwWriteSize;
 		}
+
 		memcpy(pStart,pBuffer,dwOnceSize);
 		//Now write the cluster into memory.
 		if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
@@ -225,8 +216,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 			if(IS_EOC(dwNextClus))  //Reach the end of file,so extend file.
 			{
 				if(!AppendClusterToChain(pFat32Fs,&pFat32File->dwCurrClusNum))
-				{
-			
+				{			
 					goto __TERMINAL;
 				}
 				dwNextClus = pFat32File->dwCurrClusNum;
@@ -294,9 +284,7 @@ __TERMINAL:
 
 
 //Implementation of DeviceRead routine.
-DWORD FatDeviceSize(__COMMON_OBJECT* lpDrv,
-	__COMMON_OBJECT* lpDev,
-	__DRCB* lpDrcb)
+DWORD FatDeviceSize(__COMMON_OBJECT* lpDrv,	__COMMON_OBJECT* lpDev,	__DRCB* lpDrcb)
 {
 	__FAT32_FILE*          pFatFile     = NULL;
 	DWORD                  dwFileSize   = 0;   
@@ -347,7 +335,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 	{
 		dwToRead = (pFatFile->dwFileSize - pFatFile->dwCurrPos);
 	}
-	pBuffer = (BYTE*)KMemAlloc(pFatFs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFatFs->dwClusterSize);
 	if(NULL == pBuffer)  //Can not allocate memory.
 	{
 		_hx_printf("FatDeviceRead times:ClusterSize=%d",(INT)pFatFs->dwClusterSize);		
@@ -454,10 +442,10 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 		}
 	}
 __TERMINAL:
-	if(pBuffer)
-	{
-		RELEASE_OBJECT(pBuffer);
-	}
+
+	
+	FatMem_Free(pBuffer);
+
 	return dwTotalRead;
 }
 

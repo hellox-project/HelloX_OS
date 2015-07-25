@@ -757,7 +757,40 @@ static DWORD _GetFileSize(__COMMON_OBJECT* lpThis,
 						  __COMMON_OBJECT* lpFileObject,
 						  DWORD* lpdwSizeHigh)
 {
-	return 0;
+	__DRIVER_OBJECT*        pDrvObject  = NULL;
+	__DEVICE_OBJECT*        pFileObject = (__DEVICE_OBJECT*)lpFileObject;
+	__DRCB*                 pDrcb       = NULL;
+	DWORD                   dwResult    = 0;
+
+	if((NULL == pFileObject)) 
+	{
+		return 0;
+	}
+
+	pDrvObject = pFileObject->lpDriverObject;
+	//Create DRCB object and issue DeviceSeek command to file system driver.
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_DRCB);
+	if(NULL == pDrcb)        //Failed to create DRCB object.
+	{
+		return 0;
+	}
+
+	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	{
+		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pDrcb);
+
+		return 0;
+	}
+
+	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_SIZE;
+	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwInputLen      = sizeof(DWORD);
+	pDrcb->lpInputBuffer   = 0;      //Use input buffer to contain move scheme,from begin or current.
+	
+	dwResult = pDrvObject->DeviceSize((__COMMON_OBJECT*)pDrvObject,(__COMMON_OBJECT*)pFileObject,pDrcb);
+	ObjectManager.DestroyObject(&ObjectManager,	(__COMMON_OBJECT*)pDrcb);
+
+	return dwResult;
 }
 
 //Implementation of SetFilePointer.

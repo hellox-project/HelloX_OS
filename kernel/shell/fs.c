@@ -226,40 +226,60 @@ static DWORD fslist(__CMD_PARA_OBJ* pcpo)
 //A local helper routine to print the directory list,used by dir command.
 static VOID PrintDir(FS_FIND_DATA* pFindData)
 {
-	CHAR    Buffer[128] = {0};
+	CHAR    Buffer[MAX_FILE_NAME_LEN] = {0};
 
-	_hx_sprintf(Buffer,"    %16s    %16d    %4s",
-			pFindData->cAlternateFileName,
-		pFindData->nFileSizeLow,
-		(pFindData->dwFileAttribute & FILE_ATTR_DIRECTORY) ? "DIR" : "FILE");
+	if(!pFindData->bGetLongName)
+	{
+		_hx_sprintf(Buffer,"%13s    %16d    %4s",
+					pFindData->cAlternateFileName,
+		            pFindData->nFileSizeLow,
+		            (pFindData->dwFileAttribute & FILE_ATTR_DIRECTORY) ? "DIR" : "FILE");
+	}
+	else
+	{
+		_hx_sprintf(Buffer,"%s",strlen(pFindData->cFileName)?pFindData->cFileName:pFindData->cAlternateFileName);
+	}
+
 	PrintLine(Buffer);	
 }
 
 static DWORD dir(__CMD_PARA_OBJ* pCmdObj)
 {
 #ifdef __CFG_SYS_DDF
-	FS_FIND_DATA      ffd;
+	FS_FIND_DATA      ffd         = {0};
 	__COMMON_OBJECT*  pFindHandle = NULL;
 	BOOL              bFindNext   = FALSE;
 	
 	strcpy(Buffer,FsGlobalData.CurrentDir);
-	if(pCmdObj->byParameterNum >= 2)  //Target directory specified.
+	/*if(pCmdObj->byParameterNum >= 2)  //Target directory specified.
 	{
 		strcat(Buffer,pCmdObj->Parameter[1]);
-	}
+	}*/
 	ToCapital(Buffer);  //Convert to capital.
 	
-	pFindHandle = IOManager.FindFirstFile((__COMMON_OBJECT*)&IOManager,
-		Buffer,
-		&ffd);
-
-	if(NULL == pFindHandle)  //Can not open the target directory.
+	if(pCmdObj->byParameterNum >= 2 && strcmp(pCmdObj->Parameter[1],"-l") == 0)
 	{
+		ffd.bGetLongName = TRUE;
+	}
+		
+	pFindHandle = IOManager.FindFirstFile((__COMMON_OBJECT*)&IOManager,	Buffer,	&ffd);
+	if(NULL == pFindHandle)  //Can not open the target directory.
+	{		
 		PrintLine("Can not open the specified or current directory to display.");
 		goto __TERMINAL;
 	}
+
 	//Dump out the directory's content.
-	PrintLine("    File_Name           FileSize            F_D");
+	if(ffd.bGetLongName)	
+	{		
+		PrintLine("File_Name                                ");
+	}
+	else
+	{	
+		PrintLine("    File_Name            FileSize     F_D");
+	}
+	PrintLine("--------------------------------------------");
+
 	do{
 		PrintDir(&ffd);
 		bFindNext = IOManager.FindNextFile((__COMMON_OBJECT*)&IOManager,
@@ -269,6 +289,7 @@ static DWORD dir(__CMD_PARA_OBJ* pCmdObj)
 
 	}while(bFindNext);
 
+	PrintLine("--------------------------------------------");
 	//Close the find handle.
 	IOManager.FindClose((__COMMON_OBJECT*)&IOManager,
 		Buffer,
@@ -439,7 +460,7 @@ static DWORD vl(__CMD_PARA_OBJ* pCmdObj)
 	CHAR     Buffer[128];
 	DWORD    dwWritten  = 0;
 	CHAR     FullName[MAX_FILE_NAME_LEN];
-	DWORD    dwCounter  = 1024;
+	INT      dwCounter  = 6;
 
 	if(pCmdObj->byParameterNum < 2)
 	{
@@ -460,10 +481,10 @@ static DWORD vl(__CMD_PARA_OBJ* pCmdObj)
 		PrintLine("  Please specify a valid and present file name.");
 		goto __TERMINAL;
 	}
-	while(dwCounter)
+	while(dwCounter!= 0)
 	{
-		_hx_sprintf(Buffer,"Wish it can work,this line number is %d.\r\n",
-			dwCounter);
+		_hx_sprintf(Buffer,"Wish it can work,this line number is %d.\r\n",dwCounter);
+
 		if(!IOManager.WriteFile((__COMMON_OBJECT*)&IOManager,
 			hFile,
 			strlen(Buffer),

@@ -23,6 +23,9 @@
 //Kernel thread wrapper routine.
 typedef VOID (*__KERNEL_THREAD_WRAPPER)(__COMMON_OBJECT*);
 
+//Processor specified exception handler,for x86.
+VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector);
+
 //
 //Initializes the context of a kernel thread.
 //The initialization process is different on different platforms,so

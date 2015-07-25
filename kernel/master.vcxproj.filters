@@ -81,6 +81,12 @@
     <Filter Include="Source Files\jvm\OS">
       <UniqueIdentifier>{9b2777b6-45f4-4178-871a-27eb7c63381e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\bsdip">
+      <UniqueIdentifier>{d45c3103-01e8-481b-9e83-bf10a1ee10c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\bsd_hdr">
+      <UniqueIdentifier>{7a17f3ee-f237-47d6-8aaa-a729083628f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="drivers\x86\com.c">
