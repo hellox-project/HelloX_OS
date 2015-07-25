@@ -12,6 +12,7 @@
 *
 ****/
 
+#include <time.h>
 #if _MSC_VER > 1000
 #pragma once
 #endif  /* _MSC_VER > 1000 */
@@ -67,10 +68,11 @@ extern "C" {
 #include <sys/types.h>
 
 
+
 #ifndef _TIME_T_DEFINED
 typedef long time_t;
 #define _TIME_T_DEFINED
-#endif  /* _TIME_T_DEFINED */
+#endif
 
 
 #ifdef _WIN32

@@ -20,7 +20,7 @@
  */
 
 //HelloX Porting code.
-#include <stdafx.h>
+#include <StdAfx.h>
 #include <kapi.h>
 #include <io.h>
 
@@ -67,7 +67,7 @@ u4 *callJNIMethod(void *env, Class *class, char *sig, int ret_type,
                   u4 *ostack, unsigned char *f, int args) {
 
     u4 *opntr = ostack + args;
-    /*int i;
+    int i;
 
     for(i = 0; i < args; i++)
         asm volatile ("pushl %0" :: "m" (*--opntr) : "sp");
@@ -117,7 +117,8 @@ u4 *callJNIMethod(void *env, Class *class, char *sig, int ret_type,
     }
 
     asm volatile ("addl %0,%%esp" :: "r" ((args + 1) * sizeof(u4)) 
-                  : "cc", "sp");*/
+                  : "cc", "sp");
+
     return ostack;
 }
 #endif

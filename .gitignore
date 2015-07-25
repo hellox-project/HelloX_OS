@@ -1,0 +1,15 @@
+*.bin
+*.a
+*.o
+*.elf
+*.img
+*.log
+config.sub
+config.status
+Makefile
+*.in
+*.in~
+*.so
+*.Po
+*/.deps/
+autom4te.cache/

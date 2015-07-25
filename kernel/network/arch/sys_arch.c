@@ -12,14 +12,16 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "StdAfx.h"
+#include <StdAfx.h>
 #endif
 
-#include "lwip\opt.h"
-#include "lwip\sys.h"
-#include "lwip\tcpip.h"
-#include "arch\cc.h"
-#include "arch\sys_arch.h"
+#include "ktmgr.h"
+#include "heap.h"
+#include "lwip/opt.h"
+#include "lwip/sys.h"
+#include "lwip/tcpip.h"
+#include "arch/cc.h"
+#include "arch/sys_arch.h"
 
 //Light protection mechanism used by lwIP,it's critical section actually
 //in HelloX.

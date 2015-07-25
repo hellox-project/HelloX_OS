@@ -1,0 +1,5 @@
+kapi.o: kapi.c /usr/include/stdc-predef.h kapi.h
+
+/usr/include/stdc-predef.h:
+
+kapi.h:

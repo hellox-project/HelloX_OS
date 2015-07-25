@@ -17,13 +17,13 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
 #include "lwip/inet.h"
-#include "ethernet/ethif.h"
+#include "../network/ethernet/ethif.h"
 
 #include "kapi.h"
 #include "shell.h"

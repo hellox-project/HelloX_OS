@@ -13,9 +13,10 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include <stdafx.h>
-#include <string.h>
+#include <StdAfx.h>
 #include <limits.h>
+#include <ctype.h>
+#include <string.h>
 
 /*Purpose:
 *       memmove() copies a source memory buffer to a destination memory buffer.
@@ -331,27 +332,6 @@ INT FormString(LPSTR lpszBuff,LPSTR lpszFmt,LPVOID* lppParam)
 	return (lpszTmp - lpszBuff);
 }
 
-//A helper routine used to convert a string from lowercase to capital.
-//The string should be terminated by a zero,i.e,a C string.
-VOID ToCapital(LPSTR lpszString)
-{
-	int nIndex = 0;
-
-	if(NULL == lpszString)
-	{
-		return;
-	}
-	while(lpszString[nIndex])
-	{
-		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
-		{
-			lpszString[nIndex] += 'A' - 'a';
-		}
-
-		nIndex ++;
-	}
-}
-
 //string comparation code.
 int strcmp (
         const char * src,
@@ -428,7 +408,7 @@ void strtrim(char * dst,int flag)
 			i   ++;
 		}
 
-		//全是空格
+		//全锟角空革拷
 		if(len == i)
 		{
 			dst[0] = 0;
@@ -546,13 +526,6 @@ int strtol(const char *nptr, char **endptr, int base)
    unsigned long Overflow;
    int sign = 0, flag, LimitRemainder;
   
-   /*
-      跳过前面多余的空格，并判断正负符号。
-      如果base是0，允许以0x开头的十六进制数，
-      以0开头的8进制数。
-      如果base是16，则同时也允许以0x开头。
- 
-   */
    do
    {
       ch = *p++;
@@ -581,7 +554,6 @@ int strtol(const char *nptr, char **endptr, int base)
  
    for (ret = 0, flag = 0;; ch = *p++)
    {
-      /*把当前字符转换为相应运算中需要的值。*/
       if (isdigit(ch))
         ch -= '0';
       else if (isalpha(ch))
@@ -591,7 +563,6 @@ int strtol(const char *nptr, char **endptr, int base)
       if (ch >= base)
         break;
  
-      /*如果产生溢出，则置标志位，以后不再做计算。*/
       if (flag < 0 || ret > Overflow || (ret == Overflow && ch > LimitRemainder))
         flag = -1;
       else
@@ -602,18 +573,14 @@ int strtol(const char *nptr, char **endptr, int base)
       }
    }
  
-   /*
-      如果溢出，则返回相应的Overflow的峰值。
-      没有溢出，如是符号位为负，则转换为负数。
-   */
    if (flag < 0)
       ret = sign ? LONG_MIN : LONG_MAX;
    else if (sign)
       ret = -ret;
   
    /*
-      如字符串不为空，则*endptr等于指向nptr结束
-      符的指针值；否则*endptr等于nptr的首地址。
+      锟斤拷锟街凤拷锟斤拷锟斤拷为锟秸ｏ拷锟斤拷*endptr锟斤拷锟斤拷指锟斤拷nptr锟斤拷锟斤拷
+      锟斤拷锟斤拷指锟斤拷值锟斤拷锟斤拷锟斤拷*endptr锟斤拷锟斤拷nptr锟斤拷锟阶碉拷址锟斤拷
    */
    if (endptr != 0)
       *endptr = (char *)(flag ?(p - 1) : nptr);
@@ -663,4 +630,265 @@ char * strstr(const char *s1,const char *s2)
 		s1++;
 	}
 	return (char *) NULL;
+}
+
+
+
+
+//static int isdigit(int x)
+//{
+//    if(x<='9'&&x>='0')
+//        return 1;
+//    else
+//        return 0;
+//}
+
+long atol(const char *nptr)
+{
+	int c; /* current char */
+	long total; /* current total */
+	int sign; /* if ''-'', then negative, otherwise positive */
+
+	/* skip whitespace */
+	while (isspace((int)(unsigned char)*nptr))
+	{
+		++nptr;
+	}
+	c = (int)(unsigned char)*nptr++;
+	sign = c; /* save sign indication */
+	if (c == '-' || c == '+')
+	{
+		c = (int)(unsigned char)*nptr++; /* skip sign */
+	}
+	total = 0;
+
+	while (isdigit(c)) {
+		total = 10 * total + (c - '0'); /* accumulate digit */
+		c = (int)(unsigned char)*nptr++; /* get next char */
+	}
+
+	if (sign == '-')
+		return -total;
+	else
+		return total; /* return result, negated if necessary */
+}
+
+/***
+*int atoi(char *nptr) - Convert string to long
+*
+*Purpose:
+* Converts ASCII string pointed to by nptr to binary.
+* Overflow is not detected. Because of this, we can just use
+* atol().
+*
+*Entry:
+* nptr = ptr to string to convert
+*
+*Exit:
+* return int value of the string
+*
+*Exceptions:
+* None - overflow is not detected.
+*
+*******************************************************************************/
+
+int atoi(const char *nptr)
+{
+	return (int)atol(nptr);
+}
+
+char* itoa(int value, char* string, int radix)
+{
+	char tmp[33];
+	char* tp = tmp;
+	int i;
+	unsigned v;
+	int sign;
+	char* sp;
+
+	if (radix > 36 || radix <= 1)
+	{
+		//__set_errno(EDOM);
+		return 0;
+	}
+	sign = (radix == 10 && value < 0);
+	if (sign)
+		v = -value;
+	else
+		v = (unsigned)value;
+	while (v || tp == tmp)
+	{
+		i = v % radix;
+		v = v / radix;
+		if (i < 10)
+			*tp++ = i+'0';
+		else
+			*tp++ = i + 'a' - 10;
+	}
+
+	if (string == 0)
+		string = (char*)_hx_malloc((tp-tmp)+sign+1);
+	sp = string;
+
+	if (sign)
+		*sp++ = '-';
+	while (tp > tmp)
+		*sp++ = *--tp;
+	*sp = 0;
+	return string;
+}
+
+char *
+strchr (s, c_in)
+     const char *s;
+     int c_in;
+{
+  const unsigned char *char_ptr;
+  const unsigned long int *longword_ptr;
+  unsigned long int longword, magic_bits, charmask;
+  unsigned char c;
+
+  c = (unsigned char) c_in;
+
+  /* Handle the first few characters by reading one character at a time.
+     Do this until CHAR_PTR is aligned on a longword boundary.  */
+  for (char_ptr = (const unsigned char *) s;
+       ((unsigned long int) char_ptr & (sizeof (longword) - 1)) != 0;
+       ++char_ptr)
+    if (*char_ptr == c)
+      return (void *) char_ptr;
+    else if (*char_ptr == '\0')
+      return NULL;
+
+  /* All these elucidatory comments refer to 4-byte longwords,
+     but the theory applies equally well to 8-byte longwords.  */
+
+  longword_ptr = (unsigned long int *) char_ptr;
+
+  /* Bits 31, 24, 16, and 8 of this number are zero.  Call these bits
+     the "holes."  Note that there is a hole just to the left of
+     each byte, with an extra at the end:
+
+     bits:  01111110 11111110 11111110 11111111
+     bytes: AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
+
+     The 1-bits make sure that carries propagate to the next 0-bit.
+     The 0-bits provide holes for carries to fall into.  */
+  switch (sizeof (longword))
+    {
+    case 4: magic_bits = 0x7efefeffL; break;
+    case 8: magic_bits = ((0x7efefefeL << 16) << 16) | 0xfefefeffL; break;
+    default:
+      abort ();
+    }
+
+  /* Set up a longword, each of whose bytes is C.  */
+  charmask = c | (c << 8);
+  charmask |= charmask << 16;
+  if (sizeof (longword) > 4)
+    /* Do the shift in two steps to avoid a warning if long has 32 bits.  */
+    charmask |= (charmask << 16) << 16;
+  if (sizeof (longword) > 8)
+    abort ();
+
+  /* Instead of the traditional loop which tests each character,
+     we will test a longword at a time.  The tricky part is testing
+     if *any of the four* bytes in the longword in question are zero.  */
+  for (;;)
+    {
+      /* We tentatively exit the loop if adding MAGIC_BITS to
+	 LONGWORD fails to change any of the hole bits of LONGWORD.
+
+	 1) Is this safe?  Will it catch all the zero bytes?
+	 Suppose there is a byte with all zeros.  Any carry bits
+	 propagating from its left will fall into the hole at its
+	 least significant bit and stop.  Since there will be no
+	 carry from its most significant bit, the LSB of the
+	 byte to the left will be unchanged, and the zero will be
+	 detected.
+
+	 2) Is this worthwhile?  Will it ignore everything except
+	 zero bytes?  Suppose every byte of LONGWORD has a bit set
+	 somewhere.  There will be a carry into bit 8.  If bit 8
+	 is set, this will carry into bit 16.  If bit 8 is clear,
+	 one of bits 9-15 must be set, so there will be a carry
+	 into bit 16.  Similarly, there will be a carry into bit
+	 24.  If one of bits 24-30 is set, there will be a carry
+	 into bit 31, so all of the hole bits will be changed.
+
+	 The one misfire occurs when bits 24-30 are clear and bit
+	 31 is set; in this case, the hole at bit 31 is not
+	 changed.  If we had access to the processor carry flag,
+	 we could close this loophole by putting the fourth hole
+	 at bit 32!
+
+	 So it ignores everything except 128's, when they're aligned
+	 properly.
+
+	 3) But wait!  Aren't we looking for C as well as zero?
+	 Good point.  So what we do is XOR LONGWORD with a longword,
+	 each of whose bytes is C.  This turns each byte that is C
+	 into a zero.  */
+
+      longword = *longword_ptr++;
+
+      /* Add MAGIC_BITS to LONGWORD.  */
+      if ((((longword + magic_bits)
+
+	    /* Set those bits that were unchanged by the addition.  */
+	    ^ ~longword)
+
+	   /* Look at only the hole bits.  If any of the hole bits
+	      are unchanged, most likely one of the bytes was a
+	      zero.  */
+	   & ~magic_bits) != 0 ||
+
+	  /* That caught zeroes.  Now test for C.  */
+	  ((((longword ^ charmask) + magic_bits) ^ ~(longword ^ charmask))
+	   & ~magic_bits) != 0)
+	{
+	  /* Which of the bytes was C or zero?
+	     If none of them were, it was a misfire; continue the search.  */
+
+	  const unsigned char *cp = (const unsigned char *) (longword_ptr - 1);
+
+	  if (*cp == c)
+	    return (char *) cp;
+	  else if (*cp == '\0')
+	    return NULL;
+	  if (*++cp == c)
+	    return (char *) cp;
+	  else if (*cp == '\0')
+	    return NULL;
+	  if (*++cp == c)
+	    return (char *) cp;
+	  else if (*cp == '\0')
+	    return NULL;
+	  if (*++cp == c)
+	    return (char *) cp;
+	  else if (*cp == '\0')
+	    return NULL;
+	  if (sizeof (longword) > 4)
+	    {
+	      if (*++cp == c)
+		return (char *) cp;
+	      else if (*cp == '\0')
+		return NULL;
+	      if (*++cp == c)
+		return (char *) cp;
+	      else if (*cp == '\0')
+		return NULL;
+	      if (*++cp == c)
+		return (char *) cp;
+	      else if (*cp == '\0')
+		return NULL;
+	      if (*++cp == c)
+		return (char *) cp;
+	      else if (*cp == '\0')
+		return NULL;
+	    }
+	}
+    }
+
+  return NULL;
 }

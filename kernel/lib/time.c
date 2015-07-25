@@ -3,7 +3,11 @@
 #include "time.h"
 #include "time_pri.h"
 
-time_t __cdecl _gmtotime_t (int yr,/* 0 based */int mo,/* 1 based */int dy,/* 1 based */ int hr,int mn,int sc)
+time_t
+#ifndef _GCC_
+__cdecl
+#endif
+_gmtotime_t (int yr,/* 0 based */int mo,/* 1 based */int dy,/* 1 based */ int hr,int mn,int sc)
 {
  	int tmpdays;
  	long tmptim;
