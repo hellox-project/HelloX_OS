@@ -42,7 +42,7 @@ int  pthread_create (pthread_t * tid,	const pthread_attr_t * attr,void *(*start)
 	}
 	
 	_hx_sprintf(szThreadName,"pthread_%d",s_nThreadIndex++);
-	lpKernelThread = KernelThreadManager.kCreateKernelThread(
+	lpKernelThread = KernelThreadManager.CreateKernelThread(
 		             (__COMMON_OBJECT*)&KernelThreadManager,
 		             stackSize,
 		             KERNEL_THREAD_STATUS_READY,

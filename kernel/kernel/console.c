@@ -186,7 +186,7 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 	pConsole->nColNum      = CON_MAX_COLNUM;
 
 	//Create console read thread to process COM interface input message.
-	pConsole->hConThread = KernelThreadManager.kCreateKernelThread(
+	pConsole->hConThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -227,7 +227,7 @@ static VOID ConUninitialize(__CONSOLE* pConsole)
 	//Destroy console read thread.
 	if(NULL != pConsole->hConThread)
 	{
-		KernelThreadManager.kDestroyKernelThread(
+		KernelThreadManager.DestroyKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			(__COMMON_OBJECT*)pConsole->hConThread);
 	}

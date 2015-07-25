@@ -40,7 +40,7 @@ DWORD LogcatDaemon(LPVOID pData)
 				Console.PrintLine(buf);
 			}
 		}
-		KernelThreadManager.kSleep((__COMMON_OBJECT *)&KernelThreadManager, 500);
+		KernelThreadManager.Sleep((__COMMON_OBJECT *)&KernelThreadManager, 500);
 	}
 
 }

@@ -682,52 +682,22 @@ static VOID ExcepSpecificOps(LPVOID pESP,UCHAR ucVector)
          if(14 == ucVector)  //Page fault.
          {
 #ifdef _GCC_
-                            __asm__ __volatile__(
-                                               ".code32            \n\t"
-                                               "pushl       %%eax     \n\t"
-                                               "movl        %%cr2,     %%eax     \n\t"
-                                               "movl        %0,  %%eax              \n\t"
-                                               "popl         %%eax                       \n\t"
-                                               : :"r"(excepAddr) : "memory");
+        	 __asm__ __volatile__(
+				   "pushl       %%eax     			\n\t"
+				   "movl        %%cr2,     %%eax    \n\t"
+				   "movl        %0,  %%eax          \n\t"
+				   "popl         %%eax              \n\t"
+				   : :"r"(excepAddr) : "memory");
 #else
-                            __asm{
-                                     push eax
-                                     mov eax,cr2
-                                     mov excepAddr,eax
-                                     pop eax
-                            }
+        	 __asm{
+        		 push eax
+				 mov eax,cr2
+				 mov excepAddr,eax
+				 pop eax
+        	 }
 #endif
-                            _hx_printf("\tException addr: 0x%X.\r\n",excepAddr);
+			_hx_printf("\tException addr: 0x%X.\r\n",excepAddr);
          }
-}
-
-//Processor specified exception handler,for x86.
-VOID PSExcepHandler(LPVOID pESP,UCHAR ucVector)
-{
-         if(ucVector >= MAX_EXCEP_TABLE_SIZE)  //Invalid exception number.
-         {
-                   _hx_printf("\tInvalid exception number(#%d) for x86.\r\n",ucVector);
-                   return;
-         }
-         //Show detail information about the exception.
-         _hx_printf("\tException Desc: %s.\r\n",__ExcepTable[ucVector].description);
-         if(__ExcepTable[ucVector].bErrorCode)
-         {
-                   _hx_printf("\tError Code: 0x%X.\r\n",*((DWORD*)pESP + 7));
-                   _hx_printf("\tEIP: 0x%X.\r\n",*((DWORD*)pESP + 8));
-                   _hx_printf("\tCS: 0x%X.\r\n",*((DWORD*)pESP + 9));
-                   _hx_printf("\tEFlags: 0x%X.\r\n",*((DWORD*)pESP + 10));
-         }
-         else  //Without error code pushed in stack.
-         {
-                   _hx_printf("\tEIP: 0x%X.\r\n",*((DWORD*)pESP + 7));
-                   _hx_printf("\tCS: 0x%X.\r\n",*((DWORD*)pESP + 8));
-                   _hx_printf("\tEFlags: 0x%X.\r\n",*((DWORD*)pESP + 9));
-         }
-
-         //Check if specific operation exists for the exception.
-         ExcepSpecificOps(pESP,ucVector);
-         return;
 }
 
 //Default handler of Exception.

@@ -26,7 +26,7 @@ HANDLE CreateKernelThread(DWORD dwStackSize,
 						  LPVOID lpReserved,
 						  LPSTR lpszName)
 {
-	return (HANDLE)KernelThreadManager.kCreateKernelThread(
+	return (HANDLE)KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		dwStackSize,
 		dwInitStatus,
@@ -39,7 +39,7 @@ HANDLE CreateKernelThread(DWORD dwStackSize,
 
 VOID DestroyKernelThread(HANDLE hThread)
 {
-	KernelThreadManager.kDestroyKernelThread(
+	KernelThreadManager.DestroyKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		hThread);
 }
@@ -57,13 +57,13 @@ DWORD GetLastError()
 
 DWORD GetThreadID(HANDLE hThread)
 {
-	return KernelThreadManager.kGetThreadID(
+	return KernelThreadManager.GetThreadID(
 		hThread);
 }
 
 DWORD SetThreadPriority(HANDLE hThread,DWORD dwPriority)
 {
-	return KernelThreadManager.kSetThreadPriority(
+	return KernelThreadManager.SetThreadPriority(
 		hThread,
 		dwPriority);
 }
@@ -82,7 +82,7 @@ BOOL SendMessage(HANDLE hThread,MSG* lpMsg)
 
 BOOL Sleep(DWORD dwMillionSecond)
 {
-	return KernelThreadManager.kSleep(
+	return KernelThreadManager.Sleep(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		dwMillionSecond);
 }
@@ -97,7 +97,7 @@ BOOL EnableSuspend(HANDLE hThread,BOOL bEnable)
 		//Operate on the current kernel thread.
 		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
 	}
-	return KernelThreadManager.kEnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
+	return KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpKernelThread,
 		bEnable);
 }
@@ -112,7 +112,7 @@ BOOL SuspendKernelThread(HANDLE hThread)
 		//Suspend the current kernel thread.
 		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
 	}
-	return KernelThreadManager.kSuspendKernelThread(
+	return KernelThreadManager.SuspendKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpKernelThread);
 }
@@ -127,7 +127,7 @@ BOOL ResumeKernelThread(HANDLE hThread)
 		//Operate on the current kernel thread.
 		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
 	}
-	return KernelThreadManager.kResumeKernelThread(
+	return KernelThreadManager.ResumeKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpKernelThread);
 }
