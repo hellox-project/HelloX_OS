@@ -1292,7 +1292,7 @@ DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
 	//
 	//If in kernel thread context,then re-schedule kernel thread.
 	//
-	if(IN_KERNELTHREAD())  //---- !!!!!!!! PROBLEM CAUSED !!!!!!!! ----
+	if(IN_KERNELTHREAD())  //---- !!!!pe!!!! PROBLEM CAUSED !!!!!!!! ----
 	{
 		KernelThreadManager.ScheduleFromProc(NULL);
 	}

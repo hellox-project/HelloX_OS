@@ -30,6 +30,423 @@
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
 
+#define  FILENAME_TYPE_SHORT      0
+#define  FILENAME_TYPE_LONG       1
+#define  FILENAME_TYPE_FAT_SHORT  2
+
+VOID* FatMem_Alloc(INT nSize)
+{
+	VOID* p =  KMemAlloc(nSize,KMEM_SIZE_TYPE_ANY);
+
+	if(p)
+	{
+		memset(p,0,nSize);
+	}
+
+	return p;
+}
+
+VOID FatMem_Free(VOID* p)
+{
+	if(p)
+	{
+		KMemFree(p,KMEM_SIZE_TYPE_ANY,0);
+	}
+}
+
+INT  GetFileExtLen(CHAR* pFileName)
+{
+	INT    nExtLen   = 0;
+	CHAR*  pDotPos   = strstr(pFileName,".");
+
+	if(pDotPos)
+	{
+		pDotPos ++;
+		nExtLen = strlen(pDotPos);
+	}
+
+	return nExtLen;
+}
+//Convert file name to  fat32 format
+BOOL ConvertFatName(CHAR* pSrc,CHAR* pShortName)
+{
+	BOOL            bResult    = FALSE;
+	CHAR*           pDotPos    = NULL;
+	CHAR*           pStart     = NULL;
+	INT             nNameLen   = strlen(pSrc);
+	INT             nExtLen    = GetFileExtLen(pSrc);
+	INT             i,j        = 0;
+	
+	
+	if((NULL == pSrc) || nNameLen <= 0|| (NULL == pShortName))  //Invalid parameters.
+	{		
+		return FALSE;
+	}
+
+	//if file name is long.don't need to convert
+	if(nNameLen > FAT32_SHORTDIR_FILENAME_LEN || nExtLen > FAT32_STANDARDEXT_NAME_LEN )
+	{
+		if(!strstr(pSrc,"~"))
+		{
+			strcpy(pShortName,pSrc);
+			return TRUE;
+		}
+	}
+
+	//Now convert the name to directory format.	
+	pDotPos  = pSrc + (nNameLen - 1);
+	while((*pDotPos != '.') && (pDotPos != pSrc))
+	{
+		pDotPos --;
+	}
+	if((pDotPos == pSrc) && (*pDotPos == '.')) //First character is dot,invalid.
+	{
+		goto __TERMINAL;
+	}
+	if(pDotPos == pSrc)  //Without extension.
+	{
+		pDotPos = pSrc + nNameLen;
+	}
+	i = 0;
+	pStart = pSrc;
+	while(pStart != pDotPos)  //Get the name's part.
+	{
+		pShortName[i] = *pStart;
+		i ++;
+		pStart ++;
+		if(i == 8)
+		{
+			break;
+		}
+	}
+	while(i < 8)  //Fill space.
+	{
+		pShortName[i] = ' '; //0x20.
+		i ++;
+	}
+	//Process the extension.
+	pStart = pSrc + (nNameLen - 1);  //Now pStart pointing to the tail of name.
+	i = 10;
+	while((pStart > pDotPos) && (i > 7))
+	{
+		pShortName[i] = *pStart;
+		i --;
+		pStart --;
+	}
+	while(i > 7)
+	{
+		pShortName[i --] = ' ';
+	}
+	
+	ToCapital(pShortName);
+
+__TERMINAL:
+	return TRUE;
+}
+
+BYTE GetSumOfSFN (const BYTE *dir )
+{
+	BYTE sum = 0;
+	UINT n   = FAT32_SHORTDIR_FILENAME_LEN;
+
+	do sum = (sum >> 1) + (sum << 7) + *dir++; while (--n);
+
+	return sum;
+}
+
+VOID InitLongFileName(BYTE* pDstLongName,CHAR* pSrcLongName,INT nNameLen)
+{
+	INT  i,j;
+
+	for(i=0;i<nNameLen;i++)
+	{
+		if(pSrcLongName[i] != 0)
+		{
+			pDstLongName[i*2] = pSrcLongName[i];
+		}
+		else
+		{
+			pDstLongName[i*2]   = 0;
+			pDstLongName[i*2+1] = 0;
+
+			for(j=i+1;j<nNameLen;j++)
+			{
+				pDstLongName[j*2]   = 0xFF;
+				pDstLongName[j*2+1] = 0xFF;
+			}
+			break;
+		}
+	}
+
+}
+
+VOID  InitLongEntry(__FAT32_LONGENTRY* pLongEntry,INT nLongEntryNum,CHAR* pszName,BYTE bSumofSfn)
+{
+	INT    nNameLen = strlen(pszName);
+	INT    nExtLen  = GetFileExtLen(pszName);
+	INT    i        = 0;
+
+	//not need long dir
+	if(nNameLen <= FAT32_SHORTDIR_FILENAME_LEN && nExtLen <= FAT32_STANDARDEXT_NAME_LEN)
+	{
+		return ;
+	}
+
+	for(i = nLongEntryNum-1;i >= 0;i --)
+	{
+		__FAT32_LONGENTRY*  pTempEntry                               = &pLongEntry[nLongEntryNum-i-1];
+		CHAR              szPartName[FAT32_LONGDIR_FILENAME_LEN+1] = {0};
+
+		memcpy(szPartName,&pszName[i*FAT32_LONGDIR_FILENAME_LEN],FAT32_LONGDIR_FILENAME_LEN);
+
+		pTempEntry->LongFlage  = 0x0F;  //long entry flage
+		if(i == nLongEntryNum-1)
+		{			
+			pTempEntry->LongNum[0] = i+1|0x40;
+		}
+		else
+		{
+			pTempEntry->LongNum[0] = i+1;
+		}
+
+		pTempEntry->Checksum = bSumofSfn;
+
+		InitLongFileName(pTempEntry->szName1,&szPartName[0],5);
+		InitLongFileName(pTempEntry->szName2,&szPartName[5],6);
+		InitLongFileName(pTempEntry->szName3,&szPartName[11],2);			
+	}
+
+}
+
+VOID  MakeShortEntryName(CHAR* pShortName,CHAR* pLongName,INT nNum)
+{
+	CHAR*  pDotPos   = strstr(pLongName,".");
+	INT    nNameLen  = strlen(pLongName);
+	CHAR   szNum[32] = {0};
+
+
+	if(nNameLen > FAT32_SHORTDIR_FILENAME_LEN)
+	{
+		INT  nShortNameLen = FAT32_SHORTDIR_PREFIX_LEN;
+		INT  nSpaceLen     = 0;
+
+		if(pDotPos)
+		{
+			nShortNameLen = pDotPos - pLongName;
+			nShortNameLen = (nShortNameLen > FAT32_SHORTDIR_PREFIX_LEN)?FAT32_SHORTDIR_PREFIX_LEN:nShortNameLen;
+		}
+
+		memcpy(pShortName,pLongName,nShortNameLen);
+		sprintf(szNum,"~%d",nNum);
+		strcat(pShortName,szNum);
+
+		AddSpace(pShortName,FAT32_SHORTDIR_PREFIX_LEN-nShortNameLen);  
+	}
+	else
+	{
+		INT  nNameLen = pDotPos-pLongName;
+		
+		memcpy(pShortName,pLongName,nNameLen);
+		if(nNameLen <= 2)
+		{			
+			sprintf(szNum,"EDFD~%d",nNum);
+		}
+		else
+		{
+			sprintf(szNum,"~%d",nNum);
+		}
+		strcat(pShortName,szNum);
+
+		//fill left space  use 
+		AddSpace(pShortName, 8-strlen(pShortName));  		
+	}
+
+	if(pDotPos)
+	{
+		pDotPos ++;		
+		memcpy(pShortName+strlen(pShortName),pDotPos,FAT32_STANDARDEXT_NAME_LEN);		
+	}
+	else
+	{  
+		// fill 3 space		
+		AddSpace(pShortName, 3);  
+	}
+
+	ToCapital(pShortName);
+		
+}
+
+BOOL IsLongFileName(CHAR* pDirFileName)
+{
+	BOOL bLongFileName = FALSE;
+
+	if(strlen(pDirFileName) > FAT32_SHORTDIR_FILENAME_LEN)
+	{
+		bLongFileName= TRUE;
+	}
+	else
+	{
+		CHAR*  pDotPos   = strstr(pDirFileName,".");
+
+		if(pDotPos)
+		{
+			pDotPos ++;
+			bLongFileName = (strlen(pDotPos) > FAT32_STANDARDEXT_NAME_LEN)?TRUE:FALSE;
+		}
+	}
+
+	return bLongFileName;
+}
+
+VOID ConvertLongEntry(__FAT32_LONGENTRY* plongEntry,CHAR* pFileName)
+{	
+	CHAR  szBuf[32] = {0};
+	BYTE  nValue    = 0;
+	INT   i         = 0;
+
+
+	for(i=0;i<5;i++)
+	{	
+		nValue = plongEntry->szName1[i*2];
+		if(nValue!= 0 && nValue != 0xFF)
+		{
+			szBuf[i] = nValue;
+		}		
+	}
+	strcat(pFileName,szBuf);
+	memset(szBuf,0,sizeof(szBuf));
+
+	for(i=0;i<FAT32_SHORTDIR_PREFIX_LEN;i++)
+	{
+		nValue = plongEntry->szName2[i*2];
+		if(nValue!= 0 && nValue != 0xFF)
+		{
+			szBuf[i] = nValue;
+		}		
+	}
+	strcat(pFileName,szBuf);
+	memset(szBuf,0,sizeof(szBuf));
+
+	for(i=0;i<2;i++)
+	{
+		nValue = plongEntry->szName3[i*2];
+		if(nValue!= 0 && nValue != 0xFF)
+		{
+			szBuf[i] = nValue;
+		}		
+	}
+	strcat(pFileName,szBuf);
+}
+
+VOID CombinLongFileName(__FAT32_LONGENTRY** plongEntry,INT nLongEntryNum, CHAR* pFileFullName)
+{	
+	INT  i = 0;
+
+	for(i = nLongEntryNum-1;i >= 0 ;i--)
+	{
+		CHAR szTemp[32]  = {0};
+
+		ConvertLongEntry(plongEntry[i],szTemp);
+
+		ToCapital(szTemp);
+		strcat(pFileFullName,szTemp);				
+	}	
+}
+
+BOOL DirEntryIsExist(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pEntryName,BOOL bLongName)
+{
+	__FAT32_SHORTENTRY* pfse         = NULL;
+	BOOL                bResult      = FALSE;	
+	BYTE*               pBuffer      = NULL;
+	DWORD               dwCurrClus   = 0;
+	DWORD               dwSector     = 0;	
+	int                 i            = 0;
+
+	if((NULL == pFat32Fs) || (NULL == pEntryName) )
+	{
+		goto __TERMINAL;
+	}
+	
+	//Create local buffer to contain one cluster.
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->SectorPerClus * pFat32Fs->dwBytePerSector);
+	if(NULL == pBuffer)
+	{
+		goto __TERMINAL;
+	}
+	dwCurrClus = dwStartCluster;
+	while(!IS_EOC(dwCurrClus))  //Main loop to check the root directory.
+	{
+		__FAT32_LONGENTRY*  szLongEntry[64]     = {0};
+		INT                 nLongEntryNum       = 0;	
+
+		dwSector = GetClusterSector(pFat32Fs,dwCurrClus);
+		if(0 == dwSector)  //Fatal error.
+		{
+			goto __TERMINAL;
+		}
+		if(!ReadDeviceSector(pFat32Fs->pPartition,pFat32Fs->dwPartitionSatrt+dwSector,pFat32Fs->SectorPerClus,pBuffer))  //Can not read the appropriate sector(s).
+		{
+			goto __TERMINAL;
+		}
+		//Now check the root directory to seek the volume ID entry.
+		pfse = (__FAT32_SHORTENTRY*)pBuffer;
+		for(i = 0;i < pFat32Fs->SectorPerClus * 16;i ++)
+		{
+			CHAR      szFileName[MAX_FILE_NAME_LEN] = {0};
+
+			if(0xE5 == (BYTE)pfse->FileName[0])  //Empty entry.
+			{
+				pfse += 1;						//Seek to the next entry.
+				continue;
+			}
+			if(0 == pfse->FileName[0])     //All rest part is zero,no need to check futher.
+			{
+				break;
+			}
+			if(FILE_ATTR_LONGNAME == pfse->FileAttributes)  //Long file name entry.
+			{
+				szLongEntry[nLongEntryNum ++ ] =  (__FAT32_LONGENTRY*)pfse;
+				pfse += 1;				
+
+				continue;
+			}
+
+			if(FILE_ATTR_VOLUMEID & pfse->FileAttributes)   //Volume label entry.
+			{
+				pfse += 1;
+				continue;
+			}
+
+			if(bLongName)
+			{
+				CombinLongFileName(szLongEntry,nLongEntryNum,szFileName);
+				nLongEntryNum  = 0;
+			}			
+			else
+			{
+				memcpy(szFileName,pfse->FileName,sizeof(pfse->FileName));				
+			}
+
+			if(strcmp(pEntryName,szFileName) == 0) 
+			{
+				bResult = TRUE;
+				goto __TERMINAL;
+			}
+
+
+			pfse += 1;
+		}
+		if(!GetNextCluster(pFat32Fs,&dwCurrClus))
+		{
+			break;
+		}
+	}
+__TERMINAL:
+
+	FatMem_Free(pBuffer);
+
+	return bResult;
+}
 
 //set new file date and time
 VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage)
@@ -164,7 +581,7 @@ BOOL GetFreeCluster(__FAT32_FS* pFat32Fs,DWORD dwStartToFind,DWORD* pdwFreeClust
 	BOOL            bResult       = FALSE;
 	DWORD           i;
 
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->dwBytePerSector,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
 	if(NULL == pBuffer)  //Can not allocate temporary buffer.
 	{
 		return FALSE;
@@ -210,13 +627,12 @@ BOOL GetFreeCluster(__FAT32_FS* pFat32Fs,DWORD dwStartToFind,DWORD* pdwFreeClust
 		dwSector ++;  //Travel the FAT region in sector unit one by one.
 	}
 __TERMINAL:
-		if(pBuffer)
+		
+	FatMem_Free(pBuffer);
+
+	if(bResult)  //Found one free cluster successfully,return it.
 		{
-			KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-		}
-		if(bResult)  //Found one free cluster successfully,return it.
-		{
-			*pdwFreeCluster = dwCurrCluster;
+		*pdwFreeCluster = dwCurrCluster;
 		}
 		return bResult;
 }
@@ -241,7 +657,7 @@ BOOL ReleaseCluster(__FAT32_FS* pFat32Fs,DWORD dwCluster)
 	dwSector += pFat32Fs->dwFatBeginSector;
 	dwOffset  = (dwCluster - (dwCluster / 128) * 128) * sizeof(DWORD);
 
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->dwBytePerSector,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
 	if(NULL == pBuffer)
 	{
 		goto __TERMINAL;
@@ -265,10 +681,9 @@ BOOL ReleaseCluster(__FAT32_FS* pFat32Fs,DWORD dwCluster)
 	//All successfully.
 	bResult = TRUE;
 __TERMINAL:
-	if(pBuffer)
-	{
-		KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-	}
+	
+	FatMem_Free(pBuffer);
+	
 	return bResult;
 }
 
@@ -306,7 +721,7 @@ BOOL AppendClusterToChain(__FAT32_FS* pFat32Fs,DWORD* pdwCurrCluster)
 	dwSector += pFat32Fs->dwFatBeginSector;  //Now dwSector is the physical sector number of dwCurrCluster in fat.
 	dwOffset  = (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(DWORD); //Get sector offset.
 
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->dwBytePerSector,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
 	if(NULL == pBuffer)
 	{
 		goto __TERMINAL;
@@ -348,10 +763,9 @@ BOOL AppendClusterToChain(__FAT32_FS* pFat32Fs,DWORD* pdwCurrCluster)
 	}
 	bResult = TRUE;  //Anything is in place.
 __TERMINAL:
-	if(pBuffer)  //Should release it.
-	{
-		KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-	}
+
+	FatMem_Free(pBuffer);
+
 	if(bResult)
 	{
 		*pdwCurrCluster = (dwNextCluster & 0x0FFFFFFF);
@@ -408,8 +822,7 @@ BOOL InitDirectory(__FAT32_FS* pFat32Fs,DWORD dwParentCluster,DWORD dwDirCluster
 		goto __TERMINAL;
 	}
 	//Allocate temporary buffer.
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->dwClusterSize,
-		KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize);
 	if(NULL == pBuffer)
 	{
 		PrintLine("  In InitDirectory: Condition 1");
@@ -468,49 +881,35 @@ BOOL InitDirectory(__FAT32_FS* pFat32Fs,DWORD dwParentCluster,DWORD dwDirCluster
 	bResult = TRUE;
 
 __TERMINAL:
-	if(pBuffer)
-	{
-		KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-	}
+	FatMem_Free(pBuffer);
+
 	return bResult;
 }
 
 //Find one empty short directory entry in a cluster chain start from dwStartCluster,
 //and save the short entry pointed by pfse into this entry.If can not find a free one
 //in the whole cluster chain,then append a free cluster in the chain and save it.
-BOOL CreateDirEntry(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,__FAT32_SHORTENTRY* pDirEntry)
+BOOL CreateDirEntry(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,__FAT32_LONGENTRY* pDirEntry,INT nEntryNum)
 {
-	__FAT32_SHORTENTRY     DirEntry;
-	__FAT32_SHORTENTRY*    pfse       = NULL;
-	DWORD                  dwSector   = 0;
+	__FAT32_SHORTENTRY*    pfse          = NULL;
+	DWORD                  dwSector      = 0;
 	DWORD                  dwCurrCluster = 0;
 	DWORD                  dwNextCluster = 0;
 	BYTE*                  pBuffer       = NULL;
-	CHAR                   DirName[13]   = {0};
+	CHAR                   DirName[13]   = {0};	
+	BOOL                   bFind         = FALSE;
+	BOOL                   bResult       = FALSE;
 	DWORD                  i;
-	BOOL                   bFind      = FALSE;
-	BOOL                   bResult    = FALSE;
 
 	if((NULL == pFat32Fs) || (dwStartCluster < 2) || IS_EOC(dwStartCluster) || (NULL == pDirEntry))
 	{
-		PrintLine("  In CreateDirEntry,Condition 0");
 		goto __TERMINAL;
 	}
-	if(!ConvertName(pDirEntry,(BYTE*)&DirName[0]))
-	{
-		PrintLine("  In CreateDirEntry,Condition 1");
-		goto __TERMINAL;
-	}
-	//Check if the directory to be created has already in directory.
-	if(GetShortEntry(pFat32Fs,dwStartCluster,DirName,&DirEntry,NULL,NULL))  //Directory already exists.
-	{
-		PrintLine("  In CreateDirEntry: The specified directory already exist.");
-		goto __TERMINAL;
-	}
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+
+
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize);
 	if(NULL == pBuffer)
 	{
-		PrintLine("  In CreateDirEntry,can not allocate memory for temporary buffer.");
 		goto __TERMINAL;
 	}
 	//Try to find a free directory entry in the given directory,if can not find,then
@@ -521,16 +920,11 @@ BOOL CreateDirEntry(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,__FAT32_SHORTENTRY
 		dwCurrCluster = dwNextCluster;
 		dwSector = GetClusterSector(pFat32Fs,dwCurrCluster);
 		if(0 == dwSector)
-		{
-			PrintLine("  In CreateDirEntry,Condition 2");
+		{			
 			goto __TERMINAL;
 		}
-		if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-			dwSector,
-			pFat32Fs->SectorPerClus,
-			pBuffer))
+		if(!ReadDeviceSector(pFat32Fs->pPartition,pFat32Fs->dwPartitionSatrt+dwSector, pFat32Fs->SectorPerClus,pBuffer))
 		{
-			PrintLine("  In CreateDirEntry,Condition 3");
 			goto __TERMINAL;
 		}
 		//Search this cluster from begin.
@@ -550,51 +944,44 @@ BOOL CreateDirEntry(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,__FAT32_SHORTENTRY
 		}
 		//Can not find a free directory slot,try to search next cluster.
 		if(!GetNextCluster(pFat32Fs,&dwNextCluster))
-		{
-			PrintLine("  In CreateDirEntry,Condition 4");
+		{			
 			goto __TERMINAL;
 		}
 	}
+
 	if(bFind)  //Has found a free directory slot.
 	{
-		memcpy((char*)pfse,(const char*)pDirEntry,sizeof(__FAT32_SHORTENTRY));
-		if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-			dwSector,
-			pFat32Fs->SectorPerClus,
-			pBuffer))
-		{
-			PrintLine("  In CreateDirEntry,Condition 5");
+
+		memcpy(pfse,pDirEntry,sizeof(__FAT32_SHORTENTRY)*nEntryNum);
+		if(!WriteDeviceSector(pFat32Fs->pPartition,pFat32Fs->dwPartitionSatrt+dwSector,pFat32Fs->SectorPerClus,pBuffer))
+		{			
 			goto __TERMINAL;
 		}
 	}
 	else       //Can not find a free slot,allocate a new cluster for parent directory.
 	{
 		if(!AppendClusterToChain(pFat32Fs,&dwCurrCluster))
-		{
-			PrintLine("  In CreateDirEntry: Can not append a free cluster to this dir.");
+		{			
 			goto __TERMINAL;
 		}
-		memzero(pBuffer,pFat32Fs->dwClusterSize);
-		memcpy((char*)pBuffer,(const char*)pDirEntry,sizeof(__FAT32_SHORTENTRY));
+		memset(pBuffer,0,pFat32Fs->dwClusterSize);
+		memcpy((char*)pBuffer,(const char*)pDirEntry,sizeof(__FAT32_SHORTENTRY)*nEntryNum);
 		dwSector = GetClusterSector(pFat32Fs,dwCurrCluster);
-		if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-			dwSector,
-			pFat32Fs->SectorPerClus,
-			pBuffer))
-		{
-			PrintLine("  In CreateDirEntry,Condition 6");
+
+		if(!WriteDeviceSector(pFat32Fs->pPartition,pFat32Fs->dwPartitionSatrt+dwSector,pFat32Fs->SectorPerClus,pBuffer))
+		{			
 			goto __TERMINAL;
 		}
 	}
 
 	bResult = TRUE;
+
 __TERMINAL:
-	if(pBuffer)
-	{
-		KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-	}
+	FatMem_Free(pBuffer);
+
 	return bResult;
 }
+
 
 //Create directory in a given uper level directory.
 //Steps as follows:
@@ -603,6 +990,119 @@ __TERMINAL:
 // 3. Create the short directory entry by calling CreateDirEntry.
 //
 BOOL CreateFatDir(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszDirName,BYTE Attributes)
+{
+	__FAT32_SHORTENTRY  ShortEntry                   = {0};
+	__FAT32_LONGENTRY*  pEntryArry                   = NULL;
+	CHAR                szDirName[MAX_FILE_NAME_LEN] = {0};
+	CHAR                szShorDir[64]                = {0};
+	INT                 nEntryNum                    = 0;  
+	INT                 nNameLen                     = strlen(pszDirName);
+	DWORD               dwDirCluster                 = 0;	
+	BOOL                bResult                      = FALSE;
+	BOOL                bLongDir                     = FALSE;
+
+	
+	if((NULL == pFat32Fs) || (dwStartCluster < 2) || IS_EOC(dwStartCluster) || (NULL == pszDirName))
+	{
+		goto __TERMINAL;
+	}
+
+	//PrintLine(pszDirName);
+	bLongDir = IsLongFileName(pszDirName);
+	if(bLongDir == FALSE)
+	{
+		ConvertFatName(pszDirName,szDirName);
+	}
+	else
+	{
+		strcpy(szDirName,pszDirName);	
+	}
+	
+	if(DirEntryIsExist(pFat32Fs,dwStartCluster,szDirName,bLongDir))
+	{
+		bResult = TRUE;		
+		goto __TERMINAL;
+	}
+		
+	if(!GetFreeCluster(pFat32Fs,0,&dwDirCluster))
+	{		
+		goto __TERMINAL;
+	}
+
+	if(!InitDirectory(pFat32Fs,dwStartCluster,dwDirCluster))
+	{		
+		goto __TERMINAL;
+	}
+		
+	//allocate LONGENTRY num 
+	if(nNameLen > FAT32_SHORTDIR_FILENAME_LEN)
+	{
+		nEntryNum = nNameLen/FAT32_LONGDIR_FILENAME_LEN;
+		if(nNameLen%FAT32_LONGDIR_FILENAME_LEN)
+		{
+			nEntryNum ++;
+		}
+	}
+	else if(bLongDir)
+	{
+		//extension over len ,need LONGENTRY 	
+		nEntryNum ++;		
+
+	}
+	nEntryNum ++ ;//  add last short entry
+	pEntryArry = (__FAT32_LONGENTRY*)FatMem_Alloc(nEntryNum*sizeof(__FAT32_LONGENTRY));
+	if(nEntryNum > 1)
+	{
+		BYTE bSfnSum = 0;
+		INT  i       = 1;
+
+		//check short exist 
+		while(1)
+		{			
+			MakeShortEntryName(szShorDir,pszDirName,i++);	
+			//_hx_printf("short=%s,long=%s\n",szShorDir,pszDirName);
+			if(DirEntryIsExist(pFat32Fs,dwStartCluster,szShorDir,FALSE) == FALSE)
+			{
+				break;	
+			}
+			memset(szShorDir,0,sizeof(szShorDir));
+		}
+
+		bSfnSum = GetSumOfSFN((BYTE*)szShorDir);
+		InitLongEntry(pEntryArry,nEntryNum-1,pszDirName,bSfnSum);
+	}
+	else
+	{
+		strcpy(szShorDir,pszDirName);
+		ToCapital(szShorDir);
+	}
+
+	if(!InitShortEntry(&ShortEntry,szShorDir,dwDirCluster,0,Attributes))
+	{		
+		goto __TERMINAL;
+	}
+		
+	ShortEntry.CreateTimeTenth = 10;	
+	SetFatFileDateTime(&ShortEntry,FAT32_DATETIME_CREATE|FAT32_DATETIME_WRITE);
+
+	//add short entry
+	memcpy(&pEntryArry[nEntryNum-1],(__FAT32_LONGENTRY*)&ShortEntry,sizeof(__FAT32_LONGENTRY));
+
+	if(!CreateDirEntry(pFat32Fs,dwStartCluster,pEntryArry,nEntryNum))
+	{			
+		ReleaseCluster(pFat32Fs,dwDirCluster);
+		goto __TERMINAL;
+	}
+	bResult = TRUE;
+
+__TERMINAL:
+
+	FatMem_Free(pEntryArry);
+
+	return bResult;
+}
+
+/*BOOL CreateFatDir(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszDirName,BYTE Attributes)
 {
 	DWORD               dwDirCluster = 0;
 	__FAT32_SHORTENTRY  DirEntry;
@@ -624,21 +1124,7 @@ BOOL CreateFatDir(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszDirName,BYT
 		goto __TERMINAL;
 	}
 	//Initialize the directory entry.
-	/*
-	DirEntry.CreateDate       = 0;
-	DirEntry.CreateTime       = 0;
-	DirEntry.CreateTimeTenth  = 0;
-	DirEntry.dwFileSize       = 0;
-	DirEntry.FileAttributes   = FILE_ATTR_DIRECTORY;
-	DirEntry.LastAccessDate   = 0;
-	DirEntry.wFirstClusHi     = (WORD)(dwDirCluster >> 16);
-	DirEntry.wFirstClusLow    = (WORD)dwDirCluster;
-	DirEntry.WriteDate        = 0;
-	DirEntry.WriteTime        = 0;
-	for(i = 0;i < 11;i ++)
-	{
-		DirEntry.FileName[i] = pszDirName[i];
-	}*/
+	
 	if(!InitShortEntry(&DirEntry,pszDirName,dwDirCluster,0,FILE_ATTR_DIRECTORY))
 	{
 		goto __TERMINAL;
@@ -657,12 +1143,13 @@ BOOL CreateFatDir(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszDirName,BYT
 __TERMINAL:
 	return bResult;
 }
-
+*/
 
 //Create a new file in given directory.
 BOOL CreateFatFile(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszFileName,BYTE Attributes)
 {
-	DWORD               dwInitCluster = 0;
+	return CreateFatDir(pFat32Fs,dwStartCluster,pszFileName,Attributes|FILE_ATTR_ARCHIVE);
+	/*DWORD               dwInitCluster = 0;
 	__FAT32_SHORTENTRY  DirEntry;
 	BOOL                bResult       = FALSE;
 
@@ -686,6 +1173,7 @@ BOOL CreateFatFile(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszFileName,B
 	DirEntry.CreateTimeTenth = 10;
 	SetFatFileDateTime(&DirEntry,FAT32_DATETIME_CREATE|FAT32_DATETIME_WRITE);
 		
+	//pasue
 	if(!CreateDirEntry(pFat32Fs,dwStartCluster,&DirEntry))
 	{
 		ReleaseCluster(pFat32Fs,dwInitCluster);
@@ -695,7 +1183,7 @@ BOOL CreateFatFile(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszFileName,B
 	bResult = TRUE;
 __TERMINAL:
 
-	return bResult;
+	return bResult;*/
 }
 
 //Delete a given file in a given directory.
@@ -771,20 +1259,19 @@ BOOL DeleteFatDir(__FAT32_FS* pFat32Fs,CHAR* pszFileName)
 	BOOL                       bResult        = FALSE;
 	BYTE*                      pBuffer        = NULL;
 
-	if(!GetDirEntry(pFat32Fs,
-		pszFileName,
-		&ShortEntry,
+	if(!GetDirEntry(pFat32Fs,pszFileName,&ShortEntry,
 		&dwParentClus,    //Parent directory's cluster where this entry resides.
 		&dwParentOffset)) //Cluster offset.
 	{
 		goto __TERMINAL;
 	}
+
 	if(0 == (FILE_ATTR_DIRECTORY & ShortEntry.FileAttributes))  //Not a directory.
 	{
 		goto __TERMINAL;
 	}
 	//Remove the directory entry in it's parent directory.
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize);
 	if(NULL == pBuffer)
 	{
 		goto __TERMINAL;
@@ -801,74 +1288,60 @@ BOOL DeleteFatDir(__FAT32_FS* pFat32Fs,CHAR* pszFileName)
 	{
 		goto __TERMINAL;
 	}
+
 	pFileEntry = (__FAT32_SHORTENTRY*)(pBuffer + dwParentOffset);
 	memzero(pFileEntry,sizeof(__FAT32_SHORTENTRY));
 	pFileEntry->FileName[0] = (CHAR)0xE5;   //Empty this short entry.
-	if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-		dwSector,
-		pFat32Fs->SectorPerClus,
-		pBuffer))
+
+	if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,dwSector,pFat32Fs->SectorPerClus,pBuffer))
 	{
 		goto __TERMINAL;
 	}
+
 	bResult = TRUE;
+
 __TERMINAL:
-	if(pBuffer)
-	{
-		KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-	}
+
+	FatMem_Free(pBuffer);
+
 	return bResult;
 }
 
-//Get the file's directory entry given it's name.
-//  @pFat32Fs        : File system extension object;
-//  @dwStartCluster  : Start cluster of the target directory;
-//  @pFileName       : File name to find,with extension;
-//  @pShortEntry     : Contain the result if successfully.
-//  @pDirClus[OUT]   : Returns the parent directory's start cluster.
-//  @pDirOffset[OUT] : Returns the file entry's offset in parent.
-//Or else FALSE will be returned.
-BOOL GetShortEntry(__FAT32_FS* pFat32Fs,
-				   DWORD dwStartCluster,
-				   CHAR* pFileName,
-				   __FAT32_SHORTENTRY* pShortEntry,
-				   DWORD* pDirClus,
-				   DWORD* pDirOffset)
+
+BOOL GetShortEntry(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pFileName,__FAT32_SHORTENTRY* pShortEntry, DWORD* pDirClus,DWORD* pDirOffset)
 {
-	BOOL                bResult      = FALSE;
 	__FAT32_SHORTENTRY* pfse         = NULL;
+	BOOL                bResult      = FALSE;	
 	BYTE*               pBuffer      = NULL;
 	DWORD               dwCurrClus   = 0;
-	DWORD               dwSector     = 0;
-	BYTE                FileName[13];
-	int                 i;
+	DWORD               dwSector     = 0;	
+	int                 i            = 0;
 
 	if((NULL == pFat32Fs) || (NULL == pFileName) || (pShortEntry == pfse))
 	{
 		goto __TERMINAL;
 	}
 	//Create local buffer to contain one cluster.
-	pBuffer = (BYTE*)KMemAlloc(pFat32Fs->SectorPerClus * pFat32Fs->dwBytePerSector,KMEM_SIZE_TYPE_ANY);
+	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->SectorPerClus * pFat32Fs->dwBytePerSector);
 	if(NULL == pBuffer)
 	{
-		PrintLine("  In GetShortEntry: Can not allocate kernel memory.");
+
 		goto __TERMINAL;
 	}
 	dwCurrClus = dwStartCluster;
 	while(!IS_EOC(dwCurrClus))  //Main loop to check the root directory.
 	{
+		__FAT32_LONGENTRY*  szLongEntry[64]     = {0};
+		INT                 nLongEntryNum       = 0;		
+		BOOL                bFind               = FALSE;
+
 		dwSector = GetClusterSector(pFat32Fs,dwCurrClus);
 		if(0 == dwSector)  //Fatal error.
 		{
-			PrintLine("  In GetShortEntry: Can not get cluster sector.");
 			goto __TERMINAL;
 		}
-		if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-			dwSector,
-			pFat32Fs->SectorPerClus,
-			pBuffer))  //Can not read the appropriate sector(s).
+		if(!ReadDeviceSector(pFat32Fs->pPartition,pFat32Fs->dwPartitionSatrt+dwSector,pFat32Fs->SectorPerClus,pBuffer))  //Can not read the appropriate sector(s).
 		{
-			PrintLine("  In GetShortEntry: Can not read sector from device.");
 			goto __TERMINAL;
 		}
 		//Now check the root directory to seek the volume ID entry.
@@ -877,7 +1350,7 @@ BOOL GetShortEntry(__FAT32_FS* pFat32Fs,
 		{
 			if(0xE5 == (BYTE)pfse->FileName[0])  //Empty entry.
 			{
-				pfse += 1;  //Seek to the next entry.
+				pfse += 1;						//Seek to the next entry.
 				continue;
 			}
 			if(0 == pfse->FileName[0])     //All rest part is zero,no need to check futher.
@@ -886,31 +1359,64 @@ BOOL GetShortEntry(__FAT32_FS* pFat32Fs,
 			}
 			if(FILE_ATTR_LONGNAME == pfse->FileAttributes)  //Long file name entry.
 			{
-				pfse += 1;
+				szLongEntry[nLongEntryNum ++ ] =  (__FAT32_LONGENTRY*)pfse;
+
+				pfse += 1;				
 				continue;
 			}
+
 			if(FILE_ATTR_VOLUMEID & pfse->FileAttributes)   //Volume label entry.
 			{
 				pfse += 1;
 				continue;
 			}
-			if(ConvertName(pfse,FileName))  //Can not convert to regular file name string.
+			
+			if(nLongEntryNum > 0 && !strstr(pFileName,"~")) 
 			{
-				if(StrCmp((CHAR*)pFileName,(CHAR*)&FileName[0]))  //Found.
+				CHAR   szLongFileName[MAX_FILE_NAME_LEN] = {0};
+
+				CombinLongFileName(szLongEntry,nLongEntryNum,szLongFileName);							
+
+				//_hx_printf("CombinLongFileName \n%s,%s\n",szLongFileName,pFileName);
+
+				nLongEntryNum  = 0;				
+				
+				if(strncmp(szLongFileName,pFileName,strlen(pFileName)) == 0)
 				{
-					memcpy((char*)pShortEntry,(const char*)pfse,sizeof(__FAT32_SHORTENTRY));
-					if(pDirClus)
-					{
-						*pDirClus = dwCurrClus;
-					}
-					if(pDirOffset)
-					{
-						*pDirOffset = (BYTE*)pfse - pBuffer;
-					}
-					bResult = TRUE;
-					goto __TERMINAL;
+					bFind = TRUE;
+				}
+				else
+				{					
+					pfse += 1;
+					continue;
 				}
 			}
+			else
+			{
+				CHAR    szFileName[MAX_FILE_NAME_LEN] = {0};
+
+				memcpy(szFileName,pfse->FileName,sizeof(pfse->FileName));
+				if(strcmp(pFileName,szFileName) == 0) 
+				{
+					bFind = TRUE;				
+				}									
+			}
+
+			if(bFind)  //Found.
+			{
+				memcpy((char*)pShortEntry,(const char*)pfse,sizeof(__FAT32_SHORTENTRY));
+				if(pDirClus)
+				{
+					*pDirClus = dwCurrClus;
+				}
+				if(pDirOffset)
+				{
+					*pDirOffset = (BYTE*)pfse - pBuffer;
+				}
+				bResult = TRUE;
+				goto __TERMINAL;
+			}
+
 			pfse += 1;
 		}
 		if(!GetNextCluster(pFat32Fs,&dwCurrClus))
@@ -919,10 +1425,8 @@ BOOL GetShortEntry(__FAT32_FS* pFat32Fs,
 		}
 	}
 __TERMINAL:
-	if(pBuffer)
-	{
-		KMemFree(pBuffer,KMEM_SIZE_TYPE_ANY,0);
-	}
+	FatMem_Free(pBuffer);
+
 	return bResult;
 }
 
@@ -930,87 +1434,92 @@ __TERMINAL:
 //The difference between this routine and GetShortEntry is,the last one only
 //search the directory designated by start cluster.
 //But this one will search the whole file system tree to seek the target.
-BOOL GetDirEntry(__FAT32_FS* pFat32Fs,
-				 CHAR* pFullName,
-				 __FAT32_SHORTENTRY* pfse,
-				 DWORD* pDirClus,
-				 DWORD* pDirOffset)
+BOOL GetDirEntry(__FAT32_FS* pFat32Fs, CHAR* pFullName,	 __FAT32_SHORTENTRY* pfse, DWORD* pDirClus, DWORD* pDirOffset)
 {
-	BOOL                 bResult            = FALSE;
-	DWORD                dwLevel            = 0;
-	int                  i;
-	BYTE*                pBuffer            = 0;
-	DWORD                dwStartClus        = 0;      //Start cluster of current directory to search.
-	DWORD                dwSector           = 0;
 	__FAT32_SHORTENTRY   ShortEntry         = {0};
 	CHAR                 SubDir[MAX_FILE_NAME_LEN];
-	CHAR                 buffer[13];
+	CHAR                 buffer[MAX_FILE_NAME_LEN];
+	CHAR                 szConvertName[MAX_FILE_NAME_LEN] = {0};
+	BOOL                 bResult            = FALSE;
+	DWORD                dwLevel            = 0;	
+	DWORD                dwStartClus        = 0;      //Start cluster of current directory to search.
+	DWORD                dwSector           = 0;	
+	int                  i;
 
 	if((NULL == pFat32Fs) || (NULL == pFullName) || (NULL == pfse))
 	{
 		goto __TERMINAL;
 	}
+	
 	if(!NameIsValid(pFullName))  //Is not a valid full file name.
 	{
 		goto __TERMINAL;
 	}
+
 	if(!GetFullNameLevel(pFullName,&dwLevel))
 	{
-		PrintLine("  In GetDirEntry: GetFullNameLevel failed.");
 		goto __TERMINAL;
 	}
-	i = 1;
+	i           = 1;
 	dwStartClus = pFat32Fs->dwRootDirClusStart;
+
 	//Initialize the short entry as root directory.
 	ShortEntry.FileAttributes = FILE_ATTR_DIRECTORY;
 	ShortEntry.wFirstClusHi   = (WORD)(dwStartClus >> 16);
 	ShortEntry.wFirstClusLow  = (WORD)dwStartClus;
 
 	while(dwLevel)
-	{
+	{	
 		if(!GetSubDirectory(pFullName,i,SubDir))  //Get the sub-directory.
-		{
-			PrintLine("  In GetDirEntry: GetSubDirectory failed.");
+		{			
 			goto __TERMINAL;
 		}
-		if(!GetShortEntry(pFat32Fs,dwStartClus,SubDir,&ShortEntry,pDirClus,pDirOffset))
-		{
-			/*
-			PrintLine("In GetDirEntry: GetShortEntry failed.");
-			sprintf(Buffer,"  Parameters: start clus = %d,SubDir = %s",dwStartClus,SubDir);
-			PrintLine(Buffer);*/
+		memset(szConvertName,0,sizeof(szConvertName));
+
+		ConvertFatName(SubDir,szConvertName);
+		//_hx_printf("ConvertFatName: src=%s,dst=%s\n",SubDir,szConvertName);
+
+		if(!GetShortEntry(pFat32Fs,dwStartClus,szConvertName,&ShortEntry,pDirClus,pDirOffset))
+		{		
+			//_hx_printf("GetDirEntry: SubDir=%s,src=%s\n",SubDir,szConvertName);
 			goto __TERMINAL;
 		}
-		dwStartClus = (DWORD)ShortEntry.wFirstClusHi;
-		dwStartClus = dwStartClus << 16;
-		dwStartClus = dwStartClus + (DWORD)ShortEntry.wFirstClusLow;
+		dwStartClus   = ShortEntry.wFirstClusHi;
+		dwStartClus   = (dwStartClus<<16)+ShortEntry.wFirstClusLow;
+		//dwStartClus   = //MAKELONG(ShortEntry.wFirstClusLow,ShortEntry.wFirstClusHi);		
 		dwLevel --;
 		i ++;
 	}
+
 	if(!GetPathName(pFullName,SubDir,buffer))
-	{
-		PrintLine("  In GetDirEntry: GetPathName failed.");
+	{		
 		goto __TERMINAL;
 	}
-	if(0 == buffer[0])  //The target is a directory.
+
+	memset(szConvertName,0,sizeof(szConvertName));
+	ConvertFatName(buffer,szConvertName);	
+	//_hx_printf("GetDirEntry: fat=%s,src=%s\n",buffer,szConvertName);
+
+	if(0 == szConvertName[0])  //The target is a directory.
 	{
 		memcpy((char*)pfse,(const char*)&ShortEntry,sizeof(__FAT32_SHORTENTRY));
 		bResult = TRUE;
+
 		goto __TERMINAL;
 	}
-	if(!GetShortEntry(pFat32Fs,dwStartClus,buffer,&ShortEntry,pDirClus,pDirOffset))
-	{
-		/*
-		PrintLine("  In GetDirEntry: GetShortEntry failed,next one.");
-		sprintf(Buffer,"  Parameters: start clus = %d,SubDir = %s",dwStartClus,SubDir);
-		PrintLine(Buffer);*/
+
+	if(!GetShortEntry(pFat32Fs,dwStartClus,szConvertName,&ShortEntry,pDirClus,pDirOffset))
+	{	
 		goto __TERMINAL;
 	}
-	//memcpy(pfse,&ShortEntry,sizeof(__FAT32_SHORTENTRY));
+
 	memcpy((char*)pfse,(const char*)&ShortEntry,sizeof(__FAT32_SHORTENTRY));
 	bResult = TRUE;
+
 __TERMINAL:
+	
 	return bResult;
+
 }
 
 #endif

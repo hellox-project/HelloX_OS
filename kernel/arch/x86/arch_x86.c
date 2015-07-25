@@ -37,6 +37,93 @@ BOOL HardwareInitialize()
 	return TRUE;
 }
 
+//Exception table.
+typedef struct{
+	char*  description;
+	BOOL   bErrorCode;
+}__EXCEPTION_TABLE;
+
+#define MAX_EXCEP_TABLE_SIZE 20  //Maximal exceptions available under current processor.
+
+static __EXCEPTION_TABLE __ExcepTable[MAX_EXCEP_TABLE_SIZE] = {
+	{ "Divide Error(#DE)", FALSE },
+	{ "Reserved(#DB)", FALSE },
+	{ "NMI Interrupt", FALSE },
+	{ "Breakpoint(#BP)", FALSE },
+	{ "Overflow(#OF)", FALSE },
+	{ "Bound Range Exceed(#BR)", FALSE },
+	{ "Invalid Opcode(#UD)", FALSE },
+	{ "Device Not Available(#NM)", FALSE },
+	{ "Double Fault(#DF)", TRUE },
+	{ "Coprocessor Segment Overrun", FALSE },
+	{ "Invalid TSS(#TS)", TRUE },
+	{ "Segment Not Present(#NP)", TRUE },
+	{ "Stack Segment Fault(#SS)", TRUE },
+	{ "General Protection(#GP)", TRUE },
+	{ "Page Fault(#PF)", TRUE },
+	{ "Internal reserved", FALSE },
+	{ "x87 Floating point error(#MF)", FALSE },
+	{ "Alignment check(#AC)", TRUE },
+	{ "Machine Check(#MC)", FALSE },
+	{ "SIMD Floating-Point Exception(#XM)", FALSE }
+};
+
+//Exception specific operations.
+static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
+{
+	DWORD excepAddr;
+
+	if (14 == ucVector)  //Page fault.
+	{
+#ifdef _POSIX_
+		__asm__ __volatile__(
+			".code32            \n\t"
+			"pushl       %%eax     \n\t"
+			"movl        %%cr2,     %%eax     \n\t"
+			"movl        %0,  %%eax              \n\t"
+			"popl         %%eax                       \n\t"
+			: : "r"(excepAddr) : "memory");
+#else
+		__asm{
+			push eax
+				mov eax, cr2
+				mov excepAddr, eax
+				pop eax
+		}
+#endif
+		_hx_printf("\tException addr: 0x%X.\r\n", excepAddr);
+	}
+}
+
+//Processor specified exception handler,for x86.
+VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
+{
+	if (ucVector >= MAX_EXCEP_TABLE_SIZE)  //Invalid exception number.
+	{
+		_hx_printf("\tInvalid exception number(#%d) for x86.\r\n", ucVector);
+		return;
+	}
+	//Show detail information about the exception.
+	_hx_printf("\tException Desc: %s.\r\n", __ExcepTable[ucVector].description);
+	if (__ExcepTable[ucVector].bErrorCode)
+	{
+		_hx_printf("\tError Code: 0x%X.\r\n", *((DWORD*)pESP + 7));
+		_hx_printf("\tEIP: 0x%X.\r\n", *((DWORD*)pESP + 8));
+		_hx_printf("\tCS: 0x%X.\r\n", *((DWORD*)pESP + 9));
+		_hx_printf("\tEFlags: 0x%X.\r\n", *((DWORD*)pESP + 10));
+	}
+	else  //Without error code pushed in stack.
+	{
+		_hx_printf("\tEIP: 0x%X.\r\n", *((DWORD*)pESP + 7));
+		_hx_printf("\tCS: 0x%X.\r\n", *((DWORD*)pESP + 8));
+		_hx_printf("\tEFlags: 0x%X.\r\n", *((DWORD*)pESP + 9));
+	}
+
+	//Check if specific operation exists for the exception.
+	ExcepSpecificOps(pESP, ucVector);
+	return;
+}
+
 //
 //This routine switches the current executing path to the new one identified
 //by lpContext.
