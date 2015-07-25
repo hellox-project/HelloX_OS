@@ -483,7 +483,7 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 
 
 //Implementation of DeleteFile routine.
-static BOOL DeleteFile(__COMMON_OBJECT* lpDev,LPSTR pszFileName)       //Delete a file.
+static BOOL _fat32DeleteFile(__COMMON_OBJECT* lpDev,LPSTR pszFileName)       //Delete a file.
 {
 	__FAT32_FS*        pFat32Fs   = NULL;
 
@@ -497,7 +497,7 @@ static BOOL DeleteFile(__COMMON_OBJECT* lpDev,LPSTR pszFileName)       //Delete 
 }
 
 //Implementation of FindClose routine.
-static BOOL FindClose(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* pHandle)  //Close find handle.
+static BOOL _fat32FindClose(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* pHandle)  //Close find handle.
 {
 	__FAT32_FIND_HANDLE*  pFindHandle = (__FAT32_FIND_HANDLE*)pHandle;
 	if(NULL == pFindHandle)
@@ -714,7 +714,7 @@ __FIND:
 }
 
 //Implementation of FindFirstFile.
-static __COMMON_OBJECT* FindFirstFile(__COMMON_OBJECT* lpThis,CHAR*  pszFileName,FS_FIND_DATA* pFindData)
+static __COMMON_OBJECT* _fat32FindFirstFile(__COMMON_OBJECT* lpThis,CHAR*  pszFileName,FS_FIND_DATA* pFindData)
 {
 	__FAT32_FIND_HANDLE*      pFindHandle = NULL;
 	__DEVICE_OBJECT*          pDevice     = (__DEVICE_OBJECT*)lpThis;
@@ -759,7 +759,7 @@ static DWORD FatDeviceFlush(__COMMON_OBJECT* lpDrv,
 }
 
 //Implementation of GetFileAttributes.
-static DWORD GetFileAttributes(__COMMON_OBJECT* lpDev, LPCTSTR  pszFileName)  //Get file's attribute.
+static DWORD _fat32GetFileAttributes(__COMMON_OBJECT* lpDev, LPCTSTR  pszFileName)  //Get file's attribute.
 {
 	__FAT32_FS*         pFat32Fs      = NULL;
 	CHAR                FileName[MAX_FILE_NAME_LEN];

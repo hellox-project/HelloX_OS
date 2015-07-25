@@ -212,7 +212,7 @@ DWORD Hypertrm(LPVOID lpData)
 	InitComPort(be.wPortBase);
 
 	//Now create the receive and send kernel thread.
-	lpSendThread = (__KERNEL_THREAD_OBJECT*)KernelThreadManager.kCreateKernelThread(
+	lpSendThread = (__KERNEL_THREAD_OBJECT*)KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -227,7 +227,7 @@ DWORD Hypertrm(LPVOID lpData)
 		goto __TERMINAL;
 	}
 
-	lpRecvThread = (__KERNEL_THREAD_OBJECT*)KernelThreadManager.kCreateKernelThread(
+	lpRecvThread = (__KERNEL_THREAD_OBJECT*)KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,

@@ -149,7 +149,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 	pBuffer      = (BYTE*)lpDrcb->lpInputBuffer;
 	pBufferEnd   = pBuffer + dwWriteSize;
 
-	pClusBuffer  = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pClusBuffer  = (BYTE*) FatMem_Alloc(pFat32Fs->dwClusterSize);
 	if(NULL == pClusBuffer)  //Can not allocate buffer.
 	{
 		goto __TERMINAL;

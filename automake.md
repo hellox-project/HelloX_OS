@@ -1,9 +1,27 @@
-##automake
+# GCC编译环境介绍
 
-###8.3.9.1 Error: 鈥榬equired file `./ltmain.sh' not found鈥�
-	http://www.gnu.org/software/automake/manual/html_node/Error-required-file-ltmain_002esh-not-found.html
-	http://stackoverflow.com/questions/22603163/automake-error-ltmain-sh-not-found
+## 实现GCC编译模块
+	目前已经实现kernel使用GCC编译。
+
+## 构建系统
+	automake
+
+## 配置说明
+### HelloX_OS/kernel/kernel.mk
+	Automake使用的编译选项，内核编译各个模块Makefile.am都include该文件， 如果模块需要自定义参数，则可以修改模块下的Makefile.am。
 	
+### HelloX_OS/kernel/make/mkhellox.sh
+	编译脚本文件。
+
+
+###编译内核
+1. cd HelloX_OS 
 	
-__declspec(naked)
+	./amake.sh
+2. cd kernel
 	
+	./mkhellox.sh make
+	负责编译，生成的master.bin， 拷贝master.bin到HelloX_OS/tools/vfmaker
+
+###清理
+	./mkhellox.sh clean
