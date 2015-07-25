@@ -65,17 +65,14 @@ static void DeadLoop(BOOL bDisableInt)
 	{
 		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 		while (TRUE){
-			//PrintLine("loop TRUE"); GotoHome();
 		}
 		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{
 		while (TRUE){
-			//PrintLine("loop FALSE"); GotoHome();
 		}
 	}
-	//PrintLine("loop");
 }
 
 //User entry point if used as EOS.
@@ -269,23 +266,17 @@ void __OS_Entry()
 	dwIndex = 0;
 	while(DriverEntryArray[dwIndex])
 	{
-		_hx_sprintf(strInfo, "IOManager.LoadDriver-%d", dwIndex);
-		PrintLine(strInfo);
 		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex])) //Failed to load.
 		{
 			_hx_sprintf(strInfo,"Failed to load the %d th driver.", dwIndex); //Show an error.
 			PrintLine(strInfo);
 		}
 		dwIndex++;  //Continue to load.
-		PrintLine("ok");
 	}
 #endif
 
 	//Initialize Console object if necessary.
 #ifdef __CFG_SYS_CONSOLE
-	PrintStr("Console.Initialize");
-	GotoHome();
-	ChangeLine();
 
 	if(!Console.Initialize(&Console))
 	{
@@ -304,11 +295,8 @@ void __OS_Entry()
 	//so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
 	//Also need to mention that this thread is mandatory and without any switch to turn off
 	//it.
-	PrintStr("KernelThreadManager.kCreateKernelThread");
-		GotoHome();
-		ChangeLine();
 
-	lpIdleThread = KernelThreadManager.kCreateKernelThread(
+	lpIdleThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -323,17 +311,14 @@ void __OS_Entry()
 		goto __TERMINAL;
 	}
 	//Disable suspend on this kernel thread,since it may lead system crash.
-	PrintStr("KernelThreadManager.kEnableSuspend");
-		GotoHome();
-		ChangeLine();
-	KernelThreadManager.kEnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
+	KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIdleThread,
 		FALSE);
 
 	//Create statistics kernel thread.
 #ifdef __CFG_SYS_CPUSTAT
 
-	lpStatKernelThread = KernelThreadManager.kCreateKernelThread(
+	lpStatKernelThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -355,7 +340,7 @@ void __OS_Entry()
 	if(NULL == ModuleMgr.ShellEntry)  //Use default shell.
 	{
 
-		lpShellThread = KernelThreadManager.kCreateKernelThread(   //Create shell thread.
+		lpShellThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
 			KERNEL_THREAD_STATUS_READY,
@@ -372,7 +357,7 @@ void __OS_Entry()
 	}
 	else    //Use other kernel module specified shell.
 	{
-		lpShellThread = KernelThreadManager.kCreateKernelThread(   //Create shell thread.
+		lpShellThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
 			KERNEL_THREAD_STATUS_READY,
@@ -410,7 +395,7 @@ void __OS_Entry()
 	//Create user kernel thread.
 #ifdef __CFG_USE_EOS
 
-	lpUserThread = KernelThreadManager.kCreateKernelThread(   //Create shell thread.
+	lpUserThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -429,7 +414,7 @@ void __OS_Entry()
 	//If log debugging functions is enabled.
 #ifdef __CFG_SYS_LOGCAT
 
-	lpLogcatDaemonThread = KernelThreadManager.kCreateKernelThread(   //Create logcat daemon thread.
+	lpLogcatDaemonThread = KernelThreadManager.CreateKernelThread(   //Create logcat daemon thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,

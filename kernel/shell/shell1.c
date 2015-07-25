@@ -339,7 +339,7 @@ static BOOL ExecuteBinModule(DWORD dwStartAddress,LPVOID pParams)
 		goto __TERMINAL;
 	}
 	//Create a kernel thread to run the binary module.
-	hKernelThread = KernelThreadManager.kCreateKernelThread(
+	hKernelThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -358,7 +358,7 @@ static BOOL ExecuteBinModule(DWORD dwStartAddress,LPVOID pParams)
 		(__COMMON_OBJECT*)hKernelThread);
 	hKernelThread->WaitForThisObject((__COMMON_OBJECT*)hKernelThread);  //Block shell to wait module over.
 	//Destroy the module's kernel thread.
-	KernelThreadManager.kDestroyKernelThread(
+	KernelThreadManager.DestroyKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)hKernelThread);
 	//Switch back input focus to shell.

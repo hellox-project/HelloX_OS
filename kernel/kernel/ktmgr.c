@@ -153,9 +153,7 @@ VOID KernelThreadUninitialize(__COMMON_OBJECT* lpThis)
 //
 
 //Initializing routine of Kernel Thread Manager.
-//static
-
- BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
+static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 {
 	BOOL                       bResult          = FALSE;
 	__KERNEL_THREAD_MANAGER*   lpMgr            = NULL;
@@ -285,7 +283,7 @@ __TERMINAL:
 // 3. Create the kernel thread's stack by calling KMemAlloc;
 // 4. Insert the kernel thread object into proper queue.
 //
-//static
+static
 
  __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             lpThis,
 												  DWORD                        dwStackSize,
@@ -456,7 +454,7 @@ __TERMINAL:
 // 2. Delete the kernel thread object from Terminal Queue;
 // 3. Destroy the kernel thread object by calling DestroyObject.
 //
-//static
+static
 
  VOID kDestroyKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpKernel)
 {
@@ -503,9 +501,7 @@ __TERMINAL:
 //If bEnable is TRUE,then enable the suspending on the specified thread,and do a suspending
 //if there is pending one(suspending counter > 0).
 //If bEnable is FALSE,then disable the suspending operation on the specified thread.
-//static
-
- BOOL kEnableSuspend(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread,BOOL bEnable)
+static BOOL kEnableSuspend(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread,BOOL bEnable)
 {
 	__KERNEL_THREAD_OBJECT*  lpKernelThread   = (__KERNEL_THREAD_OBJECT*)lpThread;
 	__KERNEL_THREAD_MANAGER* lpManager        = (__KERNEL_THREAD_MANAGER*)lpThis;
@@ -590,9 +586,7 @@ static BOOL kSuspendKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThre
 //It decrements the suspending counter of the given kernel thread,if the counter is reach
 //zero,then check if the kernel thread's status is SUSPENDED,and move it into READY queue
 //if so.
-//static
-
- BOOL kResumeKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
+static BOOL kResumeKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
 {
 	__KERNEL_THREAD_MANAGER*     lpManager      = (__KERNEL_THREAD_MANAGER*)lpThis;
 	__KERNEL_THREAD_OBJECT*      lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpThread;
@@ -635,7 +629,7 @@ static BOOL kSuspendKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThre
 //This routine can be called anywhere that re-schedule is required,under process context.
 //The ScheduleFromInt(later one) should be called in interrupt context.
 //
-//static
+static
  VOID ScheduleFromProc(__KERNEL_THREAD_CONTEXT* lpContext)
 {
 	//__KERNEL_THREAD_OBJECT*          lpKernelThread     = NULL;
@@ -748,8 +742,7 @@ static BOOL kSuspendKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThre
 //kernel thread(s) in system.
 //The corresponding routine,ScheduleFromProc,is called in PROCESS context
 //to do schedule.
-static
- VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
+static VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 {
 	__KERNEL_THREAD_OBJECT*         lpNextThread    = NULL;
 	__KERNEL_THREAD_OBJECT*         lpCurrentThread = NULL;
@@ -1014,8 +1007,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 #endif  //__CFG_SYS_IS
 
 //SetThreadPriority.
-//static
- DWORD kSetThreadPriority(__COMMON_OBJECT* lpKernelThread,DWORD dwPriority)
+static DWORD  kSetThreadPriority(__COMMON_OBJECT* lpKernelThread,DWORD dwPriority)
 {
 	__KERNEL_THREAD_OBJECT*    lpThread = NULL;
 	DWORD                      dwOldPri = PRIORITY_LEVEL_IDLE;
@@ -1036,8 +1028,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 }
 
 //GetThreadPriority.
-static
- DWORD GetThreadPriority(__COMMON_OBJECT* lpKernelThread)
+static DWORD  GetThreadPriority(__COMMON_OBJECT* lpKernelThread)
 {
 	//__KERNEL_THREAD_OBJECT*    lpThread = NULL;
 
@@ -1050,8 +1041,7 @@ static
 
 //Terminate a kernel thread.Only support the scenario that one kernel thread terminates itself,
 //don't support one kernel thread terminates other kernel thread,for safety reason.
-static
- DWORD TerminateKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread,DWORD dwExitCode)
+static DWORD  TerminateKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread,DWORD dwExitCode)
 {
 	__KERNEL_THREAD_MANAGER* lpManager      = (__KERNEL_THREAD_MANAGER*)lpThis;
 	__KERNEL_THREAD_OBJECT*  lpKernelThread = NULL;
@@ -1131,29 +1121,25 @@ static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/D
 }
 
 //CancelSleep Routine.
-static
- BOOL CancelSleep(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpKernelThread)
+static BOOL CancelSleep(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpKernelThread)
 {
 	return FALSE;
 }
 
 //SetCurrentIRQL.
-static
- DWORD SetCurrentIRQL(__COMMON_OBJECT* lpThis,DWORD dwNewIRQL)
+static DWORD  SetCurrentIRQL(__COMMON_OBJECT* lpThis,DWORD dwNewIRQL)
 {
 	return 0;
 }
 
 //GetCurrentIRQL.
-static
- DWORD GetCurrentIRQL(__COMMON_OBJECT* lpThis)
+static DWORD  GetCurrentIRQL(__COMMON_OBJECT* lpThis)
 {
 	return 0;
 }
 
 //SetLastError.
-//static
-DWORD _SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError)
+static DWORD  _SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError)
 {
 	DWORD  dwOldError = 0;
 
@@ -1163,15 +1149,13 @@ DWORD _SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError)
 }
 
 //GetLastError.
-//static
-DWORD _GetLastError(/*__COMMON_OBJECT* lpKernelThread*/)
+static DWORD _GetLastError(/*__COMMON_OBJECT* lpKernelThread*/)
 {
 	return KernelThreadManager.lpCurrentKernelThread->dwLastError;
 }
 
 //kGetThreadID.
-//static
-DWORD kGetThreadID(__COMMON_OBJECT* lpKernelThread)
+static DWORD kGetThreadID(__COMMON_OBJECT* lpKernelThread)
 {
 	if(NULL == lpKernelThread)  //Return current kernel thread's ID.
 	{
@@ -1182,9 +1166,7 @@ DWORD kGetThreadID(__COMMON_OBJECT* lpKernelThread)
 }
 
 //GetThreadStatus.
-//static
-
-DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
+static DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
 {
 	if(NULL == lpKernelThread)  //Return current kernel thread's ID.
 	{
@@ -1195,16 +1177,13 @@ DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
 }
 
 //SetThreadStatus.
-//static
- DWORD SetThreadStatus(__COMMON_OBJECT* lpKernelThread,DWORD dwStatus)
+static DWORD  SetThreadStatus(__COMMON_OBJECT* lpKernelThread,DWORD dwStatus)
 {
 	return 0;
 }
 
 //MsgQueueFull.
-//static
-
- BOOL MsgQueueFull(__COMMON_OBJECT* lpThread)
+static BOOL MsgQueueFull(__COMMON_OBJECT* lpThread)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread  = NULL;
 
@@ -1219,9 +1198,7 @@ DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
 }
 
 //MsgQueueEmpty.
-//static
-
- BOOL MsgQueueEmpty(__COMMON_OBJECT* lpThread)
+static BOOL MsgQueueEmpty(__COMMON_OBJECT* lpThread)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread = NULL;
 
@@ -1236,9 +1213,7 @@ DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
 }
 
 //SendMessage.
-//static
-
- BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpMsg)
+static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpMsg)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread = NULL;
 	__KERNEL_THREAD_OBJECT*     lpNewThread    = NULL;
@@ -1306,9 +1281,7 @@ __TERMINAL:
 //GetMessage from current or a specified kernel thread's message queue,it's a blocking operation
 //that will never return without message got.
 //TRUE will be returned if message is got successfully,otherwise,FALSE,in case of bad parameter.
-//static
-
- BOOL MgrGetMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpMsg)
+static BOOL MgrGetMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpMsg)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread  = NULL;
 	DWORD                       dwFlags         = 0;
@@ -1360,9 +1333,7 @@ __TRY_AGAIN:
 //PeekMessage will check the current or specified kernel thread's message queue,if there
 //is one or more message,it will fetch one and return TRUE,otherwise(the message queue is
 //empty),FALSE will be returned.
-//static
-
- BOOL MgrPeekMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpMsg)
+static BOOL MgrPeekMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpMsg)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread  = NULL;
 	DWORD                       dwFlags         = 0;
@@ -1413,9 +1384,7 @@ __TRY_AGAIN:
 //CAUTION: When lock a kernel thread,you must unlock it by calling UnlockKernelThread routine to
 //unlock the kernel thread,otherwise,others kernel thread(s) will never be scheduled.
 //
-//static
-
- BOOL LockKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
+static BOOL LockKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
 {
 	__KERNEL_THREAD_MANAGER*                   lpManager        = NULL;
 	__KERNEL_THREAD_OBJECT*                    lpKernelThread   = NULL;
@@ -1453,7 +1422,7 @@ __TRY_AGAIN:
 //The following routine unlockes a kernel thread who is locked by LockKernelThread routine.
 //
 
-//static
+static
 
  VOID UnlockKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
 {

@@ -405,7 +405,7 @@ static BOOL Initialize(struct __ETHERNET_MANAGER* pManager)
 	}
 	
 	//Create the ethernet core thread.
-	EthernetManager.EthernetCoreThread = KernelThreadManager.kCreateKernelThread(
+	EthernetManager.EthernetCoreThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,                           //Use default stack size.
 		KERNEL_THREAD_STATUS_READY,
