@@ -4,8 +4,6 @@
 *.elf
 *.img
 *.log
-config.sub
-config.status
 Makefile
 *.in
 *.in~
@@ -13,3 +11,4 @@ Makefile
 *.Po
 */.deps/
 autom4te.cache/
+.settings

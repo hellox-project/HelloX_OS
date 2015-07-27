@@ -56,7 +56,6 @@ static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 
 	//lpRes = (__RESOURCE*)malloc(sizeof(__RESOURCE));
 	lpRes = (__RESOURCE*)KMemAlloc(sizeof(__RESOURCE),KMEM_SIZE_TYPE_ANY);
-	_hx_printf("lpRes=%p\n", lpRes);
 
 	if(NULL == lpRes)    //Can not allocate memory.
 	{

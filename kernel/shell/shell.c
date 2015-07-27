@@ -229,7 +229,7 @@ DWORD IoCtrlApp(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	__KERNEL_THREAD_OBJECT*    lpIoCtrlThread    = NULL;
 
-	lpIoCtrlThread = KernelThreadManager.kCreateKernelThread(
+	lpIoCtrlThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -253,7 +253,7 @@ DWORD IoCtrlApp(__CMD_PARA_OBJ* pCmdParaObj)
 	//the IO control
 	//application end.
 	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,NULL);
-	KernelThreadManager.kDestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+	KernelThreadManager.DestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIoCtrlThread);  //Destroy the thread object.
 
 	return SHELL_CMD_PARSER_SUCCESS;
@@ -283,7 +283,7 @@ static DWORD JvmHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	//char*                      className = "-version";
 
 	//Create Java VM thread.
-	lpJVMThread = KernelThreadManager.kCreateKernelThread(
+	lpJVMThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -307,7 +307,7 @@ static DWORD JvmHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	//the IO control
 	//application end.
 	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager, NULL);
-	KernelThreadManager.kDestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+	KernelThreadManager.DestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpJVMThread);  //Destroy the thread object.
 
 	return SHELL_CMD_PARSER_SUCCESS;
@@ -321,7 +321,7 @@ DWORD SysDiagApp(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	__KERNEL_THREAD_OBJECT*        lpSysDiagThread    = NULL;
 
-	lpSysDiagThread = KernelThreadManager.kCreateKernelThread(
+	lpSysDiagThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -341,7 +341,7 @@ DWORD SysDiagApp(__CMD_PARA_OBJ* pCmdParaObj)
 
 	lpSysDiagThread->WaitForThisObject((__COMMON_OBJECT*)lpSysDiagThread);
 	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,NULL);
-	KernelThreadManager.kDestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+	KernelThreadManager.DestroyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpSysDiagThread);  //Destroy the kernel thread object.
 
 	return SHELL_CMD_PARSER_SUCCESS;
@@ -735,7 +735,7 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 	{		
 		if(StrCmp(ExtCmdArray[dwIndex].lpszCmdName,lpCmdParamObj->Parameter[0]))  //Found.
 		{	
-			hKernelThread = KernelThreadManager.kCreateKernelThread(
+			hKernelThread = KernelThreadManager.CreateKernelThread(
 				(__COMMON_OBJECT*)&KernelThreadManager,
 				0,
 				KERNEL_THREAD_STATUS_READY,
@@ -750,7 +750,7 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 					(__COMMON_OBJECT*)hKernelThread);  //Give the current input focus to this thread.
 				hKernelThread->WaitForThisObject((__COMMON_OBJECT*)hKernelThread);
 				DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,NULL);
-				KernelThreadManager.kDestroyKernelThread(
+				KernelThreadManager.DestroyKernelThread(
 					(__COMMON_OBJECT*)&KernelThreadManager,
 					(__COMMON_OBJECT*)hKernelThread);  //Destroy it.
 				//Set focus thread to shell.

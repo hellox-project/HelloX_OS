@@ -40,7 +40,7 @@ void sys_arch_unprotect(sys_prot_t val)
 //Create a new thread.
 sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg,int stacksize,int prio)
 {
-	return KernelThreadManager.kCreateKernelThread(
+	return KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,

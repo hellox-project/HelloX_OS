@@ -15,6 +15,7 @@ make_kernel(){
     make
 }
 
+##清理内核
 clean_kernel(){
     cd ..
     make clean

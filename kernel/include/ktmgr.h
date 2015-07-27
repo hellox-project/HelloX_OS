@@ -341,7 +341,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 
 	BOOL                                     (*Initialize)(__COMMON_OBJECT* lpThis);
 
-	__KERNEL_THREAD_OBJECT*                  (*kCreateKernelThread)(
+	__KERNEL_THREAD_OBJECT*                  (*CreateKernelThread)(
 		                                      __COMMON_OBJECT*          lpThis,
 											  DWORD                     dwStackSize,
 											  DWORD                     dwStatus,
@@ -351,20 +351,20 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											  LPVOID                    lpOwnerProcess,
 											  LPSTR                     lpszName);
 
-	VOID                                     (*kDestroyKernelThread)(__COMMON_OBJECT* lpThis,
+	VOID                                     (*DestroyKernelThread)(__COMMON_OBJECT* lpThis,
 		                                     __COMMON_OBJECT*           lpKernelThread
 											 );
 
-	BOOL                                     (*kEnableSuspend)(
+	BOOL                                     (*EnableSuspend)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread,
 											 BOOL                       bSuspend);
 
-	BOOL                                     (*kSuspendKernelThread)(
+	BOOL                                     (*SuspendKernelThread)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread);
 
-	BOOL                                     (*kResumeKernelThread)(
+	BOOL                                     (*ResumeKernelThread)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread);
 
@@ -381,7 +381,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 		                                     __COMMON_OBJECT*           lpThis,
 											 LPVOID                     lpESP);
 
-	DWORD                                    (*kSetThreadPriority)(
+	DWORD                                    (*SetThreadPriority)(
 											 __COMMON_OBJECT*           lpKernelThread,
 											 DWORD                      dwNewPriority
 											 );
@@ -396,7 +396,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											 DWORD                      dwExitCode
 											 );
 
-	BOOL                                     (*kSleep)(
+	BOOL                                     (*Sleep)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 //__COMMON_OBJECT*           lpKernelThread,
 											 DWORD                      dwMilliSecond
@@ -425,7 +425,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											 DWORD                      dwNewError
 											 );
 
-	DWORD                                    (*kGetThreadID)(
+	DWORD                                    (*GetThreadID)(
 		                                     __COMMON_OBJECT*           lpKernelThread
 											 );
 

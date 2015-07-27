@@ -184,7 +184,7 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	//The following code initializes identifier member of physical device.
 	//
 
-	_hx_printf("Read vendor ID and device ID\n");
+//	_hx_printf("Read vendor ID and device ID\n");
 	dwConfigReg &= 0xFFFFFF00;    //Clear offset part.
 	dwConfigReg += PCI_CONFIG_OFFSET_VENDOR;
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -197,7 +197,7 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 
 
 
-	_hx_printf("Get revision ID and class code\n");
+	//_hx_printf("Get revision ID and class code\n");
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_REVISION;  //Get revision ID and class code.
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -207,7 +207,7 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpDevInfo->dwClassCode                 = dwTmp;  //Save to information struct also.
 
 
-	_hx_printf("Get header type\n");
+	//_hx_printf("Get header type\n");
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_CACHELINESZ;    //Get header type.
 	__outd(CONFIG_REGISTER,dwConfigReg);

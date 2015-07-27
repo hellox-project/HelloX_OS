@@ -496,6 +496,7 @@ static BOOL _fat32DeleteFile(__COMMON_OBJECT* lpDev,LPSTR pszFileName)       //D
 	return DeleteFatFile(pFat32Fs,pszFileName);
 }
 
+
 //Implementation of _fat32FindClose routine.
 static BOOL _fat32FindClose(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* pHandle)  //Close find handle.
 {
@@ -713,6 +714,7 @@ __FIND:
 	return bResult;
 }
 
+
 //Implementation of _fat32FindFirstFile.
 static __COMMON_OBJECT* _fat32FindFirstFile(__COMMON_OBJECT* lpThis,CHAR*  pszFileName,FS_FIND_DATA* pFindData)
 {
@@ -757,6 +759,7 @@ static DWORD FatDeviceFlush(__COMMON_OBJECT* lpDrv,
 {
 	return FALSE;
 }
+
 
 //Implementation of _fat32GetFileAttributes.
 static DWORD _fat32GetFileAttributes(__COMMON_OBJECT* lpDev, LPCTSTR  pszFileName)  //Get file's attribute.
