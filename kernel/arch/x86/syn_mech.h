@@ -22,20 +22,19 @@ extern "C" {
 //System level critical section operations definition.
 
 #ifdef __I386__
-#ifdef _GCC_
+
+#ifdef __GCC__
 	#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags)	\
 		__asm__ __volatile__("pushfl; popl %0 ; cli" : "=g" (dwFlags): /* no input */ :"memory");
 #else
 
 	#define __ENTER_CRITICAL_SECTION(lpObj, dwFlags) \
-		__asm {					 \
-			push eax			 \
-			pushfd               \
-			pop eax              \
-			mov dwFlags,eax      \
-			pop eax              \
-			cli                  \
-		}
+		__asm	push eax			 \
+		__asm	pushfd               \
+		__asm	pop eax              \
+		__asm	mov dwFlags,eax      \
+		__asm	pop eax              \
+		__asm	cli
 #endif
 
 #else
@@ -47,15 +46,14 @@ extern "C" {
 
 #ifdef __I386__
 
-#ifdef _GCC_
+#ifdef __GCC__
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)	\
 	__asm__ __volatile__("pushl %0; popf " :	 : "g"(dwFlags): "memory")
 #else
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags) \
-    __asm {				\
-		push dwFlags 	\
-		popfd			\
-	}
+    __asm push dwFlags	\
+	__asm popfd
+
 #endif
 #else
 
@@ -65,7 +63,7 @@ extern "C" {
 
 //Interrupt enable and disable operation.
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	#define __ENABLE_INTERRUPT() 	\
 	{    							\
 		__asm__("pushl %%eax	\n\t"::);			\
@@ -92,7 +90,7 @@ extern "C" {
 #endif
 
 #ifdef __I386__
-	#ifdef _GCC_
+	#ifdef __GCC__
 		#define __DISABLE_INTERRUPT() {__asm__("cli" : : :"memory"); }
 	#else
 		#define __DISABLE_INTERRUPT() {__asm cli}
@@ -105,7 +103,7 @@ extern "C" {
 //This macros is used to flush cache's content to memory.
 //
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	#define FLUSH_CACHE()  {__asm__ ("wbinvd \n\t"::);}
 #else
 	#define FLUSH_CACHE()  {__asm wbinvd}
@@ -130,7 +128,7 @@ extern "C" {
 //writing operations into device immediately,the following macro must be called.
 //
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	#define BARRIER() __asm__("LOCK addl $0, (%%esp) \n\t"::);
 #else
 	#define BARRIER() __asm LOCK add dword ptr [esp],0

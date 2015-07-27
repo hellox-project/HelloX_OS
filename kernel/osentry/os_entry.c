@@ -269,7 +269,6 @@ void __OS_Entry()
 	dwIndex = 0;
 	while(DriverEntryArray[dwIndex])
 	{
-		_hx_sprintf(strInfo, "IOManager.LoadDriver-%d", dwIndex);
 		PrintLine(strInfo);
 		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex])) //Failed to load.
 		{
@@ -277,15 +276,11 @@ void __OS_Entry()
 			PrintLine(strInfo);
 		}
 		dwIndex++;  //Continue to load.
-		PrintLine("ok");
 	}
 #endif
 
 	//Initialize Console object if necessary.
 #ifdef __CFG_SYS_CONSOLE
-	PrintStr("Console.Initialize");
-	GotoHome();
-	ChangeLine();
 
 	if(!Console.Initialize(&Console))
 	{
@@ -304,9 +299,6 @@ void __OS_Entry()
 	//so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
 	//Also need to mention that this thread is mandatory and without any switch to turn off
 	//it.
-	PrintStr("KernelThreadManager.kCreateKernelThread");
-		GotoHome();
-		ChangeLine();
 
 	lpIdleThread = KernelThreadManager.kCreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
@@ -323,9 +315,6 @@ void __OS_Entry()
 		goto __TERMINAL;
 	}
 	//Disable suspend on this kernel thread,since it may lead system crash.
-	PrintStr("KernelThreadManager.kEnableSuspend");
-		GotoHome();
-		ChangeLine();
 	KernelThreadManager.kEnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIdleThread,
 		FALSE);

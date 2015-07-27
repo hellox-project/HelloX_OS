@@ -312,7 +312,7 @@ static DWORD inputd(__CMD_PARA_OBJ* lpParamObj)
 	wPort = (WORD)(dwVal);
 
 #ifdef __I386__               //Read data from port.
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 			".code32			\n\t"
 			"pushl	%%eax		\n\t"
@@ -458,7 +458,7 @@ static DWORD outputd(__CMD_PARA_OBJ* lpCmdObj)
 	wPort = (WORD)(dwPort);
 
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ __volatile__(
 	".code32			\n\t"
 	"pushl	%%edx		\n\t"

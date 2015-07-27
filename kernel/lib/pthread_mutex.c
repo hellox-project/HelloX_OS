@@ -33,7 +33,7 @@ LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
 
 #ifdef __I386__
 
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ __volatile__(
 			".code32					;"
 			"PUSHL 		%%ecx			;"
@@ -47,7 +47,7 @@ LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
 			: "memory"
 	);
 #else
-	_asm {
+	asm {
 		PUSH         ecx
 		MOV          ecx,dword ptr [location]
 		MOV          eax,dword ptr [value]
@@ -69,7 +69,7 @@ PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG 
 
 #ifdef __I386__
 
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ __volatile__ (
 			".code32						;"
 			"PUSH %%ecx 					;"
@@ -86,7 +86,7 @@ PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG 
 			: "memory"
 			);
 #else
-	_asm {
+	asm {
 		PUSH         ecx
 		PUSH         edx
 		MOV          ecx,dword ptr [location]

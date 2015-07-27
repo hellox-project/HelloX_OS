@@ -4,7 +4,7 @@
 #include "time_pri.h"
 
 time_t
-#ifndef _GCC_
+#ifndef __GCC__
 __cdecl
 #endif
 _gmtotime_t (int yr,/* 0 based */int mo,/* 1 based */int dy,/* 1 based */ int hr,int mn,int sc)

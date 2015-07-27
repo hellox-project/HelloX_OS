@@ -6,7 +6,7 @@
  * Number of clock ticks per second. A clock tick is the unit by which
  * processor time is measured and is returned by 'clock'.
  */
-#ifdef _GCC_
+#ifdef __GCC__
 typedef long long	 __int64;
 #endif
 

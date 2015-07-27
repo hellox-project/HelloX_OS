@@ -20,7 +20,7 @@
 
 //The following macros are defined to simply the programming.
 
-#ifdef _GCC_
+#ifdef __GCC__
 
 //AT&T syntax
 #define SYSCALL_PARAM_0(num) 	 \
@@ -428,7 +428,7 @@ HANDLE ConnectInterrupt(__INTERRUPT_HANDLER lpInterruptHandler,
 						LPVOID              lpHandlerParam,
 						UCHAR               ucVector)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ __volatile__(
 			".code32			;"
 			"pushl 	%%ebx		;"

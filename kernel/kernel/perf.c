@@ -37,7 +37,7 @@ VOID PerfBeginRecord(__PERF_RECORDER* lpPr)
 	lpStart = &lpPr->u64Start;
 
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 			"push %%eax \n\t"
 			"push %%ebx \n\t"
@@ -86,7 +86,7 @@ VOID PerfEndRecord(__PERF_RECORDER* lpPr)
 	lpEnd = &lpPr->u64End;
 
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 	"pushl %%eax  \n\t"
 	"pushl %%ebx  \n\t"

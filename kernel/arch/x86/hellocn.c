@@ -23,7 +23,7 @@
 INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 {
 	PrintLine("SetGeneralIntHandler\n");
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 	"pushl	%%ebx							\n\t"
 	"pushl	%%ecx							\n\t"
@@ -52,13 +52,13 @@ INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 
 VOID WriteByteToPort(UCHAR byte,WORD wPort)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 	".code32				\n\t"
 	"pushl	%%ebp			\n\t"
@@ -87,13 +87,13 @@ VOID WriteByteToPort(UCHAR byte,WORD wPort)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 
 VOID ReadByteStringFromPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 		"pushl	%%ebp	\n\t"
 		"movl	%%esp,	%%ebp	\n\t"
@@ -135,13 +135,13 @@ VOID ReadByteStringFromPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 VOID WriteByteStringToPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
 {
 
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 		"pushl	%%ebp	\n\t"
 		"movl	%%esp,	%%ebp	\n\t"
@@ -179,13 +179,13 @@ VOID WriteByteStringToPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 
  VOID ReadWordFromPort(WORD* pWord,WORD wPort)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 	"pushl	%%ebp	\n\t"
 	"movl	%%esp,	%%ebp	\n\t"
@@ -219,13 +219,13 @@ __declspec(naked)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 
  VOID WriteWordToPort(WORD w1,WORD w2)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 			"pushl	%%ebp           \n\t"
 			"movl %%esp,	%%ebp   \n\t"
@@ -253,13 +253,13 @@ __declspec(naked)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 
  VOID ReadWordStringFromPort(LPVOID p1,DWORD d1,WORD w1)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 	"pushl %%ebp         \n\t                 "
 	"movl %%esp, %%ebp   \n\t                 "
@@ -301,13 +301,13 @@ __declspec(naked)
 #endif
 }
 
-#ifndef _GCC_
+#ifndef __GCC__
 __declspec(naked)
 #endif
 
  VOID WriteWordStringToPort(LPVOID p1,DWORD d1,WORD w1)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 		"pushl %%ebp				\n\t"
 		"movl %%esp, %%ebp          \n\t"

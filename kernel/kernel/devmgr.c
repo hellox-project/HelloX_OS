@@ -97,9 +97,7 @@ static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 	//
 
 	#ifdef __CFG_SYS_BM
-		_hx_printf("begin PciBusDriver\n");
 		PciBusDriver(lpDevMgr);
-		_hx_printf("end PciBusDriver\n");
 	#endif
 
 	return TRUE;

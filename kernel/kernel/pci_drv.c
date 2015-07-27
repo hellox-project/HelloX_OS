@@ -27,11 +27,9 @@ static BOOL PciBusProbe()    //Probe if there is(are) PCI bus(es).
 {
 	DWORD   dwInit     = 0x80000000;
 
-	_hx_printf("outd CONFIG_REGISTER=%d\n", dwInit);
 	__outd(CONFIG_REGISTER,dwInit);
 
 	dwInit = __ind(DATA_REGISTER);
-	_hx_printf("intd DATA_REGISTER=%d\n", dwInit);
 
 	if(dwInit == 0xFFFFFFFF)    //The HOST-PCI bridge is not exist.
 		return FALSE;
@@ -167,15 +165,12 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	//DWORD                                 dwLoop         = 0;
 	DWORD                                 dwTmp          = 0;
 
-	_hx_printf("PciAddDevice=%p\n", lpSysBus);
 	if((0 == dwConfigReg) || (NULL == lpSysBus)) //Invalid parameters.
 		return;
 
-	_hx_printf("KMemAlloc lpPhyDev\n");
 	lpPhyDev = (__PHYSICAL_DEVICE*)KMemAlloc(sizeof(__PHYSICAL_DEVICE), KMEM_SIZE_TYPE_ANY);  //Create physical device.
 	if(NULL == lpPhyDev)
 		goto __TERMINAL;
-	_hx_printf("KMemAlloc lpPhyDev ok\n");
 
 	lpDevInfo = (__PCI_DEVICE_INFO*)KMemAlloc(sizeof(__PCI_DEVICE_INFO), KMEM_SIZE_TYPE_ANY);
 	if(NULL == lpDevInfo)  //Can not allocate information structure.
@@ -324,9 +319,7 @@ static VOID PciScanDevices(__SYSTEM_BUS* lpSysBus)
 			PciAddDevice(dwConfigReg,lpSysBus);
 			dwLoop += 7;                     //Skip all other functions of current device.
 		}*/
-		_hx_printf("begin addDevice=:%p\n", lpSysBus);
 		PciAddDevice(dwConfigReg,lpSysBus);  //Add to system device.
-		_hx_printf("end addDevice=:%p\n", lpSysBus);
 	}
 	return;
 }
@@ -422,8 +415,6 @@ BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr)
 	//
 	//Now,should scan all PCI devices.
 	//
-	_hx_printf("begin PciScanBus\n");
 	PciScanBus(lpDevMgr,NULL,0);
-	_hx_printf("end PciScanBus\n");
 	return TRUE;
 }

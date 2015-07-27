@@ -22,6 +22,7 @@
 
 #include <StdAfx.h>
 #include <arch.h>
+#include <stdio.h>
 #include <sys/utsname.h>
 
 
@@ -75,16 +76,16 @@ static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
 
 	if (14 == ucVector)  //Page fault.
 	{
-#ifdef _POSIX_
+#ifdef __GCC__
 		__asm__ __volatile__(
 			".code32            \n\t"
 			"pushl       %%eax     \n\t"
 			"movl        %%cr2,     %%eax     \n\t"
-			"movl        %0,  %%eax              \n\t"
-			"popl         %%eax                       \n\t"
-			: : "r"(excepAddr) : "memory");
+			"movl        %%eax, %0                \n\t"
+			"popl        %%eax                       \n\t"
+			:"=g"(excepAddr) :  : "memory");
 #else
-		__asm{
+		asm{
 			push eax
 				mov eax, cr2
 				mov excepAddr, eax
@@ -128,10 +129,12 @@ VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
 //This routine switches the current executing path to the new one identified
 //by lpContext.
 //
-//__declspec(naked)
+#ifndef __GCC__
+__declspec(naked)
+#endif
 VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 	".code32						\n\t "
 	"pushl 	%%ebp					\n\t"
@@ -151,7 +154,7 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 	:	:
 	);
 #else
-	__asm{
+	asm{
 		push ebp
 		mov ebp,esp
 		mov esp,dword ptr [ebp + 0x08]  //Restore ESP.
@@ -184,12 +187,14 @@ static DWORD dwTmpEbp = 0;
 //This routine saves current kernel thread's context,and switch
 //to the new kernel thread.
 //
-//__declspec(naked)
+#ifndef __GCC__
+__declspec(naked)
+#endif
 VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 									   __KERNEL_THREAD_CONTEXT** lppNewContext)
 {
 
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 	".code32								\n\t"
 	"movl	%%esp,	%0                  	\n\t"
@@ -269,7 +274,7 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 //
 VOID EnableVMM()
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 	".code32			\n\t"
 	"pushl	%%eax		\n\t"
@@ -299,7 +304,7 @@ VOID EnableVMM()
 //Halt current CPU in case of IDLE,it will be called by IDLE thread.
 VOID HaltSystem()
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ __volatile__ ("hlt	\n\t");
 #else
 	__asm{
@@ -353,7 +358,7 @@ VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 //Get time stamp counter.
 VOID __GetTsc(__U64* lpResult)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 		".code32		\n\t"
 		"pushl	%%ebp	\n\t"
@@ -393,7 +398,7 @@ static
 //_declspec(naked)
 		ReadCmosData(WORD* pData,BYTE nPort)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__(
 	".code32				\n\t"
 	"pushl	%%ebp			\n\t"
@@ -483,7 +488,7 @@ VOID __MicroDelay(DWORD dwmSeconds)
 
 VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	asm volatile("outl %0,%1" : : "a" (dwVal), "dN" (wPort));
 
 #else
@@ -502,7 +507,7 @@ VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 DWORD __ind(WORD wPort)    //Read one double word from a port.
 {
 	DWORD    dwRet       = 0;
-#ifdef _GCC_
+#ifdef __GCC__
 	asm volatile("inl %1,%0" : "=a" (dwRet) : "dN" (wPort));
 #else
 	__asm{
@@ -520,7 +525,7 @@ DWORD __ind(WORD wPort)    //Read one double word from a port.
 
 VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	asm volatile("outb %0,%1" : : "a" (_bt), "dN" (_port));
 
 #else
@@ -539,7 +544,7 @@ VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 UCHAR __inb(WORD _port)  //Receive a byte from port.
 {
 	UCHAR uRet;
-#ifdef _GCC_
+#ifdef __GCC__
 	asm volatile("inb %1,%0" : "=a" (uRet) : "dN" (_port));
 
 #else
@@ -558,7 +563,7 @@ UCHAR __inb(WORD _port)  //Receive a byte from port.
 WORD __inw(WORD wPort)
 {
 	WORD    wRet       = 0;
-#ifdef _GCC_
+#ifdef __GCC__
 	asm volatile("inw %1,%0" : "=a" (wRet) : "dN" (wPort));
 #else
 	__asm{
@@ -576,7 +581,7 @@ WORD __inw(WORD wPort)
 
 VOID __outw(WORD wVal,WORD wPort)
 {
-#ifdef _GCC_
+#ifdef __GCC__
 	asm volatile("outw %0,%1" : : "a" (wVal), "dN" (wPort));
 #else
 	__asm{
@@ -591,12 +596,14 @@ VOID __outw(WORD wVal,WORD wPort)
 #endif
 }
 
-//__declspec(naked)
+#ifndef __GCC__
+__declspec(naked)
+#endif
 VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 {
 #ifdef __I386__
 
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 	"	.code32								\n\t"
 	"	pushl 	%%ebp                                      \n\t"
@@ -641,11 +648,13 @@ VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 #endif
 }
 
-//__declspec(naked)
+#ifndef __GCC__
+__declspec(naked)
+#endif
 VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 {
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 	__asm__ (
 	".code32			  				\n\t"
 	" pushl %%ebp                        \n\t"

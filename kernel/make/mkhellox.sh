@@ -18,6 +18,7 @@ make_kernel(){
 clean_kernel(){
     cd ..
     make clean
+    rm -rfv master.bin
 }
 
 ##制作内核bin文件
@@ -29,6 +30,8 @@ make_kernel_bin(){
     #将内核elf文件中二进制提取到bin
     #objcopy -O binary -j .rodata -j .text -j .data -j .bss  -S -g $KERNEL_ELF $KERNEL_BIN
     objcopy -v -O binary -j .rodata -j .text -j .data -j .bss $KERNEL_ELF_FILE $KERNEL_BIN
+    
+    cp -v $KERNEL_BIN ../tools/vfmaker/$MASTER_BIN
 }
 
 main(){
@@ -61,7 +64,7 @@ fi
    
     if [ $1 == "clean" ]; then
         clean_kernel
-        return 1;
+        return 0;
     fi
     cd $LPWD
 }
@@ -73,7 +76,6 @@ if [ ! $RETVAL -eq 0 ]; then
     exit $RETVAL;
 fi
 
-cp -v ../$KERNEL_BIN ../../tools/vfmaker/$MASTER_BIN
 
 exit 0
 

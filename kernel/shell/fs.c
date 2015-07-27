@@ -597,7 +597,7 @@ static DWORD copy(__CMD_PARA_OBJ* pcpo)
 	LPSTR    lpInfo4 = "  Third parameter is Hello China 2.";
 	LPSTR    lpInfo5 = "  Third parameter is Hello China 3.";
 #ifdef __I386__
-#ifdef _GCC_
+#ifdef __GCC__
 
 	asm(
 		".code32			;"
