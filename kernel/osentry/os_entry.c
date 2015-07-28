@@ -239,10 +239,6 @@ void __OS_Entry()
 
 	//Enable the virtual memory management mechanism if __CFG_SYS_VMM flag is defined.
 #ifdef __CFG_SYS_VMM
-
-	PrintStr("EnableVMM");
-	GotoHome();
-	ChangeLine();
 	EnableVMM();
 #endif
 

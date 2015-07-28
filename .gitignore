@@ -10,5 +10,6 @@ Makefile
 *.so
 *.Po
 */.deps/
+.deps/
 autom4te.cache/
 .settings

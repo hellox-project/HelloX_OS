@@ -47,7 +47,7 @@ LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
 			: "memory"
 	);
 #else
-	asm {
+	__asm {
 		PUSH         ecx
 		MOV          ecx,dword ptr [location]
 		MOV          eax,dword ptr [value]
@@ -86,7 +86,7 @@ PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG 
 			: "memory"
 			);
 #else
-	asm {
+	__asm {
 		PUSH         ecx
 		PUSH         edx
 		MOV          ecx,dword ptr [location]

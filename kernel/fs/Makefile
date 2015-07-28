@@ -257,6 +257,7 @@ build_cpu = x86_64
 build_os = linux-gnu
 build_vendor = unknown
 builddir = .
+cflags = -m32
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
@@ -268,8 +269,8 @@ host_cpu = x86_64
 host_os = linux-gnu
 host_vendor = unknown
 htmldir = ${docdir}
-hx_arch = arch/x86
-hx_drivers = drivers/x86
+hx_arch = 
+hx_drivers = 
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
 install_sh = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/install-sh
@@ -293,10 +294,10 @@ target_alias =
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
-AM_CFLAGS = -nostdlib -nostdinc -m32 -fno-builtin -D__GCC__ -D_POSIX_ \
-	-D_M_IX86 -DMEM_LIBC_MALLOC -I$(top_srcdir)/kernel/include \
-	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys \
-	-I$(top_srcdir)/kernel/lib
+AM_CFLAGS = -nostdlib -nostdinc -fno-builtin -m32 -D__GCC__ \
+	-D_POSIX_ -D_M_IX86 -DMEM_LIBC_MALLOC \
+	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config \
+	-I$(top_srcdir)/kernel/lib/sys -I$(top_srcdir)/kernel/lib
 noinst_LIBRARIES = libfs.a
 libfs_a_SOURCES = fat322.c  fat32.c  fatmgr2.c  fatmgr.c  fatstr.c  fsstr.c  ntfs2.c  ntfs.c  ntfsdrv.c
 all: all-am

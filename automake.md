@@ -13,11 +13,15 @@
 ### HelloX_OS/kernel/make/mkhellox.sh
 	编译脚本文件。
 
-
+### HelloX_OS/amake.sh
+	配置脚本，在编译内核前执行（./amake.sh [stm32|x86]）, 可以指定编译平台，默认x86
+	
 ###编译内核
 1. cd HelloX_OS 
 	
-	./amake.sh
+	./amake.sh	[stm32|x86]	#默认:x86
+	使用stm32选项时，会使用arm-none-eabi-{gcc|gas|ld}工具链
+	
 2. cd kernel
 	
 	./mkhellox.sh make

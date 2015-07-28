@@ -85,7 +85,7 @@ static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
 			"popl        %%eax                       \n\t"
 			:"=g"(excepAddr) :  : "memory");
 #else
-		asm{
+		__asm{
 			push eax
 				mov eax, cr2
 				mov excepAddr, eax
@@ -154,7 +154,7 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 	:	:
 	);
 #else
-	asm{
+	__asm{
 		push ebp
 		mov ebp,esp
 		mov esp,dword ptr [ebp + 0x08]  //Restore ESP.
@@ -395,8 +395,10 @@ VOID __GetTsc(__U64* lpResult)
 
 //A local helper routine used to read CMOS date and time information.
 static
-//_declspec(naked)
-		ReadCmosData(WORD* pData,BYTE nPort)
+#ifndef __GCC__
+	_declspec(naked)
+#endif
+ReadCmosData(WORD* pData,BYTE nPort)
 {
 #ifdef __GCC__
 	__asm__(

@@ -699,6 +699,7 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+cflags
 hx_drivers
 hx_arch
 os
@@ -3254,9 +3255,11 @@ fi
 
 os="HelloX"
 
-hx_arch="arch/x86"
+hx_arch=$hx_arch
 
-hx_drivers="drivers/x86"
+hx_drivers=$hx_drivers
+
+cflags=$cflags
 
 
 ##AM_CPPFLAGS =-nostdlib -m32  -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
@@ -17530,7 +17533,7 @@ done
                  #kernel/jvm/os/HelloX/Makefile
                  #kernel/jvm/os/HelloX/i386/Makefile
 
-ac_config_files="$ac_config_files kernel/kernel/Makefile kernel/fs/Makefile kernel/kapi/Makefile kernel/drivers/x86/Makefile kernel/kthread/Makefile kernel/network/Makefile kernel/osentry/Makefile kernel/shell/Makefile kernel/lib/Makefile kernel/user/Makefile kernel/arch/x86/Makefile kernel/Makefile"
+ac_config_files="$ac_config_files kernel/kernel/Makefile kernel/fs/Makefile kernel/kapi/Makefile kernel/kthread/Makefile kernel/network/Makefile kernel/osentry/Makefile kernel/shell/Makefile kernel/lib/Makefile kernel/user/Makefile kernel/drivers/x86/Makefile kernel/arch/x86/Makefile kernel/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -18654,13 +18657,13 @@ do
     "kernel/kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/kernel/Makefile" ;;
     "kernel/fs/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/fs/Makefile" ;;
     "kernel/kapi/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/kapi/Makefile" ;;
-    "kernel/drivers/x86/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/drivers/x86/Makefile" ;;
     "kernel/kthread/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/kthread/Makefile" ;;
     "kernel/network/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/network/Makefile" ;;
     "kernel/osentry/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/osentry/Makefile" ;;
     "kernel/shell/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/shell/Makefile" ;;
     "kernel/lib/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/lib/Makefile" ;;
     "kernel/user/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/user/Makefile" ;;
+    "kernel/drivers/x86/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/drivers/x86/Makefile" ;;
     "kernel/arch/x86/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/arch/x86/Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
 

@@ -205,7 +205,7 @@ static void LightOrQuench()
 	:"r"(cmd)
 	);
 #else
-	asm
+	__asm
 	{
 		push eax
 		push edx
@@ -460,7 +460,7 @@ unsigned char GetScanCode()
 	return code;
 
 #else
-	asm { in al,0x60 };
+	__asm { in al,0x60 };
 #endif
 
 #endif
@@ -487,7 +487,7 @@ static void AckKeyBoard()
 		::
 	);
 #else
-	asm{
+	__asm{
 		in al,0x61
 		or al,0x80
 		nop

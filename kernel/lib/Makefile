@@ -259,6 +259,7 @@ build_cpu = x86_64
 build_os = linux-gnu
 build_vendor = unknown
 builddir = .
+cflags = -m32
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
@@ -270,8 +271,8 @@ host_cpu = x86_64
 host_os = linux-gnu
 host_vendor = unknown
 htmldir = ${docdir}
-hx_arch = arch/x86
-hx_drivers = drivers/x86
+hx_arch = 
+hx_drivers = 
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
 install_sh = ${SHELL} /media/gaojie/Java/hellox/HelloX_OS/install-sh
@@ -295,10 +296,10 @@ target_alias =
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
-AM_CFLAGS = -nostdlib -nostdinc -m32 -fno-builtin -D__GCC__ -D_POSIX_ \
-	-D_M_IX86 -DMEM_LIBC_MALLOC -I$(top_srcdir)/kernel/include \
-	-I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel/lib/sys \
-	-I$(top_srcdir)/kernel/lib
+AM_CFLAGS = -nostdlib -nostdinc -fno-builtin -m32 -D__GCC__ \
+	-D_POSIX_ -D_M_IX86 -DMEM_LIBC_MALLOC \
+	-I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config \
+	-I$(top_srcdir)/kernel/lib/sys -I$(top_srcdir)/kernel/lib
 noinst_LIBRARIES = libhellolib.a
 libhellolib_a_SOURCES = atox.c errno.c io.c memory.c pthread_mutex.c sched.c signal.c stdio.c sysmem.c ctype.c getenv.c math.c pthread.c pthread_other.c setjmp.c stat.c string.c time.c
 all: all-am

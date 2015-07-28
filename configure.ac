@@ -7,8 +7,9 @@ AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign subdir-objects])
 
 
 AC_SUBST(os, "HelloX")
-AC_SUBST(hx_arch, "arch/x86")
-AC_SUBST(hx_drivers, "drivers/x86")
+AC_SUBST(hx_arch, $hx_arch)
+AC_SUBST(hx_drivers, $hx_drivers)
+AC_SUBST(cflags, $cflags)
 
 ##AM_CPPFLAGS =-nostdlib -m32  -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/config  -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys -D_TIME_T_DEFINED -D_M_IX86
 #HX_CFLAGS = -nostdlib -m32 -I$(top_srcdir)/kernel/config -I$(top_srcdir)/kernel -I$(top_srcdir)/kernel/include -I$(top_srcdir)/kernel/lib -I$(top_srcdir)/kernel/lib/sys
@@ -114,13 +115,13 @@ AC_CHECK_FUNCS([dup2 floor getcwd getpagesize gettimeofday inet_ntoa memchr memm
 AC_CONFIG_FILES([kernel/kernel/Makefile
                  kernel/fs/Makefile
                  kernel/kapi/Makefile
-                 kernel/drivers/x86/Makefile
                  kernel/kthread/Makefile
                  kernel/network/Makefile
                  kernel/osentry/Makefile
                  kernel/shell/Makefile
                  kernel/lib/Makefile
                  kernel/user/Makefile
+                 kernel/drivers/x86/Makefile
                  kernel/arch/x86/Makefile
                  kernel/Makefile])
 AC_OUTPUT
