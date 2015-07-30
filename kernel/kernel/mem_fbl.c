@@ -539,7 +539,7 @@ __TERMINAL:
 //	{NULL,0}
 //};
 //
-//extern __MEMORY_REGION SystemMemRegion[];
+extern __MEMORY_REGION SystemMemRegion[];
 
 
 

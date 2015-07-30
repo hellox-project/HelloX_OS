@@ -18,8 +18,10 @@
 #ifndef __STDAFX_H__
 #include <StdAfx.h>
 #endif
+#include "buffmgr.h"
 
-extern __MEMORY_REGION SystemMemRegion[] = {
+
+__MEMORY_REGION SystemMemRegion[] = {
 	//{Start address of memory region,memory region's length}
 	{(LPVOID)KMEM_ANYSIZE_START_ADDRESS,0x00100000},  //1M memory,start from KMEM_ANYSIZE_START_ADDRESS
 	{(LPVOID)(KMEM_ANYSIZE_START_ADDRESS + 0x00100000),0x00100000},
