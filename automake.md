@@ -15,17 +15,27 @@
 
 ### HelloX_OS/amake.sh
 	配置脚本，在编译内核前执行（./amake.sh [stm32|x86]）, 可以指定编译平台，默认x86
+
+##安装依赖
+	apt-get install autoconf automake gcc g++ binutils
 	
-###编译内核
+##编译内核
 1. cd HelloX_OS 
 	
 	./amake.sh	[stm32|x86]	#默认:x86
 	使用stm32选项时，会使用arm-none-eabi-{gcc|gas|ld}工具链
 	
-2. cd kernel
+2. cd HelloX_OS/kernel/make
 	
 	./mkhellox.sh make
 	负责编译，生成的master.bin， 拷贝master.bin到HelloX_OS/tools/vfmaker
 
-###清理
+##清理
 	./mkhellox.sh clean
+	
+##运行
+	安装qemu
+	cd HelloX_OS/tools/vfmaker
+	qemu-system-i386 -fda VFLOPPY.VFD
+	
+	

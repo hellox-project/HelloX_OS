@@ -11,7 +11,7 @@ case $arch in
     stm32)
     	CONF_OPTS="cflags=-m --host=arm-none-eabi hx_arch=arch/stm32 hx_drivers=drivers/stm32";;
     x86)
-    	CONF_OPTS="cflags=-m32";;
+    	CONF_OPTS="cflags=-m32 hx_arch=arch/x86 hx_drivers=drivers/x86";;
 esac
 
 echo $CONF_OPTS

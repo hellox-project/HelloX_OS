@@ -113,9 +113,7 @@ typedef struct{
 
 
 extern __BUFFER_CONTROL_BLOCK AnySizeBuffer;
-//typedef __BUFFER_CONTROL_BLOCK AnySizeBuffer;
-
-
+extern __MEMORY_REGION SystemMemRegion[];
 //#ifdef __cplusplus
 //}
 //#endif
