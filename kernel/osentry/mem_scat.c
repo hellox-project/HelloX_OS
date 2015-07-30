@@ -20,7 +20,7 @@
 #endif
 #include "buffmgr.h"
 
-
+#ifndef __GCC_
 __MEMORY_REGION SystemMemRegion[] = {
 	//{Start address of memory region,memory region's length}
 	{(LPVOID)KMEM_ANYSIZE_START_ADDRESS,0x00100000},  //1M memory,start from KMEM_ANYSIZE_START_ADDRESS
@@ -31,3 +31,4 @@ __MEMORY_REGION SystemMemRegion[] = {
 	//The last entry must be NULL and zero,to indicate the end of this array.
 	{NULL,0}
 };
+#endif
