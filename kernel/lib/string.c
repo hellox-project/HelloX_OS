@@ -642,7 +642,7 @@ char * strstr(const char *s1,const char *s2)
 //    else
 //        return 0;
 //}
-#ifdef atox
+#ifdef __GCC__
 long atol(const char *nptr)
 {
 	int c; /* current char */
