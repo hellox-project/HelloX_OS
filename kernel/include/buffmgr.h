@@ -16,9 +16,9 @@
 #ifndef __BUFFMGR_H__
 #define __BUFFMGR_H__
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 //Basic concepts:
@@ -114,8 +114,8 @@ typedef struct{
 
 extern __BUFFER_CONTROL_BLOCK AnySizeBuffer;
 extern __MEMORY_REGION SystemMemRegion[];
-//#ifdef __cplusplus
-//}
-//#endif
+#ifdef __cplusplus
+}
+#endif
 
 #endif //End of buffmgr.h

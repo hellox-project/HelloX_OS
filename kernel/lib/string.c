@@ -642,7 +642,7 @@ char * strstr(const char *s1,const char *s2)
 //    else
 //        return 0;
 //}
-
+#ifdef atox
 long atol(const char *nptr)
 {
 	int c; /* current char */
@@ -737,6 +737,8 @@ char* itoa(int value, char* string, int radix)
 	*sp = 0;
 	return string;
 }
+
+#endif
 
 char *
 strchr (s, c_in)
