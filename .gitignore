@@ -13,3 +13,4 @@ Makefile
 .deps/
 autom4te.cache/
 .settings
+**/Makefile
