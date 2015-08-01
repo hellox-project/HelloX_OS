@@ -16,6 +16,12 @@
 #ifndef __STDAFX_H__
 #include "StdAfx.h"
 #endif
+#include <types.h>
+#include <kmemmgr.h>
+#include "buffmgr.h"
+#include "types.h"
+#include "ktmgr.h"
+#include <../config/config.h>
 
 //KMEM_4K_START_ADDRESS = 0x00200000
 //KMEM_4K_END_ADDRESS   = 0x00BFFFFF

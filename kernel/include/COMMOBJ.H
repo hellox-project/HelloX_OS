@@ -16,6 +16,8 @@
 #ifndef __COMMOBJ_H__
 #define __COMMOBJ_H__
 
+
+#include "types.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,7 +34,7 @@ typedef struct tag__COMMON_OBJECT{
 	//__COMMON_OBJECT*   lpRight;              //Used in the ruture,AVL tree's right branch.
 	BOOL               (*Initialize)(struct tag__COMMON_OBJECT*); //Object's initialize routine.
 	VOID               (*Uninitialize)(struct tag__COMMON_OBJECT*);
-}__COMMON_OBJECT;
+} __COMMON_OBJECT;
 
 
 //

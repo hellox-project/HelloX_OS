@@ -19,7 +19,7 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\include\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #include "idle.h"

@@ -34,6 +34,10 @@
 
     /* 7.18.1.1 */
 
+#ifdef __GCC__
+          typedef long int		__int64;
+#endif
+
     /* exact-width signed integer types */
 typedef   signed          char int8_t;
 typedef   signed short     int int16_t;

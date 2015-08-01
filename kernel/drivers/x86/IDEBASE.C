@@ -20,15 +20,15 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #ifndef __IDEBASE_H__
-#include "IDEBASE.H"
+#include "idebase.h"
 #endif
 
-#include "..\arch\x86\BIOS.H"
-#include "..\lib\stdio.h"
+#include "../arch/x86/bios.h"
+#include "../lib/stdio.h"
 
 /*
 BOOL ReadHDSector(LPVOID lpBuffer,

@@ -216,7 +216,7 @@
     <ClCompile Include="lib\math.c" />
     <ClCompile Include="lib\memory.c" />
     <ClCompile Include="lib\pthread.c" />
-    <ClCompile Include="lib\pthread_mutex .c" />
+    <ClCompile Include="lib\pthread_mutex.c" />
     <ClCompile Include="lib\pthread_other.c" />
     <ClCompile Include="lib\sched.c" />
     <ClCompile Include="lib\setjmp.c" />
@@ -234,7 +234,7 @@
     <ClCompile Include="shell\FIBONACCI.C" />
     <ClCompile Include="shell\FS.C" />
     <ClCompile Include="shell\HEDIT.C" />
-    <ClCompile Include="shell\HISCMD .C" />
+    <ClCompile Include="shell\hiscmd.c" />
     <ClCompile Include="shell\HYPERTRM.C" />
     <ClCompile Include="shell\IOCTRL_S.C" />
     <ClCompile Include="shell\network.c" />

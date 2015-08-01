@@ -17,10 +17,15 @@
 #include "StdAfx.h"
 #endif
 
-#include "MODMGR.H"
-#include "KAPI.H"
+#include "modmgr.h"
+#include "kapi.h"
 #include "string.h"
+#include "types.h"
+#include "commobj.h"
+#include "comqueue.h"
 #include "stdio.h"
+#include "kapi.h"
+#include "process.h"
 
 //Implementation of InitModule routine.
 static BOOL InitModule(__MODULE_INIT InitEntry)

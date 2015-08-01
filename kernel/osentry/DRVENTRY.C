@@ -17,31 +17,31 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\include\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #ifdef __CFG_DRV_KEYBOARD
-#include "..\drivers\x86\KEYBRD.H"     //Header file for key board driver.
+#include "../drivers/x86/keybrd.h"     //header file for key board driver.
 #endif
 
 #ifdef __CFG_FS_FAT32
-#include "..\fs\FAT32.H"      //Header file for FAT32 file system dirver.
+#include "../fs/fat32.h"      //header file for fat32 file system dirver.
 #endif
 
 #ifdef __CFG_FS_NTFS
-#include "..\fs\NTFS.H"
+#include "../fs/ntfs.h"
 #endif
 
 #ifdef __CFG_DRV_IDE
-#include "..\drivers\x86\IDEHD.H"      //IDE interface harddisk controller driver.
+#include "../drivers/x86/idehd.h"      //IDE interface harddisk controller driver.
 #endif
 
 #ifdef __CFG_DRV_MOUSE
-#include "..\drivers\x86\MOUSE.H"
+#include "../drivers/x86/mouse.h"
 #endif
 
 #ifdef __CFG_DRV_COM
-#include "..\drivers\x86\com.h"
+#include "../drivers/x86/com.h"
 #endif
 
 #ifdef __CFG_DRV_USART
@@ -66,38 +66,51 @@
 //must put the driver entry in proper order.For example,file system driver's entry
 //point should be put ahead of storage device driver's entry point.
 //
-__DRIVER_ENTRY DriverEntryArray[] = {
+//[NOTE]: The first parameter is the entry routine of driver,and the second is
+//a readable name of the driver,which will be shown on screen in process of loading.
+//Please be noted that the driver's name is no long than 64 bytes.
+//
+__DRIVER_ENTRY_ARRAY DriverEntryArray[] = {
 #ifdef __CFG_DRV_KEYBOARD
-	KBDriverEntry,     //Key board driver entry.
+	//Key board driver entry.
+	{ KBDriverEntry, "Key board" },
 #endif
 
 #ifdef __CFG_DRV_MOUSE
-	MouseDrvEntry,     //Mouse device driver entry.
+	//Mouse device driver entry.
+	{ MouseDrvEntry, "Mouse" },
 #endif
 
 #ifdef __CFG_FS_FAT32
-	FatDriverEntry,    //FAT32 file system driver.
+	//FAT32 file system driver.
+	{ FatDriverEntry, "FAT32_FS" },
 #endif
 
 #ifdef __CFG_FS_NTFS
-	NtfsDriverEntry,   //NTFS file system driver.
+	//NTFS file system driver.
+	{NtfsDriverEntry,"NTFS_FS"},
 #endif
 
 #ifdef __CFG_DRV_IDE
-	IDEHdDriverEntry,  //IDE harddisk driver.
+	//IDE harddisk driver.
+	{ IDEHdDriverEntry, "IDE_HD" },
 #endif
 
 #ifdef __CFG_DRV_COM
-	COMDrvEntry,
+	//COM Interface.
+	{ COMDrvEntry, "COM_Int" },
 #endif
 
 #ifdef __CFG_DRV_USART //Only available under STM32.
-	UsartDrvEntry,
+	//USART driver entry.
+	{UsartDrvEntry,"USART_DRV"},
 #endif
 
 #ifdef __CFG_DRV_SDIO //Only available under STM32.
-  SDIODriverEntry,
+	//SDIO driver.
+	{SDIODriverEntry,"SDIO_DRV"},
 #endif
-	NULL               //Terminator of the driver entry array.
+	//Terminator of the driver entry array.
+	{ NULL, NULL }
 };
 

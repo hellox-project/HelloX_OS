@@ -108,6 +108,48 @@ VOID SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	DWORD sysContext[11] = {0};
 	DWORD bt;
 
+#ifdef __GCC__
+	asm __volatile__ (
+			".code32			;"
+			"pusha				;"
+			"pushl	%%eax		;"
+			"movl	0x04(%%esp),	%%eax	;"
+			"movl	%%eax,		-0x30(%%ebp);"
+			"movl	0x08(%%esp),	%%eax	;"
+			"movl	%%eax,		-0x2c(%%ebp);"
+			"movl	0x0c(%%esp),	%%eax	;"
+			"movl	%%eax,	-0x28(%%ebp)	;"
+			"movl	0x10(%%esp),	%%eax	;"
+			"movl	%%eax,		-0x24(%%ebp);"
+			"movl	0x14(%%esp),	%%eax	;"
+			"movl	%%eax,			-0x20(%%ebp);"
+			"movl	0x18(%%esp),		%%eax	;"
+			"movl	%%eax,			-0x1c(%%ebp);"
+			"movl	0x1c(%%esp),	%%eax		;"
+			"movl	%%eax,		-0x18(%%ebp)	;"
+			"movl	0x20(%%esp),	%%eax		;"
+			"movl	%%eax,	-0x14(%%ebp)		;"
+
+			"movw	%%cs,	%%ax	;"
+			"shll	$0x10,	%%eax	;"
+			"movw	%%ds,	%%ax	;"
+			"movl	%%eax,	-0x10(%%ebp)	;"
+			"movw	%%fs, 	%%ax			;"
+			"shll	$0x10,	%%eax			;"
+			"movw	%%gs,	%%ax			;"
+			"movl	%%eax,	-0x0c(%%ebp)	;"
+			"movw	%%es,	%%ax			;"
+			"shll	$0x10,	%%eax			;"
+			"movw	%%ss,	%%ax			;"
+			"movl	%%eax,	-0x08(%%ebp)	;"
+
+			"popl	%%eax					;"
+			"popa							;"
+			::
+	);
+#else
+
+
 	__asm{                       //Get the system information.
 		pushad                   //Save all the general registers.
 			                     //NOTICE: This operation only get
@@ -148,7 +190,7 @@ VOID SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		pop eax
 		popad                    //Restore the stack frame.
 	}
-
+#endif
 	//All system registers are got,then print out them.
    /*GotoHome();
 	ChangeLine();

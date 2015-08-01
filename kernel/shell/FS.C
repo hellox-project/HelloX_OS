@@ -14,15 +14,15 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #include "shell.h"
-#include "FS.H"
+#include "fs.h"
 
-#include "..\INCLUDE\KAPI.H"
-#include "..\lib\string.h"
-#include "..\lib\stdio.h"
+#include "kapi.h"
+#include "string.h"
+#include "stdio.h"
 
 
 #define  FS_PROMPT_STR   "[fs_view]"
@@ -597,6 +597,29 @@ static DWORD copy(__CMD_PARA_OBJ* pcpo)
 	LPSTR    lpInfo4 = "  Third parameter is Hello China 2.";
 	LPSTR    lpInfo5 = "  Third parameter is Hello China 3.";
 #ifdef __I386__
+#ifdef __GCC__
+
+	asm(
+		".code32			;"
+		"pushl	%9			;"
+		"pushl	%8			;"
+		"pushl	%7			;"
+		"pushl	%6			;"
+		"pushl	%5			;"
+		"pushl	$0			;"
+		"pushl	$0x2D		;"
+		"int	$0x7F		;"
+		"popl	%%eax		;"
+		"popl	%%eax		;"
+		"popl	%0			;"
+		"popl	%1			;"
+		"popl	%2			;"
+		"popl	%3			;"
+		"popl	%4			;"
+		:"=r"(lpInfo1), "=r"(lpInfo2), "=r"(lpInfo3), "=r"(lpInfo4), "=r"(lpInfo5)
+		:"r"(lpInfo1), "r"(lpInfo2), "r"(lpInfo3), "r"(lpInfo4), "r"(lpInfo5)
+		 );
+#else
 	__asm{
 		push lpInfo5
 		push lpInfo4
@@ -614,6 +637,7 @@ static DWORD copy(__CMD_PARA_OBJ* pcpo)
 		pop lpInfo4
 		pop lpInfo5
 	}
+#endif
 #endif
 	PrintLine("  In copy of fs application.");
 	PrintLine(lpInfo1);

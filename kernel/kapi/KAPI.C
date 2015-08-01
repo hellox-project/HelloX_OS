@@ -15,10 +15,166 @@
 //***********************************************************************/
 
 #ifndef __KAPI_H__
-#include "KAPI.H"
+#include "kapi.h"
 #endif
 
 //The following macros are defined to simply the programming.
+
+#ifdef __GCC__
+
+//AT&T syntax
+#define SYSCALL_PARAM_0(num) 	 \
+	{                			 \
+	__asm__ __volatile__(		 \
+		".code32 			\n\t"   \
+		"pushl		$0		\n\t"   \
+		"pushl		%0		\n\t"   \
+		"int		$0x7F	\n\t"   \
+		"popl		%%eax	\n\t"   \
+		"popl		%%eax	\n\t"   \
+		: :"r"(num): );             \
+	}
+
+#define SYSCALL_PARAM_1(num,p1) 		\
+	{                					\
+	__asm__ __volatile__ (                \
+		".code32			\n\t"            \
+		"pushl 	%2			\n\t"            \
+		"pushl	$0			\n\t"            \
+		"pushl	%1			\n\t"            \
+		"int	$0x7F		\n\t"            \
+		"popl	%%eax		\n\t"            \
+		"popl	%%eax		\n\t"            \
+		"popl	%0			\n\t"            \
+		:"=r"(p1): "r"(num), "r"(p1):);    \
+	}
+#define SYSCALL_PARAM_2(num,p1,p2) \
+	{               									 	 \
+	__asm__ __volatile__ (                                   \
+		".code32				\n\t"                           \
+		"pushl	%4				\n\t"                           \
+		"pushl	%3				\n\t"                           \
+		"pushl	$0				\n\t"                           \
+		"pushl	%2				\n\t"                           \
+		"int	$0x7F			\n\t"                           \
+		"popl	%%eax			\n\t"                           \
+		"popl	%%eax			\n\t"                           \
+		"popl	%0				\n\t"                           \
+		"popl	%1				\n\t"                           \
+		:"=r"(p1),"=r"(p2) :"r"(num), "r"(p1),"r"(p2):);       \
+	}
+
+#define SYSCALL_PARAM_3(num,p1,p2,p3) \
+	{                	                                               \
+	__asm__ __volatile__(                                              \
+		".code32				\n\t"                                     \
+		"pushl	%6				\n\t"                                     \
+		"pushl	%5				\n\t"                                     \
+		"pushl	%4				\n\t"                                     \
+		"pushl	$0				\n\t"                                     \
+		"pushl	%3				\n\t"                           		   \
+		"int	$0x7F			\n\t"                                     \
+		"popl	%%eax			\n\t"                                     \
+		"popl	%%eax			\n\t"                                     \
+		"popl	%0				\n\t"                                     \
+		"popl	%1				\n\t"                                     \
+		"popl	%2				\n\t"                                     \
+		:"=r"(p1),"=r"(p2),"=r"(p3): "r"(num), "r"(p1),"r"(p2),"r"(p3): );\
+	}
+#define SYSCALL_PARAM_4(num,p1,p2,p3,p4) \
+	{                \
+	__asm__ __volatile__(                                              \
+		".code32				\n\t"                                     \
+		"pushl	%8				\n\t"                                     \
+		"pushl	%7				\n\t"                                     \
+		"pushl	%6				\n\t"                                     \
+		"pushl	%5				\n\t"                                     \
+		"pushl	$0				\n\t"                                     \
+		"pushl	%4				\n\t"                                     \
+		"int	$0x7F			\n\t"                                     \
+		"popl	%%eax			\n\t"                                     \
+		"popl	%%eax			\n\t"                                     \
+		"popl	%0				\n\t"                                     \
+		"popl	%1				\n\t"                                     \
+		"popl	%2				\n\t"                                     \
+		"popl	%3				\n\t"                                     \
+		:"=r"(p1),"=r"(p2),"=r"(p3),"=r"(p4) :"r"(num), "r"(p1),"r"(p2),"r"(p3),"r"(p4): );\
+}
+
+#define SYSCALL_PARAM_5(num,p1,p2,p3,p4,p5) 							\
+	{                													\
+	__asm__ __volatile__(                                              \
+		".code32				\n\t"                                     \
+		"pushl	%10				\n\t"                                     \
+		"pushl	%9  			\n\t"                                     \
+		"pushl	%8				\n\t"                                     \
+		"pushl	%7				\n\t"                                     \
+		"pushl	%6				\n\t"                                     \
+		"pushl	$0				\n\t"                                     \
+		"pushl	%5				\n\t"                                     \
+		"int	$0x7F			\n\t"                                     \
+		"popl	%%eax			\n\t"                                     \
+		"popl	%%eax			\n\t"                                     \
+		"popl	%0				\n\t"                                     \
+		"popl	%1				\n\t"                                     \
+		"popl	%2				\n\t"                                     \
+		"popl	%3				\n\t"                                     \
+		"popl	%4				\n\t"                                     \
+		:"=r"(p1),"=r"(p2),"=r"(p3),"=r"(p4),"=r"(p5) :"r"(num), "r"(p1),"r"(p2),"r"(p3),"r"(p4),"r"(p5) : );\
+	}
+
+#define SYSCALL_PARAM_6(num,p1,p2,p3,p4,p5,p6) \
+	{                														\
+	__asm__ __volatile__(                                              	   \
+			".code32				\n\t"                                     \
+			"pushl	%12				\n\t"                                     \
+			"pushl	%11				\n\t"                                     \
+			"pushl	%10  			\n\t"                                     \
+			"pushl	%9  			\n\t"                                     \
+			"pushl	%8				\n\t"                                     \
+			"pushl	%7				\n\t"                                     \
+			"pushl	$0				\n\t"                                     \
+			"pushl	%6				\n\t"                                     \
+			"int	$0x7F			\n\t"                                     \
+			"popl	%%eax			\n\t"                                     \
+			"popl	%%eax			\n\t"                                     \
+			"popl	%0				\n\t"                                     \
+			"popl	%1				\n\t"                                     \
+			"popl	%2				\n\t"                                     \
+			"popl	%3				\n\t"				                       \
+			"popl	%4				\n\t"                                     \
+			"popl	%5				\n\t"                                     \
+			:"=r"(p1),"=r"(p2),"=r"(p3),"=r"(p4),"=r"(p5),"=r"(p6)		   \
+			:"r"(num), "r"(p1),"r"(p2),"r"(p3),"r"(p4),"r"(p5),"r"(p6)	);\
+	}
+#define SYSCALL_PARAM_7(num,p1,p2,p3,p4,p5,p6,p7) \
+	{                														\
+	__asm__ __volatile__(                                              	   \
+			".code32				\n\t"                                     \
+			"pushl	%14				\n\t"                                     \
+			"pushl	%13				\n\t"                                     \
+			"pushl	%12				\n\t"                                     \
+			"pushl	%11				\n\t"                                     \
+			"pushl	%10  			\n\t"                                     \
+			"pushl	%9  			\n\t"                                     \
+			"pushl	%8				\n\t"                                     \
+			"pushl	$0				\n\t"                                     \
+			"pushl	%7				\n\t"                                     \
+			"int	$0x7F			\n\t"                                     \
+			"popl	%%eax			\n\t"                                     \
+			"popl	%%eax			\n\t"                                     \
+			"popl	%0				\n\t"                                     \
+			"popl	%1				\n\t"                                     \
+			"popl	%2				\n\t"                                     \
+			"popl	%3				\n\t"				                       \
+			"popl	%4				\n\t"                                     \
+			"popl	%5				\n\t"                                     \
+			"popl	%6				\n\t"                                     \
+			:"=r"(p1), "=r"(p2), "=r"(p3), "=r"(p4), "=r"(p5), "=r"(p6), "=m"(p7)	\
+			:"r"(num), "r"(p1), "r"(p2), "r"(p3), "r"(p4), "r"(p5), "r"(p6), "m"(p7)	);\
+	}
+#else
+	// intel syntax
 #define SYSCALL_PARAM_0(num) \
 	{                \
 	__asm push 0     \
@@ -146,6 +302,7 @@
 	__asm pop p6     \
 	__asm pop p7     \
 	}
+#endif
 
 
 HANDLE CreateKernelThread(DWORD dwStackSize,
@@ -271,6 +428,29 @@ HANDLE ConnectInterrupt(__INTERRUPT_HANDLER lpInterruptHandler,
 						LPVOID              lpHandlerParam,
 						UCHAR               ucVector)
 {
+#ifdef __GCC__
+	__asm__ __volatile__(
+			".code32			;"
+			"pushl 	%%ebx		;"
+			"movb	%3,	%%bl	;"
+			"pushl	%%ebx				;"
+			"pushl	%4					;"
+			"pushl	%5					;"
+			"pushl	$0					;"
+			"pushl	SYSCALL_CONNECTINTERRUPT;"
+			"int	$0x7F					;"
+			"popl	%%eax					;"
+			"popl	%%eax					;"
+			"popl	%0						;"
+			"popl	%1						;"
+			"popl	%%ebx					;"
+			"movb	%%bl, %2				;"
+			"popl	%%ebx					;"
+			:"=r"(lpInterruptHandler), "=r"(lpHandlerParam), "=r"(ucVector)
+			:"r"(ucVector), "r"(lpHandlerParam), "r"(lpInterruptHandler)
+			:
+			);
+#else
 	__asm{
 		push ebx
 		mov bl,ucVector
@@ -288,6 +468,7 @@ HANDLE ConnectInterrupt(__INTERRUPT_HANDLER lpInterruptHandler,
 		mov ucVector,bl
 		pop ebx
 	}
+#endif
 }
 
 VOID DisconnectInterrupt(HANDLE hInterrupt)

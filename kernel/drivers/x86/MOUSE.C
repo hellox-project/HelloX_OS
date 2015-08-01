@@ -14,18 +14,19 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #ifndef __KAPI_H__
-#include "..\INCLUDE\KAPI.H"
+#include <kapi.h>
 #endif
+#include <stdio.h>
 
 #ifndef __MOUSE_H__
-#include "MOUSE.H"
+#include "mouse.h"
 #endif
 
-#include "..\lib\stdio.h"
+
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF

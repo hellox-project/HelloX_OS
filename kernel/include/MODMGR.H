@@ -16,6 +16,10 @@
 #ifndef __MODMGR_H__
 #define __MODMGR_H__
 
+#include "types.h"
+
+#include "ktmgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,7 +49,7 @@ typedef struct tag__MODULE_MGR{
 	BOOL                    (*InitModule)(__MODULE_INIT pInitEntry);
 	BOOL                    (*ReplaceShell)(__KERNEL_THREAD_ROUTINE shell);
 	BOOL                    (*LoadExternalMod)(LPSTR strCfgFileName);  //Load external modules from external storage.
-}__MODULE_MGR;
+} __MODULE_MGR;
 
 //Object to manager kernel module.
 typedef struct tag__KERNEL_MODULE{

@@ -24,8 +24,8 @@
 //************************************************************************
 
 #define OS_VERSION   "    HelloX V1.78"
-#define VERSION_INFO "    HelloX [Version 1.780(Beta),build in 2015/07/19,by Garry.Xin]"
-#define SLOGAN_INFO  "    HelloX OS,through which you can talk to everything."
+#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/08/01,by Garry.Xin]"
+#define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 
 //************************************************************************
 //
@@ -106,7 +106,7 @@
 //#define __CFG_SYS_INTNEST
 
 //Include thread heap functions.
-//#define __CFG_SYS_HEAP
+#define __CFG_SYS_HEAP
 
 //Include bus management code.
 #define __CFG_SYS_BM
@@ -133,9 +133,6 @@
 //in console object.
 //#define __CFG_SYS_CONSOLE
 
-// Logcat service for debug subsystem
-//#define __CFG_SYS_LOGCAT
-
 //************************************************************************
 //
 //  Pre-defined switches to control inline device drivers .
@@ -146,7 +143,7 @@
 #define __CFG_DRV_IDE
 
 //Include COM driver in OS.
-//#define __CFG_DRV_COM
+#define __CFG_DRV_COM
 
 //Include USART driver in OS,specific for STM32 or ARM platform.
 //#define __CFG_DRV_USART
@@ -189,7 +186,6 @@
 
 //Include IPv4 network protocol in OS.
 #define __CFG_NET_IPv4
-
 //Include IPv6 network protocol in OS.
 //#define __CFG_NET_IPv6
 
@@ -224,3 +220,6 @@
 //Enable or disable Java virtual machine in system.
 #define __CFG_APP_JVM
 
+#define _TIME_T_DEFINED
+
+//#define __GCC__

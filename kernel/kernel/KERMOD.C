@@ -19,7 +19,7 @@
 #include "StdAfx.h"
 #endif
 
-#include "MODMGR.H"
+#include "modmgr.h"
 
 #define ADD_STATIC_MODULE(baseaddr) {baseaddr,(__MODULE_INIT)baseaddr},
 

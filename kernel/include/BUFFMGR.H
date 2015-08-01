@@ -74,7 +74,7 @@ typedef struct tag__BUFFER_CONTROL_BLOCK{
 	DWORD    (*GetBufferFlag)(struct tag__BUFFER_CONTROL_BLOCK*,LPVOID);
 	BOOL     (*SetBufferFlag)(struct tag__BUFFER_CONTROL_BLOCK*,LPVOID,DWORD);
 	VOID     (*DestroyBuffer)(struct tag__BUFFER_CONTROL_BLOCK*);
-}__BUFFER_CONTROL_BLOCK;
+} __BUFFER_CONTROL_BLOCK;
 
 //
 //Free buffer's control header.
@@ -110,8 +110,10 @@ typedef struct{
 //Global object for memory management.Memory allocations routine,such as
 //KMemAlloc or KMemFree will call this object's member functions to achieve
 //memory management.
-extern __BUFFER_CONTROL_BLOCK AnySizeBuffer;
 
+
+extern __BUFFER_CONTROL_BLOCK AnySizeBuffer;
+extern __MEMORY_REGION SystemMemRegion[];
 #ifdef __cplusplus
 }
 #endif

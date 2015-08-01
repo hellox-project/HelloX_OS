@@ -15,18 +15,14 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
-#include "..\include\debug.h"
+#include <kapi.h>
+#include <debug.h>
+#include <console.h>
+#include <ktmgr.h>
 
-#ifndef __CONSOLE_H__
-#include "..\include\console.h"
-#endif
-
-#ifndef __KAPI_H__
-#include "..\include\kapi.h"
-#endif
 
 //Only available when logging service is enabled.
 #ifdef __CFG_SYS_LOGCAT

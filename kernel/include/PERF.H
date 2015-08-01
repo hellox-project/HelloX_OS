@@ -18,6 +18,8 @@
 #ifndef __PERF_H__
 #define __PERF_H__
 
+#include "types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,7 +33,7 @@ typedef struct{
 	__U64     u64End;
 	__U64     u64Result;
 	__U64     u64Max;
-}__PERF_RECORDER;
+} __PERF_RECORDER;
 
 //
 //The following routines are used to process the performance recording operations.

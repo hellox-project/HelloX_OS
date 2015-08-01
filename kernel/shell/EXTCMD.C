@@ -13,7 +13,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "../include/StdAfx.h"
+#include <StdAfx.h>
 #include "extcmd.h"
 #include "hypertrm.h"  //For hypertrm application.
 #include "fdisk.h"

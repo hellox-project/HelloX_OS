@@ -16,6 +16,10 @@
 #ifndef __DIM_H__
 #define __DIM_H__
 
+
+#include "ktmgr.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

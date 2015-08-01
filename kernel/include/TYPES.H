@@ -28,6 +28,7 @@ extern "C" {
 //
 //Hello China's basic data type.
 //
+
 typedef unsigned char       BYTE;
 typedef unsigned short      WORD;
 typedef unsigned long       DWORD;
@@ -95,6 +96,7 @@ typedef struct{
 	unsigned long dwLowPart;
 	unsigned long dwHighPart;
 }__U64;
+
 
 //
 //Add operations for unsigned 64 bits integer.

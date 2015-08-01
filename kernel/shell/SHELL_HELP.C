@@ -12,9 +12,10 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "../include/StdAfx.h"
-#include "../INCLUDE/KAPI.H"
-#include "../include/CharDisplay.h"
+#include "StdAfx.h"
+#include "stdlib.h"
+#include "kapi.h"
+#include "string.h"
 #include "shell.h"
 
 
@@ -209,7 +210,7 @@ static INT OnExecCommand(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 
 static INT OnAnalyseCommands(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 {
-	CHAR*  pCmdPos         = pCmdBuf;
+	CHAR*  pCmdPos         = (CHAR*)pCmdBuf;
 	CHAR*  pSubCmd         = NULL;
 	INT    nExecCount      = 1;	
 	INT    nRet            = S_OK;
@@ -259,7 +260,6 @@ static INT OnKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE   bt )
 			WORD   CursorX                  = 0;
 			WORD   CursorY                  = 0;
 
-			//得到命令输入串
 			CD_GetCursorPos(&CursorX,&CursorY);		
 			CD_GetString(strlen(pShellInfo->pPrompt),CursorY,szCmdBuffer,sizeof(szCmdBuffer));	
 			
@@ -326,17 +326,12 @@ static BOOL OnAutoName(SHELL_MSG_INFO*  pShellInfo)
 	WORD   CursorX                  = 0;
 	WORD   CursorY                  = 0;
 
-	//得到命令输入串
 	CD_GetCursorPos(&CursorX,&CursorY);		
 	CD_GetString(strlen(pShellInfo->pPrompt),CursorY,szUserInput,sizeof(szUserInput));
 
-	//检查是否有匹配项
 	if(strlen(szUserInput) > 0 && pShellInfo->pNameQuery)
 	{	
-		//清空
 		pShellInfo->pNameQuery(NULL,0);
-
-		//逐个询问匹配
 		while(TRUE)
 		{
 			CHAR  szCmdNmae[CMD_MAX_LEN] = {0};
@@ -348,7 +343,6 @@ static BOOL OnAutoName(SHELL_MSG_INFO*  pShellInfo)
 			
 			if(FindSub(szCmdNmae,szUserInput))
 			{	
-				//
 				if(strlen(szCmdNmae) <= strlen(szUserInput))
 				{
 					break;
@@ -442,7 +436,6 @@ static BOOL OnVkKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE bt)
 	return TRUE;
 }
 
-//shell 输入 循环处理 
 DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_NAMEQUERY_HANDLER pNameQuery)
 {
 	SHELL_MSG_INFO*  pShellInfo = NULL;
@@ -511,7 +504,6 @@ __TERMINAL:
 	return 0;
 }
 
-//shell 输入 循环处理
 DWORD Shell_Msg_Loop(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_NAMEQUERY_HANDLER pNameQuery)
 {
 	return Shell_Msg_Loop2(pPrompt,pCmdRoute,pNameQuery);	

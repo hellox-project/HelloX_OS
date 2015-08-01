@@ -15,15 +15,12 @@
 //    Extra comment             : 
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
-#endif
-
+#include "../include/StdAfx.h"
 #include "shell.h"
-#include "FDISK.H"
+#include "fdisk.h"
 
-#include "..\INCLUDE\KAPI.H"
-#include "..\lib\stdio.h"
+#include "../include/kapi.h"
+#include "../lib/stdio.h"
 
 typedef struct BPB_FAT32BS{  //BPB and fat32 boot sector.
 	UCHAR      BS_jmpBoot1;

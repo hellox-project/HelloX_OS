@@ -1,6 +1,6 @@
 //Implementation of stat routine.
 
-#include <stdafx.h>
+#include <StdAfx.h>
 #include <kapi.h>
 #include <sys/stat.h>
 

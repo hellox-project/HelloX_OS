@@ -14,7 +14,7 @@
 //    Lines number              :
 //***********************************************************************/
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #ifndef __FSSTR_H__
@@ -22,10 +22,10 @@
 #endif
 
 #ifndef __FAT32_H__
-#include "FAT32.H"
+#include "fat32.h"
 #endif
 
-#include "..\lib\stdio.h"
+#include "../lib/stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
@@ -460,12 +460,12 @@ VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage)
 	
 	//Fat32file 文件时间格式
 	//date  fmt : yyyyyyymmmmddddd  (y年份 ，m月份 d日期) 注意: 实际年份值 = 1980+yyyyyyy
-	//time  fmt : hhhhhhmmmmmsssss (h小时 ，m分钟 s秒 小时字段和秒字段需乘2为实际的数字)	 
+	//time  fmt : hhhhhhmmmmmsssss (h小时 ，m分钟 s秒 小时字段和秒字段需乘2为实际的数字)
 	
 	 /*
 	 时间为两个字节的16bit被划分为3个部分
 	 0~4bit为秒，以2秒为单位，有效值为0~29，可以表示的时刻为0~58
-	 5~9bit为分，有效值为0~59 
+	 5~9bit为分，有效值为0~59
 	 10~15bit为时，有效值为0~46，除以2后为正确的小时数(0-23)
 	 */
 

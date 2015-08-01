@@ -12,8 +12,8 @@
 #endif
 
 #include "chardisplay.h"
-#include "BIOSVGA.H"
-#include "../lib/stdio.h"
+#include "biosvga.h"
+#include <stdio.h>
 
 #define  BIOS_VGABUF_ADDR    0xB8000
 #define  BIOS_VGABUF_LEN     4000
@@ -48,7 +48,7 @@ WORD* _VGA_GetDisplayAddr(WORD nX,WORD nY)
 		return NULL;
 	}
 
-	nAddrOffset = (nY*s_szVgaInfo.Colums+nX)*2;// Ò»¸ö×Ö·ûÕ¼Á½×Ö½Ú
+	nAddrOffset = (nY*s_szVgaInfo.Colums+nX)*2;// Ò»ï¿½ï¿½ï¿½Ö·ï¿½Õ¼ï¿½ï¿½ï¿½Ö½ï¿½
 
 	return (WORD*)(s_szVgaInfo.pVideoAddr+nAddrOffset);
 }
@@ -72,7 +72,6 @@ VOID  _VGA_ScrollLine(BOOL bScrollUp)
 	}
 	else
 	{
-		// ÔÝ²»ÊµÏÖ
 	}
 }
 
@@ -107,8 +106,29 @@ BOOL  VGA_SetCursorPos(WORD CursorX,WORD CursorY)
 	cursor_h       = (cursor_index>>8)&0xFF;
 	cursor_l       = cursor_index&0xFF;
 
+#ifdef __GCC__
+	__asm__ volatile (
+	"movw %0,	%%dx                              \n\t"
+	"movb $14,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	"movw %1,	%%dx                              \n\t"
+	"movb %2,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	"movw %3,	%%dx                              \n\t"
+	"movb $15,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	"movw %4,	%%dx                              \n\t"
+	"movb %5,	%%al                              \n\t"
+	"outb %%al,	%%dx                              \n\t"
+	:
+	:"i"(DEF_INDEX_PORT),"i"(DEF_VALUE_PORT),"r"(cursor_h),
+	 "i"(DEF_INDEX_PORT),"i"(DEF_VALUE_PORT),"i"(DEF_VALUE_PORT),
+	 "r"(cursor_l)
+	 :
+	);
+#else
 	__asm{
-		mov dx,DEF_INDEX_PORT
+			mov dx,DEF_INDEX_PORT
 			mov al,14
 			out dx,al
 
@@ -123,7 +143,8 @@ BOOL  VGA_SetCursorPos(WORD CursorX,WORD CursorY)
 			mov dx,DEF_VALUE_PORT
 			mov al,cursor_l
 			out dx,al
-		}
+	}
+#endif
 	
 	return TRUE;
 }
@@ -201,7 +222,7 @@ BOOL VGA_PrintString(LPCSTR pString,BOOL cl)
 		pVideoBuf ++;
 		pos       ++;
 
-		//ÊÇ·ñÕÛÐÐ
+		//ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½
 		CursorX   ++;
 		if(CursorX >= s_szVgaInfo.Colums)
 		{
@@ -340,7 +361,7 @@ BOOL  VGA_DelChar(INT nDelMode)
 		return FALSE;	
 	}
 
-	//×Ö·ûÇ°ÒÆ
+	//ï¿½Ö·ï¿½Ç°ï¿½ï¿½
 	pVideoBuf = _VGA_GetDisplayAddr(nCharDelX,nCharDelY);
 	while(TRUE)
 	{
@@ -353,7 +374,7 @@ BOOL  VGA_DelChar(INT nDelMode)
 		}
 	}
 
-	//ÉèÖÃÐÂÓÎ±êÎ»ÖÃ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î±ï¿½Î»ï¿½ï¿½
 	VGA_SetCursorPos(nCharDelX,nCharDelY);	
 		
 	return TRUE;

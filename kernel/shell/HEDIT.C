@@ -13,18 +13,18 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include "../include/StdAfx.h"
 #endif
 
 #ifndef __KAPI_H__
-#include "..\INCLUDE\KAPI.H"
+#include "../include/kapi.h"
 #endif
 
 #include "shell.h"
-#include "HEDIT.H"
+#include "hedit.h"
 
-#include "..\lib\string.h"
-#include "..\lib\stdio.h"
+#include "../lib/string.h"
+#include "../lib/stdio.h"
 
 //Create user specified file to write.
 static HANDLE CreateEditFile(LPSTR lpszCmdLine)

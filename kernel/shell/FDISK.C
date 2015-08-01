@@ -14,15 +14,17 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include "StdAfx.h"
 #endif
 
-#include "shell.h"
-#include "FDISK.H"
 
-#include "..\INCLUDE\KAPI.H"
-#include "..\lib\string.h"
-#include "..\lib\stdio.h"
+#include "kapi.h"
+#include "string.h"
+#include "stdio.h"
+#include "stdlib.h"
+
+#include "shell.h"
+#include "fdisk.h"
 
 #define  FDISK_PROMPT_STR   "[fdisk_view]"
 
@@ -36,7 +38,7 @@ static DWORD partlist(__CMD_PARA_OBJ*);    //partlist sub-commnad's handler.
 static DWORD partadd(__CMD_PARA_OBJ*);     //partadd sub-command's handler.
 static DWORD partdel(__CMD_PARA_OBJ*);     //partdel sub-command's handler.
 static DWORD help(__CMD_PARA_OBJ*);        //help sub-command's handler.
-static DWORD exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
+static DWORD _exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
 static DWORD pdevlist(__CMD_PARA_OBJ*);
 extern DWORD format(__CMD_PARA_OBJ*);      //Implemented in FDISK2.CPP.
 
@@ -55,7 +57,7 @@ static struct __SHELL_CMD_PARSER_MAP{
 	{"format",     format,    "  format   : Use a specified file system to format one partition."},
 	{"partadd",    partadd,   "  partadd  : Add one partition to current disk."},
 	{"partdel",    partdel,   "  partdel  : Delete one partition from current disk."},
-	{"exit",       exit,      "  exit     : Exit the application."},
+	{"exit",       _exit,     "  exit     : Exit the application."},
 	{"help",       help,      "  help     : Print out this screen."},
 	{NULL,		   NULL,      NULL}
 };
@@ -303,7 +305,7 @@ DWORD fdiskEntry(LPVOID pParam)
 //
 //The exit command's handler.
 //
-static DWORD exit(__CMD_PARA_OBJ* lpCmdObj)
+static DWORD _exit(__CMD_PARA_OBJ* lpCmdObj)
 {
 #ifdef __CFG_SYS_DDF
 	if(MbrControlBlock.pCurrentDisk)  //Should close it.

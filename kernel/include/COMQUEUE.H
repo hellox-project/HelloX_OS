@@ -17,6 +17,12 @@
 #ifndef __COMQUEUE_H__
 #define __COMQUEUE_H__
 
+#include "types.h"
+#include "commobj.h"
+#include "comqueue.h"
+
+#include "kmemmgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif 

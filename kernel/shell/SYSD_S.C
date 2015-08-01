@@ -16,15 +16,15 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "../INCLUDE/StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #include "shell.h"
-#include "SYSD_S.H"
-#include "STAT_S.H"
+#include "sysd_s.h"
+#include "stat_s.h"
 
 #ifndef __PCI_DRV_H__
-#include "../INCLUDE/PCI_DRV.H"
+#include "pci_drv.h"
 #endif
 
 

@@ -15,6 +15,15 @@
 #ifndef __STDAFX_H__
 #include "StdAfx.h"
 #endif
+#ifndef __TYPES_H__
+#include "types.h"
+#endif
+
+#include "commobj.h"
+#include "kmemmgr.h"
+#include "objqueue.h"
+#include "hellocn.h"
+#include "kapi.h"
 
 //
 //Insert an element into Priority Queue.

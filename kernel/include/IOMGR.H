@@ -17,6 +17,10 @@
 #ifndef __IOMGR_H__
 #define __IOMGR_H__
 
+
+#include "commobj.h"
+#include "ktmgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -344,6 +348,12 @@ VOID DevObjUninitialize(__COMMON_OBJECT*);
 //of a device driver.
 //
 typedef BOOL (*__DRIVER_ENTRY)(__DRIVER_OBJECT*);
+
+//A array object to manage the drivers in system.
+typedef struct{
+	__DRIVER_ENTRY Entry;
+	char*          pszDriverName;
+}__DRIVER_ENTRY_ARRAY;
 
 //
 //The following is the definition of __IO_MANAGER.

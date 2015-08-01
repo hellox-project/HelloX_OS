@@ -14,13 +14,18 @@
 //                                2.
 //    Lines number              :
 //***********************************************************************/
-
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #include "shell.h"
-#include "IOCTRL_S.H"
+#include "fs.h"
+
+#include "kapi.h"
+#include "string.h"
+#include "stdio.h"
+
+#include "ioctrl_s.h"
 
 #define  IOCTRL_PROMPT_STR   "[ioctrl_view]"
 //
@@ -307,6 +312,18 @@ static DWORD inputd(__CMD_PARA_OBJ* lpParamObj)
 	wPort = (WORD)(dwVal);
 
 #ifdef __I386__               //Read data from port.
+#ifdef __GCC__
+	__asm__(
+			".code32			\n\t"
+			"pushl	%%eax		\n\t"
+			"pushl	%%edx		\n\t"
+			"movw	%0,	%%dx	\n\t"
+			"inw	%%dx,	%%ax	\n\t"
+			"popl	%%edx			\n\t"
+			"popl	%%eax			\n\t"
+			::"r"(wPort)
+		);
+#else
 	__asm{
 		push eax
 		push edx
@@ -316,6 +333,7 @@ static DWORD inputd(__CMD_PARA_OBJ* lpParamObj)
 		pop edx
 		pop eax
 	}
+#endif
 #else
 #endif
 
@@ -440,6 +458,18 @@ static DWORD outputd(__CMD_PARA_OBJ* lpCmdObj)
 	wPort = (WORD)(dwPort);
 
 #ifdef __I386__
+#ifdef __GCC__
+	__asm__ __volatile__(
+	".code32			\n\t"
+	"pushl	%%edx		\n\t"
+	"pushl	%%eax		\n\t"
+	"movw	%0,	%%dx	\n\t"
+	"movl	%1,	%%eax	\n\t"
+	"outw	%%ax,	%%dx	\n\t"
+	"popl	%%eax			\n\t"
+	"popl	%%edx			\n\t"
+	::"r"(wPort), "r"(dwVal));
+#else
 	__asm{    //Output the double value to port.
 		push edx
 		push eax
@@ -449,6 +479,7 @@ static DWORD outputd(__CMD_PARA_OBJ* lpCmdObj)
 		pop eax
 		pop edx
 	}
+#endif
 #else
 #endif
 

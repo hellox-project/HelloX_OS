@@ -2,11 +2,11 @@
 //Application simple of Hello China.
 //
 #ifndef __STDAFX_H__
-#include "..\include\StdAfx.h"
+#include "../include/StdAfx.h"
 #endif
 
 #ifndef __KAPI_H__
-#include "..\include\KAPI.H"
+#include "../include/kapi.h"
 #endif
 
 #include "shell.h"

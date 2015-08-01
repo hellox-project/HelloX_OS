@@ -26,8 +26,8 @@
 #endif
 
 #include "kapi.h"
-#include "IDEHD.H"
-#include "IDEBASE.H"
+#include "idehd.h"
+#include "idebase.h"
 #include "stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
