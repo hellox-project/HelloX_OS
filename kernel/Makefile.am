@@ -13,9 +13,15 @@ HX_INCLUDES += -I$(top_srcdir)/kernel/lib/sys -I$(top_srcdir)/kernel/lib
 
 HX_FLAGS =
 HX_FLAGS += -nostdlib  -nostdinc -fno-stack-protector -fno-builtin -m32 
+<<<<<<< HEAD
 #HX_FLAGS += -D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
 #HX_FLAGS += $(HX_INCLUDES)
 #HX_FLAGS += -Wall
+=======
+HX_FLAGS += -D_M_IX86 -DHAVE_CONFIG_H -D__CFG_SYS_MMFBL -D__CFG_SYS_DDF
+HX_FLAGS += $(HX_INCLUDES)
+HX_FLAGS += -Wall
+>>>>>>> e4ce2ac6f835fcfc9cd6ca449da9c14125af784a
 
 
 HXLDFLAGS = -e__OS_Entry -Ttext 0x110000
