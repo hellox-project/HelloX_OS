@@ -19,7 +19,13 @@
 #include <stm32f10x.h>                       /* STM32F10x definitions         */
 #endif
 
+#include "types.h"
 #include "console.h"
+#include "hellocn.h"
+
+#include "iomgr.h"
+#include "ktmgr.h"
+#include <chardisplay.h>
 
 //Available when and only when the __CFG_SYS_CONSOLE macro is defined.
 #ifdef __CFG_SYS_CONSOLE
@@ -153,7 +159,6 @@ static DWORD ConReadThread(LPVOID pData)
 static BOOL ConInitialize(__CONSOLE* pConsole)
 {
 	__COMMON_OBJECT* hCom1  = NULL;
-
 	if(NULL == pConsole)
 	{
 		return FALSE;
@@ -166,10 +171,15 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 		0,
 		0,
 		NULL);
+
+	//debug
+	PrintLine("hCom1="); PrintLine(hCom1);
+
 	if(NULL == hCom1)
 	{
 		return FALSE;
 	}
+
 	pConsole->hComInt      = hCom1;
 	pConsole->bInitialized = TRUE;
 	pConsole->nRowNum      = CON_MAX_ROWNUM;
@@ -185,6 +195,11 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 		NULL,
 		NULL,
 		CON_THREAD_NAME);
+
+	PrintStr("pConsole=");
+	PrintStr(pConsole);
+	GotoHome();
+
 	if(NULL == pConsole->hConThread)  //Failed to create thread.
 	{
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,pConsole->hComInt);

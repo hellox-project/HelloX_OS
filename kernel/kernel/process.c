@@ -32,6 +32,8 @@
 #include <StdAfx.h>
 #include <process.h>
 #include <stdio.h>
+#include <types.h>
+
 
 //WaitForProcessObject routine,wait the process run over.
 //We just wait on the main kernel thread,since it's life-cycle

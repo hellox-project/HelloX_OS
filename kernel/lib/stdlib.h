@@ -61,9 +61,10 @@ void exit(int state);
 void abort(void);
 
 //Simulate standard C malloc and free routine.
-#ifndef malloc
+//#ifndef malloc
 #define malloc _hx_malloc
-#endif
+//#endif
+
 
 #ifndef free
 #define free _hx_free

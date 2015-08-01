@@ -16,12 +16,12 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\..\INCLUDE\StdAfx.h"
+#include <tdAfx.h>
 #endif
 
 //Include STM32 chip headers if necessary.
 #ifdef __STM32__
-#include <stm32f10x.h>
+#include "stm32f10x.h"
 #endif
 
 #include "ARCH.H"

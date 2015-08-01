@@ -23,11 +23,20 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "StdAfx.h"
+#include <StdAfx.h>
 #endif
+#include "system.h"
+#include "types.h"
+#include "ktmgr2.h"
+#include "commobj.h"
+#include <heap.h>
+#include "hellocn.h"
+#include "kapi.h"
+
 
 //Change semaphore's default counter value.
-static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD dwCurrSem)
+//static
+ BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD dwCurrSem)
 {
 	__SEMAPHORE*  pSem = (__SEMAPHORE*)pSemaphore;
 
@@ -52,7 +61,8 @@ static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD d
 
 //ReleaseSemaphore's implementation.It increase the dwCurrSem's value,and wake up one 
 //kernel thread if exist.The previous current counter will be returned in pdwPrevCount.
-static BOOL ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
+//static
+ BOOL ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
 {
 	__SEMAPHORE*             pSem          = (__SEMAPHORE*)pSemaphore;
 	__KERNEL_THREAD_OBJECT*  pKernelThread = NULL;
@@ -97,7 +107,8 @@ static BOOL ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
 
 //WaitForThisObject's implementation,it only calls the WaitForThisObjectEx routine by setting 
 //the wait time to infinite.
-static DWORD WaitForSemObject(__COMMON_OBJECT* pSemaphore)
+//static
+ DWORD WaitForSemObject(__COMMON_OBJECT* pSemaphore)
 {
 	__SEMAPHORE*            pSem          = (__SEMAPHORE*)pSemaphore;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
@@ -155,7 +166,8 @@ extern DWORD TimeOutWaiting(__COMMON_OBJECT* pSynObject,__PRIORITY_QUEUE* pWaiti
 
 //Implementation of WaitForThisObjectEx routine,it decrement the dwCurrSem value,and block
 //the current kernel thread when the current counter is zero.
-static DWORD WaitForSemObjectEx(__COMMON_OBJECT* pSemaphore,DWORD dwMillionSecond,DWORD* pdwWait)
+//static
+ DWORD WaitForSemObjectEx(__COMMON_OBJECT* pSemaphore,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__SEMAPHORE*                pSem             = (__SEMAPHORE*)pSemaphore;
 	__KERNEL_THREAD_OBJECT*     pKernelThread    = NULL;
@@ -327,7 +339,8 @@ VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
 
 //WaitForMailboxObject's implementation,this is a empty implementation since it's not allowed
 //to wait a mailbox object.
-static DWORD WaitForMailboxObject(__COMMON_OBJECT* pMailbox)
+//static
+ DWORD WaitForMailboxObject(__COMMON_OBJECT* pMailbox)
 {
 	return OBJECT_WAIT_FAILED;
 }
@@ -335,7 +348,8 @@ static DWORD WaitForMailboxObject(__COMMON_OBJECT* pMailbox)
 //Implementation of SetMailboxSize,it release the previous allocated message array memory
 //and allocates a new one accordingly.
 //This routine must be called before any mailbox's sending or getting operation.
-static BOOL SetMailboxSize(__COMMON_OBJECT* pMailboxObj,DWORD dwNewSize)
+//static
+ BOOL SetMailboxSize(__COMMON_OBJECT* pMailboxObj,DWORD dwNewSize)
 {
 	__MAIL_BOX*    pMailbox         = (__MAIL_BOX*)pMailboxObj;
 	BOOL           bResult          = FALSE;
@@ -393,7 +407,8 @@ __TERMINAL:
 }
 
 //Get a message from mailbox.
-static DWORD GetMail(__COMMON_OBJECT* pMailboxObj,LPVOID* ppMessage,DWORD dwMillionSecond,DWORD* pdwWait)
+//static
+ DWORD GetMail(__COMMON_OBJECT* pMailboxObj,LPVOID* ppMessage,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__MAIL_BOX*               pMailbox      = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
@@ -533,7 +548,8 @@ __TERMINAL:
 //****NOTE****:The current implementation is not consider the priority sort of messages,
 //since it no explicit requirement of this function,and the implementation of this function
 //is complicated.:-)
-static VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
+//static
+ VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
 {
 	__MB_MESSAGE*           pMessageArray = pMailbox->pMessageArray;
 	DWORD                   dwIndex       = pMailbox->dwMessageTail;
@@ -564,7 +580,8 @@ static VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
 }
 
 //Send a message to mailbox.
-static DWORD SendMail(__COMMON_OBJECT* pMailboxObj,LPVOID pMessage,DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait)
+//static
+ DWORD SendMail(__COMMON_OBJECT* pMailboxObj,LPVOID pMessage,DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__MAIL_BOX*               pMailbox      = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
@@ -828,13 +845,15 @@ VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 
 //WaitForConditionObject's implementation,this is a empty implementation since it does not
 //conforms the operations offered by POSIX standard condition object.
-static DWORD WaitForConditionObject(__COMMON_OBJECT* pCondObj)
+//static
+ DWORD WaitForConditionObject(__COMMON_OBJECT* pCondObj)
 {
 	return OBJECT_WAIT_FAILED;
 }
 
 //Wait a specified condition object.
-static DWORD CondWait(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj)
+//static
+ DWORD CondWait(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj)
 {
 	__CONDITION*               pCond         = (__CONDITION*)pCondObj;
 	__MUTEX*                   pMutex        = (__MUTEX*)pMutexObj;
@@ -907,7 +926,8 @@ __TERMINAL:
 //Timeout call back for Condition object,will be called in TimeOutWaiting routine,
 //to remove the kernel thread waiting on the condition from pending queue in case
 //of waiting time out.
-static VOID CondTimeOutCallback(VOID* pData)
+//static
+ VOID CondTimeOutCallback(VOID* pData)
 {
 	__TIMER_HANDLER_PARAM*    lpHandlerParam = (__TIMER_HANDLER_PARAM*)pData;
 
@@ -930,7 +950,8 @@ static VOID CondTimeOutCallback(VOID* pData)
 }
 
 //Wait a condition object until the condition satisfied or time out.
-static DWORD CondWaitTimeout(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj,DWORD dwMillionSecond)
+//static
+ DWORD CondWaitTimeout(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj,DWORD dwMillionSecond)
 {
 	__CONDITION*               pCond         = (__CONDITION*)pCondObj;
 	__MUTEX*                   pMutex        = (__MUTEX*)pMutexObj;
@@ -1005,7 +1026,8 @@ __TERMINAL:
 }
 
 //Signal a condition object.
-static DWORD CondSignal(__COMMON_OBJECT* pCondObj)
+//static
+ DWORD CondSignal(__COMMON_OBJECT* pCondObj)
 {
 	__CONDITION*            pCond         = (__CONDITION*)pCondObj;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
@@ -1046,7 +1068,8 @@ static DWORD CondSignal(__COMMON_OBJECT* pCondObj)
 }
 
 //Broadcast a condition object.
-static DWORD CondBroadcast(__COMMON_OBJECT* pCondObj)
+//static
+ DWORD CondBroadcast(__COMMON_OBJECT* pCondObj)
 {
 	__CONDITION*            pCond         = (__CONDITION*)pCondObj;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;

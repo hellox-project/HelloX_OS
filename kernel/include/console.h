@@ -15,6 +15,17 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
+
+
+#include "commobj.h"
+#include "dim.h"
+#include "hellocn.h"
+
+#include "ktmsg.h"
+
+#include "process.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

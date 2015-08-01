@@ -13,7 +13,7 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\include\StdAfx.h"
+#include "../include/StdAfx.h"
 #endif
 
 #ifndef __STDDEF_H__

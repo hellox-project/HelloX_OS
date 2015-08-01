@@ -106,7 +106,7 @@
 //#define __CFG_SYS_INTNEST
 
 //Include thread heap functions.
-//#define __CFG_SYS_HEAP
+#define __CFG_SYS_HEAP
 
 //Include bus management code.
 #define __CFG_SYS_BM
@@ -146,7 +146,7 @@
 #define __CFG_DRV_IDE
 
 //Include COM driver in OS.
-//#define __CFG_DRV_COM
+#define __CFG_DRV_COM
 
 //Include USART driver in OS,specific for STM32 or ARM platform.
 //#define __CFG_DRV_USART
@@ -189,7 +189,6 @@
 
 //Include IPv4 network protocol in OS.
 #define __CFG_NET_IPv4
-
 //Include IPv6 network protocol in OS.
 //#define __CFG_NET_IPv6
 
@@ -222,5 +221,8 @@
 //************************************************************************
 
 //Enable or disable Java virtual machine in system.
-#define __CFG_APP_JVM
+//#define __CFG_APP_JVM
 
+#define _TIME_T_DEFINED
+
+//#define __GCC__

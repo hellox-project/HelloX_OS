@@ -28,16 +28,14 @@
 #endif
 
 //Include configuration headers in advance any of other headers.
-#ifndef __CONFIG_H__
-#include "..\config\config.h"
-#endif
+//#ifndef __CONFIG_H__
+//#include "../config/config.h"
+//#endif
+
+
 
 #ifndef __TYPES_H__
-#include "TYPES.H"
-#endif
-
-#ifndef __HELLO_CHINA__
-#include "hellocn.h"
+#include "types.h"
 #endif
 
 #ifndef __STRING__
@@ -45,7 +43,7 @@
 #endif
 
 #ifndef __PERF_H__
-#include "PERF.H"
+#include "perf.h"
 #endif
 
 #ifndef __COMMOBJ_H__
@@ -54,9 +52,9 @@
 
 #ifndef __SYN_MECH_H__
 #if defined(__I386__)
-#include "..\arch\x86\SYN_MECH.H"
+#include "../arch/x86/syn_mech.h"
 #elif defined(__STM32__)
-#include "..\arch\stm32\syn_mech.h"
+#include "../arch/stm32/syn_mech.h"
 #endif
 #endif
 
@@ -81,7 +79,7 @@
 #endif
 
 #ifndef __RINGBUFF_H__
-#include "RINGBUFF.H"
+#include "ringbuff.h"
 #endif
 
 #ifndef __SYSTEM_H__
@@ -116,9 +114,9 @@
 #include "heap.h"
 #endif
 
-#ifndef __IOMGR_H__
+//#ifndef __IOMGR_H__
 #include "iomgr.h"
-#endif
+//#endif
 
 #ifndef __BUFFMGR_H__
 #include "buffmgr.h"
@@ -146,11 +144,17 @@
 
 #ifndef __ARCH_H__
 #if defined(__I386__)
-#include "..\arch\x86\arch.h"
+#include "../arch/x86/arch.h"
 #elif defined(__STM32__)
-#include "..\arch\stm32\arch.h"
+#include "../arch/stm32/arch.h"
 #endif
 #endif
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
