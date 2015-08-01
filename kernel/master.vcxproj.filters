@@ -380,9 +380,6 @@
     <ClCompile Include="network\core\udp.c">
       <Filter>Source Files\network</Filter>
     </ClCompile>
-    <ClCompile Include="shell\HISCMD .C">
-      <Filter>Source Files\shell</Filter>
-    </ClCompile>
     <ClCompile Include="shell\SHELL_HELP.C">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
@@ -408,9 +405,6 @@
       <Filter>Source Files\lib</Filter>
     </ClCompile>
     <ClCompile Include="lib\pthread.c">
-      <Filter>Source Files\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\pthread_mutex .c">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
     <ClCompile Include="lib\pthread_other.c">
@@ -556,6 +550,12 @@
     </ClCompile>
     <ClCompile Include="lib\stat.c">
       <Filter>Source Files\jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\pthread_mutex.c">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\hiscmd.c">
+      <Filter>Source Files\shell</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

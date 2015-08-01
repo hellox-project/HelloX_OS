@@ -17,8 +17,11 @@
 #include "StdAfx.h"
 #endif
 
-#include "STATCPU.H"
+#include "statcpu.h"
 #include "stdio.h"
+#include "hellocn.h"
+#include "kapi.h"
+
 
 
 __THREAD_HOOK_ROUTINE  lpCreateHook        = NULL;

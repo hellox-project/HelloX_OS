@@ -18,7 +18,7 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "../include/StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #ifndef __FSSTR_H__
@@ -26,15 +26,35 @@
 #endif
 
 #ifndef __FAT32_H__
-#include "FAT32.H"
+#include "fat32.h"
 #endif
 
-#include "..\lib\stdio.h"
+#include "../lib/stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
 
 
+
+//A helper routine used to convert a string from lowercase to capital.
+//The string should be terminated by a zero,i.e,a C string.
+//static
+VOID ToCapital(LPSTR lpszString)
+{
+	int nIndex = 0;
+
+	if(NULL == lpszString)
+	{
+		return;
+	}
+	while(lpszString[nIndex++])
+	{
+		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
+		{
+			lpszString[nIndex] += 'A' - 'a';
+		}
+	}
+}
 
 //Create a new file in the specified directory.
 //Input of lpDrcb:
@@ -93,8 +113,7 @@ DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB*   
 	{		
 		goto __TERMINAL;
 	}
-
-	
+		
 	dwResult = 1;
 __TERMINAL:
 	return dwResult;
@@ -130,7 +149,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 	pBuffer      = (BYTE*)lpDrcb->lpInputBuffer;
 	pBufferEnd   = pBuffer + dwWriteSize;
 
-	pClusBuffer  = (BYTE*)FatMem_Alloc(pFat32Fs->dwClusterSize,KMEM_SIZE_TYPE_ANY);
+	pClusBuffer  = (BYTE*) FatMem_Alloc(pFat32Fs->dwClusterSize);
 	if(NULL == pClusBuffer)  //Can not allocate buffer.
 	{
 		goto __TERMINAL;
@@ -138,7 +157,6 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 	dwCurrPos  = pFat32File->dwCurrPos;
 	dwNextClus = pFat32File->dwCurrClusNum;
 
-	//if file null£¬first alloc a Cluster
 	if(dwNextClus == 0 && GetFreeCluster(pFat32Fs,0,&dwNextClus))
 	{
 		pFat32File->dwCurrClusNum  = dwNextClus;

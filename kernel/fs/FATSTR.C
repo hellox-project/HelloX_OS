@@ -14,18 +14,18 @@
 //    Lines number              :
 //***********************************************************************/
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include <StdAfx.h>
 #endif
 
 #ifndef __FAT32_H__
-#include "FAT32.H"
+#include "fat32.h"
 #endif
 
 #ifndef __FSSTR_H__
 #include "fsstr.h"
 #endif
 
-#include "..\lib\stdio.h"
+#include "../lib/stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF

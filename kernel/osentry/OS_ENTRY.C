@@ -21,18 +21,23 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "../include/StdAfx.h"
+#include <StdAfx.h>
 #endif
 
-#include "../include/STATCPU.H"
-#include "../shell/shell.h"
-#include "../shell/STAT_S.H"
-#include "../kthread/idle.h"
-#include "../include/MODMGR.H"
-#include "../include/console.h"
+#include "statcpu.h"
+#include "modmgr.h"
+#include "console.h"
 #include "lwip/tcpip.h"
-#include "ethernet/ethif.h"
-#include "../lib/stdio.h"
+#include "stdio.h"
+#include "buffmgr.h"
+
+#include "../shell/shell.h"
+#include "../shell/stat_s.h"
+#include "../kthread/idle.h"
+#include "../network/ethernet/ethif.h"
+
+#include "../kthread/logcat.h"
+#include "ktmgr.h"
 
 #ifdef __I386__
 #include "../arch/x86/biosvga.h"
@@ -48,21 +53,24 @@ char* pszHelpInfo = "Any help please press 'help' + return.";
 
 //Driver entry point array,this array resides in drventry.cpp file in the 
 //same directory as os_entry.cpp,which is OSENTRY in current version.
-extern __DRIVER_ENTRY DriverEntryArray[];
+extern __DRIVER_ENTRY_ARRAY DriverEntryArray[];
 
 //A dead loop routine.
+//static
 static void DeadLoop(BOOL bDisableInt)
 {
 	//DWORD dwFlags;
 	if (bDisableInt)
 	{
 		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
-		while (TRUE);
+		while (TRUE){
+		}
 		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{
-		while (TRUE);
+		while (TRUE){
+		}
 	}
 }
 
@@ -87,12 +95,14 @@ void __OS_Entry()
 {
 	__KERNEL_THREAD_OBJECT*       lpIdleThread     = NULL;
 	__KERNEL_THREAD_OBJECT*       lpShellThread    = NULL;
+	__KERNEL_THREAD_OBJECT*		lpLogcatDaemonThread = NULL;
 #ifdef __CFG_USE_EOS
 	__KERNEL_THREAD_OBJECT*       lpUserThread     = NULL;
 #endif
 	DWORD                         dwIndex          = 0;
-	CHAR                          strInfo[64];
+	CHAR                          strInfo[128];
 	char*                         pszErrorMsg      = "INIT: OK,everything is done.";
+
 
 	//Initialize display device under PC architecture,since the rest output will rely on this.
 #ifdef __I386__
@@ -114,6 +124,7 @@ void __OS_Entry()
 
 	//Prepare the OS initialization environment.It's worth noting that even the System
 	//object self is not initialized yet.
+
 	if(!System.BeginInitialize((__COMMON_OBJECT*)&System))
 	{
 		pszErrorMsg = "INIT ERROR: System.BeginInitialization routine failed.";
@@ -140,6 +151,7 @@ void __OS_Entry()
 	//********************************************************************************
 
 #ifdef __CFG_SYS_VMM    //Should enable virtual memory model.
+
 	lpVirtualMemoryMgr = (__VIRTUAL_MEMORY_MANAGER*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_VIRTUAL_MEMORY_MANAGER);    //Create virtual memory manager object.
@@ -156,7 +168,7 @@ void __OS_Entry()
 	}
 #endif
 
-	//Initialize the process manager object.
+
 	if(!ProcessManager.Initialize((__COMMON_OBJECT*)&ProcessManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize ProcessManager object.";
@@ -164,6 +176,8 @@ void __OS_Entry()
 	}
 
 	//Initialize Kernel Thread Manager object.
+	//Initialize the process manager object.
+
 	if(!KernelThreadManager.Initialize((__COMMON_OBJECT*)&KernelThreadManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize KernelThreadManager object.";
@@ -229,6 +243,7 @@ void __OS_Entry()
 
 	//Initialize Ethernet Manager if it is enabled.
 #ifdef __CFG_NET_ETHMGR
+
 	if(!EthernetManager.Initialize(&EthernetManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Ethernet Manager.\r\n";
@@ -244,19 +259,28 @@ void __OS_Entry()
 	//********************************************************************************
 #ifdef __CFG_SYS_DDF
 	dwIndex = 0;
-	while(DriverEntryArray[dwIndex])
+	_hx_printf("\r\n");
+	while(DriverEntryArray[dwIndex].Entry)
 	{
-		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex])) //Failed to load.
+		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex].Entry)) //Failed to load.
 		{
-			_hx_sprintf(strInfo,"Failed to load the %dth driver.",dwIndex); //Show an error.
+			//Show an error.
+			_hx_sprintf(strInfo,"Warning: Failed to load driver [%s].", DriverEntryArray[dwIndex].pszDriverName);
 			PrintLine(strInfo);
 		}
-		dwIndex ++;  //Continue to load.
+		else
+		{
+			//Show the correct loaded driver.
+			_hx_sprintf(strInfo, "Load driver [%s] OK.", DriverEntryArray[dwIndex].pszDriverName);
+			PrintLine(strInfo);
+		}
+		dwIndex++;  //Continue to load.
 	}
 #endif
 
 	//Initialize Console object if necessary.
 #ifdef __CFG_SYS_CONSOLE
+
 	if(!Console.Initialize(&Console))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Console object.";
@@ -274,6 +298,7 @@ void __OS_Entry()
 	//so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
 	//Also need to mention that this thread is mandatory and without any switch to turn off
 	//it.
+
 	lpIdleThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -295,6 +320,7 @@ void __OS_Entry()
 
 	//Create statistics kernel thread.
 #ifdef __CFG_SYS_CPUSTAT
+
 	lpStatKernelThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -316,6 +342,7 @@ void __OS_Entry()
 #ifdef __CFG_SYS_SHELL  //Shell can be eleminated by turn off this switch.
 	if(NULL == ModuleMgr.ShellEntry)  //Use default shell.
 	{
+
 		lpShellThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
@@ -370,6 +397,7 @@ void __OS_Entry()
 
 	//Create user kernel thread.
 #ifdef __CFG_USE_EOS
+
 	lpUserThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -388,7 +416,7 @@ void __OS_Entry()
 
 	//If log debugging functions is enabled.
 #ifdef __CFG_SYS_LOGCAT
-	DebugManager.Initialize(&DebugManager);
+
 	lpLogcatDaemonThread = KernelThreadManager.CreateKernelThread(   //Create logcat daemon thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -407,14 +435,17 @@ void __OS_Entry()
 #endif  //__CFG_SYS_LOGCAT.
 
 #ifdef __CFG_NET_IPv4  //IPv4 network protocol is enabled.
+
 	if(!IPv4_Entry(NULL))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize IPv4 protocol function.";
 		goto __TERMINAL;
 	}
 #endif
-
 	System.EndInitialize((__COMMON_OBJECT*)&System);
+	_hx_printf("\r\n");
+	_hx_printf("Loading process is successful.\r\n");
+	_hx_printf("\r\n");
 	//Enter a dead loop to wait for the scheduling of kernel threads.
 	DeadLoop(FALSE);
 

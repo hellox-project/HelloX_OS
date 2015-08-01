@@ -1,5 +1,5 @@
 //Error number related souce code.
-#include <stdafx.h>
+#include <StdAfx.h>
 #include <errno.h>
 
 //Error number.

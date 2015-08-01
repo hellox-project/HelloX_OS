@@ -25,6 +25,11 @@
 #include "StdAfx.h"
 #endif
 
+#include "ktmgr2.h"
+#include "hellocn.h"
+#include "kapi.h"
+
+
 //A helper routine,to check if a given kernel thread should be suspended.
 //It will be invoked by GetReadyKernelThread.
 static BOOL ShouldSuspend(__KERNEL_THREAD_OBJECT* lpKernelThread)

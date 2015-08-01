@@ -9,8 +9,11 @@
 //  Last udpated content   : 
 //------------------------------------------------------------------------
 
-#include "..\INCLUDE\StdAfx.h"
- 
+#ifndef __STDAFX_H__
+#include <StdAfx.h>
+#endif
+
+
 #ifndef __FSSTR_H__
 #include "fsstr.h"
 #endif

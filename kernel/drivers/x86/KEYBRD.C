@@ -13,16 +13,17 @@
 //                designed without number pad.
 //------------------------------------------------------------------------
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\STDAFX.H"
+#include <StdAfx.h>
 #endif
 
 #ifndef __KAPI_H__
-#include "..\INCLUDE\KAPI.H"
+#include <kapi.h>
 #endif
 
 #ifndef __KEYBRD_H__
-#include "KEYBRD.H"
+#include "keybrd.h"
 #endif
+
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
@@ -185,6 +186,25 @@ static void LightOrQuench()
 		cmd |= 0x02;
 	}
 #ifdef __I386__
+#ifdef __GCC__
+	__asm__ (
+	".code32		;"
+	"pushl 	%%eax	;"
+	"pushl	%%edx	;"
+	"movw	$0x60,	%%dx	;"
+	"movb	$0xed,	%%al	;"
+	"outb	%%al,	%%dx	;"
+	"nop					;"
+	"nop					;"
+	"nop					;"
+	"movb	%0,		%%al	;"
+	"outb	%%al,	%%dx	;"
+	"popl	%%edx			;"
+	"popl	%%eax			;"
+	:
+	:"r"(cmd)
+	);
+#else
 	__asm
 	{
 		push eax
@@ -200,6 +220,7 @@ static void LightOrQuench()
 		pop edx
 		pop eax
 	}
+#endif
 #else
 #endif
 }
@@ -429,13 +450,19 @@ static BOOL InitKeyBoard()
 }
 
 //Get scan code from key board data register.
-static unsigned char GetScanCode()
+//static
+unsigned char GetScanCode()
 {
 #ifdef __I386__
-	__asm{
-		in al,0x60
-	}
+#ifdef __GCC__
+	unsigned char code = 0;
+	__asm__ volatile ("inb $0x60, %%al; movb %%al, %0" : "=m"(code) : );
+	return code;
+
 #else
+	__asm { in al,0x60 };
+#endif
+
 #endif
 }
 
@@ -443,6 +470,23 @@ static unsigned char GetScanCode()
 static void AckKeyBoard()
 {
 #ifdef __I386__
+#ifdef __GCC__
+	__asm__ (
+		".code32				;"
+		"inb	$0x61,	%%al	;"
+		"orb	$0x80,	%%al	;"
+		"nop					;"
+		"nop					;"
+		"nop					;"
+		"outb	%%al,	$0x61	;"
+		"andb	$0x7F,	%%al	;"
+		"nop					;"
+		"nop					;"
+		"nop					;"
+		"outb	%%al,	$0x61	;"
+		::
+	);
+#else
 	__asm{
 		in al,0x61
 		or al,0x80
@@ -456,6 +500,7 @@ static void AckKeyBoard()
 		nop
 		out 0x61,al
 	}
+#endif
 #else
 #endif
 }

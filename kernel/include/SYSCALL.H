@@ -15,6 +15,11 @@
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
 
+#include "types.h"
+#include "iomgr.h"
+#include "types.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

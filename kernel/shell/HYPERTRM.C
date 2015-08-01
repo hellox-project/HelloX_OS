@@ -13,14 +13,14 @@
 //***********************************************************************/
 
 #ifndef __STDAFX_H__
-#include "..\INCLUDE\StdAfx.h"
+#include "../include/StdAfx.h"
 #endif
 
 #include "shell.h"
-#include "HYPERTRM.H"
+#include "hypertrm.h"
 
-#include "..\INCLUDE\KAPI.H"
-#include "..\lib\stdio.h"
+#include "kapi.h"
+#include "stdio.h"
 
 /*------------------------------------------------------------------------
     The poll mode COM IO application,named HYPERTRM.

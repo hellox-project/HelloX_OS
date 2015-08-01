@@ -12,15 +12,31 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include <stdafx.h>
+#include <StdAfx.h>
 #include <arch.h>
 #include <console.h>
 #include <stdio.h>
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
+
 INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 {
+#ifdef __GCC__
+	__asm__ (
+	"pushl	%%ebx							\n\t"
+	"pushl	%%ecx							\n\t"
+	"movl 	%0,	%%ebx						\n\t"
+	"movl 	%1,	%%eax						\n\t"
+	"movl (%%ebx),			%%ecx			\n\t"
+	"movl %%eax,			(%%ebx)			\n\t"
+	"movl %%ecx,			%%eax			\n\t"
+	"popl	%%ecx							\n\t"
+	"popl	%%ebx							\n\t"
+	:
+	:"i"(__TIMERHANDLER_BASE), "r"(TimerHandler)
+	);
+#else
 	__asm{
 		push ebx
 		push ecx
@@ -32,10 +48,30 @@ INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 		pop ecx
 		pop ebx
 	}
+#endif
 }
 
-__declspec(naked) VOID WriteByteToPort(UCHAR byte,WORD wPort)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+
+VOID WriteByteToPort(UCHAR byte,WORD wPort)
 {
+#ifdef __GCC__
+	__asm__ (
+	".code32				\n\t"
+	"pushl	%%ebp			\n\t"
+	"movl	%%esp,	%%ebp	\n\t"
+	"pushl	%%edx			\n\t"
+	"movb	8(%%ebp),	%%al\n\t"
+	"movw	12(%%ebp),	%%ax\n\t"
+	"outb	%%al,	%%dx	\n\t"
+	"popl	%%edx	\n\t"
+	"leave			\n\t"
+	"ret			\n\t"
+	:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -47,10 +83,35 @@ __declspec(naked) VOID WriteByteToPort(UCHAR byte,WORD wPort)
 		leave
 		retn
 	}
+#endif
 }
 
-__declspec(naked) VOID ReadByteStringFromPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+
+VOID ReadByteStringFromPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
 {
+#ifdef __GCC__
+	__asm__(
+		"pushl	%%ebp	\n\t"
+		"movl	%%esp,	%%ebp	\n\t"
+		"pushl	%%ecx	\n\t"
+		"pushl	%%edx	\n\t"
+		"pushl	%%edi	\n\t"
+		"movl	8(%%ebp),	%%edi	\n\t"
+		"movl	12(%%ebp),	%%edi	\n\t"
+		"movw	16(%%ebp),	%%dx	\n\t"
+		"rep	insb	\n\t"
+		"popl	%%edi	\n\t"
+		"popl	%%edx	\n\t"
+		"popl	%%ecx	\n\t"
+		"leave	\n\t"
+		"ret	\n\t"
+			:
+	);
+
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -70,10 +131,34 @@ __declspec(naked) VOID ReadByteStringFromPort(LPVOID lpBuffer,DWORD dwBufLen,WOR
 		leave
 		retn
 	}
+#endif
 }
 
-__declspec(naked) VOID WriteByteStringToPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+VOID WriteByteStringToPort(LPVOID lpBuffer,DWORD dwBufLen,WORD wPort)
 {
+
+#ifdef __GCC__
+	__asm__(
+		"pushl	%%ebp	\n\t"
+		"movl	%%esp,	%%ebp	\n\t"
+		"pushl	%%ecx	\n\t"
+		"pushl	%%edx	\n\t"
+		"pushl	%%esi	\n\t"
+		"movl	8(%%ebp),	%%esi	\n\t"
+		"movl	12(%%ebp),	%%ecx	\n\t"
+		"movw	16(%%ebp),	%%dx	\n\t"
+		"rep	outsb	\n\t"
+		"popl	%%esi	\n\t"
+		"popl	%%edx	\n\t"
+		"popl	%%ecx	\n\t"
+		"leave	\n\t"
+		"ret	\n\t"
+			:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -90,10 +175,32 @@ __declspec(naked) VOID WriteByteStringToPort(LPVOID lpBuffer,DWORD dwBufLen,WORD
 		leave
 		retn
 	}
+#endif
 }
 
-__declspec(naked) VOID ReadWordFromPort(WORD* pWord,WORD wPort)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+
+ VOID ReadWordFromPort(WORD* pWord,WORD wPort)
 {
+#ifdef __GCC__
+	__asm__(
+	"pushl	%%ebp	\n\t"
+	"movl	%%esp,	%%ebp	\n\t"
+	"pushl	%%ebx	\n\t"
+	"pushl	%%edx	\n\t"
+	"movw	0x0c(%%ebp),	%%dx	\n\t"
+	"movl	0x08(%%ebp),	%%ebx	\n\t"
+	"inw	%%dx,	%%ax	\n\t"
+	"movw	%%ax,	(%%ebx)	\n\t"
+	"popl	%%edx	\n\t"
+	"popl	%%ebx	\n\t"
+	"leave			\n\t"
+	"ret			\n\t"
+			:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -108,10 +215,29 @@ __declspec(naked) VOID ReadWordFromPort(WORD* pWord,WORD wPort)
 		leave
 		retn
 	}
+#endif
 }
 
-__declspec(naked) VOID WriteWordToPort(WORD w1,WORD w2)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+
+ VOID WriteWordToPort(WORD w1,WORD w2)
 {
+#ifdef __GCC__
+	__asm__(
+			"pushl	%%ebp           \n\t"
+			"movl %%esp,	%%ebp   \n\t"
+			"pushw %%dx             \n\t"
+			"movw 0x0c(%%ebp),	%%dx\n\t"
+			"movw 0x08(%%ebp),	%%ax\n\t"
+			"outw %%ax, %%dx        \n\t"
+			"popw %%dx              \n\t"
+			"leave                  \n\t"
+			"ret					\n\t"
+			:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -123,10 +249,36 @@ __declspec(naked) VOID WriteWordToPort(WORD w1,WORD w2)
 		leave
 		retn
 	}
+#endif
 }
 
-__declspec(naked) VOID ReadWordStringFromPort(LPVOID p1,DWORD d1,WORD w1)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+
+ VOID ReadWordStringFromPort(LPVOID p1,DWORD d1,WORD w1)
 {
+#ifdef __GCC__
+	__asm__(
+	"pushl %%ebp         \n\t                 "
+	"movl %%esp, %%ebp   \n\t                 "
+	"pushl %%ecx         \n\t                 "
+	"pushl %%edx         \n\t                 "
+	"pushl %%edi         \n\t                 "
+	"movl 0x08(%%ebp),	%%edi				\n\t"
+	"movl 0x0c(%%ebp),	%%ecx				\n\t"
+	"shrl $0x01,		%%ecx             	\n\t"
+	"movw 0x10(%%ebp),	%%dx				\n\t"
+	"cld                               		\n\t"
+	"rep insw               	           	\n\t"
+	"popl %%edi                 	        \n\t  "
+	"popl %%edx                     	    \n\t  "
+	"popl %%ecx                         	\n\t  "
+	"leave		\n\t"
+	"ret		\n\t"
+			:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -145,10 +297,35 @@ __declspec(naked) VOID ReadWordStringFromPort(LPVOID p1,DWORD d1,WORD w1)
 		leave
 		retn
 	}
+#endif
 }
 
-__declspec(naked) VOID WriteWordStringToPort(LPVOID p1,DWORD d1,WORD w1)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+
+ VOID WriteWordStringToPort(LPVOID p1,DWORD d1,WORD w1)
 {
+#ifdef __GCC__
+	__asm__(
+		"pushl %%ebp				\n\t"
+		"movl %%esp, %%ebp          \n\t"
+		"pushl %%ecx                \n\t"
+		"pushl %%edx                \n\t"
+		"pushl %%esi                \n\t"
+		"movl 0x0c(%%ebp),	%%esi   \n\t"
+		"movl 0x0c(%%ebp),	%%ecx   \n\t"
+		"shrl $0x02,		%%ecx   \n\t"
+		"movw 0x10(%%ebp),	%%dx    \n\t"
+		"rep outsw                  \n\t"
+		"popl %%esi                 \n\t"
+		"popl %%edx                 \n\t"
+		"popl %%ecx                 \n\t"
+		"leave                      \n\t"
+		"ret						\n\t"
+			:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -166,6 +343,7 @@ __declspec(naked) VOID WriteWordStringToPort(LPVOID p1,DWORD d1,WORD w1)
 		leave
 		retn
 	}
+#endif
 }
 
 #endif //__I386__

@@ -1,0 +1,39 @@
+All authors have contribution to the Kernel module of HelloX operating system will be recorded here.
+
+   NAME                    CONTRIBUTION                      CONTACT                  OTHER INFO
+----------            -----------------------           ----------------       -------------------------`
+ Garry.Xin             Original author of this          garryxin@gmail.com            N/A
+                       module.About 50K lines of
+                       code.
+
+ Erwin.wang            Added a logging service
+                       can be used by applications.
+                       It can be enabled or dis-
+                       abled by define or comment
+                       the macro __CFG_SYS_LOGCAT
+                       in config.h file.
+                       About 1000 lines code.           erwin.wang@qq.com              N/A
+
+ tywind.huang          Modified about fat32 Files       370543742@qq.com               N/A
+
+ tywind.huang          Implements a standard VGA        370543742@qq.com               N/A
+                       driver in C language,and
+                       optimized shell mechanism,
+                       about 2000 LOC.
+
+ tywind.huang          Implements a subset of POSIX     370543742@qq.com               N/A
+                       library to support the JamVM
+		       migration.
+
+ Joy(Gaojie)           Port the whole code tree into    18510248810@qq.com             N/A
+                       GCC environment,this includes:
+                       1) Convert the Intel style
+                          asm code into AT&T style;
+                       2) Modified some C code to
+                          fit GCC's requirement;
+                       3) Debugging,it's a hardwork;
+                       4) Writting documents about
+                          the new environment;
+                       5) Other related works.
+                       Convert all these works into
+                       2000 LOC.

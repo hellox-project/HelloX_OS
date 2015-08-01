@@ -19,6 +19,7 @@
 #endif
 
 #include "stdio.h"
+#include "kapi.h"
 
 //Only Device Driver Framework is enabled the following code will be included
 //in OS kernel.
@@ -251,6 +252,8 @@ VOID DevObjUninitialize(__COMMON_OBJECT* lpThis)
 
 //A helper routine used to convert a string from lowercase to capital.
 //The string should be terminated by a zero,i.e,a C string.
+/**
+ *
 static VOID ToCapital(LPSTR lpszString)
 {
 	int nIndex = 0;
@@ -268,6 +271,7 @@ static VOID ToCapital(LPSTR lpszString)
 		nIndex ++;
 	}
 }
+ */
 
 //Create a new file in the given file system.
 BOOL CreateNewFile(__COMMON_OBJECT* lpThis,

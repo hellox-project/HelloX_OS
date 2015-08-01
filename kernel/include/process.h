@@ -32,12 +32,18 @@
 #ifndef __PROCESS_H__
 #define __PROCESS_H__
 
+
+#include "types.h"
+#include "commobj.h"
+#include "kapi.h"
+#include "syscall.h"
+
 //Link list node used to contain all kernel objects belong to on process.
 typedef struct tag__KOBJ_LIST_NODE{
 	__COMMON_OBJECT*            pKernelObject;
 	struct tag__KOBJ_LIST_NODE* prev;
 	struct tag__KOBJ_LIST_NODE* next;
-}__KOBJ_LIST_NODE;
+} __KOBJ_LIST_NODE;
 
 //Process object,the main object to manage a process in HelloX,like task
 //control block in tradition OS.

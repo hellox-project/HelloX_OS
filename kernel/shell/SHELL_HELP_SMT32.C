@@ -12,9 +12,11 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "..\include\StdAfx.h"
-#include "..\INCLUDE\KAPI.H"
+#include "StdAfx.h"
+#include "kapi.h"
+#include "chardisplay.h"
 #include "shell.h"
+
 
 #define  ERROR_STR   "You entered incorrect command name."
 #define  ERROR_STR2  "Failed to process the command."
@@ -355,7 +357,7 @@ static INT OnKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE   bt )
 	return nRet;
 }
 
-//shell 输入 循环处理 
+//shell 输入 循环处理
 DWORD Shell_Msg_Loop(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_NAMEQUERY_HANDLER pNameQuery)
 {
 	SHELL_MSG_INFO*  pShellInfo  = NULL;

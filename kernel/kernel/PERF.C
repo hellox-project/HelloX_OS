@@ -18,7 +18,8 @@
 #ifndef __STDAFX_H__
 #include "StdAfx.h"
 #endif
-
+#include "commobj.h"
+#include "perf.h"
 //
 //The implementation of PerfBeginRecord routine.
 //This routine records the current CPU clock circle counter into u64Start member of
@@ -36,6 +37,20 @@ VOID PerfBeginRecord(__PERF_RECORDER* lpPr)
 	lpStart = &lpPr->u64Start;
 
 #ifdef __I386__
+#ifdef __GCC__
+	__asm__ (
+			"push %%eax \n\t"
+			"push %%ebx \n\t"
+			"push %%edx \n\t"
+			"movl %0, %%ebx	\n\t"
+			"rdtsc	\n\t"
+			"movl %%eax, (%%ebx)	\n\t"
+			"movl %%edx, 4(%%ebx)	\n\t"
+			"popl %%edx	\n\t"
+			"popl %%ebx	\n\t"
+			"popl %%eax	\n\t"
+			::"r"(lpStart));
+#else
 	__asm{
 		push eax
         push ebx
@@ -48,6 +63,7 @@ VOID PerfBeginRecord(__PERF_RECORDER* lpPr)
         pop ebx
         pop eax
 	}
+#endif
 #else
 	(void)lpStart;  //Avoid warning generation under some compiler.
 #endif
@@ -70,6 +86,20 @@ VOID PerfEndRecord(__PERF_RECORDER* lpPr)
 	lpEnd = &lpPr->u64End;
 
 #ifdef __I386__
+#ifdef __GCC__
+	__asm__(
+	"pushl %%eax  \n\t"
+	"pushl %%ebx  \n\t"
+	"pushl %%edx  \n\t"
+	"movl %0, %%ebx	\n\t"
+	"rdtsc	\n\t"
+	"movl %%eax, (%%ebx) \n\t"
+	"movl %%edx, 4(%%ebx)	\n\t"
+	"popl %%edx \n\t"
+	"popl %%ebx \n\t"
+	"popl %%eax \n\t"
+	::"r"(lpEnd));
+#else
 	__asm{
         push eax
         push ebx
@@ -80,8 +110,9 @@ VOID PerfEndRecord(__PERF_RECORDER* lpPr)
         mov dword ptr [ebx + 4],edx  //Save high part.
         pop edx
         pop ebx
-        pop  eax
+        pop eax
 	}
+#endif
 #else
 	(void)lpEnd;  //Avoid warning generation under some compiler.
 #endif

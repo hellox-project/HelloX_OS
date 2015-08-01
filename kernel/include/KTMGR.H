@@ -21,9 +21,20 @@
 #ifndef __KTMGR_H__
 #define __KTMGR_H__
 
+#ifndef __TYPES_H__
+#include "types.h"
+#endif
+
+#include "commobj.h"
+#include "objqueue.h"
+
+#include "../config/config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 //
 //***********************************************************************
@@ -251,8 +262,8 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 
 	//Suspending flags and suspending counter,used to manage the suspending operations for kernel thread.
 	//The meanings of each bit as follows:
-	// bit0 - bit15:  Suspending counter,incremented by SuspendKernelThread routine and decremented by
-	//                ResumeKernelThread routine;
+	// bit0 - bit15:  Suspending counter,incremented by kSuspendKernelThread routine and decremented by
+	//                kResumeKernelThread routine;
 	// bit16 - bit31: Suspending flags,only the 31 bit is used,to indicate the suspending disable/enable
 	//                status.
 	// SUSPEND_FLAG_MASK is used to seperate these 2 parts.

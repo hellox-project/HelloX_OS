@@ -27,17 +27,28 @@
 #ifndef __STDAFX_H__
 #include "StdAfx.h"
 #endif
-
-#include "SYSCALL.H"
+#include "system.h"
+#include "types.h"
+#include "syscall.h"
 #include "stdio.h"
-#include "..\arch\x86\bios.h"
+#include "ktmsg.h"
+
+#include "hellocn.h"
+#include "kapi.h"
+
+#ifdef __I386__
+#include "../arch/x86/bios.h"
+#endif
+
+
 
 
 __PERF_RECORDER  TimerIntPr = {
 	U64_ZERO,
 	U64_ZERO,
 	U64_ZERO,
-	U64_ZERO};                  //Performance recorder object used to mesure
+	U64_ZERO
+};                  //Performance recorder object used to mesure
                                 //the performance of timer interrupt.
 
 //
@@ -57,7 +68,7 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 	__PRIORITY_QUEUE*         lpSleepingQueue   = NULL;
 	__KERNEL_THREAD_OBJECT*   lpKernelThread    = NULL;
 	DWORD                     dwFlags           = 0;
-
+	
 	if(NULL == lpEsp)    //Parameter check.
 	{
 		return TRUE;
@@ -89,7 +100,6 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 				KernelThreadManager.SendMessage(
 					(__COMMON_OBJECT*)lpTimerObject->lpKernelThread,
 					&Msg);
-				//PrintLine("Send a timer message to kernel thread.");
 			}
 			else
 			{
@@ -204,13 +214,13 @@ __TERMINAL:
 
 
 //
-//The implementation of ConnectInterrupt routine of Interrupt Object.
+//The implementation of kConnectInterrupt routine of Interrupt Object.
 //The routine do the following:
 // 1. Insert the current object into interrupt object array(maintenanced by system object);
 // 2. Set the object's data members correctly.
 //
 
-static __COMMON_OBJECT* ConnectInterrupt(__COMMON_OBJECT*     lpThis,
+static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT*     lpThis,
 							 __INTERRUPT_HANDLER  lpInterruptHandler,
 							 LPVOID               lpHandlerParam,
 							 UCHAR                ucVector,
@@ -271,10 +281,10 @@ static __COMMON_OBJECT* ConnectInterrupt(__COMMON_OBJECT*     lpThis,
 }
 
 //
-//The implementation of DisconnectInterrupt.
+//The implementation of kDiskConnectInterrupt.
 //
 
-static VOID DisconnectInterrupt(__COMMON_OBJECT* lpThis,
+static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,
 								__COMMON_OBJECT* lpInterrupt)
 {
 	__INTERRUPT_OBJECT*   lpIntObject    = NULL;
@@ -584,6 +594,7 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 	}
 
 	lpIntObject = lpSystem->lpInterruptVector[ucVector];
+
 	if(NULL == lpIntObject)  //The current interrupt vector has not handler object.
 	{
 		DefaultIntHandler(lpEsp,ucVector);
@@ -606,6 +617,7 @@ __RETFROMINT:
 	{
 		if (IN_SYSINITIALIZATION())  //It's a abnormal case.
 		{
+
 			_hx_sprintf(strError, "Warning: Interrupt[%d] raised in sys initialization.", ucVector);
 			PrintLine(strError);
 		}
@@ -629,45 +641,46 @@ __RETFROMINT:
 	return;
 }
 
+
 //Default handler of Exception.
-static VOID DefaultExcepHandler(LPVOID pESP, UCHAR ucVector)
-
+static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 {
-	__KERNEL_THREAD_OBJECT* pKernelThread = KernelThreadManager.lpCurrentKernelThread;
-	DWORD dwFlags;
-	static DWORD totalExcepNum = 0;
+         __KERNEL_THREAD_OBJECT* pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+         DWORD dwFlags;
+         static DWORD totalExcepNum = 0;
 
-	//Switch to text mode,because the exception maybe caused in GUI mode.
+         //Switch to text mode,because the exception maybe caused in GUI mode.
 #ifdef __I386__
-	SwitchToText();
+         SwitchToText();
 #endif
-	_hx_printf("Exception occured: #%d.\r\n", ucVector);
-	totalExcepNum++;  //Increase total exception number.
+         _hx_printf("Exception occured: #%d.\r\n",ucVector);
+         totalExcepNum ++;  //Increase total exception number.
 
-	//Show kernel thread information which lead the exception.
-	if (pKernelThread)
-	{
-		_hx_printf("\tCurrent kthread ID: %d.\r\n", pKernelThread->dwThreadID);
-		_hx_printf("\tCurrent kthread name: %s.\r\n", pKernelThread->KernelThreadName);
-	}
-	else //In process of system initialization.
-	{
-		_hx_printf("\tException occured in process of initialization.\r\n");
-	}
+         //Show kernel thread information which lead the exception.
+         if(pKernelThread)
+         {
+                   _hx_printf("\tCurrent kthread ID: %d.\r\n",pKernelThread->dwThreadID);
+                   _hx_printf("\tCurrent kthread name: %s.\r\n",pKernelThread->KernelThreadName);
+         }
+         else //In process of system initialization.
+         {
+                   _hx_printf("\tException occured in process of initialization.\r\n");
+         }
 
-	//Call processor specific exception handler.
-	PSExcepHandler(pESP, ucVector);
+         //Call processor specific exception handler.
+         PSExcepHandler(pESP,ucVector);
 
-	if (totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
-	{
-		_hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n", totalExcepNum);
-		_hx_printf("Please power off the system and reboot it.\r\n");
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
-		while (1); //Make a dead loop.
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
-	}
-	return;
+         if(totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
+         {
+                   _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
+                   _hx_printf("Please power off the system and reboot it.\r\n");
+                   __ENTER_CRITICAL_SECTION(NULL,dwFlags);
+                   while(1); //Make a dead loop.
+                   __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+         }
+         return;
 }
+
 
 //DispatchException,called by GeneralIntHandler to handle exception,include
 //system call.
@@ -697,14 +710,14 @@ static VOID DispatchException(__COMMON_OBJECT* lpThis,
 }
 
 //
-//SetTimer.
+//kSetTimer.
 //The routine do the following:
 // 1. Create a timer object;
 // 2. Initialize the timer object;
 // 3. Insert into the timer object into timer queue of system object;
 // 4. Return the timer object's base address if all successfully.
 //
-static __COMMON_OBJECT* SetTimer(__COMMON_OBJECT* lpThis,
+static __COMMON_OBJECT* kSetTimer(__COMMON_OBJECT* lpThis,
 								 __KERNEL_THREAD_OBJECT* lpKernelThread,
 					             DWORD  dwTimerID,
 								 DWORD  dwTimeSpan,
@@ -791,10 +804,10 @@ __TERMINAL:
 }
 
 //
-//CancelTimer implementation.
+//kCancelTimer implementation.
 //This routine is used to cancel timer.
 //
-static VOID CancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
+static VOID kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 {
 	__SYSTEM*                  lpSystem       = NULL;
 	DWORD                      dwPriority     = 0;
@@ -908,10 +921,10 @@ __SYSTEM System = {
 	GetPhysicalMemorySize,    //GetPhysicalMemorySize routine.
 	DispatchInterrupt,        //DispatchInterrupt routine.
 	DispatchException,        //DispatchException routine.
-	ConnectInterrupt,         //ConnectInterrupt.
-	DisconnectInterrupt,      //DisconnectInterrupt.
-	SetTimer,                 //SetTimerRoutine.
-	CancelTimer
+	kConnectInterrupt,         //kConnectInterrupt.
+	kDiskConnectInterrupt,      //kDiskConnectInterrupt.
+	kSetTimer,                 //kSetTimerRoutine.
+	kCancelTimer
 };
 
 //***************************************************************************************
@@ -929,6 +942,7 @@ __SYSTEM System = {
 
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
+	//PrintLine("GeneralIntHandler");
 	UCHAR    ucVector = (BYTE)(dwVector);
 
 	if(IS_EXCEPTION(ucVector))  //Exception.

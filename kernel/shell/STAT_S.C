@@ -13,10 +13,10 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "..\include\StdAfx.h"
-#include "..\include\STATCPU.H"
-#include "..\lib\stdio.h"
-#include "STAT_S.H"
+#include "StdAfx.h"
+#include "statcpu.h"
+#include "stdio.h"
+#include "stat_s.h"
 
 __KERNEL_THREAD_OBJECT*  lpStatKernelThread = NULL;  //Used to save statistics kernel
                                                      //thread's object.

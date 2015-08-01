@@ -20,17 +20,11 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
-
-#ifndef __ARCH_H__
-#include "arch.h"
-#endif
-
-#ifndef __UTSNAME_H__
+#include <StdAfx.h>
+#include <arch.h>
+#include <stdio.h>
 #include <sys/utsname.h>
-#endif
+
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
@@ -82,14 +76,14 @@ static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
 
 	if (14 == ucVector)  //Page fault.
 	{
-#ifdef _POSIX_
+#ifdef __GCC__
 		__asm__ __volatile__(
 			".code32            \n\t"
 			"pushl       %%eax     \n\t"
 			"movl        %%cr2,     %%eax     \n\t"
-			"movl        %0,  %%eax              \n\t"
-			"popl         %%eax                       \n\t"
-			: : "r"(excepAddr) : "memory");
+			"movl        %%eax, %0                \n\t"
+			"popl        %%eax                       \n\t"
+			:"=g"(excepAddr) :  : "memory");
 #else
 		__asm{
 			push eax
@@ -135,8 +129,31 @@ VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
 //This routine switches the current executing path to the new one identified
 //by lpContext.
 //
-__declspec(naked) VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 {
+#ifdef __GCC__
+	__asm__ (
+	".code32						\n\t "
+	"pushl 	%%ebp					\n\t"
+	"movl	%%esp,	%%ebp			\n\t"
+	"movl	0x08(%%ebp),	%%esp	\n\t"
+	"popl	%%ebp	\n\t"
+	"popl	%%edi	\n\t"
+	"popl	%%esi	\n\t"
+	"popl	%%edx	\n\t"
+	"popl	%%ecx	\n\t"
+	"popl	%%ebx	\n\t"
+	"movb	$0x20,	%%al	\n\t"
+	"outb	%%al,	$0x20	\n\t"
+	"outb	%%al,	$0xa0	\n\t"
+	"popl	%%eax			\n\t"
+	"iret					\n\t"
+	:	:
+	);
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -155,6 +172,7 @@ __declspec(naked) VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 		pop eax
 		iretd
 	}
+#endif
 }
 
 //
@@ -169,9 +187,50 @@ static DWORD dwTmpEbp = 0;
 //This routine saves current kernel thread's context,and switch
 //to the new kernel thread.
 //
-__declspec(naked) VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
+#ifndef __GCC__
+__declspec(naked)
+#endif
+VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 									   __KERNEL_THREAD_CONTEXT** lppNewContext)
 {
+
+#ifdef __GCC__
+	__asm__(
+	".code32								\n\t"
+	"movl	%%esp,	%0                  	\n\t"
+	"popl	%1		                      	\n\t"
+	"movl	%%eax,	%2   				\n\t"
+	"pushf             					\n\t"
+	"xorl	%%eax,	%%eax     				\n\t"
+	"movw	%%cs,	%%ax          				\n\t"
+	"pushl	%%eax           				\n\t"
+	"pushl	%3      						\n\t"
+	"pushl  %4      						\n\t"
+	"pushl %%ebx                          	\n\t"
+	"pushl %%ecx                          	\n\t"
+	"pushl %%edx                          	\n\t"
+	"pushl %%esi                          	\n\t"
+	"pushl %%edi                          	\n\t"
+	"pushl %%ebp                          	\n\t"
+	"             	                     	\n\t"
+	"movl %5, %%ebp                  		\n\t"
+	"movl 0x04(%%ebp),	%%ebx				\n\t"
+	"movl %%esp,	(%%ebx)					\n\t"
+	"                                     	\n\t"
+	"movl 0x08(%%ebp),	%%ebx				\n\t"
+	"movl (%%ebx),		%%esp   			  \n\t"
+	"popl %%ebp                              \n\t"
+	"popl %%edi                              \n\t"
+	"popl %%esi                              \n\t"
+	"popl %%edx                            \n\t"
+	"popl %%ecx                 			\n\t"
+	"popl %%ebx         					\n\t"
+    "popl %%eax							\n\t"
+    "iret"
+	:"=m"(dwTmpEbp),"=m"(dwTmpEip),"=m"(dwTmpEax)
+	:"m"(dwTmpEip),"m"(dwTmpEax),"m"(dwTmpEbp)
+	);
+#else
 	__asm{
 		mov dwTmpEbp,esp
 		pop dwTmpEip
@@ -206,6 +265,7 @@ __declspec(naked) VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 		pop eax
 		iretd
 	}
+#endif
 }
 
 //
@@ -214,6 +274,21 @@ __declspec(naked) VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 //
 VOID EnableVMM()
 {
+#ifdef __GCC__
+	__asm__ (
+	".code32			\n\t"
+	"pushl	%%eax		\n\t"
+	"movl	%0,	%%eax	\n\t"
+	"movl	%%eax,		%%cr3	\n\t"
+	"movl	%%cr0,		%%eax	\n\t"
+	"orl	$0x80000000,	%%eax	\n\t"
+	"movl	%%eax,		%%cr0	\n\t"
+	"popl	%%eax				\n\t"
+	:
+	:"r"(PD_START)
+	);
+
+#else
 	__asm{
 		push eax
 		mov eax,PD_START
@@ -223,14 +298,19 @@ VOID EnableVMM()
 		mov cr0,eax
 		pop eax
 	}
+#endif
 }
 
 //Halt current CPU in case of IDLE,it will be called by IDLE thread.
 VOID HaltSystem()
 {
+#ifdef __GCC__
+	__asm__ __volatile__ ("hlt	\n\t");
+#else
 	__asm{
 		hlt
 	}
+#endif
 }
 
 //
@@ -278,6 +358,26 @@ VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 //Get time stamp counter.
 VOID __GetTsc(__U64* lpResult)
 {
+#ifdef __GCC__
+	__asm__(
+		".code32		\n\t"
+		"pushl	%%ebp	\n\t"
+		"movl	%%esp,	%%ebp	\n\t"
+		"pushl 	%%eax	\n\t"
+		"pushl	%%edx	\n\t"
+		"pushl	%%ebx	\n\t"
+		"rdtsc			\n\t"
+		"movl	0x08(%%ebp),	%%ebx	\n\t"
+		"movl	%%eax,			(%%ebx)	\n\t"
+		"movl	%%edx,		0x04(%%ebx)	\n\t"
+		"popl	%%ebx	\n\t"
+		"popl	%%edx	\n\t"
+		"popl	%%eax	\n\t"
+		"popl	%%ebp	\n\t"
+		"ret			\n\t"
+			::
+	);
+#else
 	__asm{
 		push eax
 		push edx
@@ -290,11 +390,38 @@ VOID __GetTsc(__U64* lpResult)
 		pop edx
 		pop eax
 	}
+#endif
 }
 
 //A local helper routine used to read CMOS date and time information.
-static _declspec(naked) ReadCmosData(WORD* pData,BYTE nPort)
+static
+#ifndef __GCC__
+	_declspec(naked)
+#endif
+ReadCmosData(WORD* pData,BYTE nPort)
 {
+#ifdef __GCC__
+	__asm__(
+	".code32				\n\t"
+	"pushl	%%ebp			\n\t"
+	"movl	%%esp,	%%ebp	\n\t"
+	"pushl	%%ebx			\n\t"
+	"pushl	%%edx			\n\t"
+	"movl	0x08(%%ebp),%%ebx	\n\t"
+	"xorw	%%ax,	%%ax	\n\t"
+	"movb	%0,	%%al		\n\t"
+	"outb	%%al,	$0x70	\n\t"
+	"inb	$0x71,	%%al	\n\t"
+	"movw	%%ax,	(%%ebx)	\n\t"
+	"popl	%%edx			\n\t"
+	"popl	%%ebx			\n\t"
+	"leave					\n\t"
+	"ret					\n\t"	//retn->ret
+	:
+	:"r"(nPort)
+	);
+
+#else
 	__asm{
 		    push ebp
 			mov ebp,esp
@@ -314,6 +441,7 @@ static _declspec(naked) ReadCmosData(WORD* pData,BYTE nPort)
 			leave
 			retn
 	}
+#endif
 }
 
 //Get CMOS date and time.
@@ -362,6 +490,10 @@ VOID __MicroDelay(DWORD dwmSeconds)
 
 VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 {
+#ifdef __GCC__
+	asm volatile("outl %0,%1" : : "a" (dwVal), "dN" (wPort));
+
+#else
 	__asm{
 		push eax
 		push edx
@@ -371,11 +503,15 @@ VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 		pop edx
 		pop eax
 	}
+#endif
 }
 
 DWORD __ind(WORD wPort)    //Read one double word from a port.
 {
 	DWORD    dwRet       = 0;
+#ifdef __GCC__
+	asm volatile("inl %1,%0" : "=a" (dwRet) : "dN" (wPort));
+#else
 	__asm{
 		push eax
 		push edx
@@ -385,11 +521,15 @@ DWORD __ind(WORD wPort)    //Read one double word from a port.
 		pop edx
 		pop eax
 	}
+#endif
 	return dwRet;
 }
 
 VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 {
+#ifdef __GCC__
+	asm volatile("outb %0,%1" : : "a" (_bt), "dN" (_port));
+#else
 	__asm{
 		push eax
 		push edx
@@ -399,11 +539,15 @@ VOID __outb(UCHAR _bt,WORD _port)  //Send bt to port.
 		pop edx
 		pop eax
 	}
+#endif
 }
 
 UCHAR __inb(WORD _port)  //Receive a byte from port.
 {
 	UCHAR uRet;
+#ifdef __GCC__
+	asm volatile("inb %1,%0" : "=a" (uRet) : "dN" (_port));
+#else
 	__asm{
 		xor eax,eax
 		push edx
@@ -412,12 +556,16 @@ UCHAR __inb(WORD _port)  //Receive a byte from port.
 		pop edx
 		mov uRet,al
 	}
+#endif
 	return uRet;
 }
 
 WORD __inw(WORD wPort)
 {
 	WORD    wRet       = 0;
+#ifdef __GCC__
+	asm volatile("inw %1,%0" : "=a" (wRet) : "dN" (wPort));
+#else
 	__asm{
 		push eax
 		push edx
@@ -427,11 +575,15 @@ WORD __inw(WORD wPort)
 		pop edx
 		pop eax
 	}
+#endif
 	return wRet;
 }
 
 VOID __outw(WORD wVal,WORD wPort)
 {
+#ifdef __GCC__
+	asm volatile("outw %0,%1" : : "a" (wVal), "dN" (wPort));
+#else
 	__asm{
 		push eax
 		push edx
@@ -441,14 +593,42 @@ VOID __outw(WORD wVal,WORD wPort)
 		pop edx
 		pop eax
 	}
+#endif
 }
 
-__declspec(naked) VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 {
 #ifdef __I386__
+
+#ifdef __GCC__
+	__asm__ (
+	"	.code32								\n\t"
+	"	pushl 	%%ebp                                      \n\t"
+	"	movl 	%%esp,	%%ebp                               \n\t"
+	"	pushl %%ecx                                      \n\t"
+	"	pushl %%edx                                      \n\t"
+	"	pushl %%edi                                      \n\t"
+	"	movl 	0x08(%%ebp),	%%edi				     \n\t"
+	"	movl 	0x0c(%%ebp),	%%ecx						\n\t"
+	"	shrl 	$0x01,			%%ecx                          \n\t"
+	"	movw 	0x10(%%ebp),	%%dx				\n\t"
+	"	cld                                        	\n\t"
+	"	rep 	insw                                    \n\t"
+	"	popl %%edi                                     \n\t"
+	"	popl %%edx                                     \n\t"
+	"	popl %%ecx                                     \n\t"
+	"	leave                                      	\n\t"
+	"	ret                                		\n\t"	//retn->ret
+			:	:
+	);
+
+#else
 	__asm{
 		push ebp
-		mov ebp,esp
+		mov 	ebp,esp
 		push ecx
 		push edx
 		push edi
@@ -464,13 +644,35 @@ __declspec(naked) VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 		leave
 		retn
 	}
-#else
+#endif
 #endif
 }
 
-__declspec(naked) VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
+#ifndef __GCC__
+__declspec(naked)
+#endif
+VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 {
 #ifdef __I386__
+#ifdef __GCC__
+	__asm__ (
+	".code32			  				\n\t"
+	" pushl %%ebp                        \n\t"
+	" movl %%esp, %%ebp                  \n\t"
+	" pushl %%ecx                           \n\t"
+	" pushl %%edx                           \n\t"
+	" pushl %%esi                           \n\t"
+	" movw 0x10(%%ebp), %%dx			\n\t"
+	" rep outsw                        	\n\t"
+	" popl %%esi                            \n\t"
+	" popl %%edx                            \n\t"
+	" popl %%ecx                            \n\t"
+	" leave                             \n\t"
+	" ret			                	\n\t"	//retn
+			::
+	);
+
+#else
 	__asm{
 		push ebp
 		mov ebp,esp
@@ -488,7 +690,7 @@ __declspec(naked) VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 		leave
 		retn
 	}
-#else
+#endif
 #endif
 }
 

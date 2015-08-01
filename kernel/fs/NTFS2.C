@@ -9,17 +9,18 @@
 //  Last udpated content   : 
 //------------------------------------------------------------------------
  
-#include "..\INCLUDE\StdAfx.h"
-
+#ifndef __STDAFX_H__
+#include <StdAfx.h>
+#endif
 #ifndef __NTFS_H__
-#include "NTFS.H"
+#include "ntfs.h"
 #endif
 
 #ifndef __FSSTR_H__
 #include "fsstr.h"
 #endif
 
-#include "..\lib\stdio.h"
+#include "../lib/stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF

@@ -15,7 +15,14 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "kapi.h"
+#ifndef __STDAFX_H__
+#include "../include/StdAfx.h"
+#endif
+
+#ifndef __KAPI_H__
+#include "../include/kapi.h"
+#endif
+
 #include "debug.h"
 #include "stdio.h"
 #include "string.h"

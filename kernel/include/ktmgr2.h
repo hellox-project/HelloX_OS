@@ -20,6 +20,15 @@
 #ifndef __KTMGR2_H__
 #define __KTMGR2_H__
 
+#ifndef __TYPES_H__
+#include "types.h"
+#endif
+
+#include "ktmgr.h"
+#include "commobj.h"
+#include "comqueue.h"
+
+
 //A helper structure used to transfer parameters to time out waiting handler,
 //which is a basic routine to implements time out waiting for synchronization
 //kernel objects.

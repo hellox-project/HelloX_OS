@@ -140,7 +140,7 @@
 	 return EINVAL;
  }
 
- int  pthread_cond_timedwait (pthread_cond_t * cond,pthread_mutex_t * mutex, const struct timespec *abstime)
+ int  pthread_cond_timedwait (pthread_cond_t * cond, pthread_mutex_t * mutex, const struct timespec *abstime)
  {
 	 __CONDITION*    pCond   = NULL;
 	 __MUTEX*        pMutex  = NULL;
@@ -203,15 +203,21 @@
 /*
  * Scheduling
  */
+ /**
+  *gaojie
  int  pthread_setschedparam (pthread_t thread, int policy, const struct sched_param *param)
  {
 	 return S_OK;
  }
-
+  */
+/**
+ * gaojie
+ *
  int  pthread_getschedparam (pthread_t thread, int *policy,struct sched_param *param)
  {
 	 return S_OK;
  }
+ */
 
  int  pthread_setconcurrency (int n)
  {
@@ -251,20 +257,27 @@
 	 return S_OK;
  }
 
+ /**
+  * gaojie
+  *
  int  pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *abstime)
  {
 	 return S_OK;
  }
+  */
 
  int  pthread_rwlock_wrlock(pthread_rwlock_t *lock)
  {
 	 return S_OK;
  }
-
+/**
+ * gaojie
+ *
  int  pthread_rwlock_timedwrlock(pthread_rwlock_t *lock,const struct timespec *abstime)
  {
 	 return S_OK;
  }
+ */
 
  int  pthread_rwlock_unlock(pthread_rwlock_t *lock)
  {
@@ -307,10 +320,14 @@
 /*
  * Possibly supported by other POSIX threads implementations
  */
+ /**
+  * gaojie
+  *
  int  pthread_delay_np (struct timespec * interval)
  {
 	 return S_OK;
  }
+  */
 
  int  pthread_num_processors_np(void)
  {

@@ -252,12 +252,12 @@ typedef struct _MSG{
 	DWORD   dwParam;
 }MSG;
 
-struct __FILE_TIME{
+typedef struct  {
     DWORD dwHighDateTime;
     DWORD dwLowDateTime;
-};
+} __FILE_TIME;
 
-struct FS_FIND_DATA{
+typedef struct {
     DWORD           dwFileAttribute;
     __FILE_TIME     ftCreationTime;    //-------- CAUTION!!! --------
 	__FILE_TIME     ftLastAccessTime;  //-------- CAUTION!!! --------
@@ -268,7 +268,7 @@ struct FS_FIND_DATA{
 	DWORD           dwReserved1;
 	CHAR            cFileName[MAX_FILE_NAME_LEN];
 	CHAR            cAlternateFileName[13];
-};
+} FS_FIND_DATA;
 
 typedef DWORD (*__KERNEL_THREAD_ROUTINE)(LPVOID);            //Kernel thread's start routine.
 typedef DWORD    (*__DIRECT_TIMER_HANDLER)(LPVOID);          //Timer handler's protype.
