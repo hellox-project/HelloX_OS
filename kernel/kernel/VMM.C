@@ -375,7 +375,7 @@ static LPVOID DoCommit(__COMMON_OBJECT* lpThis,
 
 	if((NULL == lpThis) || (NULL == lpDesiredAddr))
 		return NULL;
-	if(dwAllocFlags != VIRTUAL_AREA_ALLOCATE_COMMIT)   //This routine only process commit.
+	if(dwAllocFlags != VIRTUAL_AREA_ALLOCATE_IOCOMMIT)   //This routine only process commit.
 		return NULL;
 
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
@@ -566,7 +566,7 @@ static LPVOID DoReserveAndCommit(__COMMON_OBJECT* lpThis,
 
 	if((NULL == lpThis) || (0 == dwSize))    //Parameter check.
 		return NULL;
-	if(VIRTUAL_AREA_ALLOCATE_ALL != dwAllocFlags)    //Invalidate flags.
+	if(VIRTUAL_AREA_ALLOCATE_ALL != dwAllocFlags)    //Invalid flags.
 		return NULL;
 	lpIndexMgr = lpMemMgr->lpPageIndexMgr;
 	if(NULL == lpIndexMgr)    //Validate.
@@ -673,6 +673,152 @@ __TERMINAL:
 		if(lpVad)
 			KMemFree((LPVOID)lpVad,KMEM_SIZE_TYPE_ANY,0);
 		if(lpPhysical)
+			PageFrameManager.FrameFree((__COMMON_OBJECT*)&PageFrameManager,
+			lpPhysical,
+			dwSize);
+		return NULL;
+	}
+	return lpDesiredAddr;
+}
+
+//
+//DoIoCommit routine.When VirtualAlloc is called with VIRTUAL_AREA_ALLOCATE_IOCOMMIT,
+//this is routine is called by VirtualAlloc.It allocates a virtual area,initializes it,
+//insert it into virtual area list and reserve memory page for it.
+//The difference between this and DoReserveAndCommit is,the Page Table's cache flags is
+//set to disabled in this routine,thus the memory synchronization is guaranteed,since
+//cache mechanism is disabled.
+//Must code lines are same between this and DoReserveAndCommit,we will combine them as
+//one routine in the future,but not now,for convinence reason.:-)
+//
+static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
+	LPVOID           lpDesiredAddr,
+	DWORD            dwSize,
+	DWORD            dwAllocFlags,
+	DWORD            dwAccessFlags,
+	UCHAR*           lpVaName,
+	LPVOID           lpReserved)
+{
+	__VIRTUAL_AREA_DESCRIPTOR*              lpVad = NULL;
+	__VIRTUAL_MEMORY_MANAGER*               lpMemMgr = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
+	LPVOID                                  lpStartAddr = lpDesiredAddr;
+	LPVOID                                  lpEndAddr = NULL;
+	DWORD                                   dwFlags = 0;
+	BOOL                                    bResult = FALSE;
+	LPVOID                                  lpPhysical = NULL;
+	__PAGE_INDEX_MANAGER*                   lpIndexMgr = NULL;
+	DWORD                                   dwPteFlags = 0;
+
+	if ((NULL == lpThis) || (0 == dwSize))    //Parameter check.
+		return NULL;
+	if (VIRTUAL_AREA_ALLOCATE_IOCOMMIT != dwAllocFlags)    //Invalid flags.
+		return NULL;
+	lpIndexMgr = lpMemMgr->lpPageIndexMgr;
+	if (NULL == lpIndexMgr)    //Validate.
+		return NULL;
+
+	lpStartAddr = (LPVOID)((DWORD)lpStartAddr & ~(PAGE_FRAME_SIZE - 1)); //Round up to page.
+
+	lpEndAddr = (LPVOID)((DWORD)lpDesiredAddr + dwSize);
+	lpEndAddr = (LPVOID)(((DWORD)lpEndAddr & (PAGE_FRAME_SIZE - 1)) ?
+		(((DWORD)lpEndAddr & ~(PAGE_FRAME_SIZE - 1)) + PAGE_FRAME_SIZE - 1)
+		: ((DWORD)lpEndAddr - 1)); //Round down to page.
+
+	dwSize = (DWORD)lpEndAddr - (DWORD)lpStartAddr + 1;  //Get the actually size.
+
+	lpVad = (__VIRTUAL_AREA_DESCRIPTOR*)KMemAlloc(sizeof(__VIRTUAL_AREA_DESCRIPTOR),
+		KMEM_SIZE_TYPE_ANY); //In order to avoid calling KMemAlloc routine in the
+	//critical section,we first call it here.
+	if (NULL == lpVad)        //Can not allocate memory.
+	{
+		PrintLine("In DoReserveAndCommit: Can not allocate memory for VAD.");
+		goto __TERMINAL;
+	}
+	lpVad->lpManager = lpMemMgr;
+	lpVad->lpStartAddr = NULL;
+	lpVad->lpEndAddr = NULL;
+	lpVad->lpNext = NULL;
+	lpVad->dwAccessFlags = dwAccessFlags;
+	lpVad->dwAllocFlags = VIRTUAL_AREA_ALLOCATE_IOCOMMIT; //dwAllocFlags;
+	__INIT_ATOMIC(lpVad->Reference);
+	lpVad->lpLeft = NULL;
+	lpVad->lpRight = NULL;
+	if (lpVaName)
+	{
+		if (StrLen((LPSTR)lpVaName) > MAX_VA_NAME_LEN)
+			lpVaName[MAX_VA_NAME_LEN - 1] = 0;
+		StrCpy((LPSTR)lpVad->strName[0], (LPSTR)lpVaName);    //Set the virtual area's name.
+	}
+	else
+		lpVad->strName[0] = 0;
+	lpVad->dwCacheFlags = VIRTUAL_AREA_CACHE_IO;
+	
+	//Allocate physical memory pages.In order to reduce the time
+	//in critical section,we allocate physical memory here.
+	lpPhysical = PageFrameManager.FrameAlloc((__COMMON_OBJECT*)&PageFrameManager,
+		dwSize,
+		0);                  
+	if (NULL == lpPhysical)    //Can not allocate physical memory.
+	{
+		PrintLine("In DoIoCommit: Can not allocate physical memory.");
+		goto __TERMINAL;
+	}
+
+	//
+	//The following code searchs virtual area list or AVL tree,to check if the lpDesiredAddr
+	//is occupied,if so,then find a new one.
+	//
+	lpEndAddr = lpStartAddr;    //Save the lpStartAddr,because the lpStartAddr may changed
+	//after the SearchVirtualArea_X is called.
+	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)  //Should search in the list.
+		lpStartAddr = SearchVirtualArea_l((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
+	else    //Should search in the AVL tree.
+		lpStartAddr = SearchVirtualArea_t((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
+	if (NULL == lpStartAddr)    //Can not find proper virtual area.
+	{
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		PrintLine("In DoReserveAndCommit: SearchVirtualArea failed.");
+		goto __TERMINAL;
+	}
+
+	lpVad->lpStartAddr = lpStartAddr;
+	lpVad->lpEndAddr = (LPVOID)((DWORD)lpStartAddr + dwSize - 1);
+	if (!(lpStartAddr == lpEndAddr))    //Have not get the desired area.
+		lpDesiredAddr = lpStartAddr;
+
+	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+		InsertIntoList((__COMMON_OBJECT*)lpMemMgr, lpVad);  //Insert into list or tree.
+	else
+		InsertIntoTree((__COMMON_OBJECT*)lpMemMgr, lpVad);
+
+	//
+	//The following code reserves page table entries for the committed memory.
+	//
+	dwPteFlags = PTE_FLAGS_FOR_IOMAP;    //Normal flags.
+
+	while (dwSize)
+	{
+		if (!lpIndexMgr->ReservePage((__COMMON_OBJECT*)lpIndexMgr,
+			lpStartAddr, lpPhysical, dwPteFlags))
+		{
+			PrintLine("Fatal Error : Internal data structure is not consist.");
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			goto __TERMINAL;
+		}
+		dwSize -= PAGE_FRAME_SIZE;
+		lpStartAddr = (LPVOID)((DWORD)lpStartAddr + PAGE_FRAME_SIZE);
+		lpPhysical = (LPVOID)((DWORD)lpPhysical + PAGE_FRAME_SIZE);
+	}
+	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	bResult = TRUE;    //Indicate that the whole operation is successfully.
+
+__TERMINAL:
+	if (!bResult)   //Process failed.
+	{
+		if (lpVad)
+			KMemFree((LPVOID)lpVad, KMEM_SIZE_TYPE_ANY, 0);
+		if (lpPhysical)
 			PageFrameManager.FrameFree((__COMMON_OBJECT*)&PageFrameManager,
 			lpPhysical,
 			dwSize);
@@ -806,9 +952,9 @@ __TERMINAL:
 }
 
 //
-//The implementation of VirtualAlloc routine.
+//The implementation of VirtualAlloc routine,it just calls the appropriate
+//helper routines according the dwAllocFlags.
 //
-
 static LPVOID kVirtualAlloc(__COMMON_OBJECT* lpThis,
 						   LPVOID           lpDesiredAddr,
 						   DWORD            dwSize,
@@ -844,7 +990,15 @@ static LPVOID kVirtualAlloc(__COMMON_OBJECT* lpThis,
 			lpVaName,
 			lpReserved);
 	case VIRTUAL_AREA_ALLOCATE_COMMIT:
-		DoCommit(lpThis,
+		return DoCommit(lpThis,
+			lpDesiredAddr,
+			dwSize,
+			dwAllocFlags,
+			dwAccessFlags,
+			lpVaName,
+			lpReserved);
+	case VIRTUAL_AREA_ALLOCATE_IOCOMMIT:
+		return DoIoCommit(lpThis,
 			lpDesiredAddr,
 			dwSize,
 			dwAllocFlags,
@@ -1063,7 +1217,6 @@ static LPVOID GetPdAddress(__COMMON_OBJECT* lpThis)
 //This is one of the global objects,but it is created by CreateObject routine of
 //ObjectManager.
 //
-
 __VIRTUAL_MEMORY_MANAGER*    lpVirtualMemoryMgr    = NULL;
 
 #endif

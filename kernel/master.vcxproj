@@ -45,7 +45,7 @@
     <IntDir>.\Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>jvm;network;Lib</IncludePath>
+    <IncludePath>jvm;network;Lib;drivers</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -104,6 +104,7 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>__OS_Entry</EntryPointSymbol>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -158,6 +159,7 @@
     <ClCompile Include="drivers\x86\IDEHD.C" />
     <ClCompile Include="drivers\x86\KEYBRD.C" />
     <ClCompile Include="drivers\x86\MOUSE.C" />
+    <ClCompile Include="drivers\x86\pcnet.c" />
     <ClCompile Include="jvm\access.c" />
     <ClCompile Include="jvm\alloc.c" />
     <ClCompile Include="jvm\cast.c" />
@@ -312,6 +314,7 @@
   <ItemGroup>
     <ClInclude Include="arch\x86\BIOSVGA.H" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
+    <ClInclude Include="drivers\x86\pcnet.h" />
     <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="INCLUDE\BUFFMGR.H" />
     <ClInclude Include="include\CharDisplay.H" />
@@ -406,6 +409,7 @@
     <ClInclude Include="lib\time.h" />
     <ClInclude Include="lib\time_pri.h" />
     <ClInclude Include="lib\unistd.h" />
+    <ClInclude Include="network\ethernet\ethif.h" />
     <ClInclude Include="shell\EXTCMD.H" />
     <ClInclude Include="shell\FDISK.H" />
     <ClInclude Include="shell\FIBONACCI.H" />
@@ -419,7 +423,6 @@
     <ClInclude Include="shell\SYSD_S.H" />
     <ClInclude Include="config\config.h" />
     <ClInclude Include="include\arch\cc.h" />
-    <ClInclude Include="network\nicdrv\ethif.h" />
     <ClInclude Include="include\lwipopts.h" />
     <ClInclude Include="include\lwip\netif.h" />
     <ClInclude Include="include\lwip\opt.h" />

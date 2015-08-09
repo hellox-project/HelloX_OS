@@ -62,6 +62,9 @@ typedef void*               LPVOID;
 typedef unsigned char       __U8;
 typedef unsigned short      __U16;
 typedef unsigned long       __U32;
+typedef signed char         __S8;
+typedef signed short        __S16;
+typedef signed long         __S32;
 
 //size_t for ANSI C library.
 typedef unsigned int size_t;

@@ -465,7 +465,6 @@ static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER*   lpDevMgr,
 				if(DEVICE_ID_MATCH(lpId,&lpPhyDev->DevId))  //ID match.
 				{
 					__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-					PrintLine("GetDevice : Reach 2st position.");  //---- DEBUG ----
 					return lpPhyDev;    //Find a device object statisfying the request.
 				}
 				lpPhyDev = lpPhyDev->lpNext;

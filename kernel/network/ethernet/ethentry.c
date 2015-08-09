@@ -50,14 +50,22 @@
 
 #endif //__STM32__
 
+#ifdef __CFG_NET_PCNET  //PCNet controller is enabled.
+#include "x86/pcnet.h"
+#endif
+
 __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] = 
 {
 #ifdef __CFG_NET_MARVELLAN
-	{Marvel_Initialize,NULL},
+    {Marvel_Initialize,NULL},
 #endif
 
 #ifdef __CFG_NET_ENC28J60
-  {Ethernet_Initialize,NULL},
+    {Ethernet_Initialize,NULL},
+#endif
+
+#ifdef __CFG_NET_PCNET
+	{ PCNet_Drv_Initialize, NULL },
 #endif
 
   //Please add your ethernet driver's entry here.

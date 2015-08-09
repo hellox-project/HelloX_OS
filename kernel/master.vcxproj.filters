@@ -59,9 +59,6 @@
     <Filter Include="Header Files\config">
       <UniqueIdentifier>{7b4d4319-ff66-4f08-aae8-99160a6344a5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\nethdr">
-      <UniqueIdentifier>{a890e948-fd9d-4f30-bbb4-02baa24bacf6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{9d761576-26cf-4ef6-b103-ced7e0f1229c}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
@@ -86,6 +83,9 @@
     </Filter>
     <Filter Include="Header Files\bsd_hdr">
       <UniqueIdentifier>{7a17f3ee-f237-47d6-8aaa-a729083628f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\net_hdr">
+      <UniqueIdentifier>{a890e948-fd9d-4f30-bbb4-02baa24bacf6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -557,6 +557,9 @@
     <ClCompile Include="shell\hiscmd.c">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
+    <ClCompile Include="drivers\x86\pcnet.c">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -734,31 +737,28 @@
       <Filter>Header Files\config</Filter>
     </ClInclude>
     <ClInclude Include="include\arch\cc.h">
-      <Filter>Header Files\nethdr</Filter>
-    </ClInclude>
-    <ClInclude Include="network\nicdrv\ethif.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\lwipopts.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\lwip\netif.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\lwip\opt.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\arch\perf.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\lwip\sockets.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\lwip\sys.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\arch\sys_arch.h">
-      <Filter>Header Files\nethdr</Filter>
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
     <ClInclude Include="include\CharDisplay.H">
       <Filter>Header Files\include</Filter>
@@ -909,6 +909,12 @@
     </ClInclude>
     <ClInclude Include="lib\sys\stat.h">
       <Filter>Source Files\lib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\pcnet.h">
+      <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="network\ethernet\ethif.h">
+      <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -101,6 +101,7 @@ END_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)    //End of virtual area descriptor
                                                       //routine,the dwAllocFlags variable of
 													  //virtual area descriptor never set this
 													  //value.
+#define VIRTUAL_AREA_ALLOCATE_IOCOMMIT  0x00000010    //Allocate and commit with cache disabled.
 #define VIRTUAL_AREA_ALLOCATE_DEFAULT   VIRTUAL_AREA_ALLOCATE_ALL
 
 

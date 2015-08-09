@@ -13,17 +13,131 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
-#ifndef __PCI_DRV_H__
 #include "pci_drv.h"
-#endif
-
 #include "kmemmgr.h"
 
-static BOOL PciBusProbe()    //Probe if there is(are) PCI bus(es).
+//Read configuration from PCI bus.
+static DWORD PciReadConfig(__SYSTEM_BUS* bus, DWORD dwConfigReg,int size)
+{
+	DWORD dwTmp = 0;
+	DWORD _cfg  = 0x80000000;
+
+	dwTmp = bus->dwBusNum;
+	dwTmp &= 0x000000FF;    //Only reserve the lowest 7 bits.
+	_cfg  += (dwTmp << 16);  //Now,_cfg value countains the bus number.
+	_cfg += (dwConfigReg & 0x0000FFFF); //Now the device and function number are combined into _cfg.
+
+	//Read PCI configuration.
+	__outd(CONFIG_REGISTER, _cfg);
+	switch (size)
+	{
+	case 4:
+		return __ind(DATA_REGISTER);
+	case 2:
+		return __inw(DATA_REGISTER);
+	case 1:
+		return __inb(DATA_REGISTER);
+	default:
+		return 0;
+	}
+}
+
+//Write configuration to PCI bus.
+static BOOL PciWriteConfig(__SYSTEM_BUS* bus, DWORD dwConfigReg, DWORD dwVal,int size)
+{
+	DWORD dwTmp = 0;
+	DWORD _cfg = 0x80000000;
+	DWORD result;
+
+	//Combine the bus number,dev number,function number and offset together.
+	dwTmp = bus->dwBusNum;
+	dwTmp &= 0x000000FF;
+	_cfg += (dwTmp << 16);
+	_cfg += (dwConfigReg & 0x0000FFFF);
+
+	//Issue writting.
+	__outd(CONFIG_REGISTER, _cfg);
+	switch (size)
+	{
+	case 4:
+		__outd(DATA_REGISTER, dwVal);
+		result = __ind(DATA_REGISTER);
+		break;
+	case 2:
+		__outw((WORD)dwVal, DATA_REGISTER);
+		result = __inw(DATA_REGISTER);
+		dwVal &= 0xFFFF;
+		break;
+	case 1:
+		__outb((UCHAR)dwVal, DATA_REGISTER);
+		result = __inb(DATA_REGISTER);
+		dwVal &= 0xFF;
+		break;
+	default:
+		return FALSE;
+	}
+
+	//Check if writting is successful.
+	if (dwVal == result)
+	{
+		return TRUE;
+	}
+	//For debugging.
+	_hx_printf("PCI_DRV: Write data to PCI space failed,val = %d,result = %d.\r\n",dwVal,result);
+	return FALSE;
+}
+
+//Read configuration from a PCI device.
+static DWORD PciReadDeviceConfig(__PHYSICAL_DEVICE* dev, DWORD dwConfigReg,int size)
+{
+	__SYSTEM_BUS* bus = NULL;
+	DWORD dwTmp = 0;
+
+	if (NULL == dev)
+	{
+		return 0;
+	}
+	bus = dev->lpHomeBus;
+	if (NULL == bus)
+	{
+		return 0;
+	}
+	
+	//Construct the device number of the configuration register.
+	dwTmp = dev->dwNumber;
+	dwTmp <<= 8;
+	dwTmp |= (dwConfigReg & 0x000000FF);
+
+	return bus->ReadConfig(bus, dwTmp,size);
+}
+
+//Write configuration to device.
+static BOOL PciWriteDeviceConfig(__PHYSICAL_DEVICE* dev, DWORD dwConfigReg, DWORD dwVal,int size)
+{
+	__SYSTEM_BUS* bus = NULL;
+	DWORD dwTmp = 0;
+
+	if (NULL == dev)
+	{
+		return FALSE;
+	}
+	bus = dev->lpHomeBus;
+	if (NULL == bus)
+	{
+		return FALSE;
+	}
+
+	//Construct the device number of the configuration register.
+	dwTmp = dev->dwNumber;
+	dwTmp <<= 8;
+	dwTmp |= (dwConfigReg & 0x000000FF);
+
+	return bus->WriteConfig(bus, dwTmp, dwVal,size);
+}
+
+//Probe if there is(are) PCI bus(es).
+static BOOL PciBusProbe()
 {
 	DWORD   dwInit     = 0x80000000;
 
@@ -36,7 +150,8 @@ static BOOL PciBusProbe()    //Probe if there is(are) PCI bus(es).
 	return TRUE;
 }
 
-static DWORD GetRangeSize(DWORD dwValue)  //Get the length of one base address register.
+//Get the length of one base address register.
+static DWORD GetRangeSize(DWORD dwValue)
 {
 	DWORD    dwTmp        = dwValue;
 
@@ -180,11 +295,13 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpDevInfo->FunctionNum = (dwConfigReg >> 8) & 0x00000007;   //Get function number.
 	lpPhyDev->lpPrivateInfo = (LPVOID)lpDevInfo;  //Link device information to physical device.
 
+	//Save device number to physical device object.
+	lpPhyDev->dwNumber = dwConfigReg & 0x0000FF00;
+	lpPhyDev->dwNumber >>= 8;
+
 	//
 	//The following code initializes identifier member of physical device.
 	//
-
-//	_hx_printf("Read vendor ID and device ID\n");
 	dwConfigReg &= 0xFFFFFF00;    //Clear offset part.
 	dwConfigReg += PCI_CONFIG_OFFSET_VENDOR;
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -195,9 +312,6 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wVendor  = (WORD)dwTmp;
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wDevice  = (WORD)(dwTmp >> 16);
 
-
-
-	//_hx_printf("Get revision ID and class code\n");
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_REVISION;  //Get revision ID and class code.
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -206,8 +320,6 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.dwClass = dwTmp;
 	lpDevInfo->dwClassCode                 = dwTmp;  //Save to information struct also.
 
-
-	//_hx_printf("Get header type\n");
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_CACHELINESZ;    //Get header type.
 	__outd(CONFIG_REGISTER,dwConfigReg);
@@ -242,6 +354,10 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 		break;
 	}
 
+	//Set up physical device's configuration reading/writting routine.
+	lpPhyDev->ReadDeviceConfig  = PciReadDeviceConfig;
+	lpPhyDev->WriteDeviceConfig = PciWriteDeviceConfig;
+
 	//
 	//Now,we have finished to initialize resource information,so we insert the physical device
 	//object into system bus.
@@ -269,8 +385,6 @@ __TERMINAL:
 //
 static VOID PciScanDevices(__SYSTEM_BUS* lpSysBus)
 {
-	//__PHYSICAL_DEVICE*              lpPhyDev      = NULL;
-	//DWORD                           dwFlags;
 	DWORD                           dwConfigReg   = 0x80000000;
 	DWORD                           dwLoop        = 0;
 	DWORD                           dwTmp         = 0;
@@ -371,6 +485,9 @@ static DWORD PciScanBus(__DEVICE_MANAGER* lpDevMgr, __PHYSICAL_DEVICE* lpBridge,
 		lpDevMgr->SystemBus[dwLoop].lpParentBus = lpBridge->lpHomeBus;
 		lpBridge->lpChildBus                    = &lpDevMgr->SystemBus[dwLoop];
 	}
+	//Set PCI bus operations.
+	lpDevMgr->SystemBus[dwLoop].ReadConfig  = PciReadConfig;
+	lpDevMgr->SystemBus[dwLoop].WriteConfig = PciWriteConfig;
 
 	PciScanDevices(&lpDevMgr->SystemBus[dwLoop]);  //Scan all devices on this bus.
 	lpPhyDev = lpDevMgr->SystemBus[dwLoop].lpDevListHdr;
