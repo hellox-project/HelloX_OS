@@ -52,6 +52,7 @@ typedef BOOL (*__INTERRUPT_HANDLER)(LPVOID lpEsp,LPVOID);    //Interrupt handler
 #define INTERRUPT_VECTOR_TIMER         0x0F
 #endif
 
+#define INTERRUPT_VECTOR_BASE          0x20    //Base of all hardware interrupt.
 #define INTERRUPT_VECTOR_KEYBOARD      0x21
 #define INTERRUPT_VECTOR_MOUSE         0x22
 #define INTERRUPT_VECTOR_COM1          0x23

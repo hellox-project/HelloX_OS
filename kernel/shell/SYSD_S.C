@@ -15,18 +15,13 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
+#include <stdio.h>
 
 #include "shell.h"
 #include "sysd_s.h"
 #include "stat_s.h"
-
-#ifndef __PCI_DRV_H__
 #include "pci_drv.h"
-#endif
-
 
 #define  SYSD_PROMPT_STR   "[sysdiag_view]"
 
@@ -343,7 +338,7 @@ static DWORD pcilist(__CMD_PARA_OBJ* lpParamObj)
 	DWORD                  dwLoop          = 0;
 	__PHYSICAL_DEVICE*     lpPhyDev        = NULL;
 
-	PrintLine("    Device ID/Vendor ID    Bus Number    Description");
+	_hx_printf("    Device ID/Vendor ID\t  Bus Number\t  Description\r\n");
 
 	for(dwLoop = 0;dwLoop < MAX_BUS_NUM;dwLoop ++)
 	{
@@ -454,17 +449,17 @@ static struct __PCI_DEV_DESC{
 
 static VOID OutputDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 {
-	CHAR                 strBuff[80];
 	DWORD                dwVendor          = 0;
 	DWORD                dwDevice          = 0;
 	DWORD                dwBusNum          = 0;
 	LPSTR                lpszDes           = NULL;
 	WORD                 wClassCode        = 0;
 	DWORD                dwLoop            = 0;
-	LPVOID               lpParam[4];
 
-	if(NULL == lpPhyDev)
+	if (NULL == lpPhyDev)
+	{
 		return;
+	}
 	dwDevice = (DWORD)lpPhyDev->DevId.Bus_ID.PCI_Identifier.wDevice;
 	dwVendor = (DWORD)lpPhyDev->DevId.Bus_ID.PCI_Identifier.wVendor;
 	dwBusNum = lpPhyDev->lpHomeBus->dwBusNum;
@@ -479,16 +474,13 @@ static VOID OutputDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 		}
 		dwLoop ++;
 	}
-	if(NULL == lpszDes)
+	if (NULL == lpszDes)
+	{
 		lpszDes = DEFAULT_PCI_DESC;
+	}
 
-	lpParam[0]  = (LPVOID)&dwDevice;
-	lpParam[1]  = (LPVOID)&dwVendor;
-	lpParam[2]  = (LPVOID)&dwBusNum;
-	lpParam[3]  = (LPVOID)lpszDes;
-
-	FormString(strBuff,"    %x/%x      %d             %s",lpParam);
-	PrintLine(strBuff);
+	//Show PCI device information.
+	_hx_printf("    %08X/%08X\t\t  %d\t  %s\r\n", dwDevice, dwVendor, dwBusNum, lpszDes);
 }
 
 //
@@ -497,7 +489,6 @@ static VOID OutputDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 {
 	__PCI_DEVICE_INFO*   lpPciInfo           = NULL;
-	CHAR                 strBuff[80];
 	DWORD                dwLoop              = 0;
 	DWORD                dwDevNum            = 0;
 	DWORD                dwFuncNum           = 0;
@@ -505,7 +496,6 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 	UCHAR                ucResType           = 0;
 	DWORD                dwStartAddr         = 0;
 	DWORD                dwEndAddr           = 0;
-	LPVOID               lppParam[6];
 	
 	if(NULL == lpPhyDev)  //Invalid parameter.
 		return;
@@ -531,7 +521,7 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 			dwEndAddr   = (DWORD)lpPhyDev->Resource[0].Dev_Res.MemoryRegion.lpEndAddr;
 			break;
 		case RESOURCE_TYPE_IO:
-			ucResType = 'I';        //Memory.
+			ucResType = 'P';        //Memory.
 			dwStartAddr = (DWORD)lpPhyDev->Resource[0].Dev_Res.IOPort.wStartPort;
 			dwEndAddr   = (DWORD)lpPhyDev->Resource[0].Dev_Res.IOPort.wEndPort;
 			break;
@@ -539,19 +529,14 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 			break;
 		}
 	}
-	//
-	//Now,we shall print out all device information.
-	//
-	lppParam[0] = (LPVOID)&dwDevNum;
-	lppParam[1] = (LPVOID)&dwFuncNum;
-	lppParam[2] = (LPVOID)&dwVector;
-	lppParam[3] = (LPVOID)&ucResType;
-	lppParam[4] = (LPVOID)&dwStartAddr;
-	lppParam[5] = (LPVOID)&dwEndAddr;
+	
+	//Print out device information.
+	_hx_printf("    Device id = %d,function id = %d,resource as:\r\n",
+		dwDevNum, dwFuncNum);
+	_hx_printf("    [resource] type = I,interrupt = %d\r\n", dwVector);
+	_hx_printf("    [resource] type = %c,startaddr = 0x%0X,endaddr = 0x%0X\r\n",
+		ucResType, dwStartAddr, dwEndAddr);
 
-	PrintLine("    Dev/Func    IntVector    ResType    ResStart      ResEnd");
-	FormString(strBuff,"         %d/%d           %d          %c    0x%x    0x%x",lppParam);
-	PrintLine(strBuff);
 	//
 	//Print out the rest resource information.
 	//
@@ -568,19 +553,18 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 			dwEndAddr   = (DWORD)lpPhyDev->Resource[dwLoop].Dev_Res.MemoryRegion.lpEndAddr;
 			break;
 		case RESOURCE_TYPE_IO:
-			ucResType = 'I';        //Memory.
+			ucResType = 'P';        //Memory.
 			dwStartAddr = (DWORD)lpPhyDev->Resource[dwLoop].Dev_Res.IOPort.wStartPort;
 			dwEndAddr   = (DWORD)lpPhyDev->Resource[dwLoop].Dev_Res.IOPort.wEndPort;
 			break;
 		default:
 			continue;    //Continue to process another.
 		}
-		lppParam[0] = (LPVOID)&ucResType;
-		lppParam[1] = (LPVOID)&dwStartAddr;
-		lppParam[2] = (LPVOID)&dwEndAddr;
-		FormString(strBuff,"                                   %c    0x%x    0x%x",lppParam);
-		PrintLine(strBuff);
+		_hx_printf("    [resource] type = %c,startaddr = 0x%0X,endaddr = 0x%0X\r\n",
+			ucResType, dwStartAddr, dwEndAddr);
 	}
+	//Change a new line.
+	_hx_printf("\r\n");
 	return;
 }
 

@@ -32,7 +32,6 @@ extern "C" {
 //
 BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr);
 
-
 //
 //Constants used by PCI driver.
 //
@@ -108,7 +107,6 @@ BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr);
 //
 //Define a structure to contain PCI device specific information.
 //
-//BEGIN_DEFINE_OBJECT(__PCI_DEVICE_INFO)
 typedef struct{
 	DWORD             dwDeviceType;
 	DWORD             DeviceNum   : 5;
@@ -118,7 +116,6 @@ typedef struct{
 	UCHAR             ucSecondary;   //For PCI-PCI bridge only.
 	UCHAR             ucSubordinate; //For PCI-PCI bridge only.
 } __PCI_DEVICE_INFO;
-//END_DEFINE_OBJECT()
 
 //
 //Device type's definition.

@@ -134,7 +134,7 @@ typedef BOOL              (*__ETHOPS_INITIALIZE)(__ETHERNET_INTERFACE*);
 #define WIFI_POLL_TIME   200
 
 //Maximal ethernet interfaces can exist in system.
-#define MAX_ETH_INTERFACE_NUM 1
+#define MAX_ETH_INTERFACE_NUM 6
 
 //Ethernet Manager object,the core object of HelloX's ethernet framework.
 struct __ETHERNET_MANAGER{

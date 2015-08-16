@@ -528,21 +528,21 @@ static err_t _ethernet_if_init(struct netif *netif)
   /* device capabilities */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
   netif->flags        = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
-	//Set the MAC address of this interface.
-	memcpy(netif->hwaddr,pEthInt->ethMac,ETH_MAC_LEN);
-	
+  //Set the MAC address of this interface.
+  memcpy(netif->hwaddr,pEthInt->ethMac,ETH_MAC_LEN);
+
   return ERR_OK;
 }
 
 //Implementation of AddEthernetInterface,which is called by Ethernet Driver to register an interface
 //object.
 static __ETHERNET_INTERFACE*   AddEthernetInterface(char* ethName,
-                                                  char* mac,
-	                                                LPVOID pIntExtension,
-	                                                __ETHOPS_INITIALIZE Init,
-	                                                __ETHOPS_SEND_FRAME SendFrame,
-	                                                __ETHOPS_RECV_FRAME RecvFrame,
-	                                                __ETHOPS_INT_CONTROL IntCtrl)
+	char* mac,
+	LPVOID pIntExtension,
+	__ETHOPS_INITIALIZE Init,
+	__ETHOPS_SEND_FRAME SendFrame,
+	__ETHOPS_RECV_FRAME RecvFrame,
+	__ETHOPS_INT_CONTROL IntCtrl)
 {
 	__ETHERNET_INTERFACE*        pEthInt            = NULL;
 	BOOL                         bResult            = FALSE;
@@ -852,18 +852,18 @@ static BOOL UnshutInterface(char* ethName)
 
 struct __ETHERNET_MANAGER EthernetManager = {
 	{0},                    //Ethernet interface array.
-  0,                      //Index of free slot.
-  NULL,                   //Handle of ethernet core thread.
-  FALSE,                  //Not initialized yet.
-
-  Initialize,             //Initialize.
-  AddEthernetInterface,   //AddEthernetInterface.
-  ConfigInterface,        //ConfigInterface.
-  Rescan,                 //Rescan.
-  Assoc,                  //Assoc.
-  Delivery,                   //Delivery.
-  SendFrame,              //SendFrame.
-  ShowInt,                //ShowInt.
-  ShutdownInterface,      //ShutdownInterface.
-  UnshutInterface         //UnshutInterface.
+	0,                      //Index of free slot.
+	NULL,                   //Handle of ethernet core thread.
+	FALSE,                  //Not initialized yet.
+	
+	Initialize,             //Initialize.
+	AddEthernetInterface,   //AddEthernetInterface.
+	ConfigInterface,        //ConfigInterface.
+	Rescan,                 //Rescan.
+	Assoc,                  //Assoc.
+	Delivery,               //Delivery.
+	SendFrame,              //SendFrame.
+	ShowInt,                //ShowInt.
+	ShutdownInterface,      //ShutdownInterface.
+	UnshutInterface         //UnshutInterface.
 };

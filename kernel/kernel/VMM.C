@@ -51,16 +51,15 @@ VOID PrintVirtualArea(__VIRTUAL_MEMORY_MANAGER* lpMemMgr)
 //
 //Declaration for member routines.
 //
-
 static LPVOID kVirtualAlloc(__COMMON_OBJECT*,LPVOID,DWORD,DWORD,DWORD,UCHAR*,LPVOID);
 static LPVOID GetPdAddress(__COMMON_OBJECT*);
 static VOID   kVirtualFree(__COMMON_OBJECT*,LPVOID);
-static VOID InsertIntoList(__COMMON_OBJECT*,__VIRTUAL_AREA_DESCRIPTOR*);
+static VOID   InsertIntoList(__COMMON_OBJECT*,__VIRTUAL_AREA_DESCRIPTOR*);
+static LPVOID _GetPhysicalAddress(__COMMON_OBJECT*, LPVOID);
 
 //
 //The implementation of VmmInitialize routine.
 //
-
 BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 {
 	__VIRTUAL_MEMORY_MANAGER*       lpManager      = NULL;
@@ -74,10 +73,13 @@ BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 	}
 
 	lpManager = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
-	lpManager->VirtualAlloc     = kVirtualAlloc;
-	lpManager->VirtualFree      = kVirtualFree;
-	lpManager->GetPdAddress     = GetPdAddress;
-	lpManager->dwVirtualAreaNum = 0;
+	lpManager->VirtualAlloc       = kVirtualAlloc;
+	lpManager->VirtualFree        = kVirtualFree;
+	lpManager->GetPdAddress       = GetPdAddress;
+	lpManager->GetPhysicalAddress = _GetPhysicalAddress;
+	lpManager->dwVirtualAreaNum   = 0;
+	lpManager->lpListHdr          = NULL;
+	lpManager->lpTreeRoot         = NULL;
 
 	//
 	//The following code creates the page index manager object.
@@ -767,9 +769,9 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	//
 	//The following code searchs virtual area list or AVL tree,to check if the lpDesiredAddr
 	//is occupied,if so,then find a new one.
-	//
-	lpEndAddr = lpStartAddr;    //Save the lpStartAddr,because the lpStartAddr may changed
+	//First we save the lpStartAddr,because the lpStartAddr may changed
 	//after the SearchVirtualArea_X is called.
+	lpEndAddr = lpStartAddr;    
 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)  //Should search in the list.
 		lpStartAddr = SearchVirtualArea_l((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
@@ -796,7 +798,6 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	//The following code reserves page table entries for the committed memory.
 	//
 	dwPteFlags = PTE_FLAGS_FOR_IOMAP;    //Normal flags.
-
 	while (dwSize)
 	{
 		if (!lpIndexMgr->ReservePage((__COMMON_OBJECT*)lpIndexMgr,
@@ -1193,7 +1194,6 @@ __TERMINAL:
 //The implementation of GetPdAddress routine.
 //This routine returns the physical address of page directory.
 //
-
 static LPVOID GetPdAddress(__COMMON_OBJECT* lpThis)
 {
 	__VIRTUAL_MEMORY_MANAGER*       lpManager = NULL;
@@ -1204,6 +1204,19 @@ static LPVOID GetPdAddress(__COMMON_OBJECT* lpThis)
 	lpManager = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
 
 	return (LPVOID)lpManager->lpPageIndexMgr->lpPdAddress;
+}
+
+//Get the physical address by giving a virtual address.
+static LPVOID _GetPhysicalAddress(__COMMON_OBJECT* lpThis, LPVOID lpVirtualAddr)
+{
+	__VIRTUAL_MEMORY_MANAGER* lpManager = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
+
+	if (NULL == lpManager)
+	{
+		return NULL;
+	}
+	return lpManager->lpPageIndexMgr->GetPhysicalAddress((__COMMON_OBJECT*)lpManager->lpPageIndexMgr,
+		lpVirtualAddr);
 }
 
 /***********************************************************************************

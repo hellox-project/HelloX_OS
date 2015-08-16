@@ -103,6 +103,127 @@ static int pcnet_check(pcnet_priv_t *dev)
 	return __inw(dev->ioBase + PCNET_RAP) == 88;
 }
 
+//Interrupt control routines,enable or disable receiving interrupt.
+static void pcnet_enable_rint(pcnet_priv_t* dev, BOOL bEnable)
+{
+	__U16 csr0, csr3;
+
+	if (bEnable)
+	{
+		csr0 = pcnet_read_csr(dev, 0);
+		//Set IENA bits of CSR0,to enable interrupt.
+		csr0 |= (1 << 6);
+		pcnet_write_csr(dev, 0, csr0);
+		//Clear RINTM bit in interrupt mask register.
+		csr3 = pcnet_read_csr(dev, 3);
+		csr3 &= (~(1 << 10));
+		pcnet_write_csr(dev, 3, csr3);
+	}
+	else  //Shoud disable the RINT interrupt.
+	{
+		csr3 = pcnet_read_csr(dev, 3);
+		csr3 |= (1 << 10);
+		pcnet_write_csr(dev, 3,csr3);
+	}
+	return;
+}
+
+//Interrupt control routines,enable or disable send over interrupt.
+static void pcnet_enable_sint(pcnet_priv_t* dev, BOOL bEnable)
+{
+	__U16 csr0, csr3;
+
+	if (bEnable)
+	{
+		csr0 = pcnet_read_csr(dev, 0);
+		//Set IENA bits of CSR0,to enable interrupt.
+		csr0 |= (1 << 6);
+		pcnet_write_csr(dev, 0, csr0);
+		//Clear SINTM bit in interrupt mask register.
+		csr3 = pcnet_read_csr(dev, 3);
+		csr3 &= (~(1 << 9));
+		pcnet_write_csr(dev, 3, csr3);
+	}
+	else  //Shoud disable the SINT interrupt.
+	{
+		csr3 = pcnet_read_csr(dev, 3);
+		csr3 |= (1 << 9);
+		pcnet_write_csr(dev, 3,csr3);
+	}
+	return;
+}
+
+//Interrupt control routines,enable or disable initialization done interrupt.
+static void pcnet_enable_idint(pcnet_priv_t* dev, BOOL bEnable)
+{
+	__U16 csr0, csr3;
+
+	if (bEnable)
+	{
+		csr0 = pcnet_read_csr(dev, 0);
+		//Set IENA bits of CSR0,to enable interrupt.
+		csr0 |= (1 << 6);
+		pcnet_write_csr(dev, 0, csr0);
+		//Clear IDOINTM bit in interrupt mask register.
+		csr3 = pcnet_read_csr(dev, 3);
+		csr3 &= (~(1 << 8));
+		pcnet_write_csr(dev, 3, csr3);
+	}
+	else  //Shoud disable the IDOINT interrupt.
+	{
+		csr3 = pcnet_read_csr(dev, 3);
+		csr3 |= (1 << 8);
+		pcnet_write_csr(dev, 3,csr3);
+	}
+	return;
+}
+
+//Acknowledge rint interrupt.
+static void pcnet_ack_rint(pcnet_priv_t* dev)
+{
+	__U16 csr0 = 0;
+	csr0 = pcnet_read_csr(dev, 0);
+	csr0 |= (1 << 10);
+	pcnet_write_csr(dev, 0, csr0);
+}
+
+//Acknowledge sint interrupt.
+static void pcnet_ack_sint(pcnet_priv_t* dev)
+{
+	__U16 csr0 = 0;
+	csr0 = pcnet_read_csr(dev, 0);
+	csr0 |= (1 << 9);
+	pcnet_write_csr(dev, 0, csr0);
+}
+
+//Acknowledge idint interrupt.
+static void pcnet_ack_idint(pcnet_priv_t* dev)
+{
+	__U16 csr0 = 0;
+	csr0 = pcnet_read_csr(dev, 0);
+	csr0 |= (1 << 8);
+	pcnet_write_csr(dev, 0, csr0);
+}
+
+//Enable all PCNet NIC's interrupt,only rint,sint,idint are enavbled.This function
+//should be invoked at the end of the PCNet driver's entry point,since it may lead to system crash
+//when data structures are not established before the end of driver's entry point.
+static void EnableAllInterrupt()
+{
+	pcnet_priv_t* dev = lp;
+
+	while (dev)
+	{
+		if (dev->available)  //Only available NIC's interrupt is set.
+		{
+			pcnet_enable_rint(dev, TRUE);
+			pcnet_enable_sint(dev, TRUE);
+			pcnet_enable_idint(dev, TRUE);
+		}
+		dev = dev->next;
+	}
+}
+
 //Enumerates all PCNet NICs in system,by searching the PCI bus device list.
 //Create a pcnet_priv_t structure for each PCNet NIC device.
 static BOOL EnumPCNet_NIC()
@@ -176,6 +297,7 @@ static BOOL EnumPCNet_NIC()
 		priv->ioBase = iobase;
 		priv->intVector = intVector;
 		priv->pPhyDev = pDev;
+		priv->hInterrupt = NULL;
 		priv->available = 0;  //Will be changed to 1 in probe process.
 
 		//Link the structure to global list.
@@ -285,6 +407,37 @@ static BOOL ProbePCNetNICs()
 	return bResult;
 }
 
+//Interrupt handler of PCNet.
+static DWORD PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
+{
+	pcnet_priv_t* dev = (pcnet_priv_t*)lpParam;
+	__U16 csr0 = 0;
+
+	while((csr0 = pcnet_read_csr(dev, 0)) & (1 << 7))  //Check INTR bit of CSR0.
+	{
+		if (csr0 & (1 << 8)) //IDINT.
+		{
+			pcnet_ack_idint(dev);
+			continue;
+		}
+		if (csr0 & (1 << 9)) //TINT.
+		{
+			pcnet_ack_sint(dev);
+			continue;
+		}
+		if (csr0 & (1 << 10)) //RINT.
+		{
+			//Add notify code here.
+			pcnet_ack_rint(dev);
+			continue;
+		}
+		//Acknowledge all other interrupts.
+		pcnet_write_csr(dev, 0, csr0);
+		_hx_printf("Warning: Unhandled interrupt in PCNet NIC driver,CSR0 = 0x%X.\r\n", csr0);
+	}
+	return 0;
+}
+
 //Initialize one PCNet NIC.
 static BOOL InitPCNetNIC(pcnet_priv_t* dev)
 {
@@ -309,7 +462,7 @@ static BOOL InitPCNetNIC(pcnet_priv_t* dev)
 #ifdef __PCNET_DEBUG
 		_hx_printf("PCNet: Can not write command into PCI device.\r\n");
 #endif
-		//goto __TERMINAL;
+		goto __TERMINAL;
 	}
 	
 	/* Switch pcnet to 32bit mode */
@@ -338,6 +491,22 @@ static BOOL InitPCNetNIC(pcnet_priv_t* dev)
 	val |= 0x3 << 10;
 	pcnet_write_csr(dev, 80, val);
 
+	//Install interrupt handler for current NIC.Please be noted that the actual
+	//interrupt vector value should add INTERRUPT_VECTOR_BASE.
+	if (dev->intVector && (dev->intVector < MAX_INTERRUPT_VECTOR - INTERRUPT_VECTOR_BASE))
+	{
+		dev->hInterrupt = ConnectInterrupt(
+			PCNetInterrupt,
+			dev,
+			dev->intVector + INTERRUPT_VECTOR_BASE);
+		if (NULL == dev->hInterrupt)  //Failed to create interrupt object.
+		{
+			goto __TERMINAL;
+		}
+		//Enable IDINT since it may triggered by the initialization process.
+		//pcnet_enable_idint(dev, TRUE);
+	}
+
 	//Initializes the control block of the NIC,include Init Block,RX and TX rings.
 	//It's a bit complicated caused by the alignment,which is required by the PCNet
 	//controller that both Init Block and TX/RX ring must be aligned with 16 boundary.
@@ -350,6 +519,9 @@ static BOOL InitPCNetNIC(pcnet_priv_t* dev)
 		VIRTUAL_AREA_ALLOCATE_IOCOMMIT,
 		VIRTUAL_AREA_ACCESS_RW,
 		"PCNET_UNCACHE");
+#ifdef __PCNET_DEBUG
+	_hx_printf("PCNet: Allocate uc at va = 0x%0X,pa = 0x%0X\r\n", uc,PCI_TO_MEM_LE(uc,uc));
+#endif
 #else
 	//Use normal memory with cache flushing mechanism to implement the un-cached
 	//zone.
@@ -397,7 +569,7 @@ static BOOL InitPCNetNIC(pcnet_priv_t* dev)
 	*/
 	dev->cur_rx = 0;
 	for (i = 0; i < RX_RING_SIZE; i++) {
-		uc->rx_ring[i].base = (__U32)PCI_TO_MEM_LE(dev, (*lp->rx_buf)[i]);
+		uc->rx_ring[i].base = (__U32)PCI_TO_MEM_LE(dev, (*dev->rx_buf)[i]);
 		uc->rx_ring[i].buf_length = cpu_to_le16(-PKT_BUF_SZ);
 		uc->rx_ring[i].status = cpu_to_le16(0x8000);
 #ifdef __PCNET_DEBUG
@@ -438,7 +610,7 @@ static BOOL InitPCNetNIC(pcnet_priv_t* dev)
 	//Use cache flushing to guarantee the memory synchronization
 	__FLUSH_CACHE(uc, sizeof(*uc), CACHE_FLUSH_WRITEBACK);
 #endif
-	addr = (__U32)PCI_TO_MEM_LE(dev, &lp->uc->init_block);
+	addr = (__U32)PCI_TO_MEM_LE(dev, &dev->uc->init_block);
 	pcnet_write_csr(dev, 1, addr & 0xffff);
 	pcnet_write_csr(dev, 2, (addr >> 16) & 0xffff);
 	
@@ -482,6 +654,10 @@ __TERMINAL:
 		{
 			_hx_free(dev->rx_buf_unalign);
 		}
+		if (dev->hInterrupt)
+		{
+			DisconnectInterrupt(dev->hInterrupt);
+		}
 		dev->available = 0;  //Set as unavailable.
 	}
 	return bResult;
@@ -509,6 +685,7 @@ static BOOL InitPCNetNICs()
 static int pcnet_send(pcnet_priv_t *dev, void *packet, int pkt_len)
 {
 	int i, status;
+	__U16 csr0;
 	struct pcnet_tx_head *entry = &dev->uc->tx_ring[dev->cur_tx];
 
 #ifdef __PCNET_DEBUG
@@ -551,8 +728,12 @@ static int pcnet_send(pcnet_priv_t *dev, void *packet, int pkt_len)
 	__FLUSH_CACHE(&entry, sizeof(entry), CACHE_FLUSH_WRITEBACK);
 #endif
 	
-	/* Trigger an immediate send poll. */
-	pcnet_write_csr(dev, 0, 0x0008);
+	/* Trigger an immediate send poll. We should retrieve the CSR0 register and then
+	   Set the poll demand bit instead by writting 0x0008 directly,which will lead
+	   the NIC disabling all interrupts. */
+	csr0 = pcnet_read_csr(dev, 0);
+	csr0 |= 0x0008;
+	pcnet_write_csr(dev, 0, csr0);
 
 failure:
 	if (++dev->cur_tx >= TX_RING_SIZE)
@@ -567,10 +748,10 @@ failure:
 
 //Receive a packet from PCNet NIC,it maybe called by the polling process
 //of HelloX's network framework.
-static int pcnet_recv(pcnet_priv_t *dev)
+static unsigned char* pcnet_recv(pcnet_priv_t *dev,int* pPktLen)
 {
 	struct pcnet_rx_head *entry;
-	unsigned char *buf;
+	unsigned char *buf = NULL;
 	int pkt_len = 0;
 	__U16 status, err_status;
 	
@@ -626,8 +807,18 @@ static int pcnet_recv(pcnet_priv_t *dev)
 		__writew(status, &entry->status);
         if (++dev->cur_rx >= RX_RING_SIZE)
 				dev->cur_rx = 0;
+
+		if (buf)  //Received a packet,return it.
+		{
+			goto __TERMINAL;
+		}
 	}
-	return pkt_len;
+__TERMINAL:
+	if (pPktLen)
+	{
+		*pPktLen = pkt_len;  //Return the packet's length.
+	}
+	return buf;
 }
 
 //Initializer of the ethernet interface,it will be called by HelloX's ethernet framework.
@@ -650,6 +841,7 @@ static BOOL Ethernet_Ctrl(__ETHERNET_INTERFACE* pInt, DWORD dwOperation, LPVOID 
 static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
 {
 	BOOL          bResult = FALSE;
+	pcnet_priv_t* dev = NULL;
 
 	if (NULL == pInt)
 	{
@@ -661,12 +853,14 @@ static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
 	}
 
 	//Invoke sending routine of NIC to do actual transmition.
-	//Pcnetsend();
-
+	dev = pInt->pIntExtension;
+	if (0 == pcnet_send(dev, pInt->SendBuff, pInt->buffSize))
+	{
+		goto __TERMINAL;
+	}
 	bResult = TRUE;
 
 __TERMINAL:
-
 	return bResult;
 }
 
@@ -680,19 +874,32 @@ __TERMINAL:
 static struct pbuf* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 {
 
-	struct pbuf    *p = NULL;
-	struct pbuf    *q = NULL;
-	unsigned short len = 0;
-	
-	/* Obtain the size of the packet and put it into the "len"
-	variable. */
+	struct pbuf    *p  = NULL;
+	struct pbuf    *q  = NULL;
+	int            len = 0;
+	pcnet_priv_t*  dev = NULL;
+	unsigned char* buf = NULL;
 
-	//len = ENC28J60_Packet_Receive(MAX_FRAMELEN, recvbuf);
+	if (NULL == pInt)
+	{
+		return NULL;
+	}
+	dev = (pcnet_priv_t*)pInt->pIntExtension;
+	if (NULL == dev)
+	{
+		return NULL;
+	}
 
+	buf = pcnet_recv(dev, &len);
+	if (!buf)  //No packet received.
+	{
+		return NULL;
+	}
+
+	//Received a pakcet,delivery it to IP stack.
 	if (len > 0)
 	{
 		int      l = 0;
-
 
 		/* We allocate a pbuf chain of pbufs from the pool. */
 		p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
@@ -700,7 +907,7 @@ static struct pbuf* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 		{
 			for (q = p; q != NULL; q = q->next)
 			{
-				//memcpy((u8_t*)q->payload, (u8_t*)&buffer[l], q->len);
+				memcpy((u8_t*)q->payload, buf, q->len);
 				l = l + q->len;
 			}
 		}
@@ -711,7 +918,6 @@ static struct pbuf* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 #endif
 		}
 	}
-
 	return p;
 }
 
@@ -720,6 +926,10 @@ static struct pbuf* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 BOOL PCNet_Drv_Initialize(LPVOID pData)
 {
 	__ETHERNET_INTERFACE* pNetInt = NULL;
+	char strEthName[64];
+	pcnet_priv_t* dev = lp;
+	int index = 0;
+	BOOL bResult = FALSE;
 
 #ifdef __PCNET_DEBUG
 	_hx_printf("\r\n");  //Start a new line.
@@ -731,6 +941,7 @@ BOOL PCNet_Drv_Initialize(LPVOID pData)
 #ifdef __PCNET_DEBUG
 		_hx_printf("PCNet: Can not enumerate PCNet NIC device.\r\n");
 #endif
+		goto __TERMINAL;
 	}
 
 	//Probe all PCNet NICs.
@@ -739,6 +950,7 @@ BOOL PCNet_Drv_Initialize(LPVOID pData)
 #ifdef __PCNET_DEBUG
 		_hx_printf("PCNet: Probe NIC failed.\r\n");
 #endif
+		goto __TERMINAL;
 	}
 
 	//Initialize all NICs in system.
@@ -747,6 +959,7 @@ BOOL PCNet_Drv_Initialize(LPVOID pData)
 #ifdef __PCNET_DEBUG
 		_hx_printf("PCNet: Initialize NICs failed.\r\n");
 #endif
+		goto __TERMINAL;
 	}
 
 	//Show all NICs in system.
@@ -755,21 +968,47 @@ BOOL PCNet_Drv_Initialize(LPVOID pData)
 #endif
 
 	//Register the ethernet interface to HelloX's network framework.
-	pNetInt = EthernetManager.AddEthernetInterface(
-		PCNET_DEV_NAME, //ETHERNET_NAME,
-		NULL, //(char*)&macaddr[0],
-		(LPVOID)NULL,
-		Ethernet_Int_Init,
-		Ethernet_SendFrame,
-		Ethernet_RecvFrame,
-		Ethernet_Ctrl);
-
-	if (NULL == pNetInt)
+	dev = lp;
+	index = 0;
+	while (dev)
 	{
+		//Skip the NICs that is not available.
+		if (!dev->available)
+		{
+			dev = dev->next;
+			index ++;
+			continue;
+		}
+
+		//Construct interface's name.
+		_hx_sprintf(strEthName, PCNET_INT_NAME, index);
+		dev->pEthInt = EthernetManager.AddEthernetInterface(
+			strEthName,
+			dev->macAddr,
+			(LPVOID)dev,
+			Ethernet_Int_Init,
+			Ethernet_SendFrame,
+			Ethernet_RecvFrame,
+			Ethernet_Ctrl);
+		if (NULL == dev->pEthInt)
+		{
 #ifdef __PCNET_DEBUG
-		_hx_printf("PCNet: AddEthernetInterface failid.\r\n");
-#endif	
-		return FALSE;
+			_hx_printf("PCNet: Add Ethernet Interface failid[index = %d].\r\n",index);
+#endif
+			//Mark the structure as unavailable,it will be released later.
+			dev->available = 0;
+		}
+		//Process next one.
+		dev = dev->next;
+		index ++;
 	}
-	return TRUE;
+
+	//Enable all interrupts of ALL NICs in system.
+	EnableAllInterrupt();
+
+	//Mark the driver loading process is successful.
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
 }

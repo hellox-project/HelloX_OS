@@ -16,15 +16,25 @@
 #ifndef __PCNET_H__
 #define __PCNET_H__ 
 
+//Macro to control the debugging functions of PCNet.
+//#define __PCNET_DEBUG
+
 //Some macros used to endian converting.
 #define cpu_to_le16(v)  (v)
 #define cpu_to_le32(v)  (v)
-#define PCI_TO_MEM_LE(dev,m)  (m)
 
-//Macro to control the debugging functions of PCNet.
-#define __PCNET_DEBUG
+#ifdef __CFG_SYS_VMM
+#define PCI_TO_MEM_LE(dev,m) \
+	    lpVirtualMemoryMgr->GetPhysicalAddress((__COMMON_OBJECT*)lpVirtualMemoryMgr,m)
+#else
+#define PCI_TO_MEM_LE(dev,m) (m)
+#endif
 
-//Device name of the PCNet NIC.
+//Ethernet interface name of PCNet.
+#define PCNET_INT_NAME "PCNet Ethernet Interface[%d]"
+
+//Device name of the PCNet NIC,please be aware that the
+//device name is different to ethernet interface name.
 #define PCNET_DEV_NAME "\\\\.\\PCNet_NIC"
 
 //Vendor ID and device ID of PCNet NIC.
@@ -114,6 +124,10 @@ typedef struct pcnet_priv {
 	char* chip_name;
 	/* The corresponding physical device. */
 	__PHYSICAL_DEVICE* pPhyDev;
+	/* The ethernet interface object of this interface. */
+	__ETHERNET_INTERFACE* pEthInt;
+	/* Interrupt object of this NIC. */
+	LPVOID hInterrupt;
 } pcnet_priv_t;
 
 //Entry point of PCNet NIC device.
