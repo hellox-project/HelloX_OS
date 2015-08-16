@@ -102,14 +102,35 @@ extern "C" {
 //
 //This macros is used to flush cache's content to memory.
 //
+//Flags to control the cache flushing.
+#define CACHE_FLUSH_WRITEBACK   0x00000001
+#define CACHE_FLUSH_INVALIDATE  0x00000002
 #ifdef __I386__
 #ifdef __GCC__
-	#define FLUSH_CACHE()  {__asm__ ("wbinvd \n\t"::);}
+#define __FLUSH_CACHE(addr,leng,flags)  {__asm__ ("wbinvd \n\t"::);}
 #else
-	#define FLUSH_CACHE()  {__asm wbinvd}
+#define __FLUSH_CACHE(addr,leng,flags) \
+    { \
+        if(CACHE_FLUSH_WRITEBACK == flags) \
+		        { \
+            __asm wbinvd \
+			__asm nop \
+			__asm nop \
+			__asm nop \
+			__asm nop \
+		        } \
+		        else if(CACHE_FLUSH_INVALIDATE == flags) \
+	        { \
+            __asm invd \
+			__asm nop \
+			__asm nop \
+			__asm nop \
+			__asm nop \
+	        } \
+	} 
 #endif
 #else
-#define FLUSH_CACHE
+#define __FLUSH_CACHE(addr,leng,flags)
 #endif
 
 #define SYNCHRONIZE_MEMORY() FLUSH_CACHE()
@@ -129,15 +150,13 @@ extern "C" {
 //
 #ifdef __I386__
 #ifdef __GCC__
-	#define BARRIER() __asm__("LOCK addl $0, (%%esp) \n\t"::);
+#define __BARRIER() __asm__("LOCK addl $0, (%%esp) \n\t"::);
 #else
-	#define BARRIER() __asm LOCK add dword ptr [esp],0
+#define __BARRIER() __asm LOCK add dword ptr [esp],0
 #endif
-
-	#else
-#define BARRIER()
+#else
+#define __BARRIER()
 #endif
-
 
 typedef unsigned long __ATOMIC_T;
 

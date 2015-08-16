@@ -150,4 +150,3 @@ VOID PageUninitialize(__COMMON_OBJECT*);
 #endif
 
 #endif  //PAGEIDX.H
-

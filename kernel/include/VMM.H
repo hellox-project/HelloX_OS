@@ -101,8 +101,10 @@ END_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)    //End of virtual area descriptor
                                                       //routine,the dwAllocFlags variable of
 													  //virtual area descriptor never set this
 													  //value.
+#define VIRTUAL_AREA_ALLOCATE_IOCOMMIT  0x00000010    //Allocate and commit with cache disabled.
+#define VIRTUAL_AREA_ALLOCATE_IOREMAP   0x00000020    //Remap a existing physical address to
+													  //an IO virtual region.
 #define VIRTUAL_AREA_ALLOCATE_DEFAULT   VIRTUAL_AREA_ALLOCATE_ALL
-
 
 //
 //The definition of virtual memory manager object.
@@ -134,17 +136,17 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 		                                            LPVOID      //Start virtual address.
 													);
 	LPVOID                           (*GetPdAddress)(__COMMON_OBJECT*);
+	LPVOID                           (*GetPhysicalAddress)(__COMMON_OBJECT*, LPVOID);
 END_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)    //End definition of virtual memory manager object.
 
 //
 //The declaration of VmmInitialize routine.
 //
-
 BOOL VmmInitialize(__COMMON_OBJECT*);
 
 //
 //The definition of VmmUninitialize routine.
-
+//
 VOID VmmUninitialize(__COMMON_OBJECT*);
 
 /***********************************************************************************
