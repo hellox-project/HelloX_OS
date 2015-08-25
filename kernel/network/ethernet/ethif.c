@@ -14,13 +14,8 @@
 //    Lines number              :
 //***********************************************************************/
  
- #ifndef __STDAFX_H__
- #include "StdAfx.h"
- #endif
- 
- #ifndef __KAPI_H__
- #include "kapi.h"
- #endif
+#include <StdAfx.h>
+#include <kapi.h>
 
 #include "lwip/opt.h"
 #include "lwip/def.h"
@@ -146,12 +141,61 @@ static void netifConfig(struct netif* pif,__ETH_INTERFACE_STATE* pifState,__ETH_
 *
 */
 
+//Try to receive a packet from a specified interface.This routine maybe called by the
+//ethernet core thread when processing DELIVERY message.
+static void _eth_if_input(__ETHERNET_INTERFACE* pEthInt)
+{
+	struct pbuf*    p     = NULL;
+	struct netif*   netif = NULL;
+	err_t           err   = 0;
+	
+	if (NULL == pEthInt)
+	{
+		return;
+	}
+
+	if (pEthInt->RecvFrame)
+	{
+		netif = (struct netif*)pEthInt->pL3Interface;
+		if (NULL == netif)  //Should not occur.
+		{
+			BUG();
+		}
+		while (TRUE)
+		{
+			p = pEthInt->RecvFrame(pEthInt);
+			if (NULL == p)  //No available frames.
+			{
+				break;
+			}
+			//Update interface statistics.
+			pEthInt->ifState.dwFrameRecv++;
+			pEthInt->ifState.dwTotalRecvSize += p->tot_len;
+			//Delivery the frame to layer 3.
+			err = netif->input(p, netif);
+			if (err != ERR_OK)
+			{
+#ifdef __ETH_DEBUG
+				_hx_printf("  _eth_if_input: Can not delivery [%s]'s frame to IP,err = %d.\r\n",
+					pEthInt->ethName, err);
+#endif
+				pbuf_free(p);
+				p = NULL;
+			}
+			else
+			{
+				pEthInt->ifState.dwFrameRecvSuccess++;
+			}
+		}
+	}
+}
+
 //A helper routine,to poll all ethernet interface(s) to check if there is frame availabe,
 //and delivery it to layer 3 if so.
 static void _ethernet_if_input()
 {
 	__ETHERNET_INTERFACE*  pEthInt  = NULL;
-  struct pbuf*           p        = NULL;
+	struct pbuf*           p        = NULL;
 	struct netif*          netif    = NULL;
 	err_t                  err      = 0;
 	int                    index    = 0;
@@ -355,6 +399,9 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 					break;
 					
 				case ETH_MSG_RECEIVE:              //Receive frame,may triggered by interrupt.
+					pEthInt = (__ETHERNET_INTERFACE*)msg.dwParam;
+					_eth_if_input(pEthInt);
+					break;
 				case KERNEL_MESSAGE_TIMER:
 					if(WIFI_TIMER_ID == msg.dwParam) //Must match the receiving timer ID.
 					{
@@ -426,6 +473,19 @@ __TERMINAL:
 	return bResult;
 }
 
+//Trigger the ethernet core thread to launch a receiving poll.Mainly used by
+//device drivers.
+static BOOL _TriggerReceive(__ETHERNET_INTERFACE* pEthInt)
+{
+	__KERNEL_THREAD_MESSAGE msg;
+
+	msg.wCommand = ETH_MSG_RECEIVE;
+	msg.wParam = 0;
+	msg.dwParam = (DWORD)pEthInt;
+	SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg);
+	return TRUE;
+}
+
 //Send out a ethernet frame through the specified ethernet interface.
 static BOOL SendFrame(__ETHERNET_INTERFACE* pEthInt,struct pbuf* p)
 {
@@ -471,6 +531,13 @@ static BOOL SendFrame(__ETHERNET_INTERFACE* pEthInt,struct pbuf* p)
 	bResult = TRUE;
 	
 __TERMINAL:
+	if (!bResult)
+	{
+		if (pAssoc)
+		{
+			KMemFree(pAssoc, KMEM_SIZE_TYPE_ANY, 0);
+		}
+	}
 	return bResult;
 }
 
@@ -520,11 +587,11 @@ static err_t _ethernet_if_init(struct netif *netif)
    * from it if you have to do some checks before sending (e.g. if link
    * is available...) */
   netif->output       = etharp_output;
-	netif->hwaddr_len   = ETH_MAC_LEN;
+  netif->hwaddr_len   = ETH_MAC_LEN;
   netif->linkoutput   = eth_level_output;
 	
   /* maximum transfer unit */
-  netif->mtu          = 1500;
+  netif->mtu          = ETH_DEFAULT_MTU;
   /* device capabilities */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
   netif->flags        = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
@@ -851,11 +918,11 @@ static BOOL UnshutInterface(char* ethName)
 */
 
 struct __ETHERNET_MANAGER EthernetManager = {
-	{0},                    //Ethernet interface array.
+	{ 0 },                    //Ethernet interface array.
 	0,                      //Index of free slot.
 	NULL,                   //Handle of ethernet core thread.
 	FALSE,                  //Not initialized yet.
-	
+
 	Initialize,             //Initialize.
 	AddEthernetInterface,   //AddEthernetInterface.
 	ConfigInterface,        //ConfigInterface.
@@ -863,6 +930,7 @@ struct __ETHERNET_MANAGER EthernetManager = {
 	Assoc,                  //Assoc.
 	Delivery,               //Delivery.
 	SendFrame,              //SendFrame.
+	_TriggerReceive,        //TriggerReceive.
 	ShowInt,                //ShowInt.
 	ShutdownInterface,      //ShutdownInterface.
 	UnshutInterface         //UnshutInterface.

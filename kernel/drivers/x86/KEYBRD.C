@@ -43,6 +43,7 @@ static void NumLockHandler(KEY_UP_DOWN,unsigned char);
 static void AltHandler(KEY_UP_DOWN event,unsigned char);
 static void CtrlHandler(KEY_UP_DOWN event,unsigned char);
 static void DeleteHandler(KEY_UP_DOWN event,unsigned char);
+unsigned char GetScanCode();
 
 //Map entry to associate the handler,scan code(is array index) and ascii code
 //or VK value.
@@ -446,11 +447,14 @@ static void DeleteHandler(KEY_UP_DOWN event,unsigned char VKCode)
 //do something to initialize the input device.
 static BOOL InitKeyBoard()
 {
+	//Drain out the pending key press.
+	GetScanCode();
+	GetScanCode();
+	GetScanCode();
 	return TRUE;
 }
 
 //Get scan code from key board data register.
-//static
 unsigned char GetScanCode()
 {
 #ifdef __I386__

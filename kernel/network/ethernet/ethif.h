@@ -160,6 +160,7 @@ struct __ETHERNET_MANAGER{
 	BOOL                    (*Assoc)(char* ethName,__WIFI_ASSOC_INFO* pInfo);
 	BOOL                    (*Delivery)(__ETHERNET_INTERFACE* pIf,struct pbuf* p);  //Called by ethernet device driver.
 	BOOL                    (*SendFrame)(__ETHERNET_INTERFACE*,struct pbuf*);  //Called by layer 3 entities.
+	BOOL                    (*TriggerReceive)(__ETHERNET_INTERFACE*); //Trigger a receiving poll.
 	VOID                    (*ShowInt)(char* ethName);
 	BOOL                    (*ShutdownInterface)(char* ethName);
 	BOOL                    (*UnshutInterface)(char* ethName);
