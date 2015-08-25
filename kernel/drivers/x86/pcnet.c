@@ -427,7 +427,8 @@ static DWORD PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
 		}
 		if (csr0 & (1 << 10)) //RINT.
 		{
-			//Add notify code here.
+			//Notify the ethernet core thread to launch a polling immediately.
+			EthernetManager.TriggerReceive(dev->pEthInt);
 			pcnet_ack_rint(dev);
 			continue;
 		}
