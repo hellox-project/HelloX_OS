@@ -153,6 +153,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="appldr\AppLoader.C" />
+    <ClCompile Include="appldr\AppLoader_ELF.C" />
+    <ClCompile Include="appldr\AppLoader_PE.C" />
+    <ClCompile Include="appldr\AppLoader_STM32.C" />
     <ClCompile Include="arch\x86\BIOSVGA.C" />
     <ClCompile Include="drivers\x86\com.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
@@ -272,7 +276,6 @@
     <ClCompile Include="kernel\STATCPU.C" />
     <ClCompile Include="kernel\SYNOBJ.C" />
     <ClCompile Include="kernel\synobj2.c" />
-    <ClCompile Include="kernel\SYSCALL.C" />
     <ClCompile Include="kernel\SYSTEM.C" />
     <ClCompile Include="kernel\TYPES.C" />
     <ClCompile Include="kernel\VMM.C" />
@@ -310,6 +313,10 @@
     <ClCompile Include="network\api\tcpip.c" />
     <ClCompile Include="network\core\timers.c" />
     <ClCompile Include="network\core\udp.c" />
+    <ClCompile Include="syscall\SYSCALL.C" />
+    <ClCompile Include="syscall\SYSCALL_IO.C" />
+    <ClCompile Include="syscall\SYSCALL_KERNEL.C" />
+    <ClCompile Include="syscall\SYSCALL_SOCKET.C" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\BIOSVGA.H" />
@@ -345,7 +352,6 @@
     <ClInclude Include="INCLUDE\RINGBUFF.H" />
     <ClInclude Include="INCLUDE\STATCPU.H" />
     <ClInclude Include="INCLUDE\StdAfx.h" />
-    <ClInclude Include="INCLUDE\SYSCALL.H" />
     <ClInclude Include="include\sysnet.h" />
     <ClInclude Include="INCLUDE\SYSTEM.H" />
     <ClInclude Include="INCLUDE\TYPES.H" />
@@ -430,6 +436,9 @@
     <ClInclude Include="include\lwip\sockets.h" />
     <ClInclude Include="include\lwip\sys.h" />
     <ClInclude Include="include\arch\sys_arch.h" />
+    <ClInclude Include="syscall\K_API_DEF.H" />
+    <ClInclude Include="syscall\SYSCALL.H" />
+    <ClInclude Include="syscall\SYSCALL_KERNEL.H" />
   </ItemGroup>
   <ItemGroup>
     <None Include="arch\x86\BOOTSECT.ASM" />

@@ -16,6 +16,7 @@
 #include "StdAfx.h"
 #include "pci_drv.h"
 #include "kmemmgr.h"
+#include "stdio.h"
 
 //Read configuration from PCI bus.
 static DWORD PciReadConfig(__SYSTEM_BUS* bus, DWORD dwConfigReg,int size)

@@ -6,20 +6,22 @@
 //                                This module countains shell procedures.
 //                                Some functions in shell.cpp originally are moved to this file to reduce the
 //                                shell.cpp's size.
-//    Last modified Author      :
-//    Last modified Date        :
-//    Last modified Content     :
+//    Last modified Author      :tywind
+//    Last modified Date        :Aug 25,2015
+//    Last modified Content     :modify loadapp and gui route 
 //                                1.
 //                                2.
 //    Lines number              :
 //***********************************************************************/
-#ifndef __STDAFX_H__
+
 #include "StdAfx.h"
-#endif
 #include "kapi.h"
 #include "shell.h"
 #include "string.h"
 #include "stdio.h"
+#include "stdlib.h"
+#include "../appldr/AppLoader.h"
+
 
 //Handler of version command.
 VOID VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
@@ -347,7 +349,7 @@ static BOOL ExecuteBinModule(DWORD dwStartAddress,LPVOID pParams)
 		(__KERNEL_THREAD_ROUTINE)dwStartAddress,
 		pParams,
 		NULL,
-		NULL);
+		"gui");
 	if(NULL == hKernelThread)  //Can not create the thread.
 	{
 		goto __TERMINAL;
@@ -373,100 +375,64 @@ __TERMINAL:
 
 //Handler for loadapp command.
 VOID LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
-{		
-	CHAR      FullPathName[128]  = {0};  //Full name of binary file.
-	DWORD     dwStartAddr        = 0;       //Load address of the module.
-	HANDLE    hBinFile           = NULL;
-	
+{	
+	__CMD_PARA_OBJ* pAppParaObj        = NULL;
+	CHAR            FullPathName[128]  = {0};  //Full name of binary file.
+	BYTE            i                  = 0; 
+
 
 	if(pCmdParaObj->byParameterNum < 2)
 	{
-		PrintLine("Please specify both app module name and load address.");
+		PrintLine("Please specify app module's name.");
 		goto __TERMINAL;
 	}
 
-	if((0 == pCmdParaObj->Parameter[0][0]) || (0 == pCmdParaObj->Parameter[1][0]))
+	pAppParaObj = (__CMD_PARA_OBJ*)_hx_malloc(sizeof(__CMD_PARA_OBJ));
+	if(NULL == pAppParaObj)
 	{
-		PrintLine("Invalid parameter(s).");
+		PrintLine("Please specify app module's name.");
+
 		goto __TERMINAL;
 	}
+	memzero(pAppParaObj,sizeof(__CMD_PARA_OBJ));
 
 	//Construct the full path and name.
 	strcpy(FullPathName,"C:\\PTHOUSE\\");
-	strcat(FullPathName,pCmdParaObj->Parameter[0]);
-	if(!Str2Hex(pCmdParaObj->Parameter[1],&dwStartAddr))
+	strcat(FullPathName,pCmdParaObj->Parameter[1]);
+	
+	//copy params
+	pAppParaObj->byParameterNum = pCmdParaObj->byParameterNum-1;
+	for(i=0;i<pAppParaObj->byParameterNum;i++)
 	{
-		PrintLine("Invalid load address.");
-		goto __TERMINAL;
+		 pAppParaObj->Parameter[i] = (CHAR*)_hx_malloc(CMD_PARAMETER_LEN+1);
+		 strcpy(pAppParaObj->Parameter[i],pCmdParaObj->Parameter[i+1]);
 	}
-	//Try to open the binary file.
-	hBinFile = CreateFile(
-		FullPathName,
-		FILE_ACCESS_READ,
-		0,
-		NULL);
-	if(NULL == hBinFile)
-	{
-		PrintLine("Can not open the specified file in OS root directory.");
-		goto __TERMINAL;
-	}
-	//Try to load and execute it.
-	if(!LoadBinModule(hBinFile,dwStartAddr))
-	{
-		PrintLine("Can not load the specified binary file.");
-		goto __TERMINAL;
-	}
-	if(!ExecuteBinModule(dwStartAddr,NULL))
-	{
-		PrintLine("Can not execute the binary module.");
-		goto __TERMINAL;
-	}
+	
+	RunDynamicAppModule(FullPathName,pAppParaObj);
+	
 __TERMINAL:
 
-	if(NULL != hBinFile)  //Destroy it.
+	if(pAppParaObj)
 	{
-		CloseFile(hBinFile);
+		for(i=0;i<pAppParaObj->byParameterNum;i++)
+		{
+			_hx_free(pAppParaObj->Parameter[i]);
+		}
+
+		_hx_free(pAppParaObj);
 	}
 		
 	return;
 }
+
+
 
 //Handler for GUI command,it only call LoadappHandler by given
 //the GUI module's name and it's start address after loaded into
 //memory.
 VOID GUIHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	HANDLE	hBinFile = NULL;
-	CHAR    FullPathName[64];  //Full name of binary file.
-	DWORD	dwStartAddr = 0x170000;
-
-	strcpy(FullPathName, "C:\\PTHOUSE\\hcngui.bin");
-	//Try to open the binary file.
-	hBinFile = CreateFile(
-		FullPathName,
-		FILE_ACCESS_READ,
-		0,
-		NULL);
-	if(NULL == hBinFile)
-	{
-		PrintLine("Can not open the specified file in OS root directory.");
-		goto __TERMINAL;
-	}
-	//Try to load and execute it.
-	if(!LoadBinModule(hBinFile,dwStartAddr))
-	{
-		PrintLine("Can not load the specified binary file.");
-		goto __TERMINAL;
-	}
-	if(!ExecuteBinModule(dwStartAddr,NULL))
-	{
-		PrintLine("Can not execute the binary module.");
-		goto __TERMINAL;
-	}
-
-__TERMINAL:
-	if(NULL != hBinFile)  //Destroy it.
-	{
-		CloseFile(hBinFile);
-	}
+	RunDynamicAppModule("C:\\PTHOUSE\\hcngui.dll",pCmdParaObj);
+	//RunDynamicAppModule("C:\\PTHOUSE\\app_pe.exe",pCmdParaObj);
+	//RunDynamicAppModule("C:\\PTHOUSE\\edp.exe",pCmdParaObj);
 }

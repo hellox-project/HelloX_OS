@@ -87,6 +87,15 @@
     <Filter Include="Header Files\net_hdr">
       <UniqueIdentifier>{a890e948-fd9d-4f30-bbb4-02baa24bacf6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\syscall">
+      <UniqueIdentifier>{e736a1b5-dcfa-4982-b45d-bae346dad8c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\syscal_hdr">
+      <UniqueIdentifier>{d72ec52d-18dc-4466-a6d4-00b287ffea25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\appldr">
+      <UniqueIdentifier>{28af8e30-bdd5-4a37-a179-3215341883a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="drivers\x86\com.c">
@@ -264,9 +273,6 @@
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="kernel\synobj2.c">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\SYSCALL.C">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="kernel\SYSTEM.C">
@@ -560,6 +566,30 @@
     <ClCompile Include="drivers\x86\pcnet.c">
       <Filter>Source Files\drivers</Filter>
     </ClCompile>
+    <ClCompile Include="syscall\SYSCALL.C">
+      <Filter>Source Files\syscall</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall\SYSCALL_IO.C">
+      <Filter>Source Files\syscall</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall\SYSCALL_KERNEL.C">
+      <Filter>Source Files\syscall</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall\SYSCALL_SOCKET.C">
+      <Filter>Source Files\syscall</Filter>
+    </ClCompile>
+    <ClCompile Include="appldr\AppLoader.C">
+      <Filter>Source Files\appldr</Filter>
+    </ClCompile>
+    <ClCompile Include="appldr\AppLoader_ELF.C">
+      <Filter>Source Files\appldr</Filter>
+    </ClCompile>
+    <ClCompile Include="appldr\AppLoader_PE.C">
+      <Filter>Source Files\appldr</Filter>
+    </ClCompile>
+    <ClCompile Include="appldr\AppLoader_STM32.C">
+      <Filter>Source Files\appldr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -644,9 +674,6 @@
       <Filter>Header Files\include</Filter>
     </ClInclude>
     <ClInclude Include="INCLUDE\StdAfx.h">
-      <Filter>Header Files\include</Filter>
-    </ClInclude>
-    <ClInclude Include="INCLUDE\SYSCALL.H">
       <Filter>Header Files\include</Filter>
     </ClInclude>
     <ClInclude Include="include\sysnet.h">
@@ -915,6 +942,15 @@
     </ClInclude>
     <ClInclude Include="network\ethernet\ethif.h">
       <Filter>Header Files\net_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall\K_API_DEF.H">
+      <Filter>Header Files\syscal_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall\SYSCALL.H">
+      <Filter>Header Files\syscal_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall\SYSCALL_KERNEL.H">
+      <Filter>Header Files\syscal_hdr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

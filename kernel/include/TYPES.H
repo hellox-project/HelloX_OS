@@ -40,6 +40,7 @@ typedef int                 INT;
 typedef unsigned char       UCHAR;
 typedef short               WCHAR;
 typedef short               TCHAR;
+typedef long                LONG;
 
 typedef unsigned long       ULONG;
 typedef unsigned int        UINT;
@@ -55,6 +56,8 @@ typedef const char*         LPCSTR;
 
 typedef void                VOID;
 typedef void*               LPVOID;
+
+typedef unsigned char*      LPBYTE;
 
 //Extra definitions maybe used by some GPL code,or you can
 //add your specific data type definitions here to comply your
