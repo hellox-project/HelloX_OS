@@ -29,7 +29,7 @@
 #endif
 #include "system.h"
 #include "types.h"
-#include "syscall.h"
+#include "../syscall/syscall.h"
 #include "stdio.h"
 #include "ktmsg.h"
 

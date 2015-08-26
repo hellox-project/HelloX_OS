@@ -32,11 +32,9 @@
 #ifndef __PROCESS_H__
 #define __PROCESS_H__
 
-
 #include "types.h"
 #include "commobj.h"
 #include "kapi.h"
-#include "syscall.h"
 
 //Link list node used to contain all kernel objects belong to on process.
 typedef struct tag__KOBJ_LIST_NODE{
@@ -142,6 +140,5 @@ extern __PROCESS_MANAGER ProcessManager;
 
 //A helper routine used to debugging,dumpout all process information.
 VOID DumpProcess();
-
 
 #endif //__PROCESS_H__

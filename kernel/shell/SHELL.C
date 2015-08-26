@@ -1,4 +1,4 @@
-//***********************************************************************/
+﻿//***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : May,27 2004
 //    Module Name               : shell.cpp
@@ -11,6 +11,7 @@
 //                                2.
 //    Lines number              :
 //***********************************************************************/
+
 #ifndef __STDAFX_H__
 #include "StdAfx.h"
 #endif
@@ -92,6 +93,7 @@ __CMD_OBJ  CmdObj[] = {
 	{"ioctrl"   ,    IoCtrlApp},
 	{"sysdiag"  ,    SysDiagApp},
 	{"loadapp"  ,    LoadappHandler},
+	{"la"       ,    LoadappHandler},
 	{"gui"      ,    GUIHandler},
 #ifdef __CFG_APP_JVM  //Java VM is enabled.
 	{"jvm"      ,    JvmHandler},
