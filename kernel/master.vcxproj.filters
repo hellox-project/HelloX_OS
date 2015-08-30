@@ -23,10 +23,6 @@
     <Filter Include="Source Files\osentry">
       <UniqueIdentifier>{1ce50db2-8163-4f93-a138-53819420cac5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\kernel">
-      <UniqueIdentifier>{2ab20da3-fb06-4503-964c-7ae0e770da37}</UniqueIdentifier>
-      <Extensions>.cpp</Extensions>
-    </Filter>
     <Filter Include="Source Files\network">
       <UniqueIdentifier>{75a7017c-537e-49b1-b808-4bc8c3deaaec}</UniqueIdentifier>
     </Filter>
@@ -86,6 +82,16 @@
     </Filter>
     <Filter Include="Header Files\bsd_hdr">
       <UniqueIdentifier>{7a17f3ee-f237-47d6-8aaa-a729083628f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\kernel">
+      <UniqueIdentifier>{2ab20da3-fb06-4503-964c-7ae0e770da37}</UniqueIdentifier>
+      <Extensions>.cpp</Extensions>
+    </Filter>
+    <Filter Include="Source Files\bluttooth">
+      <UniqueIdentifier>{e1c4960e-738e-47b4-9a42-cac0b0b567be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\bt_hdr">
+      <UniqueIdentifier>{aa470ad4-363a-499f-b24d-6ed061b87daf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -557,11 +563,29 @@
     <ClCompile Include="lib\stat.c">
       <Filter>Source Files\jvm</Filter>
     </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\fcs.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\hci.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\l2cap.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\lwbt_memp.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\rfcomm.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\sdp.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\lwbt\uartif.c">
+      <Filter>Source Files\bluttooth</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\arch\bpstruct.h">
-      <Filter>Header Files\include</Filter>
-    </ClInclude>
     <ClInclude Include="INCLUDE\BUFFMGR.H">
       <Filter>Header Files\include</Filter>
     </ClInclude>
@@ -909,6 +933,33 @@
     </ClInclude>
     <ClInclude Include="lib\sys\stat.h">
       <Filter>Source Files\lib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\bd_addr.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\fcs.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\hci.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\l2cap.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\lwbt_memp.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\lwbtopts.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\phybusif.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\rfcomm.h">
+      <Filter>Header Files\bt_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lwbt\sdp.h">
+      <Filter>Header Files\bt_hdr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

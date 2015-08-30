@@ -92,6 +92,15 @@
 #define SMEMCPY(dst,src,len)            memcpy(dst,src,len)
 #endif
 
+
+/**
+* MEMCPY: override this if you have a faster implementation at hand than the
+* one included in your C library
+*/
+#ifndef MEMSET
+#define MEMSET(dst,val,len)            memset(dst,val,len)
+#endif
+
 /*
    ------------------------------------
    ---------- Memory options ----------

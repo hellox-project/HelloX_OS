@@ -153,6 +153,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="arch\x86\BIOSVGA.C" />
+    <ClCompile Include="bluetooth\lwbt\fcs.c" />
+    <ClCompile Include="bluetooth\lwbt\hci.c" />
+    <ClCompile Include="bluetooth\lwbt\l2cap.c" />
+    <ClCompile Include="bluetooth\lwbt\lwbt_memp.c" />
+    <ClCompile Include="bluetooth\lwbt\rfcomm.c" />
+    <ClCompile Include="bluetooth\lwbt\sdp.c" />
+    <ClCompile Include="bluetooth\lwbt\uartif.c" />
     <ClCompile Include="drivers\x86\com.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
     <ClCompile Include="drivers\x86\IDEHD.C" />
@@ -312,7 +319,6 @@
   <ItemGroup>
     <ClInclude Include="arch\x86\BIOSVGA.H" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
-    <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="INCLUDE\BUFFMGR.H" />
     <ClInclude Include="include\CharDisplay.H" />
     <ClInclude Include="INCLUDE\COMMOBJ.H" />
@@ -331,6 +337,15 @@
     <ClInclude Include="INCLUDE\KTMGR.H" />
     <ClInclude Include="include\ktmgr2.h" />
     <ClInclude Include="INCLUDE\KTMSG.H" />
+    <ClInclude Include="include\lwbt\bd_addr.h" />
+    <ClInclude Include="include\lwbt\fcs.h" />
+    <ClInclude Include="include\lwbt\hci.h" />
+    <ClInclude Include="include\lwbt\l2cap.h" />
+    <ClInclude Include="include\lwbt\lwbtopts.h" />
+    <ClInclude Include="include\lwbt\lwbt_memp.h" />
+    <ClInclude Include="include\lwbt\phybusif.h" />
+    <ClInclude Include="include\lwbt\rfcomm.h" />
+    <ClInclude Include="include\lwbt\sdp.h" />
     <ClInclude Include="INCLUDE\MAILBOX.H" />
     <ClInclude Include="INCLUDE\memmgr.h" />
     <ClInclude Include="INCLUDE\MODMGR.H" />
