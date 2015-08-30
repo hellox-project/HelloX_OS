@@ -408,13 +408,15 @@ static BOOL ProbePCNetNICs()
 }
 
 //Interrupt handler of PCNet.
-static DWORD PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
+static BOOL PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
 {
 	pcnet_priv_t* dev = (pcnet_priv_t*)lpParam;
 	__U16 csr0 = 0;
+	BOOL  bResult = FALSE;
 
 	while((csr0 = pcnet_read_csr(dev, 0)) & (1 << 7))  //Check INTR bit of CSR0.
 	{
+		bResult = TRUE;  //Indicates the interrupt is processed.
 		if (csr0 & (1 << 8)) //IDINT.
 		{
 			pcnet_ack_idint(dev);
@@ -436,7 +438,7 @@ static DWORD PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
 		pcnet_write_csr(dev, 0, csr0);
 		_hx_printf("Warning: Unhandled interrupt in PCNet NIC driver,CSR0 = 0x%X.\r\n", csr0);
 	}
-	return 0;
+	return bResult;
 }
 
 //Initialize one PCNet NIC.

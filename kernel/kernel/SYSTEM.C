@@ -40,16 +40,13 @@
 #include "../arch/x86/bios.h"
 #endif
 
-
-
-
+//Performance recorder object used to mesure the performance of timer interrupt.
 __PERF_RECORDER  TimerIntPr = {
 	U64_ZERO,
 	U64_ZERO,
 	U64_ZERO,
 	U64_ZERO
-};                  //Performance recorder object used to mesure
-                                //the performance of timer interrupt.
+};
 
 //
 //TimerInterruptHandler routine.
@@ -219,7 +216,6 @@ __TERMINAL:
 // 1. Insert the current object into interrupt object array(maintenanced by system object);
 // 2. Set the object's data members correctly.
 //
-
 static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT*     lpThis,
 							 __INTERRUPT_HANDLER  lpInterruptHandler,
 							 LPVOID               lpHandlerParam,
@@ -263,18 +259,20 @@ static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT*     lpThis,
 	lpInterrupt->ucVector              = ucVector;
 
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpObjectRoot = lpSystem->lpInterruptVector[ucVector];
+	//lpObjectRoot = lpSystem->lpInterruptVector[ucVector];
+	lpObjectRoot = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
 	if(NULL == lpObjectRoot)    //If this is the first interrupt object of the vector.
 	{
-		System.lpInterruptVector[ucVector]  = lpInterrupt;
+		//System.lpInterruptVector[ucVector]  = lpInterrupt;
+		System.InterruptSlotArray[ucVector].lpFirstIntObject = lpInterrupt;
 	}
 	else
 	{
 		lpInterrupt->lpNextInterruptObject  = lpObjectRoot;
 		lpObjectRoot->lpPrevInterruptObject = lpInterrupt;
-		System.lpInterruptVector[ucVector]  = lpInterrupt;
+		//System.lpInterruptVector[ucVector]  = lpInterrupt;
+		System.InterruptSlotArray[ucVector].lpFirstIntObject = lpInterrupt;
 	}
-	//LEAVE_CRITICAL_SECTION();
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 
 	return (__COMMON_OBJECT*)lpInterrupt;
@@ -283,9 +281,7 @@ static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT*     lpThis,
 //
 //The implementation of kDiskConnectInterrupt.
 //
-
-static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,
-								__COMMON_OBJECT* lpInterrupt)
+static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpInterrupt)
 {
 	__INTERRUPT_OBJECT*   lpIntObject    = NULL;
 	__SYSTEM*             lpSystem       = NULL;
@@ -305,7 +301,8 @@ static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	if(NULL == lpIntObject->lpPrevInterruptObject)  //This is the first interrupt object.
 	{
-		lpSystem->lpInterruptVector[ucVector] = lpIntObject->lpNextInterruptObject;
+		//lpSystem->lpInterruptVector[ucVector] = lpIntObject->lpNextInterruptObject;
+		lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject = lpIntObject->lpNextInterruptObject;
 		if(NULL != lpIntObject->lpNextInterruptObject) //Is not the last object.
 		{
 			lpIntObject->lpNextInterruptObject->lpPrevInterruptObject = NULL;
@@ -319,8 +316,8 @@ static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,
 			lpIntObject->lpNextInterruptObject->lpPrevInterruptObject = lpIntObject->lpPrevInterruptObject;
 		}
 	}
-	//LEAVE_CRITICAL_SECTION();
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	//Should release interrupt object here???
 	return;
 }
 
@@ -467,10 +464,11 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	lpExpObject->lpHandlerParam = NULL;
 	lpExpObject->InterruptHandler = SyscallHandler;
 
-	//ENTER_CRITICAL_SECTION();
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpSystem->lpInterruptVector[INTERRUPT_VECTOR_TIMER]   = lpIntObject;
-	lpSystem->lpInterruptVector[EXCEPTION_VECTOR_SYSCALL] = lpExpObject;
+	//lpSystem->lpInterruptVector[INTERRUPT_VECTOR_TIMER]   = lpIntObject;
+	lpSystem->InterruptSlotArray[INTERRUPT_VECTOR_TIMER].lpFirstIntObject = lpIntObject;
+	//lpSystem->lpInterruptVector[EXCEPTION_VECTOR_SYSCALL] = lpExpObject;
+	lpSystem->InterruptSlotArray[EXCEPTION_VECTOR_SYSCALL].lpFirstIntObject = lpExpObject;
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	bResult = TRUE;
 
@@ -499,7 +497,7 @@ __TERMINAL:
 //
 //GetClockTickCounter routine.
 //
-static DWORD GetClockTickCounter(__COMMON_OBJECT* lpThis)
+static DWORD _GetClockTickCounter(__COMMON_OBJECT* lpThis)
 {
 	__SYSTEM*    lpSystem = (__SYSTEM*)lpThis;
 
@@ -593,23 +591,33 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 #endif
 	}
 
-	lpIntObject = lpSystem->lpInterruptVector[ucVector];
-
+	//lpIntObject = lpSystem->lpInterruptVector[ucVector];
+	lpIntObject = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
 	if(NULL == lpIntObject)  //The current interrupt vector has not handler object.
 	{
 		DefaultIntHandler(lpEsp,ucVector);
+		//Increment the total interrupt counter.
+		lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
 		goto __RETFROMINT;
 	}
 
-	while(lpIntObject)    //Travel the whole interrupt list of this vector.
+	//Travel the whole interrupt list of this vector.
+	while(lpIntObject)
 	{
-		if(lpIntObject->InterruptHandler(lpEsp,
-			lpIntObject->lpHandlerParam))    //If an interrupt object handles the interrupt,then returns.
+		//If an interrupt object handles the interrupt,then returns.
+		if(lpIntObject->InterruptHandler(lpEsp,lpIntObject->lpHandlerParam))
 		{
-			break;
+			//Increment the interrupt counters.
+			lpSystem->InterruptSlotArray[ucVector].dwSuccHandledInt ++;
+			lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
+			//break;
+			goto __RETFROMINT;
 		}
 		lpIntObject = lpIntObject->lpNextInterruptObject;
 	}
+	//Unhandled interrupt.
+	DefaultIntHandler(lpEsp, ucVector);
+	lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
 
 __RETFROMINT:
 	lpSystem->ucIntNestLevel -= 1;    //Decrement interrupt nesting level.
@@ -659,12 +667,12 @@ static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
          //Show kernel thread information which lead the exception.
          if(pKernelThread)
          {
-                   _hx_printf("\tCurrent kthread ID: %d.\r\n",pKernelThread->dwThreadID);
-                   _hx_printf("\tCurrent kthread name: %s.\r\n",pKernelThread->KernelThreadName);
+			 _hx_printf("\tCurrent kthread ID: %d.\r\n",pKernelThread->dwThreadID);
+			 _hx_printf("\tCurrent kthread name: %s.\r\n",pKernelThread->KernelThreadName);
          }
          else //In process of system initialization.
          {
-                   _hx_printf("\tException occured in process of initialization.\r\n");
+			 _hx_printf("\tException occured in process of initialization.\r\n");
          }
 
          //Call processor specific exception handler.
@@ -672,11 +680,11 @@ static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 
          if(totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
          {
-                   _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
-                   _hx_printf("Please power off the system and reboot it.\r\n");
-                   __ENTER_CRITICAL_SECTION(NULL,dwFlags);
-                   while(1); //Make a dead loop.
-                   __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			 _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
+			 _hx_printf("Please power off the system and reboot it.\r\n");
+			 __ENTER_CRITICAL_SECTION(NULL,dwFlags);
+			 while(1); //Make a dead loop.
+			 __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
          }
          return;
 }
@@ -699,13 +707,19 @@ static VOID DispatchException(__COMMON_OBJECT* lpThis,
 	{
 		return;
 	}
-	lpIntObj = lpSystem->lpInterruptVector[ucVector];
+	//lpIntObj = lpSystem->lpInterruptVector[ucVector];
+	lpIntObj = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
 	if(NULL == lpIntObj)  //Null exception,call default exception handler.
 	{
 		DefaultExcepHandler(lpEsp,ucVector);
+		//Update exception counter.
+		lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
+		return;
 	}
 	//Call the exception handler now.For each exception,only one handler present.
 	lpIntObj->InterruptHandler(lpEsp,lpIntObj->lpHandlerParam);
+	lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
+	lpSystem->InterruptSlotArray[ucVector].dwSuccHandledInt ++;
 	return;
 }
 
@@ -895,6 +909,39 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 	return TRUE;
 }
 
+//Return the interrupt vector's statistics information by giving a interrupt vector.
+static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis, UCHAR ucVector, __INTERRUPT_VECTOR_STAT* pStat)
+{
+	__SYSTEM*           lpSystem = (__SYSTEM*)lpThis;
+	__INTERRUPT_SLOT*   pIntSlot = NULL;
+	__INTERRUPT_OBJECT* pIntObject = NULL;
+
+	if (NULL == lpSystem)
+	{
+		return FALSE;
+	}
+	if (ucVector >= MAX_INTERRUPT_VECTOR)
+	{
+		return FALSE;
+	}
+	if (NULL == pStat)
+	{
+		return FALSE;
+	}
+	pIntSlot = &lpSystem->InterruptSlotArray[ucVector];
+	pIntObject = pIntSlot->lpFirstIntObject;
+	//Copy interrupt statistics information.
+	pStat->dwSuccHandledInt = pIntSlot->dwSuccHandledInt;
+	pStat->dwTotalInt       = pIntSlot->dwTotalInt;
+	pStat->dwTotalIntObject = 0;
+	while (pIntObject)
+	{
+		pStat->dwTotalIntObject ++;
+		pIntObject = pIntObject->lpNextInterruptObject;
+	}
+	return TRUE;
+}
+
 /***************************************************************************************
 ****************************************************************************************
 ****************************************************************************************
@@ -904,8 +951,8 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 //The definition of system object.
 
 __SYSTEM System = {
-	{0},                      //lpInterruptVector[MAX_INTERRUPT_VECTOR].
 	NULL,                     //lpTimerQueue.
+	{0},                      //InterruptSlotArray[MAX_INTERRUPT_VECTOR].
 	0,                        //dwClockTickCounter,
 	0,                        //dwNextTimerTick,
 	0,                        //ucIntNestLeve;
@@ -916,15 +963,16 @@ __SYSTEM System = {
 	BeginInitialize,          //BeginInitialize,
 	EndInitialize,            //EndInitialize,
     SystemInitialize,         //Initialize routine.
-	GetClockTickCounter,      //GetClockTickCounter routine.
+	_GetClockTickCounter,     //GetClockTickCounter routine.
 	GetSysTick,               //GetSysTick routine.
 	GetPhysicalMemorySize,    //GetPhysicalMemorySize routine.
 	DispatchInterrupt,        //DispatchInterrupt routine.
 	DispatchException,        //DispatchException routine.
-	kConnectInterrupt,         //kConnectInterrupt.
-	kDiskConnectInterrupt,      //kDiskConnectInterrupt.
-	kSetTimer,                 //kSetTimerRoutine.
-	kCancelTimer
+	kConnectInterrupt,        //kConnectInterrupt.
+	kDiskConnectInterrupt,    //kDiskConnectInterrupt.
+	kSetTimer,                //kSetTimerRoutine.
+	kCancelTimer,             //CancelTimer.
+	_GetInterruptStat         //GetInterruptStat.
 };
 
 //***************************************************************************************
