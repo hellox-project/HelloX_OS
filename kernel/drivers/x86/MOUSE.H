@@ -16,7 +16,7 @@
 #ifndef __MOUSE_H__
 #define __MOUSE_H__
 
-#define MOUSE_INT_VECTOR 0x2C    //Vector of MOUSE device.
+#define MOUSE_INT_VECTOR INTERRUPT_VECTOR_MOUSE    //Vector of MOUSE device.
 
 //Entry point of MOUSE driver.
 BOOL MouseDrvEntry(__DRIVER_OBJECT* lpDriverObject);

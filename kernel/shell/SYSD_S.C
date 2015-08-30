@@ -39,6 +39,7 @@ static DWORD pcilist(__CMD_PARA_OBJ*);
 static DWORD devinfo(__CMD_PARA_OBJ*);
 static DWORD cpuload(__CMD_PARA_OBJ*);
 static DWORD devlist(__CMD_PARA_OBJ*);
+static DWORD showint(__CMD_PARA_OBJ*);
 
 //
 //The following is a map between command and it's handler.
@@ -56,24 +57,16 @@ static struct __SHELL_CMD_MAP{
 	{"devinfo",           devinfo,          "  devinfo              : Print out information about a PCI device."},
 	{"cpuload",           cpuload,          "  cpuload              : Display CPU statistics information."},
 	{"devlist",           devlist,          "  devlist              : List all devices' information in the system."},
+	{ "showint",          showint,          "  showint              : Show interrupt statistics information." },
 	{"exit",              exit,             "  exit                 : Exit the application."},
 	{"help",              help,             "  help                 : Print out this screen."},
 	{NULL,				  NULL,             NULL}
 };
 
 //
-//The following is a helper routine,it only prints out a "#" character as prompt.
-//
-//
-//This is the application's entry point.
-//
-
-
-//
 //The following routine processes the input command string.
 //It is called by SysDiagStart.
 //
-
 static DWORD CommandParser(LPSTR lpszCmdLine)
 {
 	DWORD                  dwRetVal          = SHELL_CMD_PARSER_INVALID;
@@ -164,7 +157,6 @@ static DWORD exit(__CMD_PARA_OBJ* lpCmdObj)
 //
 //The memcheck command's handler.
 //
-
 static DWORD memcheck(__CMD_PARA_OBJ* lpCmdObj)
 {
 	return SHELL_CMD_PARSER_SUCCESS;
@@ -173,7 +165,6 @@ static DWORD memcheck(__CMD_PARA_OBJ* lpCmdObj)
 //
 //The help command's handler.
 //
-
 static DWORD help(__CMD_PARA_OBJ* lpCmdObj)
 {
 	DWORD               dwIndex = 0;
@@ -192,7 +183,6 @@ static DWORD help(__CMD_PARA_OBJ* lpCmdObj)
 //
 //The cintperf command's handler.
 //
-
 static DWORD cintperf(__CMD_PARA_OBJ* lpCmdObj)
 {
 	CHAR              strBuffer[18];
@@ -216,7 +206,6 @@ static DWORD cintperf(__CMD_PARA_OBJ* lpCmdObj)
 //
 //The overload command's handler.
 //
-
 static DWORD overload(__CMD_PARA_OBJ* lpCmdObj)
 {
 	DWORD            dwTimerNum       = 10;
@@ -259,7 +248,6 @@ static DWORD overload(__CMD_PARA_OBJ* lpCmdObj)
 //
 //The beep command's handler.
 //
-
 static DWORD beep(__CMD_PARA_OBJ* lpCmdObj)
 {
 	__KERNEL_THREAD_MESSAGE       Msg;
@@ -329,7 +317,6 @@ __TERMINAL:
 //The implementation of pcilist.
 //This routine is the handler of 'pcilist' command.
 //
-
 static VOID  OutputDevInfo(__PHYSICAL_DEVICE* lpPhyDev);  //Helper routine.
 
 static DWORD pcilist(__CMD_PARA_OBJ* lpParamObj)
@@ -649,3 +636,41 @@ static DWORD devlist(__CMD_PARA_OBJ* pcpo)
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 
+//Show interrupt statistics information.
+static DWORD showint(__CMD_PARA_OBJ* pParamObj)
+{
+	__INTERRUPT_VECTOR_STAT ivs;
+	int i = 0;
+
+	_hx_printf("    Int Vector\t  Total Obj\t  Total Num\t  Succ Num\r\n");
+	for (i = 0; i < MAX_INTERRUPT_VECTOR; i++)
+	{
+		if (!System.GetInterruptStat((__COMMON_OBJECT*)&System,
+			(UCHAR)i, &ivs))
+		{
+			break;
+		}
+		//Only dumpout the interrupt statistics info for used vector.
+		if (ivs.dwTotalIntObject)
+		{
+			_hx_printf("    %d\t\t  %d\t\t  %d\t\t  %d\r\n",
+				i,
+				ivs.dwTotalIntObject,
+				ivs.dwTotalInt,
+				ivs.dwSuccHandledInt);
+		}
+	}
+
+#ifdef __I386__
+	//Show fixed interrupt vector and it's usage.
+	_hx_printf("\r\n");
+	_hx_printf("    %03d: System timer.\r\n", INTERRUPT_VECTOR_TIMER);
+	_hx_printf("    %03d: Keyboard.\r\n", INTERRUPT_VECTOR_KEYBOARD);
+	_hx_printf("    %03d: Mouse.\r\n", INTERRUPT_VECTOR_MOUSE);
+	_hx_printf("    %03d: COM1.\r\n", INTERRUPT_VECTOR_COM1);
+	_hx_printf("    %03d: COM2.\r\n", INTERRUPT_VECTOR_COM2);
+	_hx_printf("    %03d: IDE Harddisk.\r\n", INTERRUPT_VECTOR_IDE);
+	_hx_printf("    %03d: System Call Entry.\r\n", EXCEPTION_VECTOR_SYSCALL);
+#endif
+	return SHELL_CMD_PARSER_SUCCESS;
+}

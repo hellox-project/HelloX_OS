@@ -23,4 +23,8 @@
 
 DWORD SystemIdle(LPVOID lpData);
 
+#ifdef __I386__
+#define SHOW_ALIVE_TIMESPAN (100 * SYSTEM_TIME_SLICE) //100 times of SYSTICK.
+#endif
+
 #endif  //__IDLE_H__
