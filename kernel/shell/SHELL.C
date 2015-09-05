@@ -59,6 +59,7 @@ extern DWORD SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj);      //Handles the sys
 extern DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD GUIHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handler for GUI command,resides in
+extern DWORD BatHandler(__CMD_PARA_OBJ* pCmdParaObj);
 //extern DWORD FileWriteTest(__CMD_PARA_OBJ* pCmdParaObj); 
 
 static DWORD CpuHandler(__CMD_PARA_OBJ* pCmdParaObj);
@@ -716,6 +717,15 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 	}
 	
 	dwIndex = 0;
+
+	//is bat file?
+	if(strstr(lpCmdParamObj->Parameter[0],"./"))
+	{
+		BatHandler(lpCmdParamObj);
+		dwResult = SHELL_CMD_PARSER_SUCCESS;
+		goto __END;
+	}
+
 	while(CmdObj[dwIndex].CmdStr)
 	{
 		if(StrCmp(CmdObj[dwIndex].CmdStr,lpCmdParamObj->Parameter[0]))
@@ -767,10 +777,7 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 	//DefaultHandler(NULL); //Call the default command handler.	
 __END:
 
-	if(NULL != lpCmdParamObj)
-	{
-		ReleaseParameterObj(lpCmdParamObj);
-	}
+	ReleaseParameterObj(lpCmdParamObj);
 	
 	return dwResult;		
 }

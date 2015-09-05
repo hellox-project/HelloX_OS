@@ -51,6 +51,7 @@
 #define SYSCALL_SWITCHTOGRAPHIC       0x34     //SwitchToGraphic.
 #define SYSCALL_SWITCHTOTEXT          0x35     //SwitchToText.
 #define SYSCALL_SETFOCUSTHREAD        0x36     //SetFocusThread.
+#define SYSCALL_GETETHERNETINTERFACESTATE 0x37 //GetEthernetInterfaceState.
 
 // io id start
 #define SYSCALL_CREATEFILE            0x101     //CreateFile.

@@ -24,7 +24,7 @@
 
 
 //Handler of version command.
-VOID VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
+DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	/*GotoHome();
 	ChangeLine();
@@ -36,10 +36,12 @@ VOID VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	//CD_ChangeLine();
 	PrintLine(VERSION_INFO);
 	PrintLine(SLOGAN_INFO);
+
+	return S_OK;
 }
 
 //Handler for memory,this routine print out the memory layout and memory usage status.
-VOID MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
+DWORD  MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	CHAR   buff[256];
 	DWORD  dwFlags;
@@ -80,6 +82,8 @@ VOID MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	PrintLine(buff);
 	_hx_sprintf(buff,"    Free operation times  : %d/%d",dwFreeTimesH,dwFreeTimesL);
 	PrintLine(buff);
+
+	return S_OK;
 }
 
 //Local variables for sysinfo command.
@@ -104,7 +108,7 @@ LPSTR strHdr[] = {               //I have put the defination of this strings
 //#endif
 
 //Handler for sysinfo command.
-VOID SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
+DWORD SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
 #ifdef __I386__
 	DWORD sysContext[11] = {0};
@@ -208,18 +212,18 @@ VOID SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		Hex2Str(sysContext[bt],szTemp);
 		CD_PrintString(szTemp,TRUE);	
 	}
-	return;
+	return S_OK;
 #else   //Only x86 platform is supported yet.
 	//GotoHome();
 	//ChangeLine();
 	CD_PrintString("    This operation can not supported on no-I386 platform.",TRUE);
 	
-	return;
+	return S_OK;
 #endif
 }
 
 //Handler for help command.
-VOID HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's handler.
+DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's handler.
 {
 	LPSTR strHelpTitle   = "    The following commands are available currently:";
 	LPSTR strHelpVer     = "    version      : Print out the version information.";
@@ -264,117 +268,12 @@ VOID HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's handl
 #endif //__CFG_APP_JVM
 	PrintLine(strReboot);
 	PrintLine(strCls);
-}
 
-//A helper routine used to load the specified binary application module into memory.
-//  @hBinFile       : The handle of the module file;
-//  @dwStartAddress : Load address.
-//
-static BOOL LoadBinModule(HANDLE hBinFile,DWORD dwStartAddress)
-{
-	BYTE*   pBuffer    = (BYTE*)dwStartAddress;
-	BYTE*   pTmpBuff   = NULL;
-	DWORD   dwReadSize = 0;
-	BOOL    bResult    = FALSE;
-
-	//Parameter check.
-	if(dwStartAddress <= 0x00100000)  //End 1M space is reserved.
-	{
-		goto __TERMINAL;
-	}
-
-	//Allocate a temporary buffer to hold file content.
-	pTmpBuff = (BYTE*)KMemAlloc(4096,KMEM_SIZE_TYPE_ANY);
-	if(NULL == pTmpBuff)
-	{
-		goto __TERMINAL;
-	}
-	//Try to read the first 4K bytes from file.
-	if(!ReadFile(hBinFile,
-		4096,
-		pTmpBuff,
-		&dwReadSize))
-	{
-		goto __TERMINAL;
-	}
-	if(dwReadSize <= 4)  //Too short,invalid format.
-	{
-		goto __TERMINAL;
-	}
-	//Verify the validation of the bin file format.
-	if(0xE9909090 != *(DWORD*)pTmpBuff)  //Invalid binary file format.
-	{
-		goto __TERMINAL;
-	}
-	//Format is ok,try to load it.
-	memcpy(pBuffer,pTmpBuff,dwReadSize);  //Copy the first block into target.
-	pBuffer += dwReadSize;     //Adjust the target pointer.
-	while(dwReadSize == 4096)  //File size larger than 4k,continue to load it.
-	{
-		if(!ReadFile(hBinFile,
-			4096,
-			pBuffer,
-			&dwReadSize))
-		{
-			goto __TERMINAL;
-		}
-		pBuffer += dwReadSize;  //Move target pointer.
-	}
-	bResult = TRUE;
-
-__TERMINAL:
-	if(NULL != pTmpBuff)  //Should release the memory.
-	{
-		KMemFree(pTmpBuff,KMEM_SIZE_TYPE_ANY,0);
-	}
-	return bResult;
-}
-
-//A helper routine used to launch the loaded binary module.
-static BOOL ExecuteBinModule(DWORD dwStartAddress,LPVOID pParams)
-{
-	__KERNEL_THREAD_OBJECT*   hKernelThread  = NULL;
-	BOOL                      bResult        = FALSE;
-
-	if(dwStartAddress <= 0x00100000) //Low end 1M memory is reserved.
-	{
-		goto __TERMINAL;
-	}
-	//Create a kernel thread to run the binary module.
-	hKernelThread = KernelThreadManager.CreateKernelThread(
-		(__COMMON_OBJECT*)&KernelThreadManager,
-		0,
-		KERNEL_THREAD_STATUS_READY,
-		PRIORITY_LEVEL_NORMAL,
-		(__KERNEL_THREAD_ROUTINE)dwStartAddress,
-		pParams,
-		NULL,
-		"gui");
-	if(NULL == hKernelThread)  //Can not create the thread.
-	{
-		goto __TERMINAL;
-	}
-	//Switch input focus to the thread.
-	DeviceInputManager.SetFocusThread(
-		(__COMMON_OBJECT*)&DeviceInputManager,
-		(__COMMON_OBJECT*)hKernelThread);
-	hKernelThread->WaitForThisObject((__COMMON_OBJECT*)hKernelThread);  //Block shell to wait module over.
-	//Destroy the module's kernel thread.
-	KernelThreadManager.DestroyKernelThread(
-		(__COMMON_OBJECT*)&KernelThreadManager,
-		(__COMMON_OBJECT*)hKernelThread);
-	//Switch back input focus to shell.
-	DeviceInputManager.SetFocusThread(
-		(__COMMON_OBJECT*)&DeviceInputManager,
-		NULL);
-	bResult = TRUE;
-
-__TERMINAL:
-	return bResult;
+	return S_OK;
 }
 
 //Handler for loadapp command.
-VOID LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
+DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {	
 	__CMD_PARA_OBJ* pAppParaObj        = NULL;
 	CHAR            FullPathName[128]  = {0};  //Full name of binary file.
@@ -386,53 +285,118 @@ VOID LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		PrintLine("Please specify app module's name.");
 		goto __TERMINAL;
 	}
-
-	pAppParaObj = (__CMD_PARA_OBJ*)_hx_malloc(sizeof(__CMD_PARA_OBJ));
-	if(NULL == pAppParaObj)
-	{
-		PrintLine("Please specify app module's name.");
-
-		goto __TERMINAL;
-	}
-	memzero(pAppParaObj,sizeof(__CMD_PARA_OBJ));
-
+	
 	//Construct the full path and name.
 	strcpy(FullPathName,"C:\\PTHOUSE\\");
 	strcat(FullPathName,pCmdParaObj->Parameter[1]);
 	
 	//copy params
-	pAppParaObj->byParameterNum = pCmdParaObj->byParameterNum-1;
-	for(i=0;i<pAppParaObj->byParameterNum;i++)
-	{
-		 pAppParaObj->Parameter[i] = (CHAR*)_hx_malloc(CMD_PARAMETER_LEN+1);
-		 strcpy(pAppParaObj->Parameter[i],pCmdParaObj->Parameter[i+1]);
-	}
-	
+	pAppParaObj = CopyParameterObj(pCmdParaObj,1);
+		
 	RunDynamicAppModule(FullPathName,pAppParaObj);
 	
 __TERMINAL:
 
-	if(pAppParaObj)
-	{
-		for(i=0;i<pAppParaObj->byParameterNum;i++)
-		{
-			_hx_free(pAppParaObj->Parameter[i]);
-		}
-
-		_hx_free(pAppParaObj);
-	}
+	ReleaseParameterObj(pAppParaObj);
 		
-	return;
+	return S_OK;
 }
 
+DWORD RunBatCmdLine(LPSTR pCmdLine)
+{
+	__CMD_PARA_OBJ* pAppParaObj  = NULL;
+	
+	ClearUnVisableChar(pCmdLine);
+
+	pAppParaObj = FormParameterObj(pCmdLine);
+
+	//exec app
+	if(pAppParaObj->byParameterNum >= 2)
+	{
+		LoadappHandler(pAppParaObj);
+	}
+
+	ReleaseParameterObj(pAppParaObj);		
+		
+	return S_OK;
+}
+
+//Handler for Bat command.
+DWORD BatHandler(__CMD_PARA_OBJ* pCmdParaObj)
+{	
+	HANDLE	hBatFile        = NULL;
+	DWORD   dwFileSize      = 0;
+	DWORD   dwReadSize      = 0;
+	LPSTR   pShortName      = NULL;
+	CHAR    szBatFile[128]  = {0};
+	LPSTR   pBatBuf         = NULL;
+	LPSTR   pCurrPos         = NULL;
+	LPSTR   pNextPos         = NULL;
+	DWORD   i                = 0;
+
+
+	//Construct the bat full path and name.
+	strcpy(szBatFile,"C:\\PTHOUSE\\");
+	pShortName = strstr(pCmdParaObj->Parameter[0],"./");
+	if(!pShortName)
+	{
+		PrintLine("error Batfile name.");
+		goto __TERMINAL;
+	}
+
+	pShortName  += strlen("./");
+	strcat(szBatFile,pShortName);
+	
+	hBatFile = CreateFile(szBatFile,FILE_ACCESS_READ,0,NULL);
+	if(hBatFile == NULL)
+	{		
+		_hx_printf("Batfile open  error =%s \r\n",szBatFile);
+		goto __TERMINAL;	
+	}
+
+	dwFileSize = GetFileSize(hBatFile,NULL);
+	pBatBuf    = (LPSTR)_hx_malloc(dwFileSize+1);
+	ReadFile(hBatFile,dwFileSize,pBatBuf,NULL);
+
+	pCurrPos = pBatBuf;
+	pNextPos = strstr(pCurrPos,"\n");
+
+	while(pNextPos)
+	{					
+		*pNextPos = 0; 
+				
+		RunBatCmdLine(pCurrPos);
+		
+		pNextPos ++;
+		pCurrPos = pNextPos;
+		pNextPos = strstr(pCurrPos,"\n");		
+	}
+	
+	if(pCurrPos)
+	{
+		RunBatCmdLine(pCurrPos);
+	}
+
+__TERMINAL:
+
+	if(pBatBuf)
+	{
+		_hx_free(pBatBuf);
+	}
+
+	CloseFile(hBatFile);	
+
+	return S_OK;
+}
 
 
 //Handler for GUI command,it only call LoadappHandler by given
 //the GUI module's name and it's start address after loaded into
 //memory.
-VOID GUIHandler(__CMD_PARA_OBJ* pCmdParaObj)
+DWORD GUIHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	RunDynamicAppModule("C:\\PTHOUSE\\hcngui.dll",pCmdParaObj);
-	//RunDynamicAppModule("C:\\PTHOUSE\\app_pe.exe",pCmdParaObj);
-	//RunDynamicAppModule("C:\\PTHOUSE\\edp.exe",pCmdParaObj);
+
+	return S_OK;
+
 }
