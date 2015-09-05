@@ -47,6 +47,18 @@ static VOID PrintPrompt(SHELL_MSG_INFO*  pShellInfo)
 	CD_PrintString(pShellInfo->pPrompt,FALSE);
 }
 
+VOID ClearUnVisableChar(LPCSTR pszStr)
+{
+	LPSTR    pCmdPos  = (LPSTR)pszStr;
+
+	while(*pCmdPos)
+	{
+		if (*pCmdPos < ' ') *pCmdPos = ' ';
+
+		pCmdPos ++;
+	}
+}
+
 //The following function form the command parameter object link from the command
 //line string.
 __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
@@ -67,15 +79,16 @@ __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 		return NULL;
 	}
 	memzero(pObjBuffer,sizeof(__CMD_PARA_OBJ));
+	
 
 	while(*pCmdPos)
 	{
-		if(' ' == *pCmdPos)
-		{
+		if(' ' == *pCmdPos )
+		{			
 			pCmdPos ++;
 			continue; 
 		}    
-
+				
 		// add papam
 		while((' ' != *pCmdPos) && (*pCmdPos) && (byParamPos <= CMD_PARAMETER_LEN))
 		{
@@ -110,6 +123,35 @@ __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 	return pObjBuffer;
 }
 
+__CMD_PARA_OBJ* CopyParameterObj(__CMD_PARA_OBJ* lpParamObj,BYTE nStart)
+{
+	__CMD_PARA_OBJ*  pNewParamObj;
+	INT              i;
+
+	if(lpParamObj == NULL || nStart > lpParamObj->byParameterNum-1)
+	{
+		return NULL;
+	}
+
+	pNewParamObj = (__CMD_PARA_OBJ*)_hx_malloc(sizeof(__CMD_PARA_OBJ));
+	if(NULL == pNewParamObj)
+	{
+		PrintLine("Memory alloc error");
+
+		return NULL;
+	}
+	memzero(pNewParamObj,sizeof(__CMD_PARA_OBJ));
+
+	//copy params
+	pNewParamObj->byParameterNum = lpParamObj->byParameterNum-nStart;
+	for(i=0;i<pNewParamObj->byParameterNum;i++)
+	{
+		pNewParamObj->Parameter[i] = (CHAR*)_hx_malloc(CMD_PARAMETER_LEN+1);
+		strcpy(pNewParamObj->Parameter[i],lpParamObj->Parameter[i+nStart]);
+	}
+
+	return pNewParamObj;
+}
 //
 //Releases the parameter object created by FormParameterObj routine.
 //

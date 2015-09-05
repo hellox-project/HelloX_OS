@@ -164,6 +164,7 @@ struct __ETHERNET_MANAGER{
 	VOID                    (*ShowInt)(char* ethName);
 	BOOL                    (*ShutdownInterface)(char* ethName);
 	BOOL                    (*UnshutInterface)(char* ethName);
+	BOOL                    (*GetEthernetInterfaceState)(__ETH_INTERFACE_STATE* pState, int nIndex, int* pnNextInt);
 };
 
 //Global ethernet manager objects.

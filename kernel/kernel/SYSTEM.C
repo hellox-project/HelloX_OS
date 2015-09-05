@@ -403,7 +403,9 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	__SYSTEM*            lpSystem         = (__SYSTEM*)lpThis;
 	__PRIORITY_QUEUE*    lpPriorityQueue  = NULL;
 	__INTERRUPT_OBJECT*  lpIntObject      = NULL;
+#ifdef __CFG_SYS_SYSCALL
 	__INTERRUPT_OBJECT*  lpExpObject      = NULL;
+#endif
 	BOOL                 bResult          = FALSE;
 	DWORD                dwFlags          = 0;
 
@@ -421,8 +423,8 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 		return FALSE;
 	}
 
-	if(!lpPriorityQueue->Initialize((__COMMON_OBJECT*)lpPriorityQueue))  //Failed to initialize
-		                                                                 //priority queue.
+	//Failed to initialize the priority queue.
+	if(!lpPriorityQueue->Initialize((__COMMON_OBJECT*)lpPriorityQueue))
 	{
 		goto __TERMINAL;
 	}
@@ -446,6 +448,7 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	lpIntObject->lpHandlerParam = NULL;
 	lpIntObject->InterruptHandler = TimerInterruptHandler;
 
+#ifdef __CFG_SYS_SYSCALL
 	//Create and initialize system call exception interrupt object.
 	lpExpObject = (__INTERRUPT_OBJECT*)ObjectManager.CreateObject(
 		&ObjectManager,
@@ -464,11 +467,15 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	lpExpObject->lpHandlerParam = NULL;
 	lpExpObject->InterruptHandler = SyscallHandler;
 
+	//Register all system calls into call array.
+	RegisterSysCallEntry();
+#endif
+
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	//lpSystem->lpInterruptVector[INTERRUPT_VECTOR_TIMER]   = lpIntObject;
 	lpSystem->InterruptSlotArray[INTERRUPT_VECTOR_TIMER].lpFirstIntObject = lpIntObject;
-	//lpSystem->lpInterruptVector[EXCEPTION_VECTOR_SYSCALL] = lpExpObject;
+#ifdef __CFG_SYS_SYSCALL
 	lpSystem->InterruptSlotArray[EXCEPTION_VECTOR_SYSCALL].lpFirstIntObject = lpExpObject;
+#endif
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	bResult = TRUE;
 
@@ -485,11 +492,13 @@ __TERMINAL:
 			ObjectManager.DestroyObject(&ObjectManager,
 				(__COMMON_OBJECT*)lpIntObject);
 		}
+#ifdef __CFG_SYS_SYSCALL
 		if(lpExpObject != NULL)
 		{
 			ObjectManager.DestroyObject(&ObjectManager,
 				(__COMMON_OBJECT*)lpExpObject);
 		}
+#endif
 	}
 	return bResult;
 }

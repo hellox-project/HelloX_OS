@@ -12,11 +12,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "syscall.h"
 #include "kapi.h"
 #include "modmgr.h"
@@ -94,14 +90,10 @@ static BOOL DispatchToModule(LPVOID lpEsp,LPVOID lpParam)
 //Register All System call entry point.
 void  RegisterSysCallEntry()
 {	
-	//Register Kernel route
+	//Register Kernel routines.
 	RegisterKernelEntry(s_szScCallArray);
-
 	RegisterIoEntry(s_szScCallArray);
-
-	//
 	RegisterSocketEntry(s_szScCallArray);
-	
 }
 
 //System call entry point.
@@ -124,7 +116,8 @@ BOOL SyscallHandler(LPVOID lpEsp,LPVOID lpParam)
 	}
 	else if(!DispatchToModule(lpEsp,NULL))
 	{
-		PrintLine("  SyscallHandler: Unknown system call is requested.");
+		_hx_printf("SyscallHandler: Unknown system call[num = 0x%0X] raised.\r\n",
+			pspb->dwSyscallNum);
 	}
 	
 	return TRUE;

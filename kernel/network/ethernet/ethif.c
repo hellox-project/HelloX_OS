@@ -282,6 +282,13 @@ static void _dhcpAssist()
 #ifdef __ETH_DEBUG
 				_hx_printf("  _dhcpAssist: Get interface [%s]'s configuration from DHCP server.\r\n",pEthInt->ethName);
 #endif
+				//Save the IP information to layer2 interface object.
+				memcpy(&pEthInt->ifState.IpConfig.ipaddr, &netif->dhcp->offered_ip_addr,
+					sizeof(struct ip_addr));
+				memcpy(&pEthInt->ifState.IpConfig.defgw, &netif->dhcp->offered_gw_addr,
+					sizeof(struct ip_addr));
+				memcpy(&pEthInt->ifState.IpConfig.mask, &netif->dhcp->offered_sn_mask,
+					sizeof(struct ip_addr));
 				//Stop DHCP process in the interface.
 				dhcp_stop(netif);
 				pEthInt->ifState.dwDhcpLeasedTime = 0;  //Start to count DHCP time.
@@ -341,10 +348,10 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 				
 				case ETH_MSG_SETCONF:             //Configure a given interface.
 					pifConfig = (__ETH_IP_CONFIG*)msg.dwParam;
-          if(NULL == pifConfig)
-          {
+					if(NULL == pifConfig)
+					{
 						break;
-          }
+					}
 					//Locate the ethernet interface object by it's name.
 					pif = NULL;
 					for(index = 0;index < EthernetManager.nIntIndex;index ++)
@@ -911,6 +918,39 @@ static BOOL UnshutInterface(char* ethName)
 	return TRUE;
 }
 
+//Return a specified ethernet interface's state.@nIndex parameter specifies the interface
+//index which state will be returned,and @pnNextInt contains the next interface index which
+//can be used as nIndex parameter when next call of this routine is invoked.
+static BOOL _GetEthernetInterfaceState(__ETH_INTERFACE_STATE* pState, int nIndex, int* pnNextInt)
+{
+	BOOL bResult = FALSE;
+
+	if ((NULL == pState) || (nIndex >= MAX_ETH_INTERFACE_NUM))
+	{
+		goto __TERMINAL;
+	}
+	if (EthernetManager.EthInterfaces[nIndex].pL3Interface == NULL)  //Interface is not exist.
+	{
+		goto __TERMINAL;
+	}
+	memcpy(pState, &EthernetManager.EthInterfaces[nIndex].ifState, sizeof(*pState));
+	//Return the next interface's index whose state can be got.
+	if (pnNextInt)
+	{
+		if (nIndex + 1 >= MAX_ETH_INTERFACE_NUM)
+		{
+			*pnNextInt = MAX_ETH_INTERFACE_NUM;
+		}
+		else
+		{
+			*pnNextInt = nIndex + 1;
+		}
+	}
+	bResult = TRUE;
+__TERMINAL:
+	return bResult;
+}
+
 /*
 *
 *  Definition of Ethernet Manager object.
@@ -933,5 +973,6 @@ struct __ETHERNET_MANAGER EthernetManager = {
 	_TriggerReceive,        //TriggerReceive.
 	ShowInt,                //ShowInt.
 	ShutdownInterface,      //ShutdownInterface.
-	UnshutInterface         //UnshutInterface.
+	UnshutInterface,        //UnshutInterface.
+	_GetEthernetInterfaceState  //GetEthernetInterfaceState.
 };

@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="KAPI">
+      <UniqueIdentifier>{3708b939-9ac8-45b1-ab8c-d5ef456b76ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EDP">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\cJSON.c">
+      <Filter>EDP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\EdpKit.c">
+      <Filter>EDP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Main.c">
+      <Filter>EDP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\KAPI\K_IO.c">
+      <Filter>KAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\KAPI\K_KERNEL.C">
+      <Filter>KAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\KAPI\K_SOCKET.C">
+      <Filter>KAPI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\cJSON.h">
+      <Filter>EDP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Common.h">
+      <Filter>EDP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\EdpKit.h">
+      <Filter>EDP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\KAPI\KAPI.H">
+      <Filter>KAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\KAPI\K_SOCKET.H">
+      <Filter>KAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\KAPI\K_KERNEL.H">
+      <Filter>KAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\KAPI\K_IO.H">
+      <Filter>KAPI</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

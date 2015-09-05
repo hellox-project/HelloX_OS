@@ -20,6 +20,17 @@
 #include "devmgr.h"
 #include "iomgr.h"
 
+#include "lwip/opt.h"
+#include "lwip/def.h"
+#include "lwip/mem.h"
+#include "lwip/pbuf.h"
+#include "lwip/sys.h"
+#include "lwip/stats.h"
+#include "lwip/snmp.h"
+#include "lwip/tcpip.h"
+#include "lwip/dhcp.h"
+#include "ethernet/ethif.h"
+
 #ifdef __I386__
 #include "../arch/x86/bios.h"
 #endif
@@ -232,11 +243,18 @@ static void   SC_SetFocusThread(__SYSCALL_PARAM_BLOCK*  pspb)
 		(__COMMON_OBJECT*)PARAM(0));
 }
 
-
+static void   SC_GetEthernetInterfaceState(__SYSCALL_PARAM_BLOCK*  pspb)
+{
+#ifdef __CFG_NET_ETHMGR
+	pspb->lpRetValue = (LPVOID)EthernetManager.GetEthernetInterfaceState(
+		(__ETH_INTERFACE_STATE*)PARAM(0),
+		(int)PARAM(1),
+		(int*)PARAM(2));
+#endif
+}
 
 void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
 {
-	
 	pSysCallEntry[SYSCALL_CREATEKERNELTHREAD]        = SC_CreateKernelThread;
 	pSysCallEntry[SYSCALL_DESTROYKERNELTHREAD]       = SC_DestroyKernelThread;
 	pSysCallEntry[SYSCALL_SETLASTERROR]              = SC_SetLastError;
@@ -280,6 +298,6 @@ void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
 
 	pSysCallEntry[SYSCALL_SWITCHTOGRAPHIC]           = SC_SwitchToGraphic;
 	pSysCallEntry[SYSCALL_SWITCHTOTEXT]              = SC_SwitchToText;
-	pSysCallEntry[SYSCALL_SETFOCUSTHREAD]            = SC_SetFocusThread;	
-	
+	pSysCallEntry[SYSCALL_SETFOCUSTHREAD]            = SC_SetFocusThread;
+	pSysCallEntry[SYSCALL_GETETHERNETINTERFACESTATE] = SC_GetEthernetInterfaceState;
 }

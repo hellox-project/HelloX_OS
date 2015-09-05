@@ -174,7 +174,7 @@ BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
 	CloseFile(hFileObj);
 	if(pAppBuf)
 	{
-		_hx_free(pAppBuf);
+	//	_hx_free(pAppBuf);
 	}
 
 	return bRunOk;

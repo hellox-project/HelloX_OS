@@ -1,0 +1,26 @@
+﻿Build started 2015/9/5 13:27:32.
+     1>Project "C:\HelloX\iot_platform\edp_app\edp_app\edp_app.vcxproj" on node 2 (Rebuild target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /Od /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy /arch:IA32 /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt ..\KAPI\K_IO.c
+         K_IO.c
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W0 /WX- /Od /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy /arch:IA32 /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt ..\KAPI\K_KERNEL.C ..\KAPI\K_SOCKET.C ..\src\cJSON.c ..\src\EdpKit.c ..\src\Main.c
+         K_KERNEL.C
+         K_SOCKET.C
+         cJSON.c
+         EdpKit.c
+         Main.c
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\HelloX\iot_platform\edp_app\Release\edp_app.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\HelloX\iot_platform\edp_app\Release\edp_app.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /ENTRY:"edp_main" /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\HelloX\iot_platform\edp_app\Release\edp_app.lib" /MACHINE:X86 /SAFESEH Release\K_IO.obj
+         Release\K_KERNEL.obj
+         Release\K_SOCKET.obj
+         Release\cJSON.obj
+         Release\EdpKit.obj
+         Release\Main.obj
+         Generating code
+         Finished generating code
+         edp_app.vcxproj -> C:\HelloX\iot_platform\edp_app\Release\edp_app.exe
+     1>Done Building Project "C:\HelloX\iot_platform\edp_app\edp_app\edp_app.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.05
