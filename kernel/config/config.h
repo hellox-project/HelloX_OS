@@ -24,7 +24,7 @@
 //************************************************************************
 
 #define OS_VERSION   "    HelloX V1.78"
-#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/09/04,by Garry.Xin]"
+#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/09/26,by Garry.Xin]"
 #define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 
 //************************************************************************
@@ -143,7 +143,7 @@
 //************************************************************************
 
 //Include IDE driver in OS.
-#define __CFG_DRV_IDE
+//#define __CFG_DRV_IDE
 
 //Include COM driver in OS.
 #define __CFG_DRV_COM

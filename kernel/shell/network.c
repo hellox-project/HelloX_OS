@@ -60,10 +60,10 @@ static struct __FDISK_CMD_MAP{
 	{"route",      route,     "  route    : List all route entry(ies) in system."},
 	{"exit",       _exit,      "  exit     : Exit the application."},
 	{"help",       help,      "  help     : Print out this screen."},
-  {"showint",    showint,   "  showint  : Display ethernet interface's statistics information."},
-  {"assoc",      assoc,     "  assoc    : Associate to a specified WiFi SSID."},
-  {"scan",       scan,      "  scan     : Scan WiFi networks and show result."},
-  {"setif",      setif,     "  setif    : Set IP configurations to a given interface."},
+	{"showint",    showint,   "  showint  : Display ethernet interface's statistics information."},
+	{"assoc",      assoc,     "  assoc    : Associate to a specified WiFi SSID."},
+	{"scan",       scan,      "  scan     : Scan WiFi networks and show result."},
+	{"setif",      setif,     "  setif    : Set IP configurations to a given interface."},
 	{NULL,		   NULL,      NULL}
 };
 

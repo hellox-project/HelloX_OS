@@ -694,9 +694,9 @@ int _hx_printf(const char* fmt,...)
 		}
 		if ('\t' == buff[i])
 		{
-			CD_GetCursorPos(&x, &y);
+			CD_GetCursorPos((WORD*)&x, (WORD*)&y);
 			x = x + TAB_SPACE_NUM - (x % TAB_SPACE_NUM);
-			CD_SetCursorPos(x,y);
+			CD_SetCursorPos((WORD)x,(WORD)y);
 			i++;
 			continue;
 		}

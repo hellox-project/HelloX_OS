@@ -725,7 +725,7 @@ static int pcnet_send(pcnet_priv_t *dev, void *packet, int pkt_len)
 	*/
 	__writew(-pkt_len, &entry->length);
 	__writel(0, &entry->misc);
-	__writel(PCI_TO_MEM_LE(dev, packet), &entry->base);
+	__writel(PCI_TO_MEM_LE(dev, packet), (unsigned long)&entry->base);
 	__writew(0x8300, &entry->status);
 #if !defined(__CFG_SYS_VMM)
 	__FLUSH_CACHE(&entry, sizeof(entry), CACHE_FLUSH_WRITEBACK);

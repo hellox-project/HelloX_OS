@@ -952,6 +952,12 @@
     <ClInclude Include="syscall\SYSCALL_KERNEL.H">
       <Filter>Header Files\syscal_hdr</Filter>
     </ClInclude>
+    <ClInclude Include="include\byteord.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\align.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
