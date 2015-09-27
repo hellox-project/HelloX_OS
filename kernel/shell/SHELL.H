@@ -44,12 +44,9 @@ typedef struct HIS_CMD_OBJ
 
 typedef struct tag__CMD_PARA_OBJ
 {
-	BYTE         byParameterNum;         //How many parameters  followed.
-	WORD         wReserved;
-
+	BYTE        byParameterNum;         //How many parameters  followed.
+	WORD        wReserved;
 	CHAR*       Parameter[CMD_PARAMETER_COUNT];
-	//CHAR         Parameter[CMD_PARAMETER_COUNT][CMD_PARAMETER_LEN + 1]; //The parameters.
-
 }__CMD_PARA_OBJ;
 
 typedef DWORD (*__CMD_HANDLER)(__CMD_PARA_OBJ* pCmdParaObj);  //Command handler.

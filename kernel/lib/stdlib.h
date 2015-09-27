@@ -36,6 +36,9 @@ char *_hx_getenv(char *envvar);
 void* mmap(void* start,size_t length,int prot,int flags,int fd,off_t offset);
 int munmap(void* start,size_t length);
 
+//Aligned malloc.
+void* _hx_aligned_malloc(int size, int align);
+
 //Flags to control the mmap routine.
 #define PROT_READ      0x00000001
 #define PROT_WRITE     0x00000002
@@ -60,11 +63,11 @@ char* itoa(int value,char *buf,int radix);
 void exit(int state);
 void abort(void);
 
-//Simulate standard C malloc and free routine.
+//Standard C routine,alias of HX version.
+
 //#ifndef malloc
 #define malloc _hx_malloc
 //#endif
-
 
 #ifndef free
 #define free _hx_free
@@ -76,6 +79,18 @@ void abort(void);
 
 #ifndef getenv
 #define getenv _hx_getenv
+#endif
+
+#ifndef aligned_malloc
+#define aligned_malloc _hx_aligned_malloc
+#endif
+
+#ifndef memalign
+#define memalign(align,size) _hx_aligned_malloc(size,align)  //Parameter order is different.
+#endif
+
+#ifndef aligned_free
+#define aligned_free _hx_free
 #endif
 
 #endif  //__STDLIB_H__

@@ -158,8 +158,8 @@
 	 pMutex = (__MUTEX*)(*mutex)->event;
 
 	 //Should revise later.
-	 waitTime  = abstime->tv_sec * 1000;
-	 waitTime += abstime->tv_nsec / 1000;
+	 waitTime  = (DWORD)(abstime->tv_sec * 1000);
+	 waitTime += (DWORD)(abstime->tv_nsec / 1000);
 
 	 if(OBJECT_WAIT_RESOURCE == pCond->CondWaitTimeout((__COMMON_OBJECT*)pCond,(__COMMON_OBJECT*)pMutex,waitTime))
 	 {

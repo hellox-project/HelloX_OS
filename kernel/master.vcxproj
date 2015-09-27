@@ -322,8 +322,10 @@
     <ClInclude Include="arch\x86\BIOSVGA.H" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
     <ClInclude Include="drivers\x86\pcnet.h" />
+    <ClInclude Include="include\align.h" />
     <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="INCLUDE\BUFFMGR.H" />
+    <ClInclude Include="include\byteord.h" />
     <ClInclude Include="include\CharDisplay.H" />
     <ClInclude Include="INCLUDE\COMMOBJ.H" />
     <ClInclude Include="INCLUDE\COMQUEUE.H" />

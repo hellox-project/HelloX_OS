@@ -24,18 +24,24 @@
 #pragma warning(disable:4103)
 //Disable the frame pointer register modified in inline assembly code warning.
 #pragma warning(disable:4731)
-
 #endif
 
 //Include configuration headers in advance any of other headers.
-//#ifndef __CONFIG_H__
-//#include "../config/config.h"
-//#endif
-
+#ifndef __CONFIG_H__
+#include "../config/config.h"
+#endif
 
 
 #ifndef __TYPES_H__
 #include "types.h"
+#endif
+
+#ifndef __BYTEORD_H__
+#include "byteord.h"
+#endif
+
+#ifndef __ALIGN_H__
+#include "align.h"
 #endif
 
 #ifndef __STRING__
@@ -57,10 +63,6 @@
 #include "../arch/stm32/syn_mech.h"
 #endif
 #endif
-
-//#ifndef __COMQUEUE_H__
-//#include "COMQUEUE.H"
-//#endif
 
 #ifndef __OBJQUEUE_H__
 #include "objqueue.h"
@@ -150,10 +152,9 @@
 #endif
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+//#ifdef HAVE_CONFIG_H
+//#include <config.h>
+//#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
