@@ -132,6 +132,9 @@
 //Include system call support.
 #define __CFG_SYS_SYSCALL
 
+//Include USB host controller suppot.
+#define __CFG_SYS_USB
+
 //Include console object into kernel.COM input and output functions are implemented
 //in console object.
 //#define __CFG_SYS_CONSOLE

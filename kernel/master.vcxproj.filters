@@ -96,6 +96,12 @@
     <Filter Include="Source Files\appldr">
       <UniqueIdentifier>{28af8e30-bdd5-4a37-a179-3215341883a5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\usb_hdr">
+      <UniqueIdentifier>{cb733ba1-12a4-4080-b1e3-541f7679fe01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\usb">
+      <UniqueIdentifier>{7a6869ef-f128-4f8b-ba8d-6c3421ea7ebb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="drivers\x86\com.c">
@@ -590,6 +596,18 @@
     <ClCompile Include="appldr\AppLoader_STM32.C">
       <Filter>Source Files\appldr</Filter>
     </ClCompile>
+    <ClCompile Include="usb\usb.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usb_ehci.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usb_hub.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\ehci_pci.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -957,6 +975,27 @@
     </ClInclude>
     <ClInclude Include="include\align.h">
       <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usb_defs.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usb.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\hxadapt.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbdescriptors.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\errno.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\ch9.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\ehci.h">
+      <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -20,9 +20,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
 
 #include "statcpu.h"
 #include "modmgr.h"
@@ -77,6 +75,11 @@ static void DeadLoop(BOOL bDisableInt)
 //User entry point if used as EOS.
 #ifdef __CFG_USE_EOS
 extern DWORD _HCNMain(LPVOID);
+#endif
+
+//USB initialization entry.
+#ifdef __CFG_SYS_USB
+extern int usb_init(void);
 #endif
 
 //
@@ -442,6 +445,12 @@ void __OS_Entry()
 		goto __TERMINAL;
 	}
 #endif
+
+	//Initialize USB support if enabled.
+#ifdef __CFG_SYS_USB
+	usb_init();
+#endif
+
 	System.EndInitialize((__COMMON_OBJECT*)&System);
 	_hx_printf("\r\n");
 	_hx_printf("Loading process is successful.\r\n");

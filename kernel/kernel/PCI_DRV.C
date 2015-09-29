@@ -23,11 +23,11 @@ static DWORD PciReadConfig(__SYSTEM_BUS* bus, DWORD dwConfigReg,int size)
 {
 	DWORD dwTmp = 0;
 	DWORD _cfg  = 0x80000000;
-
+	
 	dwTmp = bus->dwBusNum;
 	dwTmp &= 0x000000FF;    //Only reserve the lowest 7 bits.
 	_cfg  += (dwTmp << 16);  //Now,_cfg value countains the bus number.
-	_cfg += (dwConfigReg & 0x0000FFFF); //Now the device and function number are combined into _cfg.
+	_cfg  += (dwConfigReg & 0x0000FFFF); //Now the device and function number are combined into _cfg.
 
 	//Read PCI configuration.
 	__outd(CONFIG_REGISTER, _cfg);
