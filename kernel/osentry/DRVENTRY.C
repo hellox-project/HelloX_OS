@@ -16,9 +16,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
 
 #ifdef __CFG_DRV_KEYBOARD
 #include "../drivers/x86/keybrd.h"     //header file for key board driver.
@@ -52,6 +50,10 @@
 #ifndef __SDIO_DRV_H__
 #include "mrvlwifi/sdio_drv.h"
 #endif
+#endif
+
+#ifdef __CFG_SYS_USB
+#include "../usb/usbdev_storage.h"
 #endif
 
 //
@@ -99,6 +101,10 @@ __DRIVER_ENTRY_ARRAY DriverEntryArray[] = {
 #ifdef __CFG_DRV_COM
 	//COM Interface.
 	{ COMDrvEntry, "COM_Int" },
+#endif
+
+#if defined(__CFG_SYS_USB) // && defined(CONFIG_USB_STORAGE)
+	{ USBStorage_DriverEntry, "USB_Storage" },
 #endif
 
 #ifdef __CFG_DRV_USART //Only available under STM32.

@@ -74,6 +74,7 @@ VOID  AddSpace(CHAR* pStrBuf,INT nCount)
 		nSpaceCount --;
 	}
 }
+
 //Initialize a FAT32 shortentry given it's name,start cluster number,and other
 //information.
 BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse,CHAR* pszName,DWORD dwFirstClus,DWORD dwInitSize,BYTE FileAttr)

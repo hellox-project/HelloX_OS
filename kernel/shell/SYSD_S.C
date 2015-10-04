@@ -40,6 +40,9 @@ static DWORD devinfo(__CMD_PARA_OBJ*);
 static DWORD cpuload(__CMD_PARA_OBJ*);
 static DWORD devlist(__CMD_PARA_OBJ*);
 static DWORD showint(__CMD_PARA_OBJ*);
+#ifdef __CFG_SYS_USB
+static DWORD usblist(__CMD_PARA_OBJ*);
+#endif
 
 //
 //The following is a map between command and it's handler.
@@ -57,7 +60,10 @@ static struct __SHELL_CMD_MAP{
 	{"devinfo",           devinfo,          "  devinfo              : Print out information about a PCI device."},
 	{"cpuload",           cpuload,          "  cpuload              : Display CPU statistics information."},
 	{"devlist",           devlist,          "  devlist              : List all devices' information in the system."},
-	{ "showint",          showint,          "  showint              : Show interrupt statistics information." },
+	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
+#ifdef __CFG_SYS_USB
+	{"usblist",           usblist,          "  usblist              : Show all USB device(s) in system." },
+#endif
 	{"exit",              exit,             "  exit                 : Exit the application."},
 	{"help",              help,             "  help                 : Print out this screen."},
 	{NULL,				  NULL,             NULL}
@@ -674,3 +680,13 @@ static DWORD showint(__CMD_PARA_OBJ* pParamObj)
 #endif
 	return SHELL_CMD_PARSER_SUCCESS;
 }
+
+#ifdef __CFG_SYS_USB
+extern void ShowUsbDevices();
+
+static DWORD usblist(__CMD_PARA_OBJ* pParamObj)
+{
+	ShowUsbDevices();
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+#endif

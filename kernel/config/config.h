@@ -24,7 +24,7 @@
 //************************************************************************
 
 #define OS_VERSION   "    HelloX V1.78"
-#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/09/26,by Garry.Xin]"
+#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/09/30,by Garry.Xin]"
 #define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 
 //************************************************************************
@@ -131,6 +131,9 @@
 
 //Include system call support.
 #define __CFG_SYS_SYSCALL
+
+//Include USB host controller suppot.
+#define __CFG_SYS_USB
 
 //Include console object into kernel.COM input and output functions are implemented
 //in console object.

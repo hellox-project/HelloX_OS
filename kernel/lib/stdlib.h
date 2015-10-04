@@ -69,6 +69,10 @@ void abort(void);
 #define malloc _hx_malloc
 //#endif
 
+#ifndef calloc
+#define calloc _hx_calloc
+#endif
+
 #ifndef free
 #define free _hx_free
 #endif
