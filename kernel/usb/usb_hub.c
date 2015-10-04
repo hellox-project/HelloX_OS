@@ -356,7 +356,6 @@ static int usb_hub_configure(struct usb_device *dev)
 		return -ENOMEM;
 	hub->pusb_dev = dev;
 	/* Get the the hub descriptor */
-	debug("Enter usb_get_hub_descriptor routine...\r\n");
 	ret = usb_get_hub_descriptor(dev, buffer, 4);
 	if (ret < 0) {
 		debug("usb_hub_configure: failed to get hub " \
@@ -447,7 +446,6 @@ static int usb_hub_configure(struct usb_device *dev)
 		return -EFBIG;
 	}
 
-	debug("Enter usb_get_hub_status routine...\r\n");
 	ret = usb_get_hub_status(dev, buffer);
 	if (ret < 0) {
 		debug("usb_hub_configure: failed to get Status %lX\r\n",
@@ -483,12 +481,12 @@ static int usb_hub_configure(struct usb_device *dev)
 		unsigned short portstatus, portchange;
 		int ret;
 		//ulong start = get_timer(0);
-		ulong start = CONFIG_SYS_HZ / 10;
+		ulong start = CONFIG_SYS_HZ / 100;
 
 #ifdef CONFIG_DM_USB
-		debug("\r\n\r\nScanning '%s' port %d\r\n", dev->dev->name, i + 1);
+		debug("Scanning '%s' port %d\r\n", dev->dev->name, i + 1);
 #else
-		debug("\r\n\r\nScanning port %d\r\n", i + 1);
+		//debug("Scanning port %d\r\n", i + 1);
 #endif
 		/*
 		* Wait for (whichever finishes first)
@@ -515,7 +513,8 @@ static int usb_hub_configure(struct usb_device *dev)
 			/* Test if the connection came up, and if so, exit. */
 			if (portstatus & USB_PORT_STAT_CONNECTION)
 				break;
-		} while (start --);
+			//Wait for a short time to let USB port stable...
+		} while ((mdelay(10),/*printf("."),*/ start --));
 		//while (get_timer(start) < CONFIG_SYS_HZ * 1);
 
 		if (ret < 0)
@@ -570,7 +569,6 @@ static int usb_hub_configure(struct usb_device *dev)
 				USB_PORT_FEAT_C_RESET);
 		}
 	} /* end for i all ports */
-
 	return 0;
 }
 
@@ -618,14 +616,12 @@ int usb_hub_probe(struct usb_device *dev, int ifnum)
 {
 	int ret;
 
-	debug("Enter usb_hub_check routine...\r\n");
 	ret = usb_hub_check(dev, ifnum);
 	if (ret)
 	{
 		debug("usb_hub_probe return with value = %d.\r\n", ret);
 		return 0;
 	}
-	debug("Enter usb_hub_configure routine...\r\n");
 	ret = usb_hub_configure(dev);
 	return ret;
 }

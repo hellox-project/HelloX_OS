@@ -254,6 +254,11 @@ void __OS_Entry()
 	}
 #endif
 
+//Initialize USB support if enabled.
+#ifdef __CFG_SYS_USB
+	usb_init();
+#endif
+
 	//********************************************************************************
 	//
 	//The following code loads all inline device drivers,and external drivers implemented as
@@ -444,11 +449,6 @@ void __OS_Entry()
 		pszErrorMsg = "INIT ERROR: Can not initialize IPv4 protocol function.";
 		goto __TERMINAL;
 	}
-#endif
-
-	//Initialize USB support if enabled.
-#ifdef __CFG_SYS_USB
-	usb_init();
 #endif
 
 	System.EndInitialize((__COMMON_OBJECT*)&System);

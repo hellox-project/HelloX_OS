@@ -23,18 +23,85 @@
 #include <StdAfx.h>
 #include <arch.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <sys/utsname.h>
 
 
 #ifdef __I386__  //Only available in x86 based PC platform.
+
+//8253 timer registers and constants.
+#define IO_TIMER1        0x040
+#define TIMER_FREQ       1193182
+#define TIMER_CNTR       (IO_TIMER1 + 0)
+#define TIMER_MODE       (IO_TIMER1 + 3)
+#define TIMER_SEL0       0x00
+#define TIMER_TCOUNT     0x00
+#define TIMER_16BIT      0x30
+#define TIMER_STAT       0xE0
+#define TIMER_STAT0      (TIMER_STAT | 0x02)
+
+//System clock frequency,round to up.
+#define __HZ ((1000 + SYSTEM_TIME_SLICE - 1)/ SYSTEM_TIME_SLICE)
+
+//Latch of 8253 timer's first slot,for system clock tick.
+#define __LATCH ((TIMER_FREQ + __HZ / 2) / __HZ)
+
+//CPU frequency.
+static uint64_t cpuFrequency = 0;
+
+//A helper routine to convert __U64 to uint64_t.
+static uint64_t __local_rdtsc()
+{
+	__U64 __tsc;
+	uint64_t tsc;
+	__GetTsc(&__tsc);
+	tsc = __tsc.dwHighPart;
+	tsc <<= 32;
+	tsc += __tsc.dwLowPart;
+	return tsc;
+}
+
+//Initialization of CPU frequency.
+static void Frequency_Init(void)
+{
+	uint64_t xticks = 0x000000000000FFFF;
+	uint64_t tsc = 0;
+
+	__outb(TIMER_SEL0 | TIMER_TCOUNT | TIMER_16BIT, TIMER_MODE);
+	__outb((UCHAR)(xticks % 256), IO_TIMER1);
+	__outb((UCHAR)(xticks / 256), IO_TIMER1);
+
+	uint64_t s = __local_rdtsc();
+	do{
+		__outb(TIMER_STAT0, TIMER_MODE);
+		if (__local_rdtsc() - s >= 1ULL << 32)
+		{
+			_hx_printf("Warning: 8253 timer may unavailable,assume the CUP hz as 2G.\r\n");
+			cpuFrequency = 2 * 1000 * 1000 * 1000;
+			return;
+		}
+	} while (!(__inb(TIMER_CNTR) & 0x80));
+
+	uint64_t e = __local_rdtsc();
+	cpuFrequency = ((e - s) * 10000000) / ((xticks * 10000000) / TIMER_FREQ);
+	_hx_printf("CPU frequency is %u Hz.\r\n", (DWORD)cpuFrequency);
+}
+
+//Initialization of 8253 timer for system clock.
+static void Init_Sys_Clock()
+{
+	__outb(0x34, 0x43);
+	__outb((UCHAR)(((DWORD)__LATCH) & 0xFF), 0x40);
+	__outb((UCHAR)(((DWORD)__LATCH) >> 8), 0x40);
+}
 
 //Architecture related initialization code,this routine will be called in the
 //begining of system initialization.
 //This routine must be in GLOBAL scope since it will be called by other routines.
 BOOL HardwareInitialize()
 {
-	//x86 related hardware should be initialized here.Return FALSE if there is
-	//error that can lead fault of system.
+	Frequency_Init();
+	Init_Sys_Clock();
 	return TRUE;
 }
 
@@ -190,10 +257,8 @@ static DWORD dwTmpEbp = 0;
 #ifndef __GCC__
 __declspec(naked)
 #endif
-VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
-									   __KERNEL_THREAD_CONTEXT** lppNewContext)
+VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,__KERNEL_THREAD_CONTEXT** lppNewContext)
 {
-
 #ifdef __GCC__
 	__asm__(
 	".code32								\n\t"
@@ -464,10 +529,23 @@ VOID __GetTime(BYTE* pDate)
 	pDate[5] = BCD_TO_DEC_BYTE(pDate[5]);
 }
 
-#define CLOCK_PER_MICROSECOND 1024  //Assume the CPU's clock is 1G Hz.
+//Micro second level delay.
+static void __udelay(unsigned long usec)
+{
+	uint64_t delay = (cpuFrequency * usec) / 1000000;
+	uint64_t base  = __local_rdtsc();
+	while (__local_rdtsc() - base < delay)
+	{
+		//Do nothing but wait...
+	}
+}
 
+//The alias of __udelay.
 VOID __MicroDelay(DWORD dwmSeconds)
 {
+	__udelay(dwmSeconds);
+
+	/*
 	__U64    u64CurrTsc;
 	__U64    u64TargetTsc;
 
@@ -486,6 +564,7 @@ VOID __MicroDelay(DWORD dwmSeconds)
 		}
 	}
 	return;
+	*/
 }
 
 VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.

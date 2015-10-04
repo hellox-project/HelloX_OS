@@ -25,14 +25,22 @@
 #define USB_DMA_MINALIGN	32
 #endif
 
-//Enable EHCI support.
-#define CONFIG_USB_EHCI
+//Enable or disable different USB specifications support.
+//#define CONFIG_USB_EHCI
+#define CONFIG_USB_OHCI
+#define CONFIG_USB_UHCI
+#define CONFIG_USB_XHCI
+
+//USB applications switch.
+#define CONFIG_USB_STORAGE
+//#define CONFIG_USB_KEYBOARD
+//#define CONFIG_USB_HOST_ETHER
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
 #define USB_MAXALTSETTING		128	/* Hard limit */
 
-#define USB_MAX_DEVICE			32
+#define USB_MAX_DEVICE			8  //At most 8 usb devices in system.
 #define USB_MAXCONFIG			8
 #define USB_MAXINTERFACES		8
 #define USB_MAXENDPOINTS		16
@@ -274,8 +282,9 @@ int board_usb_cleanup(int index, enum usb_init_type init);
 
 #ifdef CONFIG_USB_STORAGE
 
-#define USB_MAX_STOR_DEV 5
-block_dev_desc_t *usb_stor_get_dev(int index);
+#define USB_MAX_STOR_DEV 2
+//For debugging,comments the following code line.
+//block_dev_desc_t *usb_stor_get_dev(int index);
 int usb_stor_scan(int mode);
 int usb_stor_info(void);
 

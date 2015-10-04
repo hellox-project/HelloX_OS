@@ -18,6 +18,9 @@
 #include "usb.h"
 #include "ehci.h"
 
+//Only available when EHCI function is enabled.
+#ifdef CONFIG_USB_EHCI
+
 /* Information about a USB port */
 struct ehci_pci_priv {
 	struct ehci_ctrl ehci;
@@ -197,3 +200,5 @@ static struct pci_device_id ehci_pci_supported[] = {
 U_BOOT_PCI_DEVICE(ehci_pci, ehci_pci_supported);
 
 #endif /* CONFIG_DM_USB */
+
+#endif //CONFIG_USB_EHCI

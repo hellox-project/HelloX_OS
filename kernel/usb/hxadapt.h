@@ -19,7 +19,7 @@
 //if you use GCC as compiler.
 #define __MS_VC__
 
-//#define DEBUG  //Enable debugging.
+#define DEBUG  //Enable debugging.
 
 #ifdef __CFG_CPU_LE
 #define __LITTLE_ENDIAN
@@ -35,13 +35,26 @@
 #endif
 
 typedef ULONG ulong;
+typedef unsigned long lbaint_t;
 typedef unsigned int uint;
+typedef unsigned char uchar;
 typedef __U32 u32;
 typedef __U16 u16;
 typedef __U8  u8;
 typedef __S32 s32;
 typedef __S16 s16;
 typedef __S8  s8;
+
+/* Macros for printing `intptr_t' and `uintptr_t'.  */
+# define PRIdPTR	__PRIPTR_PREFIX "d"
+# define PRIiPTR	__PRIPTR_PREFIX "i"
+# define PRIoPTR	__PRIPTR_PREFIX "o"
+# define PRIuPTR	__PRIPTR_PREFIX "u"
+# define PRIxPTR	__PRIPTR_PREFIX "x"
+# define PRIXPTR	__PRIPTR_PREFIX "X"
+
+#define LBAF "%lx"
+#define LBAFU "%lu"
 
 typedef __U16 __le16;
 typedef __U32 __le32;
@@ -99,10 +112,6 @@ typedef int bool;
 
 #define debug(fmt, ...)			\
 	do { \
-	if(_DEBUG) \
-		{  \
-	_hx_printf("Function name = %s,line# = %d.\r\n",__func__,__LINE__); \
-		} \
 	debug_cond(_DEBUG, fmt, __VA_ARGS__); \
 	}while(0)
 #else
@@ -121,7 +130,7 @@ typedef int bool;
 //mdely's simulation.
 static void inline mdelay(int msec)
 {
-	__MicroDelay(msec);
+	__MicroDelay(1000 * msec);
 }
 
 static void inline udelay(int usec)
@@ -155,5 +164,9 @@ static ulong inline get_timer(ulong base)
 
 //isprint simulation
 #define isprint(c) (((c) >= 0x20) && ((c) <= 0x7E))
+
+#define LOG2(x) (((x & 0xaaaaaaaa) ? 1 : 0) + ((x & 0xcccccccc) ? 2 : 0) + \
+		 ((x & 0xf0f0f0f0) ? 4 : 0) + ((x & 0xff00ff00) ? 8 : 0) + \
+		 ((x & 0xffff0000) ? 16 : 0))
 
 #endif  //__HXADAPT_H__

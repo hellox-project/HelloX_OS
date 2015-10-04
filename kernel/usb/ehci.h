@@ -14,8 +14,11 @@
 #include "usb_defs.h"
 #include "usb.h"
 
+//Only available when the EHCI is enabled.
+#ifdef CONFIG_USB_EHCI
+
 #if !defined(CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS)
-#define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	2
+#define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	8
 #endif
 
 /*
@@ -394,5 +397,7 @@ struct ehci_hcor *hcor, const struct ehci_ops *ops,
 	uint tweaks, enum usb_init_type init);
 int ehci_deregister(struct udevice *dev);
 extern struct dm_usb_ops ehci_usb_ops;
+
+#endif //CONFIG_USB_EHCI
 
 #endif /* USB_EHCI_H */

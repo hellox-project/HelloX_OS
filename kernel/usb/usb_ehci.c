@@ -22,6 +22,9 @@
 #include "errno.h"
 #include "ehci.h"
 
+//The source code inside this file only works when the EHCI is enabled.
+#ifdef CONFIG_USB_EHCI
+
 #ifndef CONFIG_USB_MAX_CONTROLLER_COUNT
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 1
 #endif
@@ -728,10 +731,10 @@ static int ehci_submit_root(struct usb_device *dev, unsigned long pipe,
 
 	srclen = 0;
 
-	debug("req=%u (%#x), type=%u (%#x), value=%u, index=%u\r\n",
-		req->request, req->request,
-		req->requesttype, req->requesttype,
-		le16_to_cpu(req->value), le16_to_cpu(req->index));
+	//debug("req=%u (%#x), type=%u (%#x), value=%u, index=%u\r\n",
+	//	req->request, req->request,
+	//	req->requesttype, req->requesttype,
+	//	le16_to_cpu(req->value), le16_to_cpu(req->index));
 
 	typeReq = req->request | req->requesttype << 8;
 
@@ -1208,8 +1211,7 @@ static int _ehci_submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 }
 
 static int _ehci_submit_control_msg(struct usb_device *dev, unsigned long pipe,
-	void *buffer, int length,
-struct devrequest *setup)
+	void *buffer, int length,struct devrequest *setup)
 {
 	struct ehci_ctrl *ctrl = ehci_get_ctrl(dev);
 
@@ -1303,7 +1305,6 @@ static struct int_queue *_ehci_create_int_queue(struct usb_device *dev,
 		return NULL;
 	}
 
-	debug("Enter create_int_queue\r\n");
 	if (usb_pipetype(pipe) != PIPE_INTERRUPT) {
 		debug("non-interrupt pipe (type=%lu)", usb_pipetype(pipe));
 		return NULL;
@@ -1718,3 +1719,4 @@ struct dm_usb_ops ehci_usb_ops = {
 };
 
 #endif
+#endif  //CONFIG_USB_EHCI

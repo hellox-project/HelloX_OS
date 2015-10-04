@@ -238,9 +238,9 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 	setup_packet->value = cpu_to_le16(value);
 	setup_packet->index = cpu_to_le16(index);
 	setup_packet->length = cpu_to_le16(size);
-	debug("usb_control_msg: request: 0x%X, requesttype: 0x%X, " \
-		"value 0x%X index 0x%X length 0x%X timeout %d.\r\n",
-		request, requesttype, value, index, size,timeout);
+	//debug("usb_control_msg: request: 0x%X, requesttype: 0x%X, " \
+	//	"value 0x%X index 0x%X length 0x%X timeout %d.\r\n",
+	//	request, requesttype, value, index, size,timeout);
 	dev->status = USB_ST_NOT_PROC; /*not yet processed */
 
 	err = submit_control_msg(dev, pipe, data, size, setup_packet);
@@ -268,7 +268,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 		return -1;
 	}
 
-	debug("Submit control msg return with value %d.\r\n", dev->act_len);
+	//debug("Submit control msg return with value %d.\r\n", dev->act_len);
 	return dev->act_len;
 }
 
@@ -970,7 +970,6 @@ static int get_descriptor_len(struct usb_device *dev, int len, int expect_len)
 
 	desc = (struct usb_device_descriptor *)tmpbuf;
 
-	debug("Enter usb_get_descriptor routine...\r\n");
 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, len);
 	if (err < expect_len) {
 		if (err < 0) {
@@ -1037,7 +1036,6 @@ static int usb_setup_descriptor(struct usb_device *dev, bool do_read)
 		* bytes of data with the maxpacket guessed as 64 (above) yields a
 		* request for 1 packet.
 		*/
-		debug("Enter get_descriptor_len routine...\r\n");
 		err = get_descriptor_len(dev, 64, 8);
 		debug("get_descriptor_len returns %d.\r\n", err);
 		if (err)
@@ -1085,20 +1083,17 @@ struct usb_device *parent)
 	* and related data structures first. This call does that.
 	* Refer to sec 4.3.2 in xHCI spec rev1.0
 	*/
-	debug("Enter usb_alloc_device routine...\r\n");
 	err = usb_alloc_device(dev);
 	if (err) {
 		printf("Cannot allocate device context to get SLOT_ID\r\n");
 		return err;
 	}
-	debug("Enter usb_setup_descriptor routine with do_read = %d...\r\n",do_read);
 	err = usb_setup_descriptor(dev, do_read);
 	if (err)
 	{
 		debug("usb_prepare_device return with value = %d,returned by usb_setup_descriptor.\r\n", err);
 		return err;
 	}
-	debug("Enter usb_hub_port_reset routine...\r\n");
 	err = usb_hub_port_reset(dev, parent);
 	if (err)
 	{
@@ -1107,7 +1102,6 @@ struct usb_device *parent)
 	}
 
 	dev->devnum = addr;
-	debug("Enter usb_set_address routine...\r\n");
 	err = usb_set_address(dev); /* set address */
 
 	if (err < 0) {
@@ -1189,14 +1183,12 @@ struct usb_device *parent)
 	addr = dev->devnum;
 	dev->devnum = 0;
 
-	debug("Enter usb_prepare_device routine,addr = %d.\r\n", addr);
 	ret = usb_prepare_device(dev, addr, do_read, parent);
 	if (ret)
 	{
 		debug("usb_setup_device return with value = %d.\r\n", ret);
 		return ret;
 	}
-	debug("Enter usb_select_config routine...\r\n");
 	ret = usb_select_config(dev);
 	return ret;
 }
@@ -1223,7 +1215,6 @@ int usb_new_device(struct usb_device *dev)
 #ifdef CONFIG_USB_XHCI
 	do_read = false;
 #endif
-	debug("Enter usb_setup_device routine...\r\n");
 	err = usb_setup_device(dev, do_read, dev->parent);
 	if (err)
 	{
@@ -1232,7 +1223,6 @@ int usb_new_device(struct usb_device *dev)
 	}
 
 	/* Now probe if the device is a hub */
-	debug("Enter usb_hub_probe routine...\r\n");
 	err = usb_hub_probe(dev, 0);
 	if (err < 0)
 		return err;
@@ -1278,6 +1268,12 @@ static void ShowUsbDevice(struct usb_device* pDev)
 		pDev->mf,
 		pDev->prod,
 		pDev->serial);
+	printf("  Class/Subclass/Proto: %d/%d/%d\r\n", pDev->descriptor.bDeviceClass,
+		pDev->descriptor.bDeviceSubClass,
+		pDev->descriptor.bDeviceProtocol);
+	printf("  Vendor/Product/Device: 0x%X/0x%X/0x%X\r\n", pDev->descriptor.idVendor,
+		pDev->descriptor.idProduct,
+		pDev->descriptor.bcdDevice);
 }
 
 //Show all USB device(s) information in system.

@@ -608,6 +608,15 @@
     <ClCompile Include="usb\ehci_pci.c">
       <Filter>Source Files\usb</Filter>
     </ClCompile>
+    <ClCompile Include="usb\usb_ohci.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usb_storage.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usbhd.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -995,6 +1004,18 @@
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
     <ClInclude Include="usb\ehci.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\ohci.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbroothubdes.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\scsi.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbdev_storage.h">
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
   </ItemGroup>
