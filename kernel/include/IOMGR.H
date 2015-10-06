@@ -378,7 +378,7 @@ typedef struct tag__IO_MANAGER{
     __DRIVER_OBJECT*               lpDriverRoot;      //Pointes to driver object's list.
 	__FS_ARRAY_ELEMENT             FsArray[FILE_SYSTEM_NUM];
 	__COMMON_OBJECT*               FsCtrlArray[FS_CTRL_NUM];
-
+	volatile DWORD                 dwPartitionNumber; //Partition sequence number.
 	__RESOURCE_DESCRIPTOR*         lpResDescriptor;   //Pointes to resource descriptor's list.
 
 	BOOL                 (*Initialize)(__COMMON_OBJECT*    lpThis);  //Initialize routine.

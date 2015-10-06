@@ -318,12 +318,17 @@
     <ClCompile Include="syscall\SYSCALL_KERNEL.C" />
     <ClCompile Include="syscall\SYSCALL_SOCKET.C" />
     <ClCompile Include="usb\ehci_pci.c" />
+    <ClCompile Include="usb\ent_ary.c" />
     <ClCompile Include="usb\usb.c" />
-    <ClCompile Include="usb\usbhd.c" />
     <ClCompile Include="usb\usb_ehci.c" />
+    <ClCompile Include="usb\usb_hd.c" />
     <ClCompile Include="usb\usb_hub.c" />
     <ClCompile Include="usb\usb_ohci.c" />
     <ClCompile Include="usb\usb_storage.c" />
+    <ClCompile Include="usb\xhci.c" />
+    <ClCompile Include="usb\xhci_mem.c" />
+    <ClCompile Include="usb\xhci_pci.c" />
+    <ClCompile Include="usb\xhci_ring.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\BIOSVGA.H" />
@@ -459,6 +464,7 @@
     <ClInclude Include="usb\usbdev_storage.h" />
     <ClInclude Include="usb\usbroothubdes.h" />
     <ClInclude Include="usb\usb_defs.h" />
+    <ClInclude Include="usb\xhci.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="arch\x86\BOOTSECT.ASM" />

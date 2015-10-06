@@ -614,7 +614,22 @@
     <ClCompile Include="usb\usb_storage.c">
       <Filter>Source Files\usb</Filter>
     </ClCompile>
-    <ClCompile Include="usb\usbhd.c">
+    <ClCompile Include="usb\usb_hd.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\xhci_mem.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\xhci_ring.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\xhci.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\xhci_pci.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\ent_ary.c">
       <Filter>Source Files\usb</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1016,6 +1031,9 @@
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
     <ClInclude Include="usb\usbdev_storage.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\xhci.h">
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
   </ItemGroup>

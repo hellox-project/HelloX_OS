@@ -1,7 +1,7 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : Sep 28, 2015
-//    Module Name               : config.h
+//    Module Name               : hxadapt.h
 //    Module Funciton           : 
 //                                Definitions or conversations to fit USB porting
 //                                are put here.
@@ -41,6 +41,7 @@ typedef unsigned char uchar;
 typedef __U32 u32;
 typedef __U16 u16;
 typedef __U8  u8;
+typedef uint64_t u64;
 typedef __S32 s32;
 typedef __S16 s16;
 typedef __S8  s8;
@@ -58,6 +59,11 @@ typedef __S8  s8;
 
 typedef __U16 __le16;
 typedef __U32 __le32;
+typedef uint64_t __le64;
+
+//Get part of 64 bits integer.
+#define lower_32_bits(val) ((u32)val)
+#define upper_32_bits(val) ((u32)(val >> 32))
 
 #define __le16_to_cpu(x) (x)
 #define __le32_to_cpu(x) (x)
@@ -162,11 +168,32 @@ static ulong inline get_timer(ulong base)
 #define min3(x, y, z) min(min(x, y), z)
 #endif
 
+#ifndef max
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define max3(x, y, z) max(max(x, y), z)
+#endif
+
 //isprint simulation
 #define isprint(c) (((c) >= 0x20) && ((c) <= 0x7E))
 
 #define LOG2(x) (((x & 0xaaaaaaaa) ? 1 : 0) + ((x & 0xcccccccc) ? 2 : 0) + \
 		 ((x & 0xf0f0f0f0) ? 4 : 0) + ((x & 0xff00ff00) ? 8 : 0) + \
 		 ((x & 0xffff0000) ? 16 : 0))
+
+//Debugging control.
+#define BUG_ON(cond) \
+	do { \
+	if(cond) \
+	  BUG(); \
+				}while(0)
+
+//A dead loop debug to check if a routine is called.
+#define __DEAD_DEBUG() do { \
+	_hx_printf("Routine [%s] is called.\r\n",__func__); \
+							while(TRUE); \
+			}while(0)
+
+//Round up.
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 
 #endif  //__HXADAPT_H__

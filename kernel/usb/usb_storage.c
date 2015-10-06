@@ -50,6 +50,83 @@
 #include "scsi.h"
 #include "usbdev_storage.h"
 
+//Wrapers of several low level routines to access USB controller.
+static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
+	void *buffer, int transfer_len)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.submit_bulk_msg(dev, pipe, buffer, transfer_len);
+}
+
+static int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int transfer_len, struct devrequest *setup)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.submit_control_msg(dev, pipe, buffer, transfer_len, setup);
+}
+
+static int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int transfer_len, int interval)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.submit_int_msg(dev, pipe, buffer, transfer_len, interval);
+}
+
+static struct int_queue *create_int_queue(struct usb_device *dev, unsigned long pipe,
+	int queuesize, int elementsize, void *buffer, int interval)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return NULL;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.create_int_queue(dev, pipe, queuesize, elementsize, buffer, interval);
+}
+
+static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.destroy_int_queue(dev, queue);
+}
+
+static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return NULL;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.poll_int_queue(dev, queue);
+}
+
 /* direction table -- this indicates the direction of the data
 * transfer for each command code -- a 1 indicates input
 */

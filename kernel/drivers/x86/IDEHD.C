@@ -50,6 +50,7 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 	DWORD dwNextStart;  //Next extension's start sector if any.
 	DWORD dwAttributes = DEVICE_TYPE_PARTITION;
 	CHAR strDevName[MAX_DEV_NAME_LEN + 1];
+	DWORD dwFlags;
 	int nPartitionNum = 0;
 
 	if((NULL == pSector0) || (NULL == lpDrvObject)) //Invalid parameters.
@@ -99,7 +100,10 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 	pPe->dwStartSector += dwStartSector;  //Adjust the start sector to physical one.
 	//Partiton information is OK,now create the device object.
 	StrCpy(PARTITION_NAME_BASE,strDevName); //Form device name.
-	strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (CHAR)nBaseNumber;
+	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (CHAR)IOManager.dwPartitionNumber;
+	IOManager.dwPartitionNumber += 1;
+	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	pDevObject = IOManager.CreateDevice(
 		(__COMMON_OBJECT*)&IOManager,
 		strDevName,
@@ -163,6 +167,7 @@ static int InitPartitions(int nHdNum,
 	DWORD dwAttributes = DEVICE_TYPE_PARTITION;
 	CHAR strDevName[MAX_DEV_NAME_LEN + 1];
 	int i;
+	DWORD dwFlags;
 	BYTE Buff[512];
 
 	if((NULL == pSector0) || (NULL == lpDrvObject))  //Invalid parameter.
@@ -223,7 +228,10 @@ static int InitPartitions(int nHdNum,
 		//Create device object for this partition.
 		//strcpy(strDevName,PARTITION_NAME_BASE);  // -------- CAUTION !!! ---------
 		StrCpy(PARTITION_NAME_BASE,strDevName);
-		strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (BYTE)nPartNum;
+		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (BYTE)IOManager.dwPartitionNumber;
+		IOManager.dwPartitionNumber += 1;
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 		nPartNum ++;  //Increment the partition number.
 		pDevObject = IOManager.CreateDevice(
 			(__COMMON_OBJECT*)&IOManager,
@@ -506,86 +514,23 @@ static BOOL IDEIntHandler(LPVOID pParam,LPVOID pEsp)
 //The main entry point of WINHD driver.
 BOOL IDEHdDriverEntry(__DRIVER_OBJECT* lpDrvObj)
 {
-	__DEVICE_OBJECT*  lpDevObject = NULL;
 	__PARTITION_EXTENSION *pPe = NULL;
 	UCHAR Buff[512];
-	WORD w = 0x0700;
-	//DWORD dwLba;
 
 	//Set operating functions for lpDrvObj first.
 	lpDrvObj->DeviceRead    = DeviceRead;
 	lpDrvObj->DeviceWrite   = DeviceWrite;
 	lpDrvObj->DeviceCtrl    = DeviceCtrl;
 
-	/*
-	//Connect interrupt for IDE first.
-	ConnectInterrupt(IDEIntHandler,
-		NULL,
-		0x2D);
-	*/
-	//Disable harddisk's directly reading functions since in it's will not work properly on
-	//some platforms.
-	//The IDE accessing will be conducted by BIOS trap instead.
-	/*
-	if(!IdeInitialize())
-	{
-		PrintLine("Can not initialize the IDE controller,you may not access HD directly.");
-	}
-	else
-	{
-		PrintLine("Initialize IDE controller successfully.");
-	}
-
-	//Identify the device.
-	if(!Identify(0,(BYTE*)&Buff[0]))
-	{
-		PrintLine("Can not identify the hard disk device,you can not access IDE directly.");
-	}
-	else
-	{
-		PrintLine("Identify IDE controller successfully.");
-
-		//Get the total sector number of current disk.
-		dwLba = ((DWORD)Buff[123] << 24) + ((DWORD)Buff[122] << 16) 
-			+ ((DWORD)Buff[121] << 8) + (DWORD)Buff[120];
-
-		pPe = (__PARTITION_EXTENSION*)CREATE_OBJECT(__PARTITION_EXTENSION);
-		if(NULL == pPe)
-		{
-			PrintLine("Can not create RAW partition extension.");
-			return FALSE;
-		}
-		//Initialize the partition extension object.
-		pPe->BootIndicator  = 0x00;
-		pPe->PartitionType  = PARTITION_TYPE_RAW;
-		pPe->dwStartSector  = 0;
-		pPe->dwSectorNum    = dwLba;  //Set the maximal sector number of this disk.
-		pPe->nDiskNum       = 0;
-		pPe->dwCurrPos      = 0;
-
-		lpDevObject = IOManager.CreateDevice((__COMMON_OBJECT*)&IOManager,
-			"\\\\.\\PHYSICALHARDDISK0",
-			DEVICE_TYPE_STORAGE | DEVICE_TYPE_HARDDISK,  //Hard disk,as a kind of storage device.
-			512,
-			2048,
-			2048,
-			pPe,
-			lpDrvObj);
-		if(NULL == lpDevObject)  //Failed to create device object.
-		{
-			PrintLine("WINHD Driver: Failed to create device object for WINHD.");
-			return FALSE;
-		}
-	}*/
-	//Read the MBR from HD.
+	//Read the MBR from first HD.
 	if(!ReadSector(0,0,1,(BYTE*)&Buff[0]))
 	{
-		PrintLine("Can not read the MBR,all file system in this host may unavailable.");
+		_hx_printf("Can not read MBR from HD [0].\r\n");
 		return FALSE;
 	}
+
+	//Analyze the MBR and try to find any file partitions in HD.
 	InitPartitions(0,(BYTE*)&Buff[0],lpDrvObj);
-	//A temporary routine used to establish the partition table.
-	//CreatePartition();
 	return TRUE;
 }
 

@@ -56,6 +56,83 @@ static int dev_index;
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 1
 #endif
 
+//Wrapers of several low level routines to access USB controller.
+static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
+	void *buffer, int transfer_len)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.submit_bulk_msg(dev, pipe, buffer, transfer_len);
+}
+
+static int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int transfer_len, struct devrequest *setup)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+	
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.submit_control_msg(dev, pipe, buffer, transfer_len, setup);
+}
+
+static int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int transfer_len, int interval)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.submit_int_msg(dev, pipe, buffer, transfer_len, interval);
+}
+
+static struct int_queue *create_int_queue(struct usb_device *dev, unsigned long pipe,
+	int queuesize, int elementsize, void *buffer, int interval)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return NULL;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.create_int_queue(dev, pipe, queuesize, elementsize, buffer, interval);
+}
+
+static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return -1;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.destroy_int_queue(dev, queue);
+}
+
+static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+
+	if (NULL == dev)
+	{
+		return NULL;
+	}
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
+	return pUsbCtrl->ctrlOps.poll_int_queue(dev, queue);
+}
+
 /***************************************************************************
 * Init USB Device
 */
@@ -63,7 +140,7 @@ int usb_init(void)
 {
 	void *ctrl;
 	struct usb_device *dev;
-	int i, start_index = 0;
+	int i, start_index = 0, index = 0;
 	int controllers_initialized = 0;
 	int ret;
 
@@ -77,53 +154,56 @@ int usb_init(void)
 		usb_dev[i].devnum = -1;
 	}
 
-	/* init low_level USB */
-	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
+	while (UsbDriverEntry[index].usb_lowlevel_init)
+	{
 		/* init low_level USB */
-		printf("USB%d:   ", i);
-		ret = usb_lowlevel_init(i, USB_INIT_HOST, &ctrl);
-		if (ret == -ENODEV) {	/* No such device. */
-			puts("Port not available.\r\n");
+		for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
+			/* init low_level USB */
+			printf("USB%d:   ", i);
+			ret = UsbDriverEntry[index].usb_lowlevel_init(i, USB_INIT_HOST, &ctrl);
+			if (ret == -ENODEV) {	/* No such device. */
+				puts("Port not available.\r\n");
+				controllers_initialized++;
+				continue;
+			}
+			if (ret) {		/* Other error. */
+				//puts("lowlevel init failed\r\n");
+				continue;
+			}
+
+			/*
+			* lowlevel init is OK, now scan the bus for devices
+			* i.e. search HUBs and configure them
+			*/
 			controllers_initialized++;
-			continue;
-		}
+			start_index = dev_index;
+			printf("scanning bus %d for devices... \r\n", i);
+			ret = usb_alloc_new_device(ctrl, &dev);
+			if (ret)
+				break;
 
-		if (ret) {		/* Other error. */
-			puts("lowlevel init failed\r\n");
-			continue;
-		}
-		/*
-		* lowlevel init is OK, now scan the bus for devices
-		* i.e. search HUBs and configure them
-		*/
-		controllers_initialized++;
-		start_index = dev_index;
-		printf("scanning bus %d for devices... \r\n", i);
-		ret = usb_alloc_new_device(ctrl, &dev);
-		if (ret)
-			break;
+			/*
+			* device 0 is always present
+			* (root hub, so let it analyze)
+			*/
+			ret = usb_new_device(dev);
+			if (ret){
+				printf("usb_init: Create new device failed.\r\n");
+				usb_free_device(dev->controller);
+			}
 
-		/*
-		* device 0 is always present
-		* (root hub, so let it analyze)
-		*/
-		ret = usb_new_device(dev);
-		if (ret)
-		{
-			printf("usb_init: Create new device failed.\r\n");
-			usb_free_device(dev->controller);
-		}
+			if (start_index == dev_index) {
+				puts("No USB Device found\r\n");
+				continue;
+			}
+			else {
+				printf("%d USB Device(s) found\r\n",
+					dev_index - start_index);
+			}
 
-		if (start_index == dev_index) {
-			puts("No USB Device found\r\n");
-			continue;
+			usb_started = 1;
 		}
-		else {
-			printf("%d USB Device(s) found\r\n",
-				dev_index - start_index);
-		}
-
-		usb_started = 1;
+		index++;
 	}
 
 	debug("scan end\r\n");
@@ -139,16 +219,20 @@ int usb_init(void)
 */
 int usb_stop(void)
 {
-	int i;
+	int i, index = 0;
 
 	if (usb_started) {
 		asynch_allowed = 1;
 		usb_started = 0;
 		usb_hub_reset();
 
-		for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
-			if (usb_lowlevel_stop(i))
-				printf("failed to stop USB controller %d\r\n", i);
+		while (UsbDriverEntry[index].usb_lowlevel_stop)
+		{
+			for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
+				if (UsbDriverEntry[index].usb_lowlevel_stop(i))
+					printf("Failed to stop USB controller %d\r\n", i);
+			}
+			index++;
 		}
 	}
 
@@ -929,13 +1013,19 @@ void usb_free_device(struct udevice *controller)
 * and EHCI/OHCI just work out of the box.
 */
 #ifdef __MS_VC__
+#if !defined(CONFIG_USB_XHCI)  //xHCI will allocate device by it self.
 int usb_alloc_device(struct usb_device *udev)
-#else
-__weak int usb_alloc_device(struct usb_device *udev)
-#endif
 {
 	return 0;
 }
+#endif  //CONFIG_USB_XHCI
+#else
+__weak int usb_alloc_device(struct usb_device *udev)
+{
+	return 0;
+}
+#endif  //__MS_VC__
+
 #endif /* !CONFIG_DM_USB */
 
 static int usb_hub_port_reset(struct usb_device *dev, struct usb_device *hub)
