@@ -45,15 +45,15 @@ int _xhci_usb_lowlevel_stop(int index);
 //array for the newly added driver.
 __USB_CTRL_DRIVER_ENTRY UsbDriverEntry[] = {
 #ifdef CONFIG_USB_XHCI
-	{ _xhci_usb_lowlevel_init, _xhci_usb_lowlevel_stop },
+	{ _xhci_usb_lowlevel_init, _xhci_usb_lowlevel_stop,"USB xHCI"},
 #endif
 
 #ifdef CONFIG_USB_EHCI
-	{ _ehci_usb_lowlevel_init, _ehci_usb_lowlevel_stop },
+	{ _ehci_usb_lowlevel_init, _ehci_usb_lowlevel_stop,"USB EHCI"},
 #endif
 
 #ifdef CONFIG_USB_OHCI
-	{ _ohci_usb_lowlevel_init, _ohci_usb_lowlevel_stop },
+	{ _ohci_usb_lowlevel_init, _ohci_usb_lowlevel_stop,"USB OHCI"},
 #endif
 	//The last entry must keep NULL to be a sign of array's end.
 	{ NULL, NULL }

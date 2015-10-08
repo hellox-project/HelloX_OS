@@ -18,6 +18,10 @@
 * Create the appropriate control structures to manage a new XHCI host
 * controller.
 */
+//Save the previous found xHCI controller,to as the start point of next
+//device searching.
+static __PHYSICAL_DEVICE* pOldCtrl = NULL;
+
 int xhci_hcd_init(int index, struct xhci_hccr **ret_hccr,
 struct xhci_hcor **ret_hcor)
 {
@@ -39,12 +43,16 @@ struct xhci_hcor **ret_hcor)
 	pUsbCtrl = DeviceManager.GetDevice(&DeviceManager,
 		BUS_TYPE_PCI,
 		&id,
-		NULL);
+		pOldCtrl);
 	if (NULL == pUsbCtrl)  //Can not find the device.
 	{
 		_hx_printf("XHCI: Can not find XHCI controller in system.\r\n");
+		pOldCtrl = NULL;
 		goto __TERMINAL;
 	}
+
+	//Save the found USB controller object,so as the start point of next searching.
+	pOldCtrl = pUsbCtrl;
 
 	//Get the vendor ID and device ID and the base address.
 	vid = (u16)pUsbCtrl->ReadDeviceConfig(pUsbCtrl, PCI_CONFIG_OFFSET_VENDOR, sizeof(vid));

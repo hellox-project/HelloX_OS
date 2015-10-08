@@ -1126,12 +1126,16 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	debug("Register %x NbrPorts %d\r\n", reg, descriptor.hub.bNbrPorts);
 	/* Port Indicators */
 	if (HCS_INDICATOR(reg))
+	{
 		put_unaligned(get_unaligned(&descriptor.hub.wHubCharacteristics)
-		| 0x80, &descriptor.hub.wHubCharacteristics);
+			| 0x80, &descriptor.hub.wHubCharacteristics);
+	}
 	/* Port Power Control */
 	if (HCS_PPC(reg))
+	{
 		put_unaligned(get_unaligned(&descriptor.hub.wHubCharacteristics)
-		| 0x01, &descriptor.hub.wHubCharacteristics);
+			| 0x01, &descriptor.hub.wHubCharacteristics);
+	}
 
 	/* Start the host controller. */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
@@ -1152,9 +1156,12 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 
 	/* unblock posted write */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
+	//When estimately running here,the system will halt for several seconds(about 10~20) without
+	//any response,I don't know why,maybe caused by USB controller's hardware...
 	mdelay(5);
 	reg = HC_VERSION(ehci_readl(&ctrl->hccr->cr_capbase));
 	printf("USB EHCI %x.%02x\r\n", reg >> 8, reg & 0xff);
+	mdelay(2000); //For debugging.
 
 	return 0;
 }

@@ -159,7 +159,7 @@ int usb_init(void)
 		/* init low_level USB */
 		for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
 			/* init low_level USB */
-			printf("USB%d:   ", i);
+			printf("%s[%d]:   ", UsbDriverEntry[index].ctrlDesc,i);
 			ret = UsbDriverEntry[index].usb_lowlevel_init(i, USB_INIT_HOST, &ctrl);
 			if (ret == -ENODEV) {	/* No such device. */
 				puts("Port not available.\r\n");
@@ -330,7 +330,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 	err = submit_control_msg(dev, pipe, data, size, setup_packet);
 	if (err < 0)
 	{
-		debug("Submit control msg failed with err = %d.\r\n", err);
+		//debug("Submit control msg failed with err = %d.\r\n", err);
 		return err;
 	}
 	if (timeout == 0)

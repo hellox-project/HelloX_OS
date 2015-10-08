@@ -19,7 +19,7 @@
 //if you use GCC as compiler.
 #define __MS_VC__
 
-#define DEBUG  //Enable debugging.
+//#define DEBUG  //Enable debugging.
 
 #ifdef __CFG_CPU_LE
 #define __LITTLE_ENDIAN

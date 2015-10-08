@@ -82,7 +82,7 @@
 //if the user does not give a stack size in CreateKernelThread calling,then
 //use this value as stack size.
 //
-#define DEFAULT_STACK_SIZE 0x00001000 //4k bytes.
+#define DEFAULT_STACK_SIZE 0x00002000 //8k bytes.
 
 //************************************************************************
 //

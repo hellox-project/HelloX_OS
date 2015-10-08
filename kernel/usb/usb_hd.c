@@ -497,6 +497,7 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 	__PARTITION_EXTENSION *pPe = NULL;
 	UCHAR Buff[512];
 	BOOL bResult = FALSE;
+	int i = 0;
 
 	//Try to scan all USB storage device(s) in system.
 	if (usb_stor_scan(1))
@@ -510,7 +511,7 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 	lpDrvObj->DeviceCtrl = DeviceCtrl;
 
 	//Trave each USB block storage device(s) in usb_dev_desc_t array and try to analyze it.
-	for (int i = 0; i < usb_max_devs; i++)
+	for (i = 0; i < usb_max_devs; i++)
 	{
 		//Read the MBR from USB storage device.
 		if (!__usbReadSector(i, 0, 1, (BYTE*)&Buff[0]))

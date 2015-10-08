@@ -237,6 +237,7 @@ int usb_lowlevel_stop(int index);
 typedef struct tag__USB_CTRL_DRIVER_ENTRY{
 	int (*usb_lowlevel_init)(int index, enum usb_init_type init, void** controller);
 	int (*usb_lowlevel_stop)(int index);
+	char* ctrlDesc;  //Description string of the USB controller.
 }__USB_CTRL_DRIVER_ENTRY;
 extern __USB_CTRL_DRIVER_ENTRY UsbDriverEntry[];
 

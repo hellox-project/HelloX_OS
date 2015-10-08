@@ -65,13 +65,13 @@ static uint64_t __local_rdtsc()
 static void Frequency_Init(void)
 {
 	uint64_t xticks = 0x000000000000FFFF;
-	uint64_t tsc = 0;
+	uint64_t tsc = 0, s = 0, e = 0;
 
 	__outb(TIMER_SEL0 | TIMER_TCOUNT | TIMER_16BIT, TIMER_MODE);
 	__outb((UCHAR)(xticks % 256), IO_TIMER1);
 	__outb((UCHAR)(xticks / 256), IO_TIMER1);
 
-	uint64_t s = __local_rdtsc();
+	s = __local_rdtsc();
 	do{
 		__outb(TIMER_STAT0, TIMER_MODE);
 		if (__local_rdtsc() - s >= 1ULL << 32)
@@ -82,7 +82,7 @@ static void Frequency_Init(void)
 		}
 	} while (!(__inb(TIMER_CNTR) & 0x80));
 
-	uint64_t e = __local_rdtsc();
+	e = __local_rdtsc();
 	cpuFrequency = ((e - s) * 10000000) / ((xticks * 10000000) / TIMER_FREQ);
 	_hx_printf("CPU frequency is %u Hz.\r\n", (DWORD)cpuFrequency);
 }
@@ -534,6 +534,7 @@ static void __udelay(unsigned long usec)
 {
 	uint64_t delay = (cpuFrequency * usec) / 1000000;
 	uint64_t base  = __local_rdtsc();
+
 	while (__local_rdtsc() - base < delay)
 	{
 		//Do nothing but wait...
