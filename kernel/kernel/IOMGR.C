@@ -1273,6 +1273,7 @@ __IO_MANAGER IOManager = {
 	NULL,                                   //lpDriverRoot.
 	{0},                                    //FsArray.
 	{0},                                    //FsCtrlArray.
+	0,                                      //dwPartitionNumber;
 	NULL,                                   //lpResDescriptor.
 	IOManagerInitialize,                    //Initialize.
 	_CreateFile, //CreateFile,

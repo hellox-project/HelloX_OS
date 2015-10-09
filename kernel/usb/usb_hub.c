@@ -248,6 +248,7 @@ int usb_hub_port_connect_change(struct usb_device *dev, int port)
 	ALLOC_CACHE_ALIGN_BUFFER(struct usb_port_status, portsts, 1);
 	unsigned short portstatus;
 	int ret, speed;
+	struct usb_device *usb;
 
 	/* Check status */
 	ret = usb_get_port_status(dev, port + 1, portsts);
@@ -306,7 +307,7 @@ int usb_hub_port_connect_change(struct usb_device *dev, int port)
 
 	ret = usb_scan_device(dev->dev, port + 1, speed, &child);
 #else
-	struct usb_device *usb;
+	//struct usb_device *usb;
 
 	ret = usb_alloc_new_device(dev->controller, &usb);
 	if (ret) {

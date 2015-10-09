@@ -136,7 +136,15 @@ static struct ehci_ctrl *ehci_get_ctrl(struct usb_device *udev)
 #ifdef CONFIG_DM_USB
 	return dev_get_priv(usb_get_bus(udev->dev));
 #else
-	return udev->controller;
+	__COMMON_USB_CONTROLLER* pUsbCtrl = (__COMMON_USB_CONTROLLER*)udev->controller;
+	
+	//Validate the common usb controller object.
+	if (KERNEL_OBJECT_SIGNATURE != pUsbCtrl->dwObjectSignature)
+	{
+		BUG();
+	}
+	//return udev->controller;
+	return pUsbCtrl->pUsbCtrl;
 #endif
 }
 
@@ -1118,12 +1126,16 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	debug("Register %x NbrPorts %d\r\n", reg, descriptor.hub.bNbrPorts);
 	/* Port Indicators */
 	if (HCS_INDICATOR(reg))
+	{
 		put_unaligned(get_unaligned(&descriptor.hub.wHubCharacteristics)
-		| 0x80, &descriptor.hub.wHubCharacteristics);
+			| 0x80, &descriptor.hub.wHubCharacteristics);
+	}
 	/* Port Power Control */
 	if (HCS_PPC(reg))
+	{
 		put_unaligned(get_unaligned(&descriptor.hub.wHubCharacteristics)
-		| 0x01, &descriptor.hub.wHubCharacteristics);
+			| 0x01, &descriptor.hub.wHubCharacteristics);
+	}
 
 	/* Start the host controller. */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
@@ -1144,6 +1156,8 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 
 	/* unblock posted write */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
+	//When estimately running here,the system will halt for several seconds(about 10~20) without
+	//any response,I don't know why,maybe caused by USB controller's hardware...
 	mdelay(5);
 	reg = HC_VERSION(ehci_readl(&ctrl->hccr->cr_capbase));
 	printf("USB EHCI %x.%02x\r\n", reg >> 8, reg & 0xff);
@@ -1152,13 +1166,53 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 }
 
 #ifndef CONFIG_DM_USB
-int usb_lowlevel_stop(int index)
+int _ehci_usb_lowlevel_stop(int index)
 {
 	ehci_shutdown(&ehcic[index]);
 	return ehci_hcd_stop(index);
 }
 
-int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
+//Declaration of several EHCI controller manipulation routines.
+static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
+	void *buffer, int transfer_len);
+static int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int transfer_len, struct devrequest *setup);
+static int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int transfer_len, int interval);
+static struct int_queue *create_int_queue(struct usb_device *dev, unsigned long pipe,
+	int queuesize, int elementsize, void *buffer, int interval);
+static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue);
+static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue);
+
+//Create a common USB controller and initialize it according to EHCI.
+static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = (__COMMON_USB_CONTROLLER*)_hx_malloc(
+		sizeof(__COMMON_USB_CONTROLLER));
+	if (NULL == pUsbCtrl)
+	{
+		return pUsbCtrl;
+	}
+	//Initialize it.
+	pUsbCtrl->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
+	pUsbCtrl->dwCtrlType = USB_CONTROLLER_EHCI_WITH_COMPANION;
+	//memset(&pUsbCtrl->ctrlOps, 0, sizeof(__USB_CONTROLLER_OPERATIONS));
+	pUsbCtrl->ctrlOps.submit_bulk_msg = submit_bulk_msg;
+	pUsbCtrl->ctrlOps.submit_control_msg = submit_control_msg;
+	pUsbCtrl->ctrlOps.submit_int_msg = submit_int_msg;
+	pUsbCtrl->ctrlOps.create_int_queue = NULL;
+	pUsbCtrl->ctrlOps.destroy_int_queue = NULL;
+	pUsbCtrl->ctrlOps.poll_int_queue = NULL;
+	pUsbCtrl->ctrlOps.usb_reset_root_port = NULL;
+	
+	pUsbCtrl->pUsbCtrl = pCtrl;
+
+	return pUsbCtrl;
+}
+
+
+//Controller initialization routine called by usb_init routine.
+int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 {
 	struct ehci_ctrl *ctrl = &ehcic[index];
 	uint tweaks = 0;
@@ -1194,8 +1248,13 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 
 	ctrl->rootdev = 0;
 done:
-	*controller = &ehcic[index];
-	return 0;
+	*controller = CreateUsbCtrl(&ehcic[index]);
+	//*controller = &ehcic[index];
+	if (*controller) //Create USB common controller success.
+	{
+		return 0;
+	}
+	return -1;
 }
 #endif
 
@@ -1574,25 +1633,25 @@ static int _ehci_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 }
 
 #ifndef CONFIG_DM_USB
-int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
+static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int length)
 {
 	return _ehci_submit_bulk_msg(dev, pipe, buffer, length);
 }
 
-int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+static int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int length, struct devrequest *setup)
 {
 	return _ehci_submit_control_msg(dev, pipe, buffer, length, setup);
 }
 
-int submit_int_msg(struct usb_device *dev, unsigned long pipe,
+static int submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int length, int interval)
 {
 	return _ehci_submit_int_msg(dev, pipe, buffer, length, interval);
 }
 
-struct int_queue *create_int_queue(struct usb_device *dev,
+static struct int_queue *create_int_queue(struct usb_device *dev,
 	unsigned long pipe, int queuesize, int elementsize,
 	void *buffer, int interval)
 {
@@ -1600,12 +1659,12 @@ struct int_queue *create_int_queue(struct usb_device *dev,
 		buffer, interval);
 }
 
-void *poll_int_queue(struct usb_device *dev, struct int_queue *queue)
+static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue)
 {
 	return _ehci_poll_int_queue(dev, queue);
 }
 
-int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
+static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
 {
 	return _ehci_destroy_int_queue(dev, queue);
 }

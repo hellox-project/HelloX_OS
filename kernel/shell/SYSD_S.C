@@ -490,8 +490,10 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 	DWORD                dwStartAddr         = 0;
 	DWORD                dwEndAddr           = 0;
 	
-	if(NULL == lpPhyDev)  //Invalid parameter.
+	if (NULL == lpPhyDev)  //Invalid parameter.
+	{
 		return;
+	}
 
 	lpPciInfo      = (__PCI_DEVICE_INFO*)lpPhyDev->lpPrivateInfo;
 	dwDevNum       = lpPciInfo->DeviceNum;
@@ -556,6 +558,12 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 		_hx_printf("    [resource] type = %c,startaddr = 0x%0X,endaddr = 0x%0X\r\n",
 			ucResType, dwStartAddr, dwEndAddr);
 	}
+
+	//Show command,class code and revision ID.
+	_hx_printf("    [other] command = 0x%X,class_code = 0x%X,rev_id = 0x%X\r\n",
+		lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_COMMAND, 2),
+		(lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_REVISION, 4) >> 8),
+		(lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_REVISION, 4) & 0xFF));
 	//Change a new line.
 	_hx_printf("\r\n");
 	return;

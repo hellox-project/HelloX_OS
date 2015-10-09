@@ -1771,7 +1771,7 @@ struct int_queue *queue)
 
 #ifndef CONFIG_DM_USB
 /* submit routines called from usb.c */
-int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int transfer_len)
 {
 	info("submit_bulk_msg");
@@ -1779,13 +1779,19 @@ int submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		NULL, 0);
 }
 
-int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+static int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int transfer_len, int interval)
 {
 	info("submit_int_msg");
 	return submit_common_msg(&gohci, dev, pipe, buffer, transfer_len, NULL,
 		interval);
 }
+
+//Implemented later in this file,I don't know why does not put here by original
+//author,just make a declaration to pass compiling sine it will be refered before
+//it's implementation.
+static int submit_control_msg(struct usb_device *dev, unsigned long pipe,
+	void *buffer, int transfer_len, struct devrequest *setup);
 
 struct int_queue *create_int_queue(struct usb_device *dev,
 	unsigned long pipe, int queuesize, int elementsize,
@@ -1795,12 +1801,12 @@ struct int_queue *create_int_queue(struct usb_device *dev,
 		elementsize, buffer, interval);
 }
 
-void *poll_int_queue(struct usb_device *dev, struct int_queue *queue)
+static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue)
 {
 	return _ohci_poll_int_queue(&gohci, dev, queue);
 }
 
-int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
+static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue)
 {
 	return _ohci_destroy_int_queue(&gohci, dev, queue);
 }
@@ -2075,6 +2081,32 @@ static void hc_release_ohci(ohci_t *ohci)
 		hc_reset(ohci);
 }
 
+//Create a common USB controller object to unify the OHCI USB controller.
+static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = (__COMMON_USB_CONTROLLER*)_hx_malloc(
+		sizeof(__COMMON_USB_CONTROLLER));
+	if (NULL == pUsbCtrl)
+	{
+		return pUsbCtrl;
+	}
+	//Initialize it.
+	pUsbCtrl->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
+	pUsbCtrl->dwCtrlType = USB_CONTROLLER_OHCI;
+	//memset(&pUsbCtrl->ctrlOps, 0, sizeof(__USB_CONTROLLER_OPERATIONS));
+	pUsbCtrl->ctrlOps.submit_bulk_msg = submit_bulk_msg;
+	pUsbCtrl->ctrlOps.submit_control_msg = submit_control_msg;
+	pUsbCtrl->ctrlOps.submit_int_msg = submit_int_msg;
+	pUsbCtrl->ctrlOps.create_int_queue = create_int_queue;
+	pUsbCtrl->ctrlOps.destroy_int_queue = destroy_int_queue;
+	pUsbCtrl->ctrlOps.poll_int_queue = poll_int_queue;
+	pUsbCtrl->ctrlOps.usb_reset_root_port = NULL;
+
+	pUsbCtrl->pUsbCtrl = pCtrl;
+
+	return pUsbCtrl;
+}
+
 /*-------------------------------------------------------------------------*/
 
 /*
@@ -2082,13 +2114,19 @@ static void hc_release_ohci(ohci_t *ohci)
 */
 static char ohci_inited = 0;
 
-int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
+int _ohci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 {
 #ifdef CONFIG_PCI_OHCI
 	__PHYSICAL_DEVICE* pUsbDev = NULL;
 	__IDENTIFIER id;
 	LPVOID pRegBase = NULL;
 #endif
+
+	//Only support 1 OHCI controller now.
+	if (index)
+	{
+		return -1;
+	}
 
 #ifdef CONFIG_SYS_USB_OHCI_CPU_INIT
 	/* cpu dependant init */
@@ -2138,12 +2176,9 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 	if (pUsbDev) {
 		u16 vid, did;
 		u32 base;
-		//pci_read_config_word(pdev, PCI_VENDOR_ID, &vid);
 		vid = (u16)pUsbDev->ReadDeviceConfig(pUsbDev, PCI_CONFIG_OFFSET_VENDOR, sizeof(vid));
-		//pci_read_config_word(pdev, PCI_DEVICE_ID, &did);
 		did = (u16)pUsbDev->ReadDeviceConfig(pUsbDev, PCI_CONFIG_OFFSET_DEVICE, sizeof(did));
 		printf("OHCI pci controller (%04X, %04X) found.\r\n",vid,did);
-		//pci_read_config_dword(pdev, PCI_BASE_ADDRESS_0, &base);
 		base = pUsbDev->ReadDeviceConfig(pUsbDev, PCI_CONFIG_OFFSET_BASE1, sizeof(base));
 		printf("OHCI regs address 0x%08x\r\n",base);
 		//Reserve the config register space in Virtual Memory Space.
@@ -2205,6 +2240,13 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 		goto __TERMINAL;
 	}
 
+	//Create common USB controller object and return it to caller.
+	*controller = CreateUsbCtrl(&gohci);
+	if (!*controller)
+	{
+		goto __TERMINAL;
+	}
+
 #ifdef	DEBUG
 	ohci_dump(&gohci, 1);
 #else
@@ -2227,7 +2269,7 @@ __TERMINAL:
 	return 0;
 }
 
-int usb_lowlevel_stop(int index)
+int _ohci_usb_lowlevel_stop(int index)
 {
 	/* this gets called really early - before the controller has */
 	/* even been initialized! */
@@ -2254,7 +2296,7 @@ int usb_lowlevel_stop(int index)
 	return 0;
 }
 
-int submit_control_msg(struct usb_device *dev, unsigned long pipe,
+static int submit_control_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int transfer_len, struct devrequest *setup)
 {
 	return _ohci_submit_control_msg(&gohci, dev, pipe, buffer,

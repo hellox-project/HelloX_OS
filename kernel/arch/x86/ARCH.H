@@ -102,11 +102,11 @@ VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort);
 
 //Read or write to device maped space,in some architecture,it may
 //different compare to normal memory access.
-#define __readb(addr) (*(volatile unsigned char*)addr)
-#define __readw(addr) (*(volatile unsigned short*)addr)
-#define __readl(addr) (*(volatile unsigned long*)addr)
-#define __writeb(v,addr) (*(volatile unsigned char*)addr  = (unsigned char)v)
-#define __writew(v,addr) (*(volatile unsigned short*)addr = (unsigned short)v)
-#define __writel(v,addr) (*(volatile unsigned long*)addr  = (unsigned long)v)
+#define __readb(addr) (*(volatile unsigned char*)(addr))
+#define __readw(addr) (*(volatile unsigned short*)(addr))
+#define __readl(addr) (*(volatile unsigned long*)(addr))
+#define __writeb(v,addr) (*(volatile unsigned char*)(addr)  = (unsigned char)(v))
+#define __writew(v,addr) (*(volatile unsigned short*)(addr) = (unsigned short)(v))
+#define __writel(v,addr) (*(volatile unsigned long*)(addr)  = (unsigned long)(v))
 
 #endif  //__ARCH_H__

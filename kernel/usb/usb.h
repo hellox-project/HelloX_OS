@@ -26,15 +26,18 @@
 #endif
 
 //Enable or disable different USB specifications support.
-//#define CONFIG_USB_EHCI
+#define CONFIG_USB_EHCI
 #define CONFIG_USB_OHCI
-#define CONFIG_USB_UHCI
+//#define CONFIG_USB_UHCI
 #define CONFIG_USB_XHCI
 
 //USB applications switch.
 #define CONFIG_USB_STORAGE
 //#define CONFIG_USB_KEYBOARD
 //#define CONFIG_USB_HOST_ETHER
+
+//Maximal USB controllers in system.
+#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
@@ -229,12 +232,22 @@ enum usb_init_type {
 int usb_lowlevel_init(int index, enum usb_init_type init, void **controller);
 int usb_lowlevel_stop(int index);
 
+//USB controller initialization routine's array,each USB controller driver should
+//put one entry into this array.
+typedef struct tag__USB_CTRL_DRIVER_ENTRY{
+	int (*usb_lowlevel_init)(int index, enum usb_init_type init, void** controller);
+	int (*usb_lowlevel_stop)(int index);
+	char* ctrlDesc;  //Description string of the USB controller.
+}__USB_CTRL_DRIVER_ENTRY;
+extern __USB_CTRL_DRIVER_ENTRY UsbDriverEntry[];
+
 #if defined(CONFIG_USB_MUSB_HOST) || defined(CONFIG_DM_USB)
 int usb_reset_root_port(struct usb_device *dev);
 #else
 #define usb_reset_root_port(dev)
 #endif
 
+/*
 int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int transfer_len);
 int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
@@ -248,6 +261,39 @@ struct int_queue *create_int_queue(struct usb_device *dev, unsigned long pipe,
 int destroy_int_queue(struct usb_device *dev, struct int_queue *queue);
 void *poll_int_queue(struct usb_device *dev, struct int_queue *queue);
 #endif
+*/
+
+//A structure to contain the common operations of USB controller,no matter the 
+//controller's type is OHCI,UHCI or EHCI and others...
+//Each USB controller object will contain one instance of this structure.
+typedef struct tag__USB_CONTROLLER_OPERATIONS{
+	int (*usb_reset_root_port)(struct usb_device *dev);
+	int (*submit_bulk_msg)(struct usb_device *dev, unsigned long pipe,
+		void *buffer, int transfer_len);
+	int (*submit_control_msg)(struct usb_device *dev, unsigned long pipe, void *buffer,
+		int transfer_len, struct devrequest *setup);
+	int (*submit_int_msg)(struct usb_device *dev, unsigned long pipe, void *buffer,
+		int transfer_len, int interval);
+	struct int_queue* (*create_int_queue)(struct usb_device *dev, unsigned long pipe,
+		int queuesize, int elementsize, void *buffer, int interval);
+	int (*destroy_int_queue)(struct usb_device *dev, struct int_queue *queue);
+	void* (*poll_int_queue)(struct usb_device *dev, struct int_queue *queue);
+}__USB_CONTROLLER_OPERATIONS;
+
+//Common USB controller object to unify all types of USB controllers.
+typedef struct tag__COMMON_USB_CONTROLLER{
+	DWORD dwObjectSignature;              //Kernel object signature.
+	__USB_CONTROLLER_OPERATIONS ctrlOps;  //Common operations.
+	DWORD dwCtrlType;                     //Controller's type,EHCI,EHCI with companion,xHCI,etc.
+	LPVOID pUsbCtrl;                      //Actual controller specified informations.
+}__COMMON_USB_CONTROLLER;
+
+//USB controller types.
+#define USB_CONTROLLER_OHCI                0x0001
+#define USB_CONTROLLER_UHCI                0x0002
+#define USB_CONTROLLER_EHCI                0x0004
+#define USB_CONTROLLER_EHCI_WITH_COMPANION 0x0008
+#define USB_CONTROLLER_XHCI                0X0010
 
 /* Defines */
 #define USB_UHCI_VEND_ID	0x8086

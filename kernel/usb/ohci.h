@@ -23,6 +23,9 @@
 #define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS 8
 #endif
 
+//Entry point of low level initialization and stop.
+int _ohci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller);
+int _ohci_usb_lowlevel_stop(int index);
 
 /*
 * e.g. PCI controllers need this

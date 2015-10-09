@@ -124,6 +124,10 @@ static struct pci_device_id ehci_pci_ids[] = {
 */
 #define PCI_EHCI_CLASS_ID 0x0C0320
 
+//Save the USB controller's physical device object,to use as 
+//begining iterating position when GetDevice is called next time.
+static __PHYSICAL_DEVICE* pOldUsbCtrl = NULL;
+
 int ehci_hcd_init(int index, enum usb_init_type init,
 struct ehci_hccr **ret_hccr, struct ehci_hcor **ret_hcor)
 {
@@ -136,11 +140,14 @@ struct ehci_hccr **ret_hccr, struct ehci_hcor **ret_hcor)
 	id.Bus_ID.PCI_Identifier.dwClass = (PCI_EHCI_CLASS_ID << 8);
 
 	pUsbCtrl = DeviceManager.GetDevice(&DeviceManager,BUS_TYPE_PCI,
-		&id, NULL);
+		&id, pOldUsbCtrl);
 	if (NULL == pUsbCtrl) {
-		printf("USB: EHCI host controller not found.\r\n");
+		printf("USB: EHCI host controller [%d] is not found.\r\n",index);
 		return -1;
 	}
+
+	//Save the physical device object pointer.
+	pOldUsbCtrl = pUsbCtrl;
 
 	if (ehci_pci_common_init(pUsbCtrl, ret_hccr, ret_hcor))
 	{

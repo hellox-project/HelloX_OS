@@ -17,6 +17,10 @@
 //Only available when the EHCI is enabled.
 #ifdef CONFIG_USB_EHCI
 
+//Entry point of low level initialization and stop.
+int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller);
+int _ehci_usb_lowlevel_stop(int index);
+
 #if !defined(CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS)
 #define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	8
 #endif
@@ -361,6 +365,7 @@ struct ehci_ctrl {
 	int periodic_schedules;
 	int ntds;
 	struct ehci_ops ops;
+	//__USB_CONTROLLER_OPERATIONS ctrlOps; //Common USB controller operations.
 	void *priv;	/* client's private data */
 };
 
