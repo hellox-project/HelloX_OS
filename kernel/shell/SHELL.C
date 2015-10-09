@@ -789,10 +789,9 @@ DWORD ShellEntryPoint(LPVOID pData)
 	WORD x, y;
 
 	StrCpy(DEF_PROMPT_STR,&s_szPrompt[0]);
-	CD_PrintString(VERSION_INFO,TRUE);
-	//CD_SetCursorPos(0,SHELL_INPUT_START_Y_FIRST);
-	CD_GetCursorPos(&x, &y);
-	CD_SetCursorPos(0, y + 1);
+	_hx_printf("\r\n");
+	_hx_printf("%s\r\n",VERSION_INFO);
+	_hx_printf("\r\n");
 	
 	Shell_Msg_Loop(s_szPrompt,CommandParser,QueryCmdName);
 

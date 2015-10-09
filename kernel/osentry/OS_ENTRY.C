@@ -42,12 +42,7 @@
 #endif
 
 //Welcome information.
-char* pszStartMsg1 = "HelloX is running now.If you have any question,";
-char* pszStartMsg2 = "please send email to : garryxin@yahoo.com.cn.";
-char* pszWelcome   = "Welcome to use HelloX!";
-
-//Help information.
-char* pszHelpInfo = "Any help please press 'help' + return.";
+char* pszLoadWelcome   = "Welcome to use HelloX. Initializin now...";
 
 //Driver entry point array,this array resides in drventry.cpp file in the 
 //same directory as os_entry.cpp,which is OSENTRY in current version.
@@ -116,12 +111,9 @@ void __OS_Entry()
 	//Please note the output should put here that before the System.BeginInitialization routine,
 	//since it may cause the interrupt enable,which will lead the failure of system initialization.
 	ClearScreen();
-	PrintStr(pszStartMsg1);
-	PrintStr(pszStartMsg2);
 	GotoHome();
 	ChangeLine();
-
-	PrintStr(pszHelpInfo); //Print out help information.
+	PrintLine(pszLoadWelcome);
 	GotoHome();
 	ChangeLine();
 
