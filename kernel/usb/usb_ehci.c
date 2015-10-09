@@ -1161,7 +1161,6 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	mdelay(5);
 	reg = HC_VERSION(ehci_readl(&ctrl->hccr->cr_capbase));
 	printf("USB EHCI %x.%02x\r\n", reg >> 8, reg & 0xff);
-	mdelay(2000); //For debugging.
 
 	return 0;
 }
