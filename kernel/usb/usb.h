@@ -29,7 +29,12 @@
 #define CONFIG_USB_EHCI
 #define CONFIG_USB_OHCI
 //#define CONFIG_USB_UHCI
-#define CONFIG_USB_XHCI
+//#define CONFIG_USB_XHCI
+
+//Define this flag to cause the lowlevel_init routine of EHCI to write
+//CF flag into USB controller,otherwise the EHCI controller will lead
+//system to halt a long time...
+#define CONFIG_USB_EHCI_FARADAY
 
 //USB applications switch.
 #define CONFIG_USB_STORAGE
