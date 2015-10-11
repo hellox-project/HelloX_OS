@@ -60,9 +60,11 @@ struct xhci_hcor **ret_hcor)
 	printf("XHCI pci controller (Vendor: %04X, Device: %04X) found.\r\n", vid, did);
 	base = pUsbCtrl->ReadDeviceConfig(pUsbCtrl, PCI_CONFIG_OFFSET_BASE1, sizeof(base));
 	printf("XHCI regs address 0x%08x\r\n", base);
+	base &= ~0x0F;  //Clear the lowest 4 bits.
+
 	//Reserve the config register space in Virtual Memory Space.
 #ifdef __CFG_SYS_VMM
-	pRegBase = VirtualAlloc((LPVOID)base, 0x1000, VIRTUAL_AREA_ALLOCATE_IO,
+	pRegBase = VirtualAlloc((LPVOID)base, 0x10000, VIRTUAL_AREA_ALLOCATE_IO,
 		VIRTUAL_AREA_ACCESS_RW,
 		"xHCI Regs");
 	if (NULL == pRegBase)

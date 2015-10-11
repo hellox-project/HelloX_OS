@@ -786,8 +786,6 @@ __END:
 //
 DWORD ShellEntryPoint(LPVOID pData)
 {
-	WORD x, y;
-
 	StrCpy(DEF_PROMPT_STR,&s_szPrompt[0]);
 	_hx_printf("\r\n");
 	_hx_printf("%s\r\n",VERSION_INFO);

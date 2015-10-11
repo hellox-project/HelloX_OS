@@ -35,15 +35,21 @@ struct ehci_hcor **ret_hcor)
 #ifdef __CFG_SYS_VMM
 	DWORD dwMemSize = 0;
 	LPVOID pMemRegion = NULL;
+	int i = 0;
 #endif
 	BOOL  bResult = FALSE;
 
 	//Get hccr from configuration space.
 	hccr = (struct ehci_hccr*)pdev->ReadDeviceConfig(pdev, PCI_CONFIG_OFFSET_BASE1, sizeof(DWORD));
+	if ((int)hccr & (1 << 0))  //Maped to IO space,skip.
+	{
+		goto __TERMINAL;
+	}
+	hccr = (struct ehci_hccr*)((int)hccr & (~0x0F)); //Clear the lowest 4 bits.
 
 	//Reserve the HCCR memory region in case of VMM enabled.
 #ifdef __CFG_SYS_VMM
-	for (int i = 0; i < MAX_RESOURCE_NUM; i++)
+	for (i = 0; i < MAX_RESOURCE_NUM; i++)
 	{
 		if (pdev->Resource[i].dwResType == RESOURCE_TYPE_EMPTY)
 		{

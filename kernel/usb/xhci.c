@@ -1104,11 +1104,18 @@ int _xhci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 
 	*controller = NULL;
 
-	if (xhci_hcd_init(index, &hccr, (struct xhci_hcor **)&hcor) != 0)
+	ret = xhci_hcd_init(index, &hccr, (struct xhci_hcor **)&hcor);
+	if (ret != 0)
+	{
+		debug("xHCI: Host controller init failed[%d].\r\n", ret);
 		return -ENODEV;
+	}
 
 	if (xhci_reset(hcor) != 0)
+	{
+		debug("xHCI: xHCI controller reset failed.\r\n");
 		return -ENODEV;
+	}
 
 	ctrl = &xhcic[index];
 
@@ -1118,6 +1125,7 @@ int _xhci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 	ret = xhci_lowlevel_init(ctrl);
 
 	if (ret) {
+		debug("xHCI: xHCI lowlevel init failed[%d].\r\n", ret);
 		ctrl->hccr = NULL;
 		ctrl->hcor = NULL;
 	}

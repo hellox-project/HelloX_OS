@@ -233,6 +233,7 @@ static int prepare_ring(struct xhci_ctrl *ctrl, struct xhci_ring *ep_ring,
 		return -EINVAL;
 	}
 
+	debug("xHCI: %s enter loop last_trb(...).\r\n", __func__);
 	while (last_trb(ctrl, ep_ring, ep_ring->enq_seg, next)) {
 		/*
 		* If we're not dealing with 0.95 hardware or isoc rings
@@ -252,6 +253,8 @@ static int prepare_ring(struct xhci_ctrl *ctrl, struct xhci_ring *ep_ring,
 		ep_ring->enqueue = ep_ring->enq_seg->trbs;
 		next = ep_ring->enqueue;
 	}
+
+	debug("xHCI: %s out of loop last_trb(...).\r\n", __func__);
 
 	return 0;
 }
