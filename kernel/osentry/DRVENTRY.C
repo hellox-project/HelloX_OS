@@ -103,7 +103,7 @@ __DRIVER_ENTRY_ARRAY DriverEntryArray[] = {
 	{ COMDrvEntry, "COM_Int" },
 #endif
 
-#if defined(__CFG_SYS_USB) // && defined(CONFIG_USB_STORAGE)
+#if defined(__CFG_SYS_USB) && defined(__CFG_DRV_USBSTORAGE)
 	{ USBStorage_DriverEntry, "USB_Storage" },
 #endif
 

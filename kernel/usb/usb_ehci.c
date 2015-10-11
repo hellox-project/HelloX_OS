@@ -1009,12 +1009,23 @@ unknown:
 	return -1;
 }
 
+#ifdef __MS_VC__
+//Some early version of MS VC compiler can not support the .[name] = [value] format
+//of initialization.
+const struct ehci_ops default_ehci_ops = {
+	ehci_set_usbmode,
+	ehci_get_port_speed,
+	ehci_powerup_fixup,
+	ehci_get_portsc_register,
+};
+#else
 const struct ehci_ops default_ehci_ops = {
 	.set_usb_mode = ehci_set_usbmode,
 	.get_port_speed = ehci_get_port_speed,
 	.powerup_fixup = ehci_powerup_fixup,
 	.get_portsc_register = ehci_get_portsc_register,
 };
+#endif
 
 static void ehci_setup_ops(struct ehci_ctrl *ctrl, const struct ehci_ops *ops)
 {
@@ -1346,6 +1357,7 @@ static struct int_queue *_ehci_create_int_queue(struct usb_device *dev,
 	struct ehci_ctrl *ctrl = ehci_get_ctrl(dev);
 	struct int_queue *result = NULL;
 	uint32_t i, toggle;
+	struct QH *list = NULL;
 
 	/*
 	* Interrupt transfers requiring several transactions are not supported
@@ -1478,7 +1490,7 @@ static struct int_queue *_ehci_create_int_queue(struct usb_device *dev,
 	}
 
 	/* hook up to periodic list */
-	struct QH *list = &ctrl->periodic_queue;
+	list = &ctrl->periodic_queue;
 	result->last->qh_link = list->qh_link;
 	list->qh_link = cpu_to_hc32((unsigned long)result->first | QH_LINK_TYPE_QH);
 
@@ -1554,6 +1566,7 @@ struct int_queue *queue)
 	struct ehci_ctrl *ctrl = ehci_get_ctrl(dev);
 	int result = -1;
 	unsigned long timeout;
+	struct QH *cur = NULL;
 
 	if (disable_periodic(ctrl) < 0) {
 		debug("FATAL: periodic should never fail, but did");
@@ -1561,7 +1574,7 @@ struct int_queue *queue)
 	}
 	ctrl->periodic_schedules--;
 
-	struct QH *cur = &ctrl->periodic_queue;
+	cur = &ctrl->periodic_queue;
 	timeout = get_timer(0) + 500; /* abort after 500ms */
 	while (!(cur->qh_link & cpu_to_hc32(QH_LINK_TERMINATE))) {
 		debug("considering %p, with qh_link %x\r\n", cur, cur->qh_link);

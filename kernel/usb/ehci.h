@@ -22,7 +22,7 @@ int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 int _ehci_usb_lowlevel_stop(int index);
 
 #if !defined(CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS)
-#define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	8
+#define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	16
 #endif
 
 /*
