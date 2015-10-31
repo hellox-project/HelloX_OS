@@ -309,7 +309,7 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 		DWORD   dwMemOffset  = pSectionHdr->VirtualAddress;
 		DWORD   dwSecSize    = pSectionHdr->SizeOfRawData; 
 		LPBYTE  pMemAddr     = pRunBuffer+dwMemOffset;
-		INT     i ;	
+		DWORD   i ;	
 
 		SetFilePointer(hFileObj,&dwFileOffset,0,FILE_FROM_BEGIN);
 

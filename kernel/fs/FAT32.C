@@ -21,9 +21,9 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifndef __FSSTR_H__
 #include "fsstr.h"
@@ -32,8 +32,6 @@
 #ifndef __FAT32_H__
 #include "fat32.h"
 #endif
-
-#include "stdio.h"
 
 //This module will be available if and only if DDF is enabled.
 #ifdef __CFG_SYS_DDF

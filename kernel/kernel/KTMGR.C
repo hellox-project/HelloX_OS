@@ -1083,7 +1083,16 @@ static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/D
 	{
 	     return FALSE;
 	}
-	if(dwMillisecond < SYSTEM_TIME_SLICE)  //Just re-schedule all kernel thread(s).
+	
+	//Just re-schedule all kernel thread(s) if the sleep time is less than
+	//system slice,this may cause issues,suppose that one kernel thread want
+	//to pausing execution for 10ms,to yeild CPU to other kernel threads,
+	//then it calls Sleep routine by giving 10 as parameter.The objective
+	//will not achieved since the Sleep routine will return immediately.
+	//A feasible approach is round any sleep time less than system time
+	//slice to one SYSTEM_TIME_SLICE.
+	//But we keep it is since no problem encountered up to now.
+	if(dwMillisecond < SYSTEM_TIME_SLICE)
 	{
 		lpManager->ScheduleFromProc(NULL);
 		return TRUE;

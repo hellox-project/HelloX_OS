@@ -27,14 +27,14 @@
 
 //Enable or disable different USB specifications support.
 #define CONFIG_USB_EHCI
-#define CONFIG_USB_OHCI
+//#define CONFIG_USB_OHCI
 //#define CONFIG_USB_UHCI
 //#define CONFIG_USB_XHCI
 
 //Define this flag to cause the lowlevel_init routine of EHCI to write
 //CF flag into USB controller,otherwise the EHCI controller will lead
 //system to halt a long time...
-#define CONFIG_USB_EHCI_FARADAY
+//#define CONFIG_USB_EHCI_FARADAY
 
 //USB applications switch.
 #ifdef __CFG_DRV_USBSTORAGE
@@ -47,8 +47,14 @@
 
 //#define CONFIG_USB_HOST_ETHER
 
-//Maximal USB controllers in system.
-#define CONFIG_USB_MAX_CONTROLLER_COUNT 1
+//Maximal USB controllers of each type(OHCI/UHCI/EHCI/xHCI,etc) in system.
+#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
+
+//Maximal USB controllers of ALL TYPES in system.
+#define CONFIG_USB_MAX_CONTROLLER_NUM   4
+
+//Maximal static buffer size.
+#define USB_BUFSIZ 1024
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
@@ -67,7 +73,8 @@
 * This is the timeout to allow for submitting an urb in ms. We allow more
 * time for a BULK device to react - some are slow.
 */
-#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
+//#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? (5000  / SYSTEM_TIME_SLICE) : (1000 / SYSTEM_TIME_SLICE))
 
 /* device request (setup) */
 #ifdef __MS_VC__
@@ -289,6 +296,7 @@ typedef struct tag__USB_CONTROLLER_OPERATIONS{
 		int queuesize, int elementsize, void *buffer, int interval);
 	int (*destroy_int_queue)(struct usb_device *dev, struct int_queue *queue);
 	void* (*poll_int_queue)(struct usb_device *dev, struct int_queue *queue);
+	unsigned long (*get_ctrl_status)(void* common_ctrl);
 }__USB_CONTROLLER_OPERATIONS;
 
 //Common USB controller object to unify all types of USB controllers.
@@ -309,6 +317,41 @@ typedef struct tag__COMMON_USB_CONTROLLER{
 /* Defines */
 #define USB_UHCI_VEND_ID	0x8086
 #define USB_UHCI_DEV_ID		0x7112
+
+//USB Manager object,all USB controllers and USB devices,include USB hubs,
+//are managed by this system level object.
+typedef struct tag__USB_MANAGER{
+	//All USB controllers are stored in this array.
+	__COMMON_USB_CONTROLLER* CtrlArray[CONFIG_USB_MAX_CONTROLLER_NUM];
+	//Alias of usb_dev global array.
+	struct usb_device* UsbDevArray[USB_MAX_DEVICE];
+	int dev_index;
+
+	//Physical device list,each USB device has one element in this list.
+	__PHYSICAL_DEVICE* pUsbDeviceRoot;
+
+	//Handle of the USB background kernel thread.
+	__KERNEL_THREAD_OBJECT* UsbCoreThread;
+
+	//Global level resource or object management.
+	__COMMON_USB_CONTROLLER* (*CreateUsbCtrl)(__USB_CONTROLLER_OPERATIONS* ops,DWORD dwCtrlType,void* priv);
+	struct usb_device* (*CreateUsbDevice)(__COMMON_USB_CONTROLLER* pCtrl);
+	//Add a physical USB device into system.
+	BOOL (*AddUsbDevice)(struct usb_device* pDevice);
+	//Get a physical device specified by id.
+	__PHYSICAL_DEVICE* (*GetUsbDevice)(__IDENTIFIER* id, __PHYSICAL_DEVICE* pStart);
+
+	//Common USB operations.
+	struct usb_configuration_descriptor* (*GetConfigDescriptor)(struct usb_device* dev, int cfgno);
+	int (*BulkMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer, int transfer_len);
+	int (*ControlMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer,int transfer_len, struct devrequest *setup);
+	int (*InterruptMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer,int transfer_len, int interval);
+
+	//Initialization routine of USB Manager.
+	BOOL  (*Initialize)(struct tag__USB_MANAGER* pUsbMgr);
+}__USB_MANAGER;
+
+extern __USB_MANAGER USBManager;
 
 /*
 * PXA25x can only act as USB device. There are drivers

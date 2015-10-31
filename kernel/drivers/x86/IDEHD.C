@@ -21,9 +21,9 @@
 //                                festival,today can lead me recalling the time I was a child.
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
+#include <StdAfx.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "kapi.h"
 #include "idehd.h"

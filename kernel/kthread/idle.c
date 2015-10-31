@@ -71,7 +71,7 @@ static void ShowAlive()
 			return;
 		}
 		//No active input untile then,show alive message.
-		_hx_printf("  System is alive,but no human input yet.\r\n");
+		//_hx_printf("  System is alive,but no human input yet.\r\n");
 	}
 }
 #endif

@@ -24,7 +24,7 @@
 //************************************************************************
 
 #define OS_VERSION   "    HelloX V1.78"
-#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/10/10,by Garry.Xin]"
+#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/10/24,by Garry.Xin]"
 #define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 
 //************************************************************************
@@ -166,6 +166,12 @@
 //Include USB mass storage driver in OS.
 #define __CFG_DRV_USBSTORAGE
 
+//Include USB mouse driver in OS kernel.
+#define __CFG_DRV_USBMOUSE
+
+//Include USB keyboard driver in OS kernel.
+#define __CFG_DRV_USBKBD
+
 //************************************************************************
 //
 //  Pre-defined switches to control file system.
@@ -231,7 +237,7 @@
 //************************************************************************
 
 //Enable or disable Java virtual machine in system.
-#define __CFG_APP_JVM
+//#define __CFG_APP_JVM
 
 #define _TIME_T_DEFINED
 

@@ -27,6 +27,7 @@
 typedef struct{
 	DWORD             dwBusType;
 	union{
+		//PCI device or function's identifier.
 		struct{
 			UCHAR     ucMask;
 			WORD      wVendor;
@@ -34,16 +35,41 @@ typedef struct{
 			DWORD     dwClass;
 			UCHAR     ucHdrType;
 			WORD      wReserved;
-		}PCI_Identifier;            //PCI interface device's identifier.
+		}PCI_Identifier;
 
+		//ISA bus device identifier.
 		struct{
 			DWORD     dwDevice;
-		}ISA_Identifier;           //ISA bus device's identifier.
-		//
-		//Add other bus device's identifier here.
-		//
+		}ISA_Identifier;
+
+		//USB device or interface identifer.
+		struct{
+			UCHAR ucMask;
+			UCHAR bDeviceClass;
+			UCHAR bDeviceSubClass;
+			UCHAR bDeviceProtocol;
+			UCHAR bInterfaceClass;
+			UCHAR bInterfaceSubClass;
+			UCHAR bInterfaceProtocol;
+			WORD  wVendorID;
+			WORD  wProductID;
+		}USB_Identifier;
 	}Bus_ID;
 }__IDENTIFIER;
+
+//Member masks of USB identifier.
+#define USB_IDENTIFIER_MASK_DEVICECLASS          0x01
+#define USB_IDENTIFIER_MASK_DEVICESUBCLASS       0x02
+#define USB_IDENTIFIER_MASK_DEVICEPROTOCOL       0x04
+#define USB_IDENTIFIER_MASK_INTERFACECLASS       0x08
+#define USB_IDENTIFIER_MASK_INTERFACESUBCLASS    0x10
+#define USB_IDENTIFIER_MASK_INTERFACEPROTOCOL    0x20
+#define USB_IDENTIFIER_MASK_VENDORID             0x40
+#define USB_IDENTIFIER_MASK_PRODUCTID            0x80
+#define USB_IDENTIFIER_MASK_ALL                  0xFF
+
+//Check if 2 device IDs are match,i.e,the pIdFullClass includes the first one.
+BOOL DeviceIdMatch(__IDENTIFIER* pIdSubclass, __IDENTIFIER* pIdFullClass);
 
 //
 //The definition of resource descriptor object.

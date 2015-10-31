@@ -393,38 +393,66 @@ static BOOL CheckPortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 }
 
 //
-//The following is a helper routine,used to check if two device identifiers are match.
-//If the second Identifier(second parameter),"include" the first Identifier(first parameter),
-//then it returns TRUE,otherwise,returns FALSE.
+//Check if 2 device IDs are match(lpSecond includes lpFirst).If the inter-set 
+//of ID members of these 2 IDs equal to the first one,then return TRUE,otherwise
+//return FALSE.
 //
-static BOOL DeviceIdMatch(__IDENTIFIER* lpFirst,__IDENTIFIER* lpSecond)
+BOOL DeviceIdMatch(__IDENTIFIER* lpFirst,__IDENTIFIER* lpSecond)
 {
 	UCHAR                 ucMask                = 0;
 
-	if((NULL == lpFirst) || (NULL == lpSecond)) //Parameters check.
+	if ((NULL == lpFirst) || (NULL == lpSecond)) //Parameters check.
+	{
 		return FALSE;
-	if(lpFirst->dwBusType != lpSecond->dwBusType)  //Bus type does not match.
+	}
+	if (lpFirst->dwBusType != lpSecond->dwBusType)  //Bus type does not match.
+	{
 		return FALSE;
-	if(lpFirst->dwBusType == BUS_TYPE_NULL)  //Invalid bus type.
+	}
+	if (lpFirst->dwBusType == BUS_TYPE_NULL)  //Invalid bus type.
+	{
 		return FALSE;
+	}
 
 	switch(lpFirst->dwBusType)
 	{
 	case BUS_TYPE_PCI:    //PCI Identifier match.
-#define ID_MEMBER(id,mem) ((id)->Bus_ID.PCI_Identifier.mem)
-		if(ID_MEMBER(lpFirst,wVendor) == ID_MEMBER(lpSecond,wVendor))
+#define PCI_ID_MEMBER(id,mem) ((id)->Bus_ID.PCI_Identifier.mem)
+		if(PCI_ID_MEMBER(lpFirst,wVendor) == PCI_ID_MEMBER(lpSecond,wVendor))
 			ucMask |= PCI_IDENTIFIER_MASK_VENDOR;
-		if(ID_MEMBER(lpFirst,wDevice) == ID_MEMBER(lpSecond,wDevice))
+		if(PCI_ID_MEMBER(lpFirst,wDevice) == PCI_ID_MEMBER(lpSecond,wDevice))
 			ucMask |= PCI_IDENTIFIER_MASK_DEVICE;
 		if((lpFirst->Bus_ID.PCI_Identifier.dwClass >> 8) == 
 		   (lpSecond->Bus_ID.PCI_Identifier.dwClass >> 8))
 		    ucMask |= PCI_IDENTIFIER_MASK_CLASS;
-		if(ID_MEMBER(lpFirst,ucHdrType) == ID_MEMBER(lpSecond,ucHdrType))
+		if(PCI_ID_MEMBER(lpFirst,ucHdrType) == PCI_ID_MEMBER(lpSecond,ucHdrType))
 			ucMask |= PCI_IDENTIFIER_MASK_HDRTYPE;
 		return ((lpFirst->Bus_ID.PCI_Identifier.ucMask & ucMask) == lpFirst->Bus_ID.PCI_Identifier.ucMask);
+#undef PCI_ID_MEMBER
 
 	case BUS_TYPE_ISA:    //ISA Identifier match.
 		return (lpFirst->Bus_ID.ISA_Identifier.dwDevice == lpSecond->Bus_ID.ISA_Identifier.dwDevice);
+
+	case BUS_TYPE_USB:
+#define USB_ID_MEMBER(id,mem) (id->Bus_ID.USB_Identifier.mem)
+		if (USB_ID_MEMBER(lpFirst, bDeviceClass) == USB_ID_MEMBER(lpSecond, bDeviceClass))
+			ucMask |= USB_IDENTIFIER_MASK_DEVICECLASS;
+		if (USB_ID_MEMBER(lpFirst, bDeviceSubClass) == USB_ID_MEMBER(lpSecond, bDeviceSubClass))
+			ucMask |= USB_IDENTIFIER_MASK_DEVICESUBCLASS;
+		if (USB_ID_MEMBER(lpFirst, bDeviceProtocol) == USB_ID_MEMBER(lpSecond, bDeviceProtocol))
+			ucMask |= USB_IDENTIFIER_MASK_DEVICEPROTOCOL;
+		if (USB_ID_MEMBER(lpFirst, bInterfaceClass) == USB_ID_MEMBER(lpSecond, bInterfaceClass))
+			ucMask |= USB_IDENTIFIER_MASK_INTERFACECLASS;
+		if (USB_ID_MEMBER(lpFirst, bInterfaceSubClass) == USB_ID_MEMBER(lpSecond, bInterfaceSubClass))
+			ucMask |= USB_IDENTIFIER_MASK_INTERFACESUBCLASS;
+		if (USB_ID_MEMBER(lpFirst, bInterfaceProtocol) == USB_ID_MEMBER(lpSecond, bInterfaceProtocol))
+			ucMask |= USB_IDENTIFIER_MASK_INTERFACEPROTOCOL;
+		if (USB_ID_MEMBER(lpFirst, wVendorID) == USB_ID_MEMBER(lpSecond, wVendorID))
+			ucMask |= USB_IDENTIFIER_MASK_VENDORID;
+		if (USB_ID_MEMBER(lpFirst, wProductID) == USB_ID_MEMBER(lpSecond, wProductID))
+			ucMask |= USB_IDENTIFIER_MASK_PRODUCTID;
+		return ((USB_ID_MEMBER(lpFirst, ucMask) & ucMask) == USB_ID_MEMBER(lpFirst,ucMask));
+#undef USB_ID_MEMBER
 
 	default:
 		break;

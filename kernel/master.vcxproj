@@ -321,6 +321,11 @@
     <ClCompile Include="usb\ehci_pci.c" />
     <ClCompile Include="usb\ent_ary.c" />
     <ClCompile Include="usb\usb.c" />
+    <ClCompile Include="usb\usbkbd.c" />
+    <ClCompile Include="usb\usbmgr.c" />
+    <ClCompile Include="usb\usbmouse.c" />
+    <ClCompile Include="usb\usb_de.c" />
+    <ClCompile Include="usb\usb_diag.c" />
     <ClCompile Include="usb\usb_ehci.c" />
     <ClCompile Include="usb\usb_hd.c" />
     <ClCompile Include="usb\usb_hub.c" />
@@ -463,6 +468,8 @@
     <ClInclude Include="usb\usb.h" />
     <ClInclude Include="usb\usbdescriptors.h" />
     <ClInclude Include="usb\usbdev_storage.h" />
+    <ClInclude Include="usb\usbkbd.h" />
+    <ClInclude Include="usb\usbmouse.h" />
     <ClInclude Include="usb\usbroothubdes.h" />
     <ClInclude Include="usb\usb_defs.h" />
     <ClInclude Include="usb\xhci.h" />

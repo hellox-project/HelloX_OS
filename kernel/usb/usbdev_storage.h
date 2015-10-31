@@ -21,6 +21,11 @@
 //Only available when USB storage supporting is enabled.
 //#ifdef CONFIG_USB_STORAGE
 
+//Default sector size.
+#ifndef USB_STORAGE_SECTOR_SIZE
+#define USB_STORAGE_SECTOR_SIZE 512
+#endif
+
 //Main entry point of USB Storage device driver.
 BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj);
 

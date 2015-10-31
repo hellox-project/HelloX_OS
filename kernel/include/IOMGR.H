@@ -85,11 +85,13 @@ END_DEFINE_OBJECT(FS_FIND_DATA)
 
 //Helper macros to simply the developing process.
 #ifndef CREATE_OBJECT
-#define CREATE_OBJECT(type) KMemAlloc(sizeof(type),KMEM_SIZE_TYPE_ANY)
+//#define CREATE_OBJECT(type) KMemAlloc(sizeof(type),KMEM_SIZE_TYPE_ANY)
+#define CREATE_OBJECT(type) _hx_calloc(1,sizeof(type))
 #endif
 
 #ifndef RELEASE_OBJECT
-#define RELEASE_OBJECT(ptr) KMemFree((LPVOID)(ptr),KMEM_SIZE_TYPE_ANY,0)
+//#define RELEASE_OBJECT(ptr) KMemFree((LPVOID)(ptr),KMEM_SIZE_TYPE_ANY,0)
+#define RELEASE_OBJECT(ptr) _hx_free(ptr)
 #endif
 
 //
@@ -115,14 +117,12 @@ typedef struct tag__DRCB{
 	__EVENT*                          lpSynObject;      //Used to synchronize the access.
     __KERNEL_THREAD_OBJECT*           lpKernelThread;   //The kernel thread who originates
 	                                                    //the device access.
-	//DWORD                             dwDrcbFlag;
 	DWORD                             dwStatus;
 	DWORD                             dwRequestMode;    //Read,write,io control,etc.
 	DWORD                             dwCtrlCommand;    //If the request mode is io control,
 	                                                    //then is variable is used to indicate
 	                                                    //the control command.
 
-	//DWORD                             dwOffset;
 	DWORD                             dwOutputLen;      //Output buffer's length.
 	LPVOID                            lpOutputBuffer;   //Output buffer.
 
@@ -138,12 +138,10 @@ typedef struct tag__DRCB{
 	                                                      //is over.
 	DRCB_CANCEL_ROUTINE               OnCancel;
 
-	//DWORD                             dwDrcbExtension[1];
 	DWORD                             dwExtraParam1;      //Extra parameter,very useful in some cases.
 	DWORD                             dwExtraParam2;      //Extra parameter.
 	LPVOID                            lpDrcbExtension;    //Extension pointer,pointing to specific data.
 }__DRCB;
-//END_DEFINE_OBJECT(__DRCB)                                       //End of __DRCB's definition.
 
 //Default wait time for DRCB request.If the physical operations can not be finished in
 //this time,the DRCB will give up.
@@ -211,7 +209,6 @@ END_DEFINE_OBJECT(__SECTOR_INPUT_INFO)
 //This object is used to describe system resource,such as input/output port,DMA channel,
 //interrupt vector,etc.
 //
-//BEGIN_DEFINE_OBJECT(__RESOURCE_DESCRIPTOR)
 typedef struct tag__RESOURCE_DESCRIPTOR{
     struct tag__RESOURCE_DESCRIPTOR*    lpNext;      //Pointes to next descriptor.
     struct tag__RESOURCE_DESCRIPTOR*    lpPrev;      //Pointes to previous descriptor.
@@ -223,7 +220,6 @@ typedef struct tag__RESOURCE_DESCRIPTOR{
 	LPVOID             lpMemoryStartAddr;
 	DWORD              dwMemoryLen;
 }__RESOURCE_DESCRIPTOR;
-//END_DEFINE_OBJECT(__RESOURCE_DESCRIPTOR)  //End definition of __RESOURCE_DESCRIPTOR.
 
 //
 //The definition of __DRIVER_OBJECT.

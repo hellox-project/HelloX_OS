@@ -17,6 +17,7 @@
 
 #include <StdAfx.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "shell.h"
 #include "sysd_s.h"
@@ -31,7 +32,7 @@
 static DWORD CommandParser(LPSTR);
 static DWORD memcheck(__CMD_PARA_OBJ*);
 static DWORD cintperf(__CMD_PARA_OBJ*);
-static DWORD exit(__CMD_PARA_OBJ*);
+static DWORD _exit(__CMD_PARA_OBJ*);
 static DWORD help(__CMD_PARA_OBJ*);
 static DWORD beep(__CMD_PARA_OBJ*);
 static DWORD overload(__CMD_PARA_OBJ*);
@@ -42,6 +43,10 @@ static DWORD devlist(__CMD_PARA_OBJ*);
 static DWORD showint(__CMD_PARA_OBJ*);
 #ifdef __CFG_SYS_USB
 static DWORD usblist(__CMD_PARA_OBJ*);
+static DWORD usbdev(__CMD_PARA_OBJ*);
+static DWORD usbport(__CMD_PARA_OBJ*);
+static DWORD usbportreset(__CMD_PARA_OBJ*);
+static DWORD usbctrlstat(__CMD_PARA_OBJ*);
 #endif
 
 //
@@ -63,8 +68,12 @@ static struct __SHELL_CMD_MAP{
 	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
 #ifdef __CFG_SYS_USB
 	{"usblist",           usblist,          "  usblist              : Show all USB device(s) in system." },
+	{"usbdev",            usbdev,           "  usbdev               : Show a specified USB device's detail info." },
+	{"usbport",           usbport,          "  usbport              : List a specific USB HUB's port status." },
+	{"usbportreset",      usbportreset,     "  usbportreset         : Reset a port of the given USB HUB." },
+	{"usbctrlstat",       usbctrlstat,      "  usbctrlstat          : Show all USB controllers' status." },
 #endif
-	{"exit",              exit,             "  exit                 : Exit the application."},
+	{"exit",              _exit,            "  exit                 : Exit the application."},
 	{"help",              help,             "  help                 : Print out this screen."},
 	{NULL,				  NULL,             NULL}
 };
@@ -155,7 +164,7 @@ DWORD SysDiagStart(LPVOID p)
 //
 //The exit command's handler.
 //
-static DWORD exit(__CMD_PARA_OBJ* lpCmdObj)
+static DWORD _exit(__CMD_PARA_OBJ* lpCmdObj)
 {
 	return SHELL_CMD_PARSER_TERMINAL;
 }
@@ -691,10 +700,67 @@ static DWORD showint(__CMD_PARA_OBJ* pParamObj)
 
 #ifdef __CFG_SYS_USB
 extern void ShowUsbDevices();
+extern void ShowUsbPort(int index);
+extern void ResetUsbPort(int index, int port);
+extern void ShowUsbCtrlStatus();
+extern void ShowUsbDevice(int index);
 
+//Show a specified USB device's detail information.
+static DWORD usbdev(__CMD_PARA_OBJ* pParaObj)
+{
+	int index = 0;
+	if (pParaObj->byParameterNum < 2)
+	{
+		_hx_printf("  Please specify the USB device's index you want to show.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+	index = atol(pParaObj->Parameter[1]);
+	ShowUsbDevice(index);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+//Show USB controllers' status information.
+static DWORD usbctrlstat(__CMD_PARA_OBJ* pParamObj)
+{
+	ShowUsbCtrlStatus();
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+//Show all USB device(s) in system.
 static DWORD usblist(__CMD_PARA_OBJ* pParamObj)
 {
 	ShowUsbDevices();
 	return SHELL_CMD_PARSER_SUCCESS;
 }
+
+//List a specified USB HUB's port status information.
+static DWORD usbport(__CMD_PARA_OBJ* pParaObj)
+{
+	int index = 0;
+	if (pParaObj->byParameterNum < 2)
+	{
+		_hx_printf("  Please specify the USB HUB's index.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+	index = atol(pParaObj->Parameter[1]);
+	ShowUsbPort(index);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+//Reset a port of the given USB HUB.
+static DWORD usbportreset(__CMD_PARA_OBJ* pParaObj)
+{
+	int index = 0, port = 0;
+	if (pParaObj->byParameterNum < 3)
+	{
+		_hx_printf("  Please specify a USB HUB index and port index.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+	index = atol(pParaObj->Parameter[1]);
+	port = atol(pParaObj->Parameter[2]);
+
+	ResetUsbPort(index, port);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
 #endif
