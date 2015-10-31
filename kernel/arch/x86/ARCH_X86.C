@@ -420,6 +420,23 @@ VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 	return;
 }
 
+//Return CPU frequency.
+uint64_t __GetCPUFrequency()
+{
+	if (0 == cpuFrequency)  //Not initialized yet,assume CPU freq is 2G hz.
+	{
+		return 2ULL * 1024 * 1024 * 1024;
+	}
+	return cpuFrequency;
+}
+
+//Return CPU's time stamp counter,same as __GetTSC but use uint64_t build in data
+//type as return value.
+uint64_t __GetCPUTSC()
+{
+	return __local_rdtsc();
+}
+
 //Get time stamp counter.
 VOID __GetTsc(__U64* lpResult)
 {

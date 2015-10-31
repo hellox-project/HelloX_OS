@@ -36,9 +36,11 @@ static DWORD PciReadConfig(__SYSTEM_BUS* bus, DWORD dwConfigReg,int size)
 	case 4:
 		return __ind(DATA_REGISTER);
 	case 2:
-		return __inw(DATA_REGISTER);
+		//return __inw(DATA_REGISTER);
+		return (__ind(DATA_REGISTER) & 0xFFFF);
 	case 1:
-		return __inb(DATA_REGISTER);
+		//return __inb(DATA_REGISTER);
+		return (__ind(DATA_REGISTER) & 0xFF);
 	default:
 		return 0;
 	}
@@ -278,7 +280,6 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	__PHYSICAL_DEVICE*                    lpPhyDev       = NULL;
 	DWORD                                 dwFlags        = 0;
 	BOOL                                  bResult        = FALSE;
-	//DWORD                                 dwLoop         = 0;
 	DWORD                                 dwTmp          = 0;
 
 	if((0 == dwConfigReg) || (NULL == lpSysBus)) //Invalid parameters.

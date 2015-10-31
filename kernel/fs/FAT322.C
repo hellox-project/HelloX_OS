@@ -317,7 +317,6 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 	BYTE*                  pStartCopy       = NULL;
 	BYTE*                  pDestination     = NULL;
 	BOOL                   bHasRead         = FALSE;
-	//BYTE                   Buffer[128];
 
 	//PrintLine("FatDeviceRead Call");
 	if((NULL == lpDrv) || (NULL == lpDev))
@@ -386,7 +385,8 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 		pFatFs->SectorPerClus,
 		pBuffer))
 	{
-		PrintLine("FatDeviceRead error 7");
+		_hx_printf("%s:ReadDeviceSector failed,dwSector = %d,SectorPerClus = %d,pBuffer = 0x%X.\r\n",
+			__FUNCTION__, dwSector, pFatFs->SectorPerClus, pBuffer);
 		goto __TERMINAL;
 	}
 	pStartCopy = pBuffer + pFatFile->dwClusOffset;
@@ -441,10 +441,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 		}
 	}
 __TERMINAL:
-
-	
 	FatMem_Free(pBuffer);
-
 	return dwTotalRead;
 }
 

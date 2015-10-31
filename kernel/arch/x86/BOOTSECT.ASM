@@ -21,11 +21,8 @@
                                  ;;real address mode.
 
     org 0x0000                    ;;The start address of one segment.
-    ;org 0x0100                   ;;------------- ** debug ** -------------
 
-
-
-    %define DEF_BOOT_START 0x7c00  ;;The start segment address of the boot sector.
+    %define DEF_BOOT_START 0x9f00  ;0x7c00 ;;The start segment address of the boot sector after relocation.
                                    
 
     %define DEF_ORG_START  0x07c0  ;;The orginal address of the boot sector
@@ -37,7 +34,9 @@
     %define DEF_RINIT_LEN   8      ;;The real mode initialize code's length,unit is 512 byte,one sector.
                                    								      
 
-    %define DEF_MAST_LEN   840    ;;The master's length,in sector,thus,the Master's max length is 300K.
+    %define DEF_MAST_LEN   1120    ;840;;The HelloX kernel's length,in sector unit.
+	                               ;Please be noted that the kernel includes miniker and master.The
+								   ;upper boundary of the kernel size is 560k.
                                    
 
 
@@ -115,7 +114,7 @@ np_load:                         ;;This procedure use the int 13 interrupt
     je .ll_inc_es
     add bx,1024
     jmp .ll_start
-.ll_inc_es
+.ll_inc_es:
     mov bx,es
     add bx,4*1024                
     mov es,bx                    ;;Update the es register to another 64k b-
@@ -164,7 +163,7 @@ np_printmsg:                     ;;This procedure print out the loading msg.
     mov ah,0x03
     mov bh,0x00
     int 0x010                    ;;Read the position of cursor.
-    mov cx,34
+    mov cx,40
     mov bx,0x0007
     mov bp,loadmsg
     mov ax,0x1301
@@ -176,7 +175,7 @@ np_printmsg:                     ;;This procedure print out the loading msg.
 gl_datasection:
     loadmsg db 0x0d
             db 0x0a
-            db 'Hx Loading now,waiting please.'
+            db 'HelloX is loading now,wait please...'
             db 0x0d
             db 0x0a
     errmsg  db 0x0d
@@ -184,25 +183,16 @@ gl_datasection:
             db 'Fault Error:please power off your computer,and restart again.'            
             db 0x0d
             db 0x0a
-    device_index
-            db 0x80
+    device_index db 0x80
   _DAP_DATA:
-   dap_size
-	        db 0x10
-    dap_reserved
-	        db  0x0
-    dap_count
-	        dw  0x2
-	dap_bufaddr_lw
-	        dw  0x0	
-	dap_bufaddr_hi
-	        dw  0x0	
-	dap_sector_lw		 
-	        dd  0x02  ;; hx start form 2 sector
-	dap_sector_hi
-			dd  0x0
-    total_sector
-            dw  DEF_RINIT_LEN+DEF_MAST_LEN
+   dap_size db 0x10
+    dap_reserved db  0x0
+    dap_count  dw  0x2
+	dap_bufaddr_lw dw  0x0	
+	dap_bufaddr_hi dw  0x0	
+	dap_sector_lw  dd  0x02  ;; hx start form 2 sector
+	dap_sector_hi  dd  0x0
+    total_sector   dw  DEF_RINIT_LEN+DEF_MAST_LEN
 	 
     times 510 - ($ - $$) db 0x00
             dw 0xaa55

@@ -50,6 +50,7 @@
 #include "scsi.h"
 #include "usbdev_storage.h"
 
+#if 0
 //Wrapers of several low level routines to access USB controller.
 static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int transfer_len)
@@ -89,6 +90,7 @@ static int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buff
 	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
 	return pUsbCtrl->ctrlOps.submit_int_msg(dev, pipe, buffer, transfer_len, interval);
 }
+#endif
 
 static struct int_queue *create_int_queue(struct usb_device *dev, unsigned long pipe,
 	int queuesize, int elementsize, void *buffer, int interval)
@@ -672,13 +674,13 @@ static int usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 	return result;
 }
 
-
 static int usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 {
 	int timeout;
 
 	us->ip_wanted = 1;
-	submit_int_msg(us->pusb_dev, us->irqpipe,
+	usb_submit_int_msg(us->pusb_dev, us->irqpipe,
+	//USBManager.InterruptMessage(us->pusb_dev,us->irqpipe,
 		(void *)&us->ip_data, us->irqmaxp, us->irqinterval);
 	timeout = 1000;
 	while (timeout--) {

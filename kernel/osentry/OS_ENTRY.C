@@ -21,6 +21,10 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <align.h>
 
 #include "statcpu.h"
 #include "modmgr.h"
@@ -41,8 +45,15 @@
 #include "../arch/x86/biosvga.h"
 #endif
 
+#ifdef __CFG_SYS_USB
+#include "../usb/usb_defs.h"
+#include "../usb/usbdescriptors.h"
+#include "../usb/ch9.h"
+#include "../usb/usb.h"
+#endif
+
 //Welcome information.
-char* pszLoadWelcome   = "Welcome to use HelloX. Initializin now...";
+char* pszLoadWelcome   = "Welcome to use HelloX. Initializing now...";
 
 //Driver entry point array,this array resides in drventry.cpp file in the 
 //same directory as os_entry.cpp,which is OSENTRY in current version.
@@ -70,11 +81,6 @@ static void DeadLoop(BOOL bDisableInt)
 //User entry point if used as EOS.
 #ifdef __CFG_USE_EOS
 extern DWORD _HCNMain(LPVOID);
-#endif
-
-//USB initialization entry.
-#ifdef __CFG_SYS_USB
-extern int usb_init(void);
 #endif
 
 //
@@ -248,7 +254,7 @@ void __OS_Entry()
 
 //Initialize USB support if enabled.
 #ifdef __CFG_SYS_USB
-	usb_init();
+	USBManager.Initialize(&USBManager);
 #endif
 
 	//********************************************************************************

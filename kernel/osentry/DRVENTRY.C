@@ -52,10 +52,6 @@
 #endif
 #endif
 
-#ifdef __CFG_SYS_USB
-#include "../usb/usbdev_storage.h"
-#endif
-
 //
 //Driver entry array for all inline device drivers.
 //Inline device drivers means these drivers' source code is put together
@@ -101,10 +97,6 @@ __DRIVER_ENTRY_ARRAY DriverEntryArray[] = {
 #ifdef __CFG_DRV_COM
 	//COM Interface.
 	{ COMDrvEntry, "COM_Int" },
-#endif
-
-#if defined(__CFG_SYS_USB) && defined(__CFG_DRV_USBSTORAGE)
-	{ USBStorage_DriverEntry, "USB_Storage" },
 #endif
 
 #ifdef __CFG_DRV_USART //Only available under STM32.

@@ -632,6 +632,21 @@
     <ClCompile Include="usb\ent_ary.c">
       <Filter>Source Files\usb</Filter>
     </ClCompile>
+    <ClCompile Include="usb\usb_diag.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usbmgr.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usbmouse.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usb_de.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usbkbd.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -1034,6 +1049,12 @@
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
     <ClInclude Include="usb\xhci.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbmouse.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbkbd.h">
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
   </ItemGroup>

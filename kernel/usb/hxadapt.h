@@ -23,6 +23,8 @@
 
 #ifdef __CFG_CPU_LE
 #define __LITTLE_ENDIAN
+#else
+#define __BIG_ENDIAN
 #endif
 
 //Default DMA alignment.
@@ -114,7 +116,7 @@ typedef int bool;
 	do {						\
 		if (cond)				\
 			printf(pr_fmt(fmt), __VA_ARGS__);	\
-								} while (0)
+									} while (0)
 
 #define debug(fmt, ...)			\
 	do { \
@@ -144,17 +146,46 @@ static void inline udelay(int usec)
 	__MicroDelay(usec);
 }
 
+//Extern routines,not public to all modules.
+extern uint64_t __GetCPUFrequency();
+extern uint64_t __GetCPUTSC();
+
 //Simulation of get_timer routine.
 static ulong inline get_timer(ulong base)
 {
+	ulong timer = 0;
+	uint64_t cpuFreq = 0;
+	uint64_t tsc = 0;
+
+	//If in system initialization process,the tick counter is not updated since all
+	//interrupts are disabled,we must simulate the tick counter by CPU freq and TSC.
+	if (IN_SYSINITIALIZATION())
+	{
+		cpuFreq = __GetCPUFrequency();
+		tsc = __GetCPUTSC();
+		cpuFreq = (cpuFreq / 1000) * SYSTEM_TIME_SLICE; //How many clock cycle in one time slice.
+		tsc = tsc / cpuFreq; //How many ticks since boot.
+		timer = (ulong)tsc;
+		return (timer - base);
+	}
+	//After initialization,just return the clock time counter.
+	//A risk exist here: If the caller calls get_timer in system initialization phase,as the
+	//timer base,and then call get_timer again after system initialization phase but use the
+	//previous base,issue may raise.
+	//But in current implementation we can avoid this scenario by make sure all initialization
+	//tasks are finished in init phase,so just let it go...
+	//Sleep a system tick to avoid busying await.It's a balanced mechanism in current phase,
+	//since USB INTERRUPT mechanism is in process of implementing...
+	Sleep(SYSTEM_TIME_SLICE);
 	return System.GetClockTickCounter((__COMMON_OBJECT*)&System) - base;
 }
 
 //Watch dog operations.
 #define WATCHDOG_RESET()
 
-//Cache operations.
-#define invalidate_dcache_range(start,end) __FLUSH_CACHE(start,(end - start),CACHE_FLUSH_INVALIDATE)
+//Cache operations,do nothing for invalidate cache range in x86
+//architecture since cache snooping works.
+#define invalidate_dcache_range(start,end) 
 #define flush_dcache_range(start,end)      __FLUSH_CACHE(start,(end - start),CACHE_FLUSH_WRITEBACK)
 
 //Alignment and round.

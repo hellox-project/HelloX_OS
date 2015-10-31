@@ -97,9 +97,9 @@ struct ehci_hcor **ret_hcor)
 	*ret_hcor = hcor;
 
 	/* enable busmaster */
-	cmd = pdev->ReadDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, 2);
+	cmd = pdev->ReadDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, 4);
 	cmd |= 0x04;
-	pdev->WriteDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, cmd, 2);
+	pdev->WriteDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, cmd, 4);
 
 __TERMINAL:
 	if (!bResult)  //Failure of initialization.
@@ -134,8 +134,8 @@ static struct pci_device_id ehci_pci_ids[] = {
 //begining iterating position when GetDevice is called next time.
 static __PHYSICAL_DEVICE* pOldUsbCtrl = NULL;
 
-int ehci_hcd_init(int index, enum usb_init_type init,
-struct ehci_hccr **ret_hccr, struct ehci_hcor **ret_hcor)
+int ehci_hcd_init(int index, enum usb_init_type init,struct ehci_hccr **ret_hccr, 
+struct ehci_hcor **ret_hcor)
 {
 	__PHYSICAL_DEVICE* pUsbCtrl = NULL;
 	__IDENTIFIER id;

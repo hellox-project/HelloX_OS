@@ -175,13 +175,15 @@ static void ehci_powerup_fixup(struct ehci_ctrl *ctrl, uint32_t *status_reg,
 
 static uint32_t *ehci_get_portsc_register(struct ehci_ctrl *ctrl, int port)
 {
+	uint32_t* portsc = NULL;
+
 	if (port < 0 || port >= CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS) {
 		/* Printing the message would cause a scan failure! */
 		debug("The request port(%u) is not configured\r\n", port);
 		return NULL;
 	}
-
-	return (uint32_t *)&ctrl->hcor->or_portsc[port];
+	portsc = (uint32_t *)&ctrl->hcor->or_portsc[port];
+	return portsc;
 }
 
 static int handshake(uint32_t *ptr, uint32_t mask, uint32_t done, int usec)
@@ -630,6 +632,8 @@ int length, struct devrequest *req)
 		goto fail;
 	}
 
+	debug("%s: begin to wait for TDs to be processed.\r\n",__func__);
+
 	/* Wait for TDs to be processed. */
 	ts = get_timer(0);
 	vtd = &qtd[qtd_counter - 1];
@@ -649,6 +653,7 @@ int length, struct devrequest *req)
 		WATCHDOG_RESET();
 	} while (get_timer(ts) < (ulong)timeout);
 
+	debug("%s: end to wait for TDs to be processed.\r\n", __func__);
 	/*
 	* Invalidate the memory area occupied by buffer
 	* Don't try to fix the buffer alignment, if it isn't properly
@@ -831,6 +836,7 @@ static int ehci_submit_root(struct usb_device *dev, unsigned long pipe,
 	case USB_REQ_GET_STATUS | ((USB_RT_PORT | USB_DIR_IN) << 8) :
 		memset(tmpbuf, 0, 4);
 		reg = ehci_readl(status_reg);
+		//debug("%s:port [%d]'s status = [%X].\r\n", __func__, port, reg);
 		if (reg & EHCI_PS_CS)
 			tmpbuf[0] |= USB_PORT_STAT_CONNECTION;
 		if (reg & EHCI_PS_PE)
@@ -1116,6 +1122,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	*/
 	if (ctrl->periodic_list == NULL)
 		ctrl->periodic_list = memalign(4096, 1024 * 4);
+	//debug("%s: EHCI ctrl periodic list addr = %X.\r\n", __func__, ctrl->periodic_list);
 
 	if (!ctrl->periodic_list)
 		return -ENOMEM;
@@ -1158,6 +1165,8 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	cmd |= CMD_RUN;
 	ehci_writel(&ctrl->hcor->or_usbcmd, cmd);
 
+	mdelay(50);
+
 	if (!(tweaks & EHCI_TWEAK_NO_INIT_CF)) {
 		/* take control over the ports */
 		cmd = ehci_readl(&ctrl->hcor->or_configflag);
@@ -1167,6 +1176,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 
 	/* unblock posted write */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
+
 	//When estimately running here,the system will halt for several seconds(about 10~20) without
 	//any response,I don't know why,maybe caused by USB controller's hardware...
 	mdelay(5);
@@ -1195,32 +1205,44 @@ static struct int_queue *create_int_queue(struct usb_device *dev, unsigned long 
 static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue);
 static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue);
 
+//Return EHCI controller's status register.
+static unsigned long _get_ctrl_status(void* common_ctrl)
+{
+	__COMMON_USB_CONTROLLER* pCtrl = (__COMMON_USB_CONTROLLER*)common_ctrl;
+	struct ehci_ctrl* pEhciCtrl = NULL;
+
+	if (NULL == pCtrl)
+	{
+		BUG();
+	}
+	if (KERNEL_OBJECT_SIGNATURE != pCtrl->dwObjectSignature)
+	{
+		BUG();
+	}
+	pEhciCtrl = (struct ehci_ctrl*)pCtrl->pUsbCtrl;
+	if (NULL == pEhciCtrl)
+	{
+		BUG();
+	}
+	return __readl(&(pEhciCtrl->hcor->or_usbsts));
+}
+
 //Create a common USB controller and initialize it according to EHCI.
 static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl)
 {
-	__COMMON_USB_CONTROLLER* pUsbCtrl = (__COMMON_USB_CONTROLLER*)_hx_malloc(
-		sizeof(__COMMON_USB_CONTROLLER));
-	if (NULL == pUsbCtrl)
-	{
-		return pUsbCtrl;
-	}
-	//Initialize it.
-	pUsbCtrl->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
-	pUsbCtrl->dwCtrlType = USB_CONTROLLER_EHCI_WITH_COMPANION;
-	//memset(&pUsbCtrl->ctrlOps, 0, sizeof(__USB_CONTROLLER_OPERATIONS));
-	pUsbCtrl->ctrlOps.submit_bulk_msg = submit_bulk_msg;
-	pUsbCtrl->ctrlOps.submit_control_msg = submit_control_msg;
-	pUsbCtrl->ctrlOps.submit_int_msg = submit_int_msg;
-	pUsbCtrl->ctrlOps.create_int_queue = NULL;
-	pUsbCtrl->ctrlOps.destroy_int_queue = NULL;
-	pUsbCtrl->ctrlOps.poll_int_queue = NULL;
-	pUsbCtrl->ctrlOps.usb_reset_root_port = NULL;
-	
-	pUsbCtrl->pUsbCtrl = pCtrl;
+	__USB_CONTROLLER_OPERATIONS ctrlOps;
 
-	return pUsbCtrl;
+	ctrlOps.submit_bulk_msg = submit_bulk_msg;
+	ctrlOps.submit_control_msg = submit_control_msg;
+	ctrlOps.submit_int_msg = submit_int_msg;
+	ctrlOps.create_int_queue = NULL;
+	ctrlOps.destroy_int_queue = NULL;
+	ctrlOps.poll_int_queue = NULL;
+	ctrlOps.usb_reset_root_port = NULL;
+	ctrlOps.get_ctrl_status = _get_ctrl_status;
+
+	return USBManager.CreateUsbCtrl(&ctrlOps,USB_CONTROLLER_EHCI,pCtrl);
 }
-
 
 //Controller initialization routine called by usb_init routine.
 int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
@@ -1243,7 +1265,13 @@ int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 
 	/* EHCI spec section 4.1 */
 	if (ehci_reset(ctrl))
+	{
+		_hx_printf("%s:can not reset EHCI controller [%d].\r\n", __func__, index);
 		return -1;
+	}
+
+	//debug("%s: EHCI status register = %X after reset.\r\n", __func__, ctrl->hcor->or_usbsts);
+	//mdelay(2000);
 
 #if defined(CONFIG_EHCI_HCD_INIT_AFTER_RESET)
 	rc = ehci_hcd_init(index, init, &ctrl->hccr, &ctrl->hcor);
@@ -1626,7 +1654,7 @@ static int _ehci_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	timeout = get_timer(0) + USB_TIMEOUT_MS(pipe);
 	while ((backbuffer = _ehci_poll_int_queue(dev, queue)) == NULL)
 		if (get_timer(0) > timeout) {
-			printf("Timeout poll on interrupt endpoint\r\n");
+			debug("Timeout poll on interrupt endpoint\r\n");
 			result = -ETIMEDOUT;
 			break;
 		}

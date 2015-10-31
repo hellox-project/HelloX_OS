@@ -42,15 +42,81 @@ extern int usb_max_devs;
 extern unsigned long usb_stor_read(int device, lbaint_t blknr, lbaint_t blkcnt, void *buffer);
 extern unsigned long usb_stor_write(int device, lbaint_t blknr, lbaint_t blkcnt, const void *buffer);
 
+//Debug macro.
+#define __USB_SECTOR_RW_DEBUG \
+	_hx_printf("%s failed:dwStartSect = %d,dwSectNum = %d,pBuffer = 0x%X,dev = %d.\r\n", \
+    __func__,dwStartSect,dwSectNum,pBuffer,dev);
+
 //Local wraps of sector level reading and writing for USB device.
 static unsigned long __usbReadSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
 {
-	return usb_stor_read(dev, dwStartSect, dwSectNum, pBuffer);
+	BYTE* pAlignedBuff = NULL;
+	unsigned long ret = 0;
+
+	if ((unsigned int)pBuffer != __ALIGN(((unsigned int)pBuffer), DEFAULT_CACHE_LINE_SIZE))
+	{
+		//Should allocate a buffer aligned with cache line.
+		pAlignedBuff = _hx_aligned_malloc(dwSectNum * USB_STORAGE_SECTOR_SIZE, DEFAULT_CACHE_LINE_SIZE);
+		if (NULL == pAlignedBuff)
+		{
+			return ret;
+		}
+	}
+	if (pAlignedBuff)
+	{
+		ret = usb_stor_read(dev, dwStartSect, dwSectNum, pAlignedBuff);
+		if (ret)
+		{
+			memcpy(pBuffer, pAlignedBuff, dwSectNum * USB_STORAGE_SECTOR_SIZE);
+		}
+		aligned_free(pAlignedBuff);
+		if (!ret)
+		{
+			__USB_SECTOR_RW_DEBUG;
+		}
+		return ret;
+	}
+	//pBuffer is cache line aligned,just use it.
+	ret = usb_stor_read(dev, dwStartSect, dwSectNum, pBuffer);
+	if (!ret)
+	{
+		__USB_SECTOR_RW_DEBUG;
+	}
+	return ret;
 }
 
 static unsigned long __usbWriteSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
 {
-	return usb_stor_write(dev, dwStartSect, dwSectNum, pBuffer);
+	BYTE* pAlignedBuff = NULL;
+	unsigned long ret = 0;
+
+	if ((unsigned int)pBuffer != __ALIGN(((unsigned int)pBuffer), DEFAULT_CACHE_LINE_SIZE))
+	{
+		//Should allocate a buffer aligned with cache line.
+		pAlignedBuff = _hx_aligned_malloc(dwSectNum * USB_STORAGE_SECTOR_SIZE, DEFAULT_CACHE_LINE_SIZE);
+		if (NULL == pAlignedBuff)
+		{
+			return ret;
+		}
+	}
+	if (pAlignedBuff)
+	{
+		memcpy(pAlignedBuff,pBuffer,dwSectNum * USB_STORAGE_SECTOR_SIZE);
+		ret = usb_stor_write(dev, dwStartSect, dwSectNum, pAlignedBuff);
+		aligned_free(pAlignedBuff);
+		if (!ret)
+		{
+			__USB_SECTOR_RW_DEBUG;
+		}
+		return ret;
+	}
+	//pBuffer is aligned,just use it.
+	ret = usb_stor_write(dev, dwStartSect, dwSectNum, pBuffer);
+	if (!ret)
+	{
+		__USB_SECTOR_RW_DEBUG;
+	}
+	return ret;
 }
 
 //For each extension partition in hard disk,this function travels the
@@ -66,7 +132,7 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 	__DEVICE_OBJECT* pDevObject = NULL;
 	__PARTITION_EXTENSION* pPe = NULL;
 	BYTE* pStart = NULL;
-	BYTE  buffer[512];  //Buffer used to read one sector.
+	BYTE  buffer[USB_STORAGE_SECTOR_SIZE];  //Buffer used to read one sector.
 	DWORD dwNextStart;  //Next extension's start sector if any.
 	DWORD dwAttributes = DEVICE_TYPE_PARTITION;
 	CHAR strDevName[MAX_DEV_NAME_LEN + 1];
@@ -89,6 +155,7 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 	{
 		goto __TERMINAL;
 	}
+	pPe->nDiskNum = nHdNum;  //Harddisk number this partion resides.
 	pPe->dwCurrPos = 0;
 	pPe->BootIndicator = *pStart;
 	pStart += 4;
@@ -128,7 +195,7 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 		(__COMMON_OBJECT*)&IOManager,
 		strDevName,
 		dwAttributes,
-		512,
+		USB_STORAGE_SECTOR_SIZE,
 		16384,
 		16384,
 		pPe,
@@ -187,7 +254,7 @@ static int InitPartitions(int nHdNum,
 	CHAR strDevName[MAX_DEV_NAME_LEN + 1];
 	int i;
 	DWORD dwFlags;
-	BYTE Buff[512];
+	BYTE Buff[USB_STORAGE_SECTOR_SIZE];
 
 	if ((NULL == pSector0) || (NULL == lpDrvObject))  //Invalid parameter.
 	{
@@ -221,6 +288,7 @@ static int InitPartitions(int nHdNum,
 		{
 			break;
 		}
+		pPe->nDiskNum = nHdNum;  //The harddisk number this partition resides.
 		pPe->dwCurrPos = 0;
 		pPe->BootIndicator = *pStart;
 		pStart += 4;
@@ -256,7 +324,7 @@ static int InitPartitions(int nHdNum,
 			(__COMMON_OBJECT*)&IOManager,
 			strDevName,
 			dwAttributes,
-			512,
+			USB_STORAGE_SECTOR_SIZE,
 			16384,
 			16384,
 			pPe,
@@ -344,16 +412,12 @@ static DWORD DeviceWrite(__COMMON_OBJECT* lpDrv,
 }
 
 //Several helper routines used by DeviceCtrl.
-static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
-	__COMMON_OBJECT* lpDev,
-	__DRCB* lpDrcb)
+static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev,__DRCB* lpDrcb)
 {
 	__PARTITION_EXTENSION* pPe = NULL;
 	__DEVICE_OBJECT*       pDevice = (__DEVICE_OBJECT*)lpDev;
 	DWORD dwStartSector = 0;
 	DWORD dwSectorNum = 0;
-	int   nDiskNum = 0;
-	DWORD i;
 	DWORD dwFlags;
 
 	//Parameter validity checking.
@@ -372,6 +436,7 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 	if (lpDrcb->dwOutputLen % pDevice->dwBlockSize)     //Always integral block size times is valid.
 	{
 		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		_hx_printf("%s:dwOutputLen % pDevice->dwBlockSize != 0.\r\n", __FUNCTION__);
 		return 0;
 	}
 	dwSectorNum = lpDrcb->dwOutputLen / pDevice->dwBlockSize;
@@ -380,34 +445,23 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 	if ((dwStartSector + dwSectorNum) > pPe->dwSectorNum)
 	{
 		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		_hx_printf("%s:Exceed the partition boundary,StartSector = %d,SectorNum = %d,TotalSector = %d.\r\n",
+			__FUNCTION__, dwStartSector, dwSectorNum, pPe->dwSectorNum);
 		return 0;
 	}
 	dwStartSector += pPe->dwStartSector;
-	nDiskNum = pPe->nDiskNum;
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	//Now issue the reading command.
-	for (i = 0; i < dwSectorNum; i++)
-	{
-		if (!__usbReadSector(nDiskNum, dwStartSector + i, 1, ((BYTE*)lpDrcb->lpOutputBuffer) + 512 * i))
-		{
-			return FALSE;
-		}
-	}
-	//return ReadSector(nDiskNum,dwStartSector,dwSectorNum,(BYTE*)lpDrcb->lpOutputBuffer);
-	return TRUE;
+	return __usbReadSector(pPe->nDiskNum, dwStartSector, dwSectorNum, (BYTE*)lpDrcb->lpOutputBuffer);
 }
 
-static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,
-	__COMMON_OBJECT* lpDev,
-	__DRCB* lpDrcb)
+static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev,__DRCB* lpDrcb)
 {
 	__PARTITION_EXTENSION* pPe = NULL;
 	__DEVICE_OBJECT*       pDevice = (__DEVICE_OBJECT*)lpDev;
 	__SECTOR_INPUT_INFO*   psii = NULL;
 	DWORD dwStartSector = 0;
 	DWORD dwSectorNum = 0;
-	int   nDiskNum = 0;
-	DWORD i;
 	DWORD dwFlags;
 
 	//Parameter validity checking.
@@ -433,17 +487,9 @@ static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,
 		return 0;
 	}
 	dwStartSector = psii->dwStartSector + pPe->dwStartSector;
-	nDiskNum = pPe->nDiskNum;
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	//Now issue the reading command.
-	for (i = 0; i < dwSectorNum; i++)
-	{
-		if (!__usbWriteSector(nDiskNum, dwStartSector + i, 1, ((BYTE*)psii->lpBuffer) + 512 * i))
-		{
-			return FALSE;
-		}
-	}
-	return TRUE;
+	return __usbWriteSector(pPe->nDiskNum, dwStartSector, dwSectorNum, (BYTE*)psii->lpBuffer);
 }
 
 //DeviceCtrl for USBHD driver.
@@ -495,7 +541,7 @@ static BOOL IDEIntHandler(LPVOID pParam, LPVOID pEsp)
 BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 {
 	__PARTITION_EXTENSION *pPe = NULL;
-	UCHAR Buff[512];
+	UCHAR Buff[USB_STORAGE_SECTOR_SIZE];
 	BOOL bResult = FALSE;
 	int i = 0;
 

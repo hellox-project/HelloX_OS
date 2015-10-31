@@ -43,14 +43,15 @@
 #include <asm/4xx_pci.h>
 #endif
 
+#ifndef USB_BUFSIZ
 #define USB_BUFSIZ	512
+#endif
 
 static int asynch_allowed;
 char usb_started; /* flag for the started/stopped USB status */
 
 #ifndef CONFIG_DM_USB
-static struct usb_device usb_dev[USB_MAX_DEVICE];
-static int dev_index;
+struct usb_device usb_dev[USB_MAX_DEVICE] = { 0 };
 
 #ifndef CONFIG_USB_MAX_CONTROLLER_COUNT
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 1
@@ -144,7 +145,9 @@ int usb_init(void)
 	int controllers_initialized = 0;
 	int ret;
 
-	dev_index = 0;
+	//dev_index = 0;
+	USBManager.dev_index = 0;
+
 	asynch_allowed = 1;
 	usb_hub_reset();
 
@@ -167,7 +170,9 @@ int usb_init(void)
 				continue;
 			}
 			if (ret) {		/* Other error. */
-				//puts("lowlevel init failed\r\n");
+				debug("%s lowlevel init failed,ret = %d.\r\n",
+					UsbDriverEntry[index].ctrlDesc,
+					ret);
 				continue;
 			}
 
@@ -176,7 +181,8 @@ int usb_init(void)
 			* i.e. search HUBs and configure them
 			*/
 			controllers_initialized++;
-			start_index = dev_index;
+			start_index = USBManager.dev_index;
+			//start_index = dev_index;
 			printf("scanning bus %d for devices... \r\n", i);
 			ret = usb_alloc_new_device(ctrl, &dev);
 			if (ret)
@@ -192,18 +198,19 @@ int usb_init(void)
 				usb_free_device(dev->controller);
 			}
 
-			if (start_index == dev_index) {
+			if (start_index == USBManager.dev_index) {
 				puts("No USB Device found\r\n");
 				continue;
 			}
 			else {
 				printf("%d USB Device(s) found\r\n",
-					dev_index - start_index);
+					USBManager.dev_index - start_index);
 			}
 
 			usb_started = 1;
 		}
 		index++;
+		mdelay(2000);  //Pause for debugging.
 	}
 
 	debug("scan end\r\n");
@@ -975,20 +982,21 @@ struct usb_device *usb_get_dev_index(int index)
 int usb_alloc_new_device(struct udevice *controller, struct usb_device **devp)
 {
 	int i;
-	debug("New Device %d\n", dev_index);
-	if (dev_index == USB_MAX_DEVICE) {
+	debug("New Device %d\n", USBManager.dev_index);
+	if (USBManager.dev_index == USB_MAX_DEVICE) {
 		printf("ERROR, too many USB Devices, max=%d\r\n", USB_MAX_DEVICE);
 		return -ENOSPC;
 	}
 	/* default Address is 0, real addresses start with 1 */
-	usb_dev[dev_index].devnum = dev_index + 1;
-	usb_dev[dev_index].maxchild = 0;
+	usb_dev[USBManager.dev_index].devnum = USBManager.dev_index + 1;
+	usb_dev[USBManager.dev_index].maxchild = 0;
 	for (i = 0; i < USB_MAXCHILDREN; i++)
-		usb_dev[dev_index].children[i] = NULL;
-	usb_dev[dev_index].parent = NULL;
-	usb_dev[dev_index].controller = controller;
-	dev_index++;
-	*devp = &usb_dev[dev_index - 1];
+		usb_dev[USBManager.dev_index].children[i] = NULL;
+	usb_dev[USBManager.dev_index].parent = NULL;
+	usb_dev[USBManager.dev_index].controller = controller;
+	//dev_index++;
+	USBManager.dev_index++;
+	*devp = &usb_dev[USBManager.dev_index - 1];
 
 	return 0;
 }
@@ -1000,10 +1008,11 @@ int usb_alloc_new_device(struct udevice *controller, struct usb_device **devp)
 */
 void usb_free_device(struct udevice *controller)
 {
-	dev_index--;
-	debug("Freeing device node: %d\r\n", dev_index);
-	memset(&usb_dev[dev_index], 0, sizeof(struct usb_device));
-	usb_dev[dev_index].devnum = -1;
+	//dev_index--;
+	USBManager.dev_index--;
+	debug("Freeing device node: %d\r\n", USBManager.dev_index);
+	memset(&usb_dev[USBManager.dev_index], 0, sizeof(struct usb_device));
+	usb_dev[USBManager.dev_index].devnum = -1;
 }
 
 /*
@@ -1195,7 +1204,7 @@ struct usb_device *parent)
 	err = usb_set_address(dev); /* set address */
 
 	if (err < 0) {
-		printf("\r\n      USB device not accepting new address " \
+		printf("USB device not accepting new address " \
 			"(error=%lX)\r\n", dev->status);
 		return err;
 	}
@@ -1311,6 +1320,12 @@ int usb_new_device(struct usb_device *dev)
 		debug("usb_new_device return with value = %d.\r\n", err);
 		return err;
 	}
+	//Add a corresponding physical device into HelloX's USB management framework.
+	if (!USBManager.AddUsbDevice(dev))
+	{
+		debug("%s: Can not add usb device into system.\r\n", __func__);
+		return -1;
+	}
 
 	/* Now probe if the device is a hub */
 	err = usb_hub_probe(dev, 0);
@@ -1348,34 +1363,6 @@ bool usb_device_has_child_on_port(struct usb_device *parent, int port)
 #else
 	return parent->children[port] != NULL;
 #endif
-}
-
-//Print out one USB device's information
-static void ShowUsbDevice(struct usb_device* pDev)
-{
-	printf("  Dev#: %d\r\n  Manufacturer: %s\r\n  Product: %s\r\n  Serial: %s\r\n",
-		pDev->devnum,
-		pDev->mf,
-		pDev->prod,
-		pDev->serial);
-	printf("  Class/Subclass/Proto: %d/%d/%d\r\n", pDev->descriptor.bDeviceClass,
-		pDev->descriptor.bDeviceSubClass,
-		pDev->descriptor.bDeviceProtocol);
-	printf("  Vendor/Product/Device: 0x%X/0x%X/0x%X\r\n", pDev->descriptor.idVendor,
-		pDev->descriptor.idProduct,
-		pDev->descriptor.bcdDevice);
-}
-
-//Show all USB device(s) information in system.
-void ShowUsbDevices()
-{
-	int i = 0;
-	printf("  All USB device(s) in system:\r\n");
-	for (i = 0; i < dev_index; i++)
-	{
-		printf("  -----------------------------------------\r\n");
-		ShowUsbDevice(&usb_dev[i]);
-	}
 }
 
 /* EOF */

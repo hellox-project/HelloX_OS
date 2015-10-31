@@ -44,7 +44,7 @@ int _xhci_usb_lowlevel_stop(int index);
 #define MAX_EP_CTX_NUM		31
 #define XHCI_ALIGNMENT		64
 /* Generic timeout for XHCI events */
-#define XHCI_TIMEOUT		5000
+#define XHCI_TIMEOUT		100 //5000
 /* Max number of USB devices for any host controller - limit in section 6.1 */
 #define MAX_HC_SLOTS            256
 /* Section 5.3.3 - MaxPorts */
