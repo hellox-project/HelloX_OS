@@ -120,7 +120,7 @@ BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 
 #undef SET
 
-	__INIT_ATOMIC(lpVad->Reference);
+	INIT_ATOMIC(lpVad->Reference);
 	StrCpy((LPSTR)"System Kernel",(LPSTR)&lpVad->strName[0]);
 
 	//
@@ -486,7 +486,7 @@ static LPVOID DoReserve(__COMMON_OBJECT* lpThis,
 	lpVad->lpNext          = NULL;
 	lpVad->dwAccessFlags   = dwAccessFlags;
 	lpVad->dwAllocFlags    = dwAllocFlags;
-	__INIT_ATOMIC(lpVad->Reference);
+	INIT_ATOMIC(lpVad->Reference);
 	lpVad->lpLeft          = NULL;
 	lpVad->lpRight         = NULL;
 	if(lpVaName)
@@ -597,7 +597,7 @@ static LPVOID DoReserveAndCommit(__COMMON_OBJECT* lpThis,
 	lpVad->lpNext          = NULL;
 	lpVad->dwAccessFlags   = dwAccessFlags;
 	lpVad->dwAllocFlags    = VIRTUAL_AREA_ALLOCATE_COMMIT; //dwAllocFlags;
-	__INIT_ATOMIC(lpVad->Reference);
+	INIT_ATOMIC(lpVad->Reference);
 	lpVad->lpLeft          = NULL;
 	lpVad->lpRight         = NULL;
 	if(lpVaName)
@@ -742,7 +742,7 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	lpVad->lpNext = NULL;
 	lpVad->dwAccessFlags = dwAccessFlags;
 	lpVad->dwAllocFlags = VIRTUAL_AREA_ALLOCATE_IOCOMMIT; //dwAllocFlags;
-	__INIT_ATOMIC(lpVad->Reference);
+	INIT_ATOMIC(lpVad->Reference);
 	lpVad->lpLeft = NULL;
 	lpVad->lpRight = NULL;
 	if (lpVaName)
@@ -878,7 +878,7 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	lpVad->lpNext          = NULL;
 	lpVad->dwAccessFlags   = dwAccessFlags;
 	lpVad->dwAllocFlags    = dwAllocFlags;
-	__INIT_ATOMIC(lpVad->Reference);
+	INIT_ATOMIC(lpVad->Reference);
 	lpVad->lpLeft          = NULL;
 	lpVad->lpRight         = NULL;
 	if(lpVaName)

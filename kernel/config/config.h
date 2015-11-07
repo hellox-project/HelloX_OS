@@ -24,7 +24,7 @@
 //************************************************************************
 
 #define OS_VERSION   "    HelloX V1.78"
-#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/10/24,by Garry.Xin]"
+#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/11/06,by Garry.Xin]"
 #define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 
 //************************************************************************

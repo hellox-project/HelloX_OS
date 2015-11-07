@@ -171,9 +171,9 @@ static BOOL ScanUsbKeyboard()
 	id.Bus_ID.USB_Identifier.ucMask = USB_IDENTIFIER_MASK_INTERFACECLASS;
 	id.Bus_ID.USB_Identifier.ucMask |= USB_IDENTIFIER_MASK_INTERFACESUBCLASS;
 	id.Bus_ID.USB_Identifier.ucMask |= USB_IDENTIFIER_MASK_INTERFACEPROTOCOL;
-	id.Bus_ID.USB_Identifier.bInterfaceClass = UM_INTERFACE_CLASS_ID;
-	id.Bus_ID.USB_Identifier.bInterfaceSubClass = UM_INTERFACE_SUBCLASS_ID;
-	id.Bus_ID.USB_Identifier.bInterfaceProtocol = UM_INTERFACE_PROTOCOL_ID;
+	id.Bus_ID.USB_Identifier.bInterfaceClass = UK_INTERFACE_CLASS_ID;
+	id.Bus_ID.USB_Identifier.bInterfaceSubClass = UK_INTERFACE_SUBCLASS_ID;
+	id.Bus_ID.USB_Identifier.bInterfaceProtocol = UK_INTERFACE_PROTOCOL_ID;
 
 	//Try to find the USB mouse device from system.
 	pPhyDev = USBManager.GetUsbDevice(&id, NULL);
@@ -261,12 +261,12 @@ static BOOL OnKeyHandler(BYTE bKeyCode, BOOL bVisableCode, DWORD dwKeyState, DWO
 		}
 
 		//Key is hold(make).
-		dmsg.wDevMsgType = (bVisableCode) ? ASCII_KEY_DOWN : MSG_VK_KEY_DOWN;
+		dmsg.wDevMsgType = (bVisableCode) ? KERNEL_MESSAGE_AKEYDOWN : KERNEL_MESSAGE_VKEYDOWN;
 
 	}
 	else  //Key is released.
 	{
-		dmsg.wDevMsgType = (bVisableCode) ? ASCII_KEY_UP : MSG_VK_KEY_UP;
+		dmsg.wDevMsgType = (bVisableCode) ? KERNEL_MESSAGE_AKEYUP : KERNEL_MESSAGE_VKEYUP;
 	}
 
 	dmsg.dwDevMsgParam = (DWORD)bKeyCode;

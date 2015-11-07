@@ -21,11 +21,6 @@
 //Only available when EHCI function is enabled.
 #ifdef CONFIG_USB_EHCI
 
-/* Information about a USB port */
-struct ehci_pci_priv {
-	struct ehci_ctrl ehci;
-};
-
 static BOOL ehci_pci_common_init(__PHYSICAL_DEVICE* pdev, struct ehci_hccr **ret_hccr,
 struct ehci_hcor **ret_hcor)
 {
@@ -112,8 +107,6 @@ __TERMINAL:
 	return bResult;
 }
 
-#ifndef CONFIG_DM_USB
-
 #ifdef CONFIG_PCI_EHCI_DEVICE
 static struct pci_device_id ehci_pci_ids[] = {
 	/* Please add supported PCI EHCI controller ids here */
@@ -134,7 +127,9 @@ static struct pci_device_id ehci_pci_ids[] = {
 //begining iterating position when GetDevice is called next time.
 static __PHYSICAL_DEVICE* pOldUsbCtrl = NULL;
 
-int ehci_hcd_init(int index, enum usb_init_type init,struct ehci_hccr **ret_hccr, 
+//The physical device corresponding the USB controller is returned if success,
+//otherwise NULL will return.
+__PHYSICAL_DEVICE* ehci_hcd_init(int index, enum usb_init_type init,struct ehci_hccr **ret_hccr, 
 struct ehci_hcor **ret_hcor)
 {
 	__PHYSICAL_DEVICE* pUsbCtrl = NULL;
@@ -148,18 +143,18 @@ struct ehci_hcor **ret_hcor)
 	pUsbCtrl = DeviceManager.GetDevice(&DeviceManager,BUS_TYPE_PCI,
 		&id, pOldUsbCtrl);
 	if (NULL == pUsbCtrl) {
-		printf("USB: EHCI host controller [%d] is not found.\r\n",index);
-		return -1;
+		//_hx_printf("USB: EHCI host controller [%d] is not found.\r\n",index);
+		return NULL;
 	}
 
 	//Save the physical device object pointer.
 	pOldUsbCtrl = pUsbCtrl;
 
-	if (ehci_pci_common_init(pUsbCtrl, ret_hccr, ret_hcor))
+	if (!ehci_pci_common_init(pUsbCtrl, ret_hccr, ret_hcor))
 	{
-		return 0;
+		return NULL;
 	}
-	return -1;
+	return pUsbCtrl;
 }
 
 /*
@@ -170,48 +165,5 @@ int ehci_hcd_stop(int index)
 {
 	return 0;
 }
-#endif /* nCONFIG_DM_USB */
-
-#ifdef CONFIG_DM_USB
-static int ehci_pci_probe(struct udevice *dev)
-{
-	struct ehci_hccr *hccr;
-	struct ehci_hcor *hcor;
-
-	ehci_pci_common_init(pci_get_bdf(dev), &hccr, &hcor);
-
-	return ehci_register(dev, hccr, hcor, NULL, 0, USB_INIT_HOST);
-}
-
-static int ehci_pci_remove(struct udevice *dev)
-{
-	int ret;
-
-	ret = ehci_deregister(dev);
-	if (ret)
-		return ret;
-
-	return 0;
-}
-
-U_BOOT_DRIVER(ehci_pci) = {
-	.name = "ehci_pci",
-	.id = UCLASS_USB,
-	.probe = ehci_pci_probe,
-	.remove = ehci_pci_remove,
-	.ops = &ehci_usb_ops,
-	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
-	.priv_auto_alloc_size = sizeof(struct ehci_pci_priv),
-	.flags = DM_FLAG_ALLOC_PRIV_DMA,
-};
-
-static struct pci_device_id ehci_pci_supported[] = {
-	{ PCI_DEVICE_CLASS(PCI_CLASS_SERIAL_USB_EHCI, ~0) },
-	{},
-};
-
-U_BOOT_PCI_DEVICE(ehci_pci, ehci_pci_supported);
-
-#endif /* CONFIG_DM_USB */
 
 #endif //CONFIG_USB_EHCI

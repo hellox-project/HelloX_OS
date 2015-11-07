@@ -78,7 +78,7 @@ static VOID __UserInput(HANDLE hFile)
 	{
 		if(GetMessage(&Msg))
 		{
-			if(MSG_KEY_DOWN == Msg.wCommand)    //This is a key down message.
+			if(KERNEL_MESSAGE_AKEYDOWN == Msg.wCommand)    //This is a key down message.
 			{
 				bt = (BYTE)Msg.dwParam;
 				switch(bt)

@@ -100,7 +100,10 @@ extern "C" {
 #endif
 
 //
-//This macros is used to flush cache's content to memory.
+//This macro is used to flush cache's content to memory,or just invalidate a range of
+//cache content,according the flags parameter.
+//Cache invalidating is not necessary under x86 platform,since the cache snooping is
+//implemented in CPU,so we let it empty when the flags value is CACHE_FLUSH_INVALIDATE.
 //
 //Flags to control the cache flushing.
 #define CACHE_FLUSH_WRITEBACK   0x00000001
@@ -121,19 +124,12 @@ extern "C" {
 		        } \
 		        else if(CACHE_FLUSH_INVALIDATE == flags) \
 	        { \
-            __asm invd \
-			__asm nop \
-			__asm nop \
-			__asm nop \
-			__asm nop \
 	        } \
 	} 
 #endif
 #else
 #define __FLUSH_CACHE(addr,leng,flags)
 #endif
-
-#define SYNCHRONIZE_MEMORY() FLUSH_CACHE()
 
 //
 //This macros is used as a barrier.
@@ -158,9 +154,10 @@ extern "C" {
 #define __BARRIER()
 #endif
 
-typedef unsigned long __ATOMIC_T;
-
-#define __INIT_ATOMIC(t) (t) = 0
+//Atomic operations.
+#define __INIT_ATOMIC(t)        do{t = 0;}while(0);
+#define __INCREASE_ATOMIC(t)    do{t ++;}while(0);
+#define __DECREASE_ATOMIC(t)    do{t --;}while(0);
 
 #ifdef __cplusplus
 }

@@ -162,7 +162,7 @@ int usb_init(void)
 		/* init low_level USB */
 		for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
 			/* init low_level USB */
-			printf("%s[%d]:   ", UsbDriverEntry[index].ctrlDesc,i);
+			_hx_printf("%s[%d]:   ", UsbDriverEntry[index].ctrlDesc,i);
 			ret = UsbDriverEntry[index].usb_lowlevel_init(i, USB_INIT_HOST, &ctrl);
 			if (ret == -ENODEV) {	/* No such device. */
 				puts("Port not available.\r\n");
@@ -183,7 +183,7 @@ int usb_init(void)
 			controllers_initialized++;
 			start_index = USBManager.dev_index;
 			//start_index = dev_index;
-			printf("scanning bus %d for devices... \r\n", i);
+			_hx_printf("Scanning bus %d for devices... \r\n", i);
 			ret = usb_alloc_new_device(ctrl, &dev);
 			if (ret)
 				break;
@@ -210,7 +210,7 @@ int usb_init(void)
 			usb_started = 1;
 		}
 		index++;
-		mdelay(2000);  //Pause for debugging.
+		mdelay(100);  //Pause for debugging.
 	}
 
 	debug("scan end\r\n");

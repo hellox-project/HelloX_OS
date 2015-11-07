@@ -1076,7 +1076,7 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl)
 	ctrlOps.usb_reset_root_port = NULL;
 	ctrlOps.get_ctrl_status = NULL;
 
-	return USBManager.CreateUsbCtrl(&ctrlOps, USB_CONTROLLER_XHCI, pCtrl);
+	return USBManager.CreateUsbCtrl(&ctrlOps, USB_CONTROLLER_XHCI,NULL,pCtrl);
 }
 
 /**

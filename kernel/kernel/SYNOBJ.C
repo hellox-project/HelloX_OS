@@ -234,7 +234,8 @@ VOID EventUninitialize(__COMMON_OBJECT* lpThis)
 
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	lpPriorityQueue = lpEvent->lpWaitingQueue;
-	if(EVENT_STATUS_FREE != EVENT_STATUS_FREE)
+	//if(EVENT_STATUS_FREE != EVENT_STATUS_FREE)
+	if (EVENT_STATUS_FREE != lpEvent->dwEventStatus)
 	{
 		//Should wake up all kernel thread(s) who waiting for this object.
 		lpKernelThread = (__KERNEL_THREAD_OBJECT*)

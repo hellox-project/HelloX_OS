@@ -511,7 +511,7 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 
 			switch(Msg.wCommand)
 			{
-			case MSG_KEY_DOWN:
+			case KERNEL_MESSAGE_AKEYDOWN:
 				{
 					if(OnKeyControl(pShellInfo,bt) == FALSE)
 					{
@@ -519,7 +519,7 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 					}
 				}
 				break;
-			case MSG_VK_KEY_DOWN:
+			case KERNEL_MESSAGE_VKEYDOWN:
 				{					
 					OnVkKeyControl(pShellInfo,bt);
 				}
