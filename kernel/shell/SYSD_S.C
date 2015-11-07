@@ -47,6 +47,7 @@ static DWORD usbdev(__CMD_PARA_OBJ*);
 static DWORD usbport(__CMD_PARA_OBJ*);
 static DWORD usbportreset(__CMD_PARA_OBJ*);
 static DWORD usbctrlstat(__CMD_PARA_OBJ*);
+static DWORD usbmouse(__CMD_PARA_OBJ*);
 #endif
 
 //
@@ -72,6 +73,7 @@ static struct __SHELL_CMD_MAP{
 	{"usbport",           usbport,          "  usbport              : List a specific USB HUB's port status." },
 	{"usbportreset",      usbportreset,     "  usbportreset         : Reset a port of the given USB HUB." },
 	{"usbctrlstat",       usbctrlstat,      "  usbctrlstat          : Show all USB controllers' status." },
+	{"usbmouse",          usbmouse,         "  usbmouse             : Test USB mouse functions." },
 #endif
 	{"exit",              _exit,            "  exit                 : Exit the application."},
 	{"help",              help,             "  help                 : Print out this screen."},
@@ -704,6 +706,7 @@ extern void ShowUsbPort(int index);
 extern void ResetUsbPort(int index, int port);
 extern void ShowUsbCtrlStatus();
 extern void ShowUsbDevice(int index);
+extern void DoUsbMouse();
 
 //Show a specified USB device's detail information.
 static DWORD usbdev(__CMD_PARA_OBJ* pParaObj)
@@ -760,6 +763,13 @@ static DWORD usbportreset(__CMD_PARA_OBJ* pParaObj)
 	port = atol(pParaObj->Parameter[2]);
 
 	ResetUsbPort(index, port);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+//Test USB mouse function.
+static DWORD usbmouse(__CMD_PARA_OBJ* pData)
+{
+	DoUsbMouse();
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

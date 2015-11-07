@@ -297,6 +297,7 @@ typedef struct tag__USB_CONTROLLER_OPERATIONS{
 	int (*destroy_int_queue)(struct usb_device *dev, struct int_queue *queue);
 	void* (*poll_int_queue)(struct usb_device *dev, struct int_queue *queue);
 	unsigned long (*get_ctrl_status)(void* common_ctrl);
+	unsigned long (*InterruptHandler)(LPVOID pCommCtrl);  //Interrupt handler of the USB controller.
 }__USB_CONTROLLER_OPERATIONS;
 
 //Common USB controller object to unify all types of USB controllers.
@@ -304,6 +305,8 @@ typedef struct tag__COMMON_USB_CONTROLLER{
 	DWORD dwObjectSignature;              //Kernel object signature.
 	__USB_CONTROLLER_OPERATIONS ctrlOps;  //Common operations.
 	DWORD dwCtrlType;                     //Controller's type,EHCI,EHCI with companion,xHCI,etc.
+	__PHYSICAL_DEVICE* pPhysicalDev;      //Physical device the controller corresponding.
+	__COMMON_OBJECT* IntObject;           //Interrupt object of this controller.
 	LPVOID pUsbCtrl;                      //Actual controller specified informations.
 }__COMMON_USB_CONTROLLER;
 
@@ -334,7 +337,8 @@ typedef struct tag__USB_MANAGER{
 	__KERNEL_THREAD_OBJECT* UsbCoreThread;
 
 	//Global level resource or object management.
-	__COMMON_USB_CONTROLLER* (*CreateUsbCtrl)(__USB_CONTROLLER_OPERATIONS* ops,DWORD dwCtrlType,void* priv);
+	__COMMON_USB_CONTROLLER* (*CreateUsbCtrl)(__USB_CONTROLLER_OPERATIONS* ops,DWORD dwCtrlType,
+		__PHYSICAL_DEVICE* pPhyDev,void* priv);
 	struct usb_device* (*CreateUsbDevice)(__COMMON_USB_CONTROLLER* pCtrl);
 	//Add a physical USB device into system.
 	BOOL (*AddUsbDevice)(struct usb_device* pDevice);

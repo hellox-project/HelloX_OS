@@ -32,6 +32,29 @@ extern struct usb_device usb_dev[USB_MAX_DEVICE];
 //USB driver entry point array.
 extern __DRIVER_ENTRY_ARRAY UsbDriverEntryArray[];
 
+//Common interrupt handler of a USB controller,it will call controller
+//specific routine accordingly.
+static BOOL CommonInterruptHandler(LPVOID lpESP, LPVOID lpParam)
+{
+	__COMMON_USB_CONTROLLER* pUsbCtrl = (__COMMON_USB_CONTROLLER*)lpParam;
+	if (NULL == pUsbCtrl)
+	{
+		BUG();
+	}
+	if (NULL == pUsbCtrl->ctrlOps.InterruptHandler)
+	{
+		_hx_printf("Warning: Interrupt is enabled for USB Controller 0x%X but without HANDLER set.\r\n", 
+			pUsbCtrl->pPhysicalDev->dwNumber);
+		return FALSE;
+	}
+	//Process the interrupt by calling controller specific handler.
+	if (pUsbCtrl->ctrlOps.InterruptHandler((LPVOID)pUsbCtrl))
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
 //A dedicated kernel thread is used to service all USB controllers
 //or devices in system.It's the core of USB sub-system.
 static DWORD USBCoreThread(LPVOID pData)
@@ -109,10 +132,12 @@ static BOOL UsbMgrInit(__USB_MANAGER* pUsbMgr)
 }
 
 //Create and return a common USB controller object.
-static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,DWORD dwCtrlType,void* priv)
+static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,DWORD dwCtrlType,
+	__PHYSICAL_DEVICE* pPhyDev,void* priv)
 {
 	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
 	int i = 0;
+	unsigned char ucInt = 0;
 	
 	//Try to find a free USB controller slot in array.
 	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_NUM; i++)
@@ -138,6 +163,8 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 	//Initialize it.
 	pUsbCtrl->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
 	pUsbCtrl->dwCtrlType = dwCtrlType;
+	pUsbCtrl->pPhysicalDev = pPhyDev;
+	pUsbCtrl->IntObject = NULL;
 	pUsbCtrl->ctrlOps.submit_bulk_msg = ops->submit_bulk_msg;
 	pUsbCtrl->ctrlOps.submit_control_msg = ops->submit_control_msg;
 	pUsbCtrl->ctrlOps.submit_int_msg = ops->submit_int_msg;
@@ -146,9 +173,45 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 	pUsbCtrl->ctrlOps.poll_int_queue = ops->poll_int_queue;
 	pUsbCtrl->ctrlOps.usb_reset_root_port = ops->usb_reset_root_port;
 	pUsbCtrl->ctrlOps.get_ctrl_status = ops->get_ctrl_status;
+	pUsbCtrl->ctrlOps.InterruptHandler = ops->InterruptHandler;
 
 	//Save private data of the user specified.
 	pUsbCtrl->pUsbCtrl = priv;
+
+	//If physical device is specified,then should establish interrupt mechanism.
+	if (pPhyDev)
+	{
+		for (i = 0; i < MAX_RESOURCE_NUM; i++)
+		{
+			if (RESOURCE_TYPE_INTERRUPT == pPhyDev->Resource[i].dwResType)
+			{
+				ucInt = pPhyDev->Resource[i].Dev_Res.ucVector;
+				break;
+			}
+		}
+		if (0 == ucInt)  //No interrupt resource is found.
+		{
+			debug("%s: Can not find interrupt vector for the USB controller.\r\n", __func__);
+		}
+	}
+	if (ucInt)
+	{
+#ifdef __I386__
+		ucInt += 0x20;  //Offset to CPU's device interrupt vector region.
+#endif
+		//Create interrupt object now.
+		pUsbCtrl->IntObject = ConnectInterrupt(CommonInterruptHandler,
+			(LPVOID)pUsbCtrl,
+			ucInt);
+		if (NULL == pUsbCtrl->IntObject)  //Failed to connect interrupt.
+		{
+			_hx_printf("%s: Failed to connect interrupt object,vector = %d.\r\n",__func__, ucInt);
+			//Destroy the common USB controller object.
+			_hx_free(pUsbCtrl);
+			pUsbCtrl = NULL;
+			goto __TERMINAL;
+		}
+	}
 
 __TERMINAL:
 	return pUsbCtrl;

@@ -18,9 +18,9 @@
 #define __USBKBD_H__
 
 //Class IDs of USB keyboard.
-#define UM_INTERFACE_CLASS_ID         0x03
-#define UM_INTERFACE_SUBCLASS_ID      0x01
-#define UM_INTERFACE_PROTOCOL_ID      0x01
+#define UK_INTERFACE_CLASS_ID         0x03
+#define UK_INTERFACE_SUBCLASS_ID      0x01
+#define UK_INTERFACE_PROTOCOL_ID      0x01
 
 //USB data buffer length.
 #define MAX_USBKEYBOARD_BUFF_LEN       8

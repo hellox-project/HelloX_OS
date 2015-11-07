@@ -647,6 +647,9 @@
     <ClCompile Include="usb\usbkbd.c">
       <Filter>Source Files\usb</Filter>
     </ClCompile>
+    <ClCompile Include="usb\ehciint.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">

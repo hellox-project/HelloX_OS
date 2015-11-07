@@ -33,7 +33,7 @@
 #endif
 
 #ifndef CONFIG_SYS_HZ
-#define CONFIG_SYS_HZ 1000
+#define CONFIG_SYS_HZ (1000 / SYSTEM_TIME_SLICE)
 #endif
 
 typedef ULONG ulong;
@@ -77,7 +77,7 @@ typedef uint64_t __le64;
 #define __cpu_to_le16s(x) do { (void)(x); } while (0)
 #define __le16_to_cpus(x) do { (void)(x); } while (0)
 
-#define get_unaligned(x) (*x) //__GET_UNALIGNED(x)
+#define get_unaligned(x) (*x)
 #define put_unaligned(val,addr) (*addr = val)
 
 #ifdef __MS_VC__
@@ -185,7 +185,7 @@ static ulong inline get_timer(ulong base)
 
 //Cache operations,do nothing for invalidate cache range in x86
 //architecture since cache snooping works.
-#define invalidate_dcache_range(start,end) 
+#define invalidate_dcache_range(start,end) __FLUSH_CACHE(start,(end - start),CACHE_FLUSH_INVALIDATE)
 #define flush_dcache_range(start,end)      __FLUSH_CACHE(start,(end - start),CACHE_FLUSH_WRITEBACK)
 
 //Alignment and round.

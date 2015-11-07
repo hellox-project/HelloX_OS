@@ -19,38 +19,39 @@
 extern "C" {
 #endif
 
-//
-//These 2 messages are defined in early version of 
-//Hello China and will be obsoleted later.
-//
-#define KERNEL_MESSAGE_TERMINAL     0x0005
-#define KERNEL_MESSAGE_TIMER        0x0006
+//Messages used in kernel,please do not modify the value of each
+//message.
+//The message value from 0x0001 to 0xFF are reserved by system,
+//user thread should not use them.
 
-//Message command defination,please note the message
-//value from 0x0001 to 0x00FF are reserved by kernel,
-//user customized message can start from 0x0100.
-#define MSG_KEY_DOWN            0x0001
-#define MSG_KEY_UP              0x0002
-#define MSG_LEFT_MOUSE_UP       0x0003
-#define MSG_MIDD_MOUSE_UP       0x0004
-#define MSG_RIGHT_MOUSE_UP      0x0005
-#define MSG_LEFT_MOUSE_DOWN     0x0006
-#define MSG_MIDD_MOUSE_DOWN     0x0007
-#define MSG_RIGHT_MOUSE_DOWN    0x0008
+//Terminal message and timer message.
+#define KERNEL_MESSAGE_TERMINAL     0x05
+#define KERNEL_MESSAGE_TIMER        0x06
 
-#define MSG_SYS_TERMINAL        0x0009  //If OS want to task terminal,
-                                        //it sends this message to the task.
-#define MSG_TIMER               0x000a  //Time message.
+//Keyboard messages.
+#define KERNEL_MESSAGE_AKEYDOWN       0x01     //ASCII key down.
+#define KERNEL_MESSAGE_AKEYUP         0x02     //ASCII key up.
+#define KERNEL_MESSAGE_VKEYDOWN       0x10     //Virtual key down.
+#define KERNEL_MESSAGE_VKEYUP         0x11     //Virtual key up.
 
-#define MSG_VK_KEY_DOWN         0x0010  //
-#define MSG_VK_KEY_UP           0x0011  //
+//Mouse messages.
+#define KERNEL_MESSAGE_LBUTTONDOWN    0x20     //Left button down.
+#define KERNEL_MESSAGE_LBUTTONUP      0x21     //Left button released.
+#define KERNEL_MESSAGE_RBUTTONDOWN    0x22     //Right button down.
+#define KERNEL_MESSAGE_RBUTTONUP      0x23     //Right button released.
+#define KERNEL_MESSAGE_LBUTTONDBCLK   0x24     //Left button double clicked.
+#define KERNEL_MESSAGE_RBUTTONDBCLK   0x25     //Right button double clicked.
+#define KERNEL_MESSAGE_MOUSEMOVE      0x26     //Mouse is moving.
+#define KERNEL_MESSAGE_MBUTTONDOWN    0x27     //Middle button down.
+#define KERNEL_MESSAGE_MBUTTONUP      0x28     //Middle button up.
+#define KERNEL_MESSAGE_MBUTTONDBCLK   0x29     //Middle button double clicked.
 
 //User defined messages can be append here,please note
-//the message value should begin from 0x0100.
+//the message value should start from 0x0100.
 #define MSG_USER_START          0x0100
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //ktmsg.h
+#endif //__KTMSG_H__

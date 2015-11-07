@@ -21,6 +21,28 @@
 int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller);
 int _ehci_usb_lowlevel_stop(int index);
 
+//Interrupt queue operations,create,poll,destroy...
+struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
+	unsigned long pipe, int queuesize, int elementsize,void *buffer, int interval);
+void* EHCIPollIntQueue(struct usb_device *dev, struct int_queue *queue);
+int EHCIDestroyIntQueue(struct usb_device *dev, struct int_queue *queue);
+
+//Get the corresponding EHCI controller given a USB device.
+struct ehci_ctrl *ehci_get_ctrl(struct usb_device *udev);
+
+//Encode speed value.
+u8 ehci_encode_speed(enum usb_device_speed speed);
+void ehci_update_endpt2_dev_n_port(struct usb_device *udev, struct QH *qh);
+
+//Disable or enable periodic scheduling.
+int ehci_enable_periodic(struct ehci_ctrl *ctrl);
+int ehci_disable_periodic(struct ehci_ctrl *ctrl);
+
+//Interrupt handler of EHCI controller.
+unsigned long EHCIIntHandler(LPVOID);
+
+#define NEXT_QH(qh) (struct QH *)((unsigned long)hc32_to_cpu((qh)->qh_link) & ~0x1f)
+
 #if !defined(CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS)
 #define CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS	16
 #endif
@@ -348,6 +370,37 @@ struct ehci_ops {
 	uint32_t *(*get_portsc_register)(struct ehci_ctrl *ctrl, int port);
 };
 
+//Interrupt queue to support the interrupt transfer.
+struct int_queue {
+	int elementsize;
+	unsigned long pipe;
+	struct QH *first;
+	struct QH *current;
+	struct QH *last;
+	struct qTD *tds;
+
+	//Next interrupt queue element.
+	struct int_queue* pNext;
+
+	//Synchronization object to support interrupt mechanism.
+	HANDLE   hEvent;
+	DWORD    dwTimeOut;
+	__KERNEL_THREAD_OBJECT* pOwnerThread;
+
+	volatile DWORD dwStatus;                  //Status of this queue.
+#define INT_QUEUE_STATUS_INITIALIZED 0x01
+#define INT_QUEUE_STATUS_TIMEOUT     0x02
+#define INT_QUEUE_STATUS_ERROR       0x04
+#define INT_QUEUE_STATUS_INPROCESS   0x08
+#define INT_QUEUE_STATUS_CANCELED    0x10
+#define INT_QUEUE_STATUS_COMPLETED   0x20
+
+	struct usb_device* pUsbDev;      //USB device this queue associated with.
+
+	//Called in interrupt handler to update the status of this queue.
+	BOOL (*QueueIntHandler)(struct int_queue* pIntQueue);
+};
+
 struct ehci_ctrl {
 	enum usb_init_type init;
 	struct ehci_hccr *hccr;	/* R/O registers, not need for volatile */
@@ -365,8 +418,14 @@ struct ehci_ctrl {
 	int periodic_schedules;
 	int ntds;
 	struct ehci_ops ops;
-	//__USB_CONTROLLER_OPERATIONS ctrlOps; //Common USB controller operations.
 	void *priv;	/* client's private data */
+
+	//Mutex object to guarantee the exclusively accessing.
+	HANDLE hMutex;
+
+	//Interrupt queue list pending on this EHCI Controller.
+	struct int_queue* pIntQueueFirst;
+	struct int_queue* pIntQueueLast;
 };
 
 /**
@@ -393,7 +452,8 @@ void ehci_set_controller_priv(int index, void *priv,
 void *ehci_get_controller_priv(int index);
 
 /* Low level init functions */
-int ehci_hcd_init(int index, enum usb_init_type init,
+//int ehci_hcd_init(int index, enum usb_init_type init,struct ehci_hccr **hccr, struct ehci_hcor **hcor);
+__PHYSICAL_DEVICE* ehci_hcd_init(int index, enum usb_init_type init,
 struct ehci_hccr **hccr, struct ehci_hcor **hcor);
 int ehci_hcd_stop(int index);
 

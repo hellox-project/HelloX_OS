@@ -287,11 +287,11 @@ static void AsciiKeyHandler(KEY_UP_DOWN event,          //Key up or down.
 	
 	if(event == eKEYDOWN)  //Key is hold(make).
 	{
-		dmsg.wDevMsgType = ASCII_KEY_DOWN;
+		dmsg.wDevMsgType = KERNEL_MESSAGE_AKEYDOWN;
 	}
 	else  //Key is released.
 	{
-		dmsg.wDevMsgType = ASCII_KEY_UP;
+		dmsg.wDevMsgType = KERNEL_MESSAGE_AKEYUP;
 	}
 
 	if(CtrlKeyFlags.ShiftDown && CtrlKeyFlags.CapsLock)  //Both CapsLock and SHIFT

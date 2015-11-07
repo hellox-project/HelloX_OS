@@ -108,7 +108,7 @@ static DWORD PollSend(LPVOID lpData)
 	{
 		if(GetMessage(&msg))
 		{
-			if(MSG_KEY_DOWN == msg.wCommand)  //Key press event.
+			if(KERNEL_MESSAGE_AKEYDOWN == msg.wCommand)  //Key press event.
 			{
 				bt = (BYTE)msg.dwParam;
 				if(QUIT_CHARACTER == bt)  //Should quit.
@@ -435,7 +435,7 @@ static DWORD IntSend(LPVOID lpData)  //Interrupt mode sending thread routine.
 	{
 		if(GetMessage(&msg))
 		{
-			if(MSG_KEY_DOWN == msg.wCommand)  //Key press event.
+			if(KERNEL_MESSAGE_AKEYDOWN == msg.wCommand)  //Key press event.
 			{
 				bt = (BYTE)msg.dwParam;
 				if(QUIT_CHARACTER == bt)  //Should quit.

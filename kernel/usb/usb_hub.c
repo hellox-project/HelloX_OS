@@ -123,7 +123,7 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 		(unsigned)simple_strtol(env, NULL, 0));
 #endif
 	debug("pgood_delay=%dms\r\n", pgood_delay);
-	mdelay(pgood_delay + 1000);
+	mdelay(pgood_delay + 200);
 }
 
 void usb_hub_reset(void)
@@ -186,7 +186,7 @@ int legacy_hub_port_reset(struct usb_device *dev, int port,
 		}
 		debug("%s: usb_set_port_feature [%d] success.\r\n", __func__, port);
 
-		mdelay(200);
+		mdelay(100);
 
 		if (usb_get_port_status(dev, port + 1, portsts) < 0) {
 			debug("get_port_status failed status %lX\r\n",
@@ -488,7 +488,7 @@ static int usb_hub_configure(struct usb_device *dev)
 		unsigned short portstatus, portchange;
 		int ret;
 		//ulong start = get_timer(0);
-		ulong start = CONFIG_SYS_HZ / 20;
+		ulong start = CONFIG_SYS_HZ;
 
 #ifdef CONFIG_DM_USB
 		debug("Scanning '%s' port %d\r\n", dev->dev->name, i + 1);
@@ -541,9 +541,9 @@ static int usb_hub_configure(struct usb_device *dev)
 			((portstatus & USB_PORT_STAT_ENABLE) && (portstatus & USB_PORT_STAT_CONNECTION)))
 		{
 			debug("port %d connection change\r\n", i + 1);
-			_hx_printf("USB: Find a device on port [%d] of USB HUB [%s].\r\n",
+			_hx_printf("USB: Find a device on port [%d] of USB HUB [%d].\r\n",
 				i,
-				dev->mf);
+				dev->devnum);
 			usb_hub_port_connect_change(dev, i);
 		}
 

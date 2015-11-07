@@ -32,7 +32,7 @@ static struct UsbBaseDesc{
 	{ 0, "Shoud check farther." },
 	{ 1, "Audio functions." },
 	{ 2, "Communications and CDC control." },
-	{ 3, "HID(Human Interface Devices." },
+	{ 3, "HID(Human Interface Devices)." },
 	{ 5, "Physical." },
 	{ 6, "Image device." },
 	{ 7, "USB Printer." },
@@ -374,4 +374,49 @@ void ShowUsbCtrlStatus()
 				pCtrl->ctrlOps.get_ctrl_status(pCtrl));
 		}
 	}
+}
+
+//Test USB mouse function.
+void DoUsbMouse()
+{
+	int x = 0, y = 0;
+	MSG msg;
+
+	while (TRUE)
+	{
+		if (GetMessage(&msg))
+		{
+			x = (int)(msg.dwParam & 0xFFFF);  //Low 16 bits contains the x position.
+			y = (int)((msg.dwParam >> 16) & 0xFFFF);  //High part is y.
+
+			switch (msg.wCommand)
+			{
+			case KERNEL_MESSAGE_LBUTTONDOWN:
+				_hx_printf("  Left button down,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_LBUTTONUP:
+				_hx_printf("  Left button up,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_RBUTTONDOWN:
+				_hx_printf("  Right button down,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_RBUTTONUP:
+				_hx_printf("  Right button up,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_MOUSEMOVE:
+				_hx_printf("  Mouse is moving,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_LBUTTONDBCLK:
+				_hx_printf("  Left button double clicked,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_RBUTTONDBCLK:
+				_hx_printf("  Right button double clicked,x = %d,y = %d.\r\n",x,y);
+				break;
+			case KERNEL_MESSAGE_AKEYDOWN:
+			case KERNEL_MESSAGE_VKEYDOWN:
+				return;
+			}
+		}
+	}
+	return;
 }

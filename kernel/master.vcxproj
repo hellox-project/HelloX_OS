@@ -318,6 +318,7 @@
     <ClCompile Include="syscall\SYSCALL_IO.C" />
     <ClCompile Include="syscall\SYSCALL_KERNEL.C" />
     <ClCompile Include="syscall\SYSCALL_SOCKET.C" />
+    <ClCompile Include="usb\ehciint.c" />
     <ClCompile Include="usb\ehci_pci.c" />
     <ClCompile Include="usb\ent_ary.c" />
     <ClCompile Include="usb\usb.c" />
