@@ -206,11 +206,20 @@ static BOOL DoMouseMessage(__USB_MOUSE_DATA* pMouseData)
 	BYTE   bMouseOffsetS = pMouseData->MouseBuffer[4];
 #else
 	BYTE   bFlags  = pMouseData->MouseBuffer[0];
-	CHAR   cOffsetX = (CHAR)pMouseData->MouseBuffer[1];
-	CHAR   cOffsetY = (CHAR)pMouseData->MouseBuffer[2];
+	UCHAR  cOffsetX = pMouseData->MouseBuffer[1];
+	UCHAR  cOffsetY = pMouseData->MouseBuffer[2];
 	BYTE   bMouseOffsetS = pMouseData->MouseBuffer[3];
 #endif
 	BOOL   bButtonMsgSned = FALSE;
+
+	//Debugging.
+	debug("%s: usb data = %X %X %X %X %X %X.\r\n", __func__,
+		pMouseData->MouseBuffer[0],
+		pMouseData->MouseBuffer[1],
+		pMouseData->MouseBuffer[2],
+		pMouseData->MouseBuffer[3],
+		pMouseData->MouseBuffer[4],
+		pMouseData->MouseBuffer[5]);
 
 	//Calculate the real coordinate of x according relative move position.
 	//if (bFlags & MOUSE_X_SYMBOL)
@@ -288,6 +297,7 @@ static DWORD USB_Poll_Thread(LPVOID pData)
 	struct usb_device* pUsbDev = NULL;
 	struct usb_interface* pUsbInt = NULL;
 	struct usb_endpoint_descriptor* pED = NULL;
+	int err = 0;
 
 	//The pUsbMouseDev should be initialized before this thread is running.
 	if (NULL == pUsbMouseDev)
@@ -309,11 +319,16 @@ static DWORD USB_Poll_Thread(LPVOID pData)
 	//Main polling loop.
 	while (TRUE)
 	{
-		if (!USBManager.InterruptMessage(pUsbMouseDev, UsbMouseData.ulIntPipe,
-			&UsbMouseData.MouseBuffer[0], UsbMouseData.inputPktSize, UsbMouseData.intInterval))
+		err = USBManager.InterruptMessage(pUsbMouseDev, UsbMouseData.ulIntPipe,
+			&UsbMouseData.MouseBuffer[0], UsbMouseData.inputPktSize, UsbMouseData.intInterval);
+		if (!err)
 		{
 			//Interpret the USB input data,translate it to kernel message and delivery to kernel.
 			DoMouseMessage(&UsbMouseData);
+		}
+		else
+		{
+			debug("%s: InterruptMessage failed,err = %d.\r\n", __func__,err);
 		}
 	}
 	return 1;

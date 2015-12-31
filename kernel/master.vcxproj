@@ -45,7 +45,7 @@
     <IntDir>.\Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>jvm;network;Lib;drivers</IncludePath>
+    <IncludePath>jvm;network;Lib;drivers;netcore</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -100,7 +100,7 @@
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <OutputFile>.\release\master.dll</OutputFile>
       <ImportLibrary>.\Release\master.lib</ImportLibrary>
-      <AdditionalOptions> /ALIGN:32</AdditionalOptions>
+      <AdditionalOptions> /ALIGN:64</AdditionalOptions>
       <BaseAddress>0x110000</BaseAddress>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>__OS_Entry</EntryPointSymbol>
@@ -165,6 +165,7 @@
     <ClCompile Include="drivers\x86\KEYBRD.C" />
     <ClCompile Include="drivers\x86\MOUSE.C" />
     <ClCompile Include="drivers\x86\pcnet.c" />
+    <ClCompile Include="drivers\x86\rtl8111.c" />
     <ClCompile Include="jvm\access.c" />
     <ClCompile Include="jvm\alloc.c" />
     <ClCompile Include="jvm\cast.c" />
@@ -233,8 +234,11 @@
     <ClCompile Include="lib\string.c" />
     <ClCompile Include="lib\sysmem.c" />
     <ClCompile Include="lib\time.c" />
-    <ClCompile Include="network\ethernet\ethentry.c" />
-    <ClCompile Include="network\ethernet\ethif.c" />
+    <ClCompile Include="netcore\ethentry.c" />
+    <ClCompile Include="netcore\ethmgr.c" />
+    <ClCompile Include="netcore\hx_inet.c" />
+    <ClCompile Include="netcore\protos.c" />
+    <ClCompile Include="network\arch\lwip_pro.c" />
     <ClCompile Include="shell\EXTCMD.C" />
     <ClCompile Include="shell\FDISK.C" />
     <ClCompile Include="shell\FDISK2.C" />
@@ -341,6 +345,7 @@
     <ClInclude Include="arch\x86\BIOSVGA.H" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
     <ClInclude Include="drivers\x86\pcnet.h" />
+    <ClInclude Include="drivers\x86\rtl8111.h" />
     <ClInclude Include="include\align.h" />
     <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="INCLUDE\BUFFMGR.H" />
@@ -436,7 +441,10 @@
     <ClInclude Include="lib\time.h" />
     <ClInclude Include="lib\time_pri.h" />
     <ClInclude Include="lib\unistd.h" />
-    <ClInclude Include="network\ethernet\ethif.h" />
+    <ClInclude Include="netcore\ethmgr.h" />
+    <ClInclude Include="netcore\hx_inet.h" />
+    <ClInclude Include="netcore\proto.h" />
+    <ClInclude Include="network\arch\lwip_pro.h" />
     <ClInclude Include="shell\EXTCMD.H" />
     <ClInclude Include="shell\FDISK.H" />
     <ClInclude Include="shell\FIBONACCI.H" />

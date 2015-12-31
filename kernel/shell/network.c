@@ -23,7 +23,7 @@
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
 #include "lwip/inet.h"
-#include "../network/ethernet/ethif.h"
+#include "ethmgr.h"
 
 #include "kapi.h"
 #include "shell.h"
@@ -317,7 +317,8 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 				_hx_printf(errmsg);
 				goto __TERMINAL;
 			}						
-			pifConfig->ipaddr.addr = inet_addr(lpCmdObj->Parameter[index]);
+			pifConfig->ipaddr.Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
+			pifConfig->ipaddr.AddressType = NETWORK_ADDRESS_TYPE_IPV4;
 			bAddrOK = TRUE;
 		}		
 		else if(strcmp(lpCmdObj->Parameter[index],"/m") == 0) //Set IP subnet mask.
@@ -328,7 +329,8 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 				_hx_printf(errmsg);
 				goto __TERMINAL;
 			}
-			pifConfig->mask.addr = inet_addr(lpCmdObj->Parameter[index]);
+			pifConfig->mask.Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
+			pifConfig->mask.AddressType = NETWORK_ADDRESS_TYPE_IPV4;
 			bMaskOK = TRUE;
 		}
 		else if(strcmp(lpCmdObj->Parameter[index],"/g") == 0) //Set default gateway.
@@ -339,7 +341,8 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 				_hx_printf(errmsg);
 				goto __TERMINAL;
 			}
-			pifConfig->defgw.addr = inet_addr(lpCmdObj->Parameter[index]);
+			pifConfig->defgw.Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
+			pifConfig->defgw.AddressType = NETWORK_ADDRESS_TYPE_IPV4;
 		}
 		else  //Default parameter as interface's name.
 		{

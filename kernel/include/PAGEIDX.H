@@ -75,7 +75,7 @@ extern "C" {
 #define DEFAULT_PTE_FLAGS        (PTE_FLAG_PRESENT | PTE_FLAG_RW)
 #define DEFAULT_PDE_FLAGS        (PDE_FLAG_PRESENT | PDE_FLAG_RW)
 #define PTE_FLAGS_FOR_NORMAL     DEFAULT_PTE_FLAGS
-#define PTE_FLAGS_FOR_IOMAP      (DEFAULT_PTE_FLAGS | PTE_FLAG_PCD)
+#define PTE_FLAGS_FOR_IOMAP      (DEFAULT_PTE_FLAGS | PTE_FLAG_PWT | PTE_FLAG_PCD)
 
 #define INIT_PTE(pte)            (pte  = NULL_PTE)   //Initialize a page table entry to NULL.
 #define INIT_PTE_TO_DEFAULT(pte) (pte  = DEFAULT_PTE_FLAGS)

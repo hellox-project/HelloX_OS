@@ -296,9 +296,17 @@ typedef struct tag__USB_CONTROLLER_OPERATIONS{
 		int queuesize, int elementsize, void *buffer, int interval);
 	int (*destroy_int_queue)(struct usb_device *dev, struct int_queue *queue);
 	void* (*poll_int_queue)(struct usb_device *dev, struct int_queue *queue);
-	unsigned long (*get_ctrl_status)(void* common_ctrl);
+	unsigned long (*get_ctrl_status)(void* common_ctrl,DWORD ctrlFlags);
 	unsigned long (*InterruptHandler)(LPVOID pCommCtrl);  //Interrupt handler of the USB controller.
 }__USB_CONTROLLER_OPERATIONS;
+
+//Flags used to indicate which register to return when get_ctrl_status invoked.
+#define USB_CTRL_FLAG_EHCI_STATUS   0x01
+#define USB_CTRL_FLAG_EHCI_COMMAND  0x02
+#define USB_CTRL_FLAG_EHCI_INTR     0x04
+#define USB_CTRL_FLAG_EHCI_CF       0x08
+#define USB_CTRL_FLAG_EHCI_PLBASE   0x10
+#define USB_CTRL_FLAG_EHCI_ALBASE   0x20
 
 //Common USB controller object to unify all types of USB controllers.
 typedef struct tag__COMMON_USB_CONTROLLER{

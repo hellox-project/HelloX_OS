@@ -23,8 +23,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.78"
-#define VERSION_INFO "HelloX [Version 1.780(Beta),build in 2015/11/06,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.79"
+#define VERSION_INFO "HelloX [Version 1.790(Beta),build in 2015/12/31,by Garry.Xin]"
 #define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 
 //************************************************************************
@@ -51,7 +51,7 @@
 
 //System time slice,in ms.You can adjust it,but you must configure the
 //hardware to keep same as this definition.
-#define SYSTEM_TIME_SLICE  55  //55 million seconds per tick.
+#define SYSTEM_TIME_SLICE  5   //5 million seconds per tick.
 
 //CPU byte alignment,memory allocation will use this value to align block.
 #define SYSTEM_BYTE_ALIGN  4   //4 will work under most platforms.
@@ -204,6 +204,9 @@
 
 //Include PCNet driver in OS.
 #define __CFG_NET_PCNET
+
+//Include RTL8111 driver in OS.
+#define __CFG_NET_RTL8111
 
 //Include IPv6 network protocol in OS.
 //#define __CFG_NET_IPv6

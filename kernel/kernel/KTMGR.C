@@ -1076,7 +1076,6 @@ static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/D
 	__KERNEL_THREAD_MANAGER*           lpManager      = (__KERNEL_THREAD_MANAGER*)lpThis;
 	__KERNEL_THREAD_OBJECT*            lpKernelThread = NULL;
 	DWORD                              dwTmpCounter   = 0;
-	//__KERNEL_THREAD_CONTEXT*           lpContext      = NULL;
 	DWORD                              dwFlags        = 0;
 
 	if(NULL == lpManager)    //Parameters check.
@@ -1106,12 +1105,12 @@ static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/D
 		return FALSE;
 	}
 	dwTmpCounter =  dwMillisecond / SYSTEM_TIME_SLICE;
+	
+	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 	dwTmpCounter += System.dwClockTickCounter;         //Now,dwTmpCounter countains the 
 	                                                   //tick counter value when this
 	                                                   //kernel thread who calls this routine
 	                                                   //must be waken up.
-	//ENTER_CRITICAL_SECTION();
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	if((0 == lpManager->dwNextWakeupTick) || (lpManager->dwNextWakeupTick > dwTmpCounter))
 	{
 		lpManager->dwNextWakeupTick = dwTmpCounter;     //Update dwNextWakeupTick value.
@@ -1124,7 +1123,6 @@ static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/D
 		(__COMMON_OBJECT*)lpKernelThread,
 		dwTmpCounter);
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-	//lpContext = &lpKernelThread->KernelThreadContext;
 	lpManager->ScheduleFromProc(NULL);
 	return TRUE;
 }
@@ -1246,6 +1244,9 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 	if(MsgQueueFull((__COMMON_OBJECT*)lpKernelThread))             //Message queue is full.
 	{
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		//Show out a warning message.
+		//_hx_printf("Kernel Warning: Message queue of kthread [%s] is full.\r\n",
+		//	lpKernelThread->KernelThreadName);
 		goto __TERMINAL;
 	}
 	//Message queue not full,put the message to the queue.

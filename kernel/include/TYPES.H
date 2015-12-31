@@ -79,6 +79,9 @@ typedef signed long         __s32;
 //size_t for ANSI C library.
 typedef unsigned int size_t;
 
+//May used by some device drivers,refer to DMA address space.
+typedef __u32 dma_addr_t;
+
 //Special values for basic data types defined above.
 #define FALSE               0x00000000
 #define TRUE                0x00000001

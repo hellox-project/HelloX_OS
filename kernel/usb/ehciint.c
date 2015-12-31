@@ -13,6 +13,7 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
+#include <pci_drv.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -68,6 +69,7 @@ unsigned long EHCIIntHandler(LPVOID pParam)
 	struct ehci_ctrl* pUsbCtrl = NULL;
 	unsigned long ulResult = 0;
 	unsigned long status = 0;
+	unsigned long pciStatus = 0;
 
 	if (NULL == pCommCtrl)
 	{
@@ -92,18 +94,32 @@ unsigned long EHCIIntHandler(LPVOID pParam)
 	}
 	if (status & INTR_SEE)
 	{
+		pciStatus = pCommCtrl->pPhysicalDev->ReadDeviceConfig(pCommCtrl->pPhysicalDev,
+			PCI_CONFIG_OFFSET_COMMAND, 4);
+		_hx_printf("USB Controller [%d] system error,PCI status = %X.\r\n",
+			pCommCtrl->pPhysicalDev->dwNumber, pciStatus);
+		//Should reset the USB controller according USB EHCI specification.But now we let 
+		//it empty...
 		ulResult++;
-		//Handler of SEE.
 	}
 	if (status & INTR_UE)
 	{
 		ulResult++;
 		OnXferCompletion(pUsbCtrl);
+		_hx_printf("%s: USB transfer complete interrupt,status = %X.\r\n", __func__, status);
 	}
 	if (status & INTR_UEE)
 	{
+		_hx_printf("USB Controller [Vendor = %X,Device = %X] encounters transfer error.\r\n",
+			pCommCtrl->pPhysicalDev->DevId.Bus_ID.PCI_Identifier.wVendor,
+			pCommCtrl->pPhysicalDev->DevId.Bus_ID.PCI_Identifier.wDevice);
 		ulResult++;
 		//Handler of UEE.
+	}
+	if (status & INTR_FLR)
+	{
+		ulResult++;
+		//Handler of FLR.
 	}
 	//Acknowledge the interrupt.
 	if (ulResult)
@@ -148,6 +164,11 @@ static BOOL _ehciQueueIntHandler(struct int_queue* queue)
 		debug("Exit %s with no completed intr transfer. token is %x\r\n", __func__, token);
 		return FALSE;
 	}
+	if (QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_HALTED){
+		queue->dwStatus = INT_QUEUE_STATUS_ERROR;
+		debug("Exit %s with halted intr transfer,token is %X.\r\n", __func__, token);
+		return FALSE;
+	}
 
 	toggle = QT_TOKEN_GET_DT(token);
 	usb_settoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe), toggle);
@@ -161,10 +182,15 @@ static BOOL _ehciQueueIntHandler(struct int_queue* queue)
 		ALIGN_END_ADDR(char, cur->buffer,
 		queue->elementsize));
 
-	queue->dwStatus = INT_QUEUE_STATUS_COMPLETED;
-	debug("Exit %s with completed intr transfer. token is %x at %p (first at %p)\r\n",
-		__func__, token, cur, queue->first);
-	return TRUE;
+	//Last qTD is transfer over.
+	if (NULL == queue->current)
+	{
+		queue->dwStatus = INT_QUEUE_STATUS_COMPLETED;
+		debug("Exit %s with completed intr transfer. token is %x at %p (first at %p)\r\n",
+			__func__, token, cur, queue->first);
+		return TRUE;
+	}
+	return FALSE;
 }
 
 //Create and return an interrupt queue object.
@@ -176,6 +202,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 	struct int_queue *result = NULL;
 	uint32_t i, toggle;
 	struct QH *list = NULL;
+	int cmd = 0;
 	DWORD dwFlags;
 
 	/*
@@ -236,6 +263,8 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 		debug("ehci intr queue: out of memory\r\n");
 		goto fail2;
 	}
+	debug("%s: Allocate %d QH(s) at %X.\r\n", __func__,queuesize,result->first);
+
 	result->current = result->first;
 	result->last = result->first + queuesize - 1;
 	result->tds = memalign(USB_DMA_MINALIGN,
@@ -244,6 +273,8 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 		debug("ehci intr queue: out of memory\r\n");
 		goto fail3;
 	}
+	debug("%s: Allocate %d qTD(s) at %X.\r\n", __func__,queuesize, result->tds);
+
 	memset(result->first, 0, sizeof(struct QH) * queuesize);
 	memset(result->tds, 0, sizeof(struct qTD) * queuesize);
 
@@ -278,7 +309,8 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 
 		td->qt_next = cpu_to_hc32(QT_NEXT_TERMINATE);
 		td->qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
-		debug("communication direction is '%s'\r\n",
+		debug("%s: communication direction is '%s'\r\n",
+			__func__,
 			usb_pipein(pipe) ? "in" : "out");
 
 		if (i == queuesize - 1)  //Last one,set IoC bit.
@@ -287,6 +319,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 				QT_TOKEN_DT(toggle) |
 				(elementsize << 16) |
 				(1 << 15) |   //Interrupt On Completion.
+				(3 << 10) |   //CERR bits.
 				((usb_pipein(pipe) ? 1 : 0) << 8) | /* IN/OUT token */
 				0x80); /* active */
 		}
@@ -295,9 +328,11 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 			td->qt_token = cpu_to_hc32(
 				QT_TOKEN_DT(toggle) |
 				(elementsize << 16) |
+				(3 << 10)           |   //CERR bits.
 				((usb_pipein(pipe) ? 1 : 0) << 8) | /* IN/OUT token */
 				0x80); /* active */
 		}
+		debug("%s: construct TD token = %X.\r\n", __func__, td->qt_token);
 		td->qt_buffer[0] =
 			cpu_to_hc32((unsigned long)buffer + i * elementsize);
 		td->qt_buffer[1] =
@@ -309,10 +344,13 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 		td->qt_buffer[4] =
 			cpu_to_hc32((td->qt_buffer[0] + 0x4000) & ~0xfff);
 
-		//Should be carefully here.!!!
 #ifdef __MS_VC__
+		//MS VC can not support sizeof(void) operation,we should
+		//convert the buffer type to char*.
 		*buf = (void*)((char*)buffer + i * elementsize);
 #else
+		//sizeof(void) is 1 under GCC or other environment,so the
+		//following sentence is same as above one.
 		*buf = buffer + i * elementsize;
 #endif
 		toggle ^= 1;
@@ -334,7 +372,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 	if (ctrl->periodic_schedules > 0) {
 		if (ehci_disable_periodic(ctrl) < 0) {
 			ReleaseMutex(ctrl->hMutex);
-			debug("FATAL: periodic should never fail, but did");
+			_hx_printf("FATAL %s: periodic should never fail, but did.\r\n",__func__);
 			goto fail3;
 		}
 	}
@@ -365,7 +403,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 
 	if (ehci_enable_periodic(ctrl) < 0) {
 		ReleaseMutex(ctrl->hMutex);
-		debug("FATAL: periodic should never fail, but did");
+		_hx_printf("FATAL %s: periodic should never fail, but did.\r\n", __func__);;
 		goto fail3;
 	}
 	ctrl->periodic_schedules++;
@@ -393,6 +431,7 @@ fail1:
 	return NULL;
 }
 
+#ifndef USB_EHCI_DISABLE_INTERRUPT
 //Poll a interrupt queue,check if the queue has been processed.
 //Please note it's a blocking poll,since HelloX's event mechanism is adopted.
 void* EHCIPollIntQueue(struct usb_device *dev,struct int_queue *queue)
@@ -400,7 +439,7 @@ void* EHCIPollIntQueue(struct usb_device *dev,struct int_queue *queue)
 	DWORD dwResult = 0;
 	void* pRet = NULL;
 
-	dwResult = WaitForThisObjectEx(queue->hEvent, 2000);
+	dwResult = WaitForThisObjectEx(queue->hEvent, 5);  //Wait for 5 millionseconds.
 	switch (dwResult)
 	{
 	case OBJECT_WAIT_RESOURCE:
@@ -412,13 +451,67 @@ void* EHCIPollIntQueue(struct usb_device *dev,struct int_queue *queue)
 	case OBJECT_WAIT_TIMEOUT:
 	case OBJECT_WAIT_DELETED:
 	case OBJECT_WAIT_FAILED:
+		//Just for debugging.
+		if (_ehciQueueIntHandler(queue))
+		{
+			pRet = queue->first->buffer;
+			debug("%s: Transimit success,int queue status = %X,overlay token = %X,qTD token = %X.\r\n", 
+				__func__,
+				queue->dwStatus,
+				queue->first->qh_overlay.qt_token,
+				queue->tds->qt_token);
+			return pRet;
+		}
+		else
+		{
+			debug("%s: Transmit failed,int queue status = %X,overlay_tok = %X,qTD_tok = %X.\r\n",
+				__func__,
+				queue->dwStatus,
+				queue->current->qh_overlay.qt_token,
+				queue->tds[queue->current - queue->first].qt_token);
+			return pRet;
+		}
 		queue->dwStatus = INT_QUEUE_STATUS_CANCELED;
 		break;
 	default:
+		BUG();
 		break;
 	}
 	return pRet;
 }
+
+#else  //USB_EHCI_DISABLE_INTERRUPT.
+
+//Use polling mode instead of interrupt mode.
+void* EHCIPollIntQueue(struct usb_device *dev, struct int_queue *queue)
+{
+	DWORD dwResult = 0;
+	void* pRet = NULL;
+	int timeout = 0;
+
+	timeout = get_timer(0);
+	while (TRUE)
+	{
+		if (_ehciQueueIntHandler(queue))
+		{
+			pRet = queue->first->buffer;
+			_hx_printf("%s: Transmit success with token = %x.\r\n",
+				__func__,
+				queue->first->qh_overlay.qt_token);
+			break;
+		}
+		if (get_timer(timeout) >= 2000 / SYSTEM_TIME_SLICE)  //Wait 2 seconds.
+		{
+			_hx_printf("%s: Transmit failed with timeout = %d,token = %X.\r\n", 
+				__func__,get_timer(timeout),
+				queue->first->qh_overlay.qt_token);
+			break;
+		}
+	}
+	return pRet;
+}
+
+#endif //USB_EHCI_DISABLE_INTERRUPT.
 
 /* Do not free buffers associated with QHs, they're owned by someone else */
 int EHCIDestroyIntQueue(struct usb_device *dev,struct int_queue *queue)

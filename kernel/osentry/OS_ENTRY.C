@@ -36,7 +36,7 @@
 #include "../shell/shell.h"
 #include "../shell/stat_s.h"
 #include "../kthread/idle.h"
-#include "../network/ethernet/ethif.h"
+#include "../netcore/ethmgr.h"
 
 #include "../kthread/logcat.h"
 #include "ktmgr.h"
@@ -448,11 +448,10 @@ void __OS_Entry()
 		goto __TERMINAL;
 	}
 #endif
-
-	System.EndInitialize((__COMMON_OBJECT*)&System);
 	_hx_printf("\r\n");
 	_hx_printf("Loading process is successful.\r\n");
 	_hx_printf("\r\n");
+	System.EndInitialize((__COMMON_OBJECT*)&System);
 	//Enter a dead loop to wait for the scheduling of kernel threads.
 	DeadLoop(FALSE);
 

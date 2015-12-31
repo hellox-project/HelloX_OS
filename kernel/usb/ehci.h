@@ -98,6 +98,7 @@ __declspec(align(4)) struct ehci_hcor {
 #define INTR_UE         (1 << 0)                /* USB interrupt enable */
 #define INTR_UEE        (1 << 1)                /* USB error interrupt enable */
 #define INTR_PCE        (1 << 2)                /* Port change detect enable */
+#define INTR_FLR        (1 << 3)                //Frame list rollover.
 #define INTR_SEE        (1 << 4)                /* system error enable */
 #define INTR_AAE        (1 << 5)                /* Interrupt on async adavance enable */
 	uint32_t or_frindex;

@@ -29,7 +29,7 @@
 #include "lwip/snmp.h"
 #include "lwip/tcpip.h"
 #include "lwip/dhcp.h"
-#include "ethernet/ethif.h"
+#include "ethmgr.h"
 
 #ifdef __I386__
 #include "../arch/x86/bios.h"

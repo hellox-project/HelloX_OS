@@ -193,7 +193,10 @@ static int handshake(uint32_t *ptr, uint32_t mask, uint32_t done, int usec)
 		result = ehci_readl(ptr);
 		udelay(5);
 		if (result == ~(uint32_t)0)
+		{
+			_hx_printf("%s: result = 0xFFFFFFFF.\r\n", __func__);
 			return -1;
+		}
 		result &= mask;
 		if (result == done)
 			return 0;
@@ -213,7 +216,7 @@ static int ehci_reset(struct ehci_ctrl *ctrl)
 	ret = handshake((uint32_t *)&ctrl->hcor->or_usbcmd,
 		CMD_RESET, 0, 250 * 1000);
 	if (ret < 0) {
-		printf("EHCI fail to reset\r\n");
+		_hx_printf("EHCI fail to reset.\r\n");
 		goto out;
 	}
 
@@ -677,7 +680,7 @@ int length, struct devrequest *req)
 	ret = handshake((uint32_t *)&ctrl->hcor->or_usbsts, STS_ASS, 0,
 		100 * 1000);
 	if (ret < 0) {
-		printf("EHCI fail timeout STS_ASS reset\r\n");
+		_hx_printf("EHCI fail timeout STS_ASS reset\r\n");
 		goto fail;
 	}
 
@@ -1090,8 +1093,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	qh_list->qh_overlay.qt_token =
 		cpu_to_hc32(QT_TOKEN_STATUS(QT_TOKEN_STATUS_HALTED));
 
-	flush_dcache_range((unsigned long)qh_list,
-		ALIGN_END_ADDR(struct QH, qh_list, 1));
+	flush_dcache_range((unsigned long)qh_list,ALIGN_END_ADDR(struct QH, qh_list, 1));
 
 	/* Set async. queue head pointer. */
 	ehci_writel(&ctrl->hcor->or_asynclistaddr, (unsigned long)qh_list);
@@ -1107,8 +1109,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	periodic->qh_overlay.qt_next = cpu_to_hc32(QT_NEXT_TERMINATE);
 	periodic->qh_overlay.qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
 
-	flush_dcache_range((unsigned long)periodic,
-		ALIGN_END_ADDR(struct QH, periodic, 1));
+	flush_dcache_range((unsigned long)periodic,ALIGN_END_ADDR(struct QH, periodic, 1));
 
 	/*
 	* Step 2: Setup frame-list: Every microframe, USB tries the same list.
@@ -1120,21 +1121,24 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	*         S-mask and C-mask.
 	*/
 	if (ctrl->periodic_list == NULL)
+	{
 		ctrl->periodic_list = memalign(4096, 1024 * 4);
+	}
 
 	if (!ctrl->periodic_list)
 	{
 		_hx_printf("%s: allocate periodic list failed.\r\n", __func__);
 		return -ENOMEM;
 	}
+	debug("%s: periodic list base = %X.\r\n", __func__, ctrl->periodic_list);
+
 	for (i = 0; i < 1024; i++) {
 		ctrl->periodic_list[i] = cpu_to_hc32((unsigned long)periodic
 			| QH_LINK_TYPE_QH);
 	}
 
 	flush_dcache_range((unsigned long)ctrl->periodic_list,
-		ALIGN_END_ADDR(uint32_t, ctrl->periodic_list,
-		1024));
+		ALIGN_END_ADDR(uint32_t, ctrl->periodic_list,1024));
 
 	/* Set periodic list base address */
 	ehci_writel(&ctrl->hcor->or_periodiclistbase,
@@ -1143,6 +1147,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	reg = ehci_readl(&ctrl->hccr->cr_hcsparams);
 	descriptor.hub.bNbrPorts = HCS_N_PORTS(reg);
 	debug("Register %x NbrPorts %d\r\n", reg, descriptor.hub.bNbrPorts);
+
 	/* Port Indicators */
 	if (HCS_INDICATOR(reg))
 	{
@@ -1164,11 +1169,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 		return -1;
 	}
 
-	//Enable interrupt of the controller.
-	cmd = ehci_readl(&ctrl->hcor->or_usbintr);
-	cmd |= (INTR_UE | INTR_UEE | INTR_AAE | INTR_PCE | INTR_SEE);
-	ehci_writel(&ctrl->hcor->or_usbintr, cmd);
-
+	debug("%s: start EHCI controller now...\r\n", __func__);
 	/* Start the host controller. */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
 	/*
@@ -1178,15 +1179,17 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	cmd &= ~(CMD_LRESET | CMD_IAAD | CMD_PSE | CMD_ASE | CMD_RESET);
 	cmd |= CMD_RUN;
 	ehci_writel(&ctrl->hcor->or_usbcmd, cmd);
-
+	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);  //Unblock posted write.
 	mdelay(50);
 
+	debug("%s: Take control over all USB controller's ports...\r\n", __func__);
 	if (!(tweaks & EHCI_TWEAK_NO_INIT_CF)) {
 		/* take control over the ports */
 		cmd = ehci_readl(&ctrl->hcor->or_configflag);
 		cmd |= FLAG_CF;
 		ehci_writel(&ctrl->hcor->or_configflag, cmd);
 	}
+	mdelay(50);
 
 	/* unblock posted write */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
@@ -1194,8 +1197,19 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	//When estimately running here,the system will halt for several seconds(about 10~20) without
 	//any response,I don't know why,maybe caused by USB controller's hardware...
 	mdelay(5);
+
+#ifndef USB_EHCI_DISABLE_INTERRUPT
+	//Enable interrupt of the controller.
+	debug("%s: Enable all interrupts on EHCI controller...\r\n",__func__);
+	cmd = ehci_readl(&ctrl->hcor->or_usbintr);
+	cmd |= (INTR_UE | INTR_UEE | INTR_AAE | INTR_PCE | INTR_SEE | INTR_FLR);
+	ehci_writel(&ctrl->hcor->or_usbintr, cmd);
+#endif
+
 	reg = HC_VERSION(ehci_readl(&ctrl->hccr->cr_capbase));
-	printf("USB EHCI %x.%02x\r\n", reg >> 8, reg & 0xff);
+	_hx_printf("USB EHCI %x.%02x\r\n", reg >> 8, reg & 0xff);
+	reg = ehci_readl(&ctrl->hccr->cr_hccparams);
+	_hx_printf("USB capabilities: %X.\r\n", reg);
 
 	return 0;
 }
@@ -1220,7 +1234,7 @@ static int destroy_int_queue(struct usb_device *dev, struct int_queue *queue);
 static void *poll_int_queue(struct usb_device *dev, struct int_queue *queue);
 
 //Return EHCI controller's status register.
-static unsigned long _get_ctrl_status(void* common_ctrl)
+static unsigned long _get_ctrl_status(void* common_ctrl,DWORD ctrlFlag)
 {
 	__COMMON_USB_CONTROLLER* pCtrl = (__COMMON_USB_CONTROLLER*)common_ctrl;
 	struct ehci_ctrl* pEhciCtrl = NULL;
@@ -1238,7 +1252,24 @@ static unsigned long _get_ctrl_status(void* common_ctrl)
 	{
 		BUG();
 	}
-	return __readl(&(pEhciCtrl->hcor->or_usbsts));
+	switch (ctrlFlag)
+	{
+	case USB_CTRL_FLAG_EHCI_STATUS:
+		return __readl(&(pEhciCtrl->hcor->or_usbsts));
+	case USB_CTRL_FLAG_EHCI_COMMAND:
+		return __readl(&pEhciCtrl->hcor->or_usbcmd);
+	case USB_CTRL_FLAG_EHCI_INTR:
+		return __readl(&pEhciCtrl->hcor->or_usbintr);
+	case USB_CTRL_FLAG_EHCI_CF:
+		return __readl(&pEhciCtrl->hcor->or_configflag);
+	case USB_CTRL_FLAG_EHCI_PLBASE:
+		return __readl(&pEhciCtrl->hcor->or_periodiclistbase);
+	case USB_CTRL_FLAG_EHCI_ALBASE:
+		return __readl(&pEhciCtrl->hcor->or_asynclistaddr);
+	default:
+		return -1;
+	}
+	return -1;
 }
 
 //Create a common USB controller and initialize it according to EHCI.
@@ -1288,6 +1319,13 @@ int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 		rc = 0;
 		goto done;
 	}
+
+	//Shutdown the EHCI controller,since it may turned on in BIOS phase.
+	//if (ehci_shutdown(ctrl))
+	//{
+	//	_hx_printf("%s: can not shutdown the EHCI controller.\r\n", __func__);
+	//	goto done;
+	//}
 
 	/* EHCI spec section 4.1 */
 	if (ehci_reset(ctrl))
@@ -1368,7 +1406,7 @@ int ehci_enable_periodic(struct ehci_ctrl *ctrl)
 	ret = handshake((uint32_t *)&hcor->or_usbsts,
 		STS_PSS, STS_PSS, 100 * 1000);
 	if (ret < 0) {
-		printf("EHCI failed: timeout when enabling periodic list\r\n");
+		_hx_printf("EHCI failed: timeout when enabling periodic list\r\n");
 		return -ETIMEDOUT;
 	}
 	udelay(1000);
@@ -1414,13 +1452,15 @@ static int _ehci_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	backbuffer = EHCIPollIntQueue(dev, queue);
 
 	if (NULL == backbuffer) {
-		debug("%s:int queue process failed.\r\n", __func__);
+		debug("%s:EHCIPollIntQueue failed,queue status = %X.\r\n", __func__,
+			queue->dwStatus);
 		result = -1;
 	}
 
 	ret = EHCIDestroyIntQueue(dev, queue);
 	if (ret < 0)
 	{
+		_hx_printf("%s: EHCIDestroyIntQueue failed,ret = %d.\r\n", __func__, ret);
 		result = ret;
 	}
 

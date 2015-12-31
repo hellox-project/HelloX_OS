@@ -84,7 +84,7 @@ struct ehci_hcor **ret_hcor)
 	hcor = (struct ehci_hcor *)((uint32_t)hccr +
 		HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
-	debug("USB: EHCI-PCI init hccr 0x%x and hcor 0x%x hc_length %d.\r\n",
+	_hx_printf("USB: EHCI-PCI init hccr 0x%x and hcor 0x%x hc_length %d.\r\n",
 		(uint32_t)hccr, (uint32_t)hcor,
 		(uint32_t)HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
@@ -99,10 +99,12 @@ struct ehci_hcor **ret_hcor)
 __TERMINAL:
 	if (!bResult)  //Failure of initialization.
 	{
+#ifdef __CFG_SYS_VMM
 		if (pMemRegion)  //Should release it.
 		{
 			VirtualFree(pMemRegion);
 		}
+#endif
 	}
 	return bResult;
 }

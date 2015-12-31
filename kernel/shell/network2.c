@@ -106,15 +106,17 @@ ping_send(int s, ip_addr_t *addr,int size)
   size_t ping_size = 0;
 
   //Set ping packet's size.
-  if(size < 16)
+  if(size < 64)
   {
-	  size = 16;
+	  size = 64;
   }
   if(size >= 65500)
   {
 	  size = 65500;
   }
-  ping_size = sizeof(struct icmp_echo_hdr) + size;
+
+  //ICMP echo request size should include ICMP's header.
+  ping_size = size + sizeof(struct icmp_echo_hdr);
 
   LWIP_ASSERT("ping_size is too big", ping_size <= 0xffff);
 
@@ -158,7 +160,7 @@ ping_recv(int s)
 		if(len >= (int)(sizeof(struct ip_hdr)+sizeof(struct icmp_echo_hdr)))
 		{
 			ip_addr_t fromaddr;
-      inet_addr_to_ipaddr(&fromaddr, &from.sin_addr);
+			inet_addr_to_ipaddr(&fromaddr, &from.sin_addr);
 			//Get times between sent and receive.
 			ms = sys_now() - ping_time;
 			ms *= SYSTEM_TIME_SLICE;
