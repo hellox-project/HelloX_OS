@@ -21,6 +21,9 @@
 
 //#define DEBUG  //Enable debugging.
 
+//Enable or disable interrupt mode of EHCI controller.
+//#define USB_EHCI_DISABLE_INTERRUPT
+
 #ifdef __CFG_CPU_LE
 #define __LITTLE_ENDIAN
 #else
@@ -29,7 +32,7 @@
 
 //Default DMA alignment.
 #ifndef ARCH_DMA_MINALIGN
-#define ARCH_DMA_MINALIGN 32
+#define ARCH_DMA_MINALIGN 64
 #endif
 
 #ifndef CONFIG_SYS_HZ

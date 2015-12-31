@@ -18,7 +18,7 @@
 #define __ARCH_H__
 
 //Constants for x86 CPU.
-#define DEFAULT_CACHE_LINE_SIZE 32
+#define DEFAULT_CACHE_LINE_SIZE 64
 #define ARCH_DMA_MINALIGN DEFAULT_CACHE_LINE_SIZE
 
 //A macro converting BCD code to decimal.

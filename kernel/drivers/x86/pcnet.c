@@ -20,17 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "lwip/opt.h"
-#include "lwip/def.h"
-#include "lwip/mem.h"
-#include "lwip/pbuf.h"
-#include "lwip/sys.h"
-#include "lwip/stats.h"
-#include "lwip/snmp.h"
-#include "lwip/tcpip.h"
-#include "lwip/dhcp.h"
-#include "ethernet/ethif.h"
-
+#include "hx_inet.h"
+#include "ethmgr.h"
 #include "pcnet.h"
 
 //PCNet NIC's control struct list,each element in this list for each NIC in system.
@@ -407,6 +398,58 @@ static BOOL ProbePCNetNICs()
 	return bResult;
 }
 
+static unsigned char* pcnet_recv(pcnet_priv_t *dev, int* pPktLen);
+
+//Handle the Rx interrupt.It requests a ethernet buffer object,copy the
+//received data into it,and post it to Ethernet Core Thread.
+static VOID RxInterruptHandler(pcnet_priv_t* priv)
+{
+	__ETHERNET_BUFFER* pEthBuff = NULL;
+	int            len = 0;
+	__ETHERNET_INTERFACE* pEthInt = priv->pEthInt;
+	unsigned char* buf = NULL;
+
+	if (NULL == pEthInt)
+	{
+		BUG();
+	}
+
+	buf = pcnet_recv(priv, &len);
+	if (!buf)  //No packet received.
+	{
+		return;
+	}
+
+	//Received a pakcet,post to kernel.
+	if (len > 0)
+	{
+		pEthBuff = EthernetManager.CreateEthernetBuffer(len);
+		if (NULL == pEthBuff)
+		{
+			_hx_printf("  %s: create ethernet buffer failed.\r\n", __func__);
+			return;
+		}
+		else  //Copy the received data to Ethernet Buffer object.
+		{
+			memcpy(pEthBuff->Buffer, buf, len);
+			pEthBuff->act_length = len;
+			//Fill the MAC addresses and packet types.
+			memcpy(pEthBuff->dstMAC, buf, ETH_MAC_LEN);
+			buf += ETH_MAC_LEN;
+			memcpy(pEthBuff->srcMAC, buf, ETH_MAC_LEN);
+			buf += ETH_MAC_LEN;
+			pEthBuff->frame_type = _hx_ntohs(*(__u16*)buf);
+			pEthBuff->pEthernetInterface = pEthInt;
+			pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_INITIALIZED;
+		}
+		if (!EthernetManager.PostFrame(pEthInt, pEthBuff))
+		{
+			//Must destroy the ethernet buffer object,since it may lead memory leak.
+			EthernetManager.DestroyEthernetBuffer(pEthBuff);
+		}
+	}
+}
+
 //Interrupt handler of PCNet.
 static BOOL PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
 {
@@ -430,7 +473,8 @@ static BOOL PCNetInterrupt(LPVOID lpESP, LPVOID lpParam)
 		if (csr0 & (1 << 10)) //RINT.
 		{
 			//Notify the ethernet core thread to launch a polling immediately.
-			EthernetManager.TriggerReceive(dev->pEthInt);
+			//EthernetManager.TriggerReceive(dev->pEthInt);
+			RxInterruptHandler(dev);
 			pcnet_ack_rint(dev);
 			continue;
 		}
@@ -845,19 +889,22 @@ static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
 {
 	BOOL          bResult = FALSE;
 	pcnet_priv_t* dev = NULL;
+	__ETHERNET_BUFFER* pEthBuff = NULL;
 
 	if (NULL == pInt)
 	{
 		goto __TERMINAL;
 	}
-	if ((0 == pInt->buffSize) || (pInt->buffSize > ETH_DEFAULT_MTU))  //No data to send or exceed the MTU.
+	pEthBuff = &pInt->SendBuffer;
+	//No data to send or exceed the MTU(include ethernet frame header).
+	if ((0 == pEthBuff->act_length) || (pEthBuff->act_length > (ETH_DEFAULT_MTU + ETH_HEADER_LEN)))
 	{
 		goto __TERMINAL;
 	}
 
 	//Invoke sending routine of NIC to do actual transmition.
 	dev = pInt->pIntExtension;
-	if (0 == pcnet_send(dev, pInt->SendBuff, pInt->buffSize))
+	if (0 == pcnet_send(dev, pEthBuff->Buffer, pEthBuff->act_length))
 	{
 		goto __TERMINAL;
 	}
@@ -874,11 +921,9 @@ __TERMINAL:
 * packet from the interface into the pbuf.
 *
 */
-static struct pbuf* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
+static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 {
-
-	struct pbuf    *p  = NULL;
-	struct pbuf    *q  = NULL;
+	__ETHERNET_BUFFER* pEthBuff = NULL;
 	int            len = 0;
 	pcnet_priv_t*  dev = NULL;
 	unsigned char* buf = NULL;
@@ -902,26 +947,27 @@ static struct pbuf* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 	//Received a pakcet,delivery it to IP stack.
 	if (len > 0)
 	{
-		int      l = 0;
-
-		/* We allocate a pbuf chain of pbufs from the pool. */
-		p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
-		if (p != NULL)
+		pEthBuff = EthernetManager.CreateEthernetBuffer(len);
+		if (NULL == pEthBuff)
 		{
-			for (q = p; q != NULL; q = q->next)
-			{
-				memcpy((u8_t*)q->payload, buf, q->len);
-				l = l + q->len;
-			}
+			_hx_printf("  %s: create ethernet buffer failed.\r\n", __func__);
+			return NULL;
 		}
-		else
+		else  //Copy the received data to Ethernet Buffer object.
 		{
-#ifdef __PCNET_DEBUG
-			_hx_printf("PCNet: Allocate pbuf failed in RecvFrame.\r\n");
-#endif
+			memcpy(pEthBuff->Buffer, buf, len);
+			pEthBuff->act_length = len;
+			//Fill the MAC addresses and packet types.
+			memcpy(pEthBuff->dstMAC, buf, ETH_MAC_LEN);
+			buf += ETH_MAC_LEN;
+			memcpy(pEthBuff->srcMAC, buf, ETH_MAC_LEN);
+			buf += ETH_MAC_LEN;
+			pEthBuff->frame_type = _hx_ntohs(*(__u16*)buf);
+			pEthBuff->pEthernetInterface = pInt;
+			pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_INITIALIZED;
 		}
 	}
-	return p;
+	return pEthBuff;
 }
 
 //Initializer of the PCNet Ethernet Driver,it's a global function and is called

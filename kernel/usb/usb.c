@@ -1072,12 +1072,12 @@ static int get_descriptor_len(struct usb_device *dev, int len, int expect_len)
 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, len);
 	if (err < expect_len) {
 		if (err < 0) {
-			printf("unable to get device descriptor (error=%d)\r\n",
+			_hx_printf("unable to get device descriptor (error=%d)\r\n",
 				err);
 			return err;
 		}
 		else {
-			printf("USB device descriptor short read (expected %i, got %i)\r\n",
+			_hx_printf("USB device descriptor short read (expected %i, got %i)\r\n",
 				expect_len, err);
 			return -EIO;
 		}

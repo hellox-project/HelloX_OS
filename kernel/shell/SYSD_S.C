@@ -571,10 +571,17 @@ static VOID PrintDevInfo(__PHYSICAL_DEVICE* lpPhyDev)
 	}
 
 	//Show command,class code and revision ID.
-	_hx_printf("    [other] command = 0x%X,class_code = 0x%X,rev_id = 0x%X\r\n",
+	_hx_printf("    [other1] command = 0x%X,class_code = 0x%X,rev_id = 0x%X\r\n",
 		lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_COMMAND, 2),
 		(lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_REVISION, 4) >> 8),
 		(lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_REVISION, 4) & 0xFF));
+	//Show cache line sz and other information.
+	dwLoop = lpPhyDev->ReadDeviceConfig(lpPhyDev, PCI_CONFIG_OFFSET_CACHELINESZ, 4);
+	_hx_printf("    [other2] cl_sz = %d,l_timer = %d,h_type = %d,BIST = %d.\r\n",
+		dwLoop & 0xFF,
+		(dwLoop >> 8) & 0xFF,
+		(dwLoop >> 16) & 0xFF,
+		(dwLoop >> 24) & 0xFF);
 	//Change a new line.
 	_hx_printf("\r\n");
 	return;
@@ -678,7 +685,7 @@ static DWORD showint(__CMD_PARA_OBJ* pParamObj)
 		//Only dumpout the interrupt statistics info for used vector.
 		if (ivs.dwTotalIntObject)
 		{
-			_hx_printf("    %d\t\t  %d\t\t  %d\t\t  %d\r\n",
+			_hx_printf("    %8d\t  %8d\t  %8d\t  %8d\r\n",
 				i,
 				ivs.dwTotalIntObject,
 				ivs.dwTotalInt,

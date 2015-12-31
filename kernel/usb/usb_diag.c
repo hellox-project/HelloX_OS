@@ -370,8 +370,19 @@ void ShowUsbCtrlStatus()
 			{
 				continue;
 			}
-			printf("  USB Controller #%d: status = %X.\r\n", i,
-				pCtrl->ctrlOps.get_ctrl_status(pCtrl));
+			_hx_printf("  USB Controller [%d] status information:\r\n", i);
+			_hx_printf("    status:    %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl, 
+				USB_CTRL_FLAG_EHCI_STATUS));
+			_hx_printf("    command:   %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_COMMAND));
+			_hx_printf("    intr:      %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_INTR));
+			_hx_printf("    conf_flag: %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_CF));
+			_hx_printf("    pl_base:   %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_PLBASE));
+			_hx_printf("    al_base:   %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_ALBASE));
 		}
 	}
 }

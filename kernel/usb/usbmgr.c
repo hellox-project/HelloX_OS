@@ -264,7 +264,7 @@ static struct usb_configuration_descriptor* _GetConfigDescriptor(struct usb_devi
 	length = le16_to_cpu(pCfgTmp->wTotalLength);
 
 	//Allocate a memory block to hold the descriptor,should be released by the caller.
-	pCfgReturn = aligned_malloc(length, ARCH_DMA_MINALIGN);
+	pCfgReturn = aligned_malloc(length,ARCH_DMA_MINALIGN);
 	if (NULL == pCfgReturn)
 	{
 		_hx_printf("USB: %s alloc memory failed.\r\n",__func__);

@@ -19,7 +19,7 @@
 
 //Enable or disable the enhanced wheel support.Set to 0 will disable the
 //enhanced wheel support.
-#define ENHANCED_WHEEL_SUPPORT 1
+#define ENHANCED_WHEEL_SUPPORT 0
 
 //Class IDs of USB mouse.
 #define UM_INTERFACE_CLASS_ID         0x03

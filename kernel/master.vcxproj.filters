@@ -102,6 +102,12 @@
     <Filter Include="Source Files\usb">
       <UniqueIdentifier>{7a6869ef-f128-4f8b-ba8d-6c3421ea7ebb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\netcore">
+      <UniqueIdentifier>{abf6bfdf-a7e9-49f6-ae5c-3838fb037de9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\netcore">
+      <UniqueIdentifier>{0c11a301-4ccd-4386-ad07-9d8fcdec5564}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="drivers\x86\com.c">
@@ -401,12 +407,6 @@
     <ClCompile Include="arch\x86\BIOSVGA.C">
       <Filter>Source Files\arch</Filter>
     </ClCompile>
-    <ClCompile Include="network\ethernet\ethentry.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\ethernet\ethif.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
     <ClCompile Include="lib\atox.c">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
@@ -649,6 +649,24 @@
     </ClCompile>
     <ClCompile Include="usb\ehciint.c">
       <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\protos.c">
+      <Filter>Source Files\netcore</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\ethmgr.c">
+      <Filter>Source Files\netcore</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\ethentry.c">
+      <Filter>Source Files\netcore</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\hx_inet.c">
+      <Filter>Source Files\netcore</Filter>
+    </ClCompile>
+    <ClCompile Include="network\arch\lwip_pro.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\rtl8111.c">
+      <Filter>Source Files\drivers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1000,9 +1018,6 @@
     <ClInclude Include="drivers\x86\pcnet.h">
       <Filter>Header Files\drv_hdr</Filter>
     </ClInclude>
-    <ClInclude Include="network\ethernet\ethif.h">
-      <Filter>Header Files\net_hdr</Filter>
-    </ClInclude>
     <ClInclude Include="syscall\K_API_DEF.H">
       <Filter>Header Files\syscal_hdr</Filter>
     </ClInclude>
@@ -1059,6 +1074,21 @@
     </ClInclude>
     <ClInclude Include="usb\usbkbd.h">
       <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\proto.h">
+      <Filter>Header Files\netcore</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\ethmgr.h">
+      <Filter>Header Files\netcore</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\hx_inet.h">
+      <Filter>Header Files\netcore</Filter>
+    </ClInclude>
+    <ClInclude Include="network\arch\lwip_pro.h">
+      <Filter>Header Files\net_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\rtl8111.h">
+      <Filter>Header Files\drv_hdr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
