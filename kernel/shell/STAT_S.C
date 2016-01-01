@@ -99,11 +99,11 @@ static VOID ShowStatInfo()  //Display the statistics information.
 	CHAR Buff[256];
 
 	//Print table header.
-	PrintLine("      Thread Name  Thread ID  1s usage  60s usage  5m usage");
-	PrintLine("    -------------  ---------  --------  ---------  --------");
+	PrintLine("      Thread Name  Thread ID  1s usage  60s usage  5m usage  Message recv/drop");
+	PrintLine("    -------------  ---------  --------  ---------  --------  -----------------");
 	//For each kernel thread,print out statistics information.
 	do{
-		_hx_sprintf(Buff,"    %13s  %9X  %6d.%d  %7d.%d  %6d.%d",
+		_hx_sprintf(Buff,"    %13s  %9X  %6d.%d  %7d.%d  %6d.%d  %d/%d",
 			lpStatObj->lpKernelThread->KernelThreadName,
 			lpStatObj->lpKernelThread->dwThreadID,
 			lpStatObj->wCurrPeriodRatio / 10,
@@ -111,9 +111,9 @@ static VOID ShowStatInfo()  //Display the statistics information.
 			lpStatObj->wOneMinuteRatio  / 10,
 			lpStatObj->wOneMinuteRatio  % 10,
 			lpStatObj->wMaxStatRatio    / 10,
-			lpStatObj->wMaxStatRatio    % 10
-			//lpStatObj->TotalCpuCycle.dwHighPart,
-			//lpStatObj->TotalCpuCycle.dwLowPart
+			lpStatObj->wMaxStatRatio    % 10,
+			lpStatObj->lpKernelThread->nMsgReceived,
+			lpStatObj->lpKernelThread->nMsgDroped
 			);
 		PrintLine(Buff);
 
