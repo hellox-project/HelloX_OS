@@ -283,9 +283,7 @@ __TERMINAL:
 // 3. Create the kernel thread's stack by calling KMemAlloc;
 // 4. Insert the kernel thread object into proper queue.
 //
-static
-
- __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             lpThis,
+static __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             lpThis,
 												  DWORD                        dwStackSize,
 												  DWORD                        dwStatus,
 												  DWORD                        dwPriority,
@@ -370,6 +368,8 @@ static
 	lpKernelThread->ucMsgQueueHeader      = 0;
 	lpKernelThread->ucMsgQueueTrial       = 0;
 	lpKernelThread->ucCurrentMsgNum       = 0;
+	lpKernelThread->nMsgReceived          = 0;
+	lpKernelThread->nMsgDroped            = 0;
 
 	lpKernelThread->dwLastError           = 0;
 	lpKernelThread->dwWaitingStatus       = OBJECT_WAIT_WAITING;
@@ -1243,6 +1243,7 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	if(MsgQueueFull((__COMMON_OBJECT*)lpKernelThread))             //Message queue is full.
 	{
+		lpKernelThread->nMsgDroped += 1;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		//Show out a warning message.
 		//_hx_printf("Kernel Warning: Message queue of kthread [%s] is full.\r\n",
@@ -1262,6 +1263,7 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 		lpKernelThread->ucMsgQueueTrial = 0;
 	}
 	lpKernelThread->ucCurrentMsgNum ++;
+	lpKernelThread->nMsgReceived += 1;
 
 	lpNewThread = (__KERNEL_THREAD_OBJECT*)lpKernelThread->lpMsgWaitingQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpKernelThread->lpMsgWaitingQueue,

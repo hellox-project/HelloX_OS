@@ -240,9 +240,11 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	volatile UCHAR                       ucMsgQueueTrial;
 	volatile UCHAR                       ucCurrentMsgNum;
 	UCHAR                                ucAligment;
+	UINT                                 nMsgReceived;  //How many messages received from start.
+	UINT                                 nMsgDroped;    //Messages droped,caused by queue full or others.
 	__PRIORITY_QUEUE*                    lpMsgWaitingQueue;
 
-	DWORD                                dwUserData;  //User custom data.
+	DWORD                                dwUserData;    //User private data.
 	DWORD                                dwLastError;
 	UCHAR                                KernelThreadName[MAX_THREAD_NAME];
 
