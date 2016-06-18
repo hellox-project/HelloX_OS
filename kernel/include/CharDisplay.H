@@ -16,7 +16,7 @@
 #endif
 
 #ifndef __CONFIG_H__
-#include "..\config\config.h"
+#include "config.h"
 #endif
 
 
@@ -55,6 +55,9 @@ VOID CD_PrintChar(CHAR ch);
 //从指定位置得到字符串
 VOID  CD_GetString(WORD nCursorX,WORD nCursorY,LPSTR pString,INT nBufLen);
 
+//得到整个屏幕字符串
+VOID  CD_GetScreen(LPSTR pBuf,INT nBufLen);
+
 //删除字符串
 VOID  CD_DelString(WORD nCursorX,WORD nCursorY,INT nDelLen);	
 
@@ -63,6 +66,11 @@ VOID  CD_DelChar(INT nDelMode);
 
 //清屏
 VOID  CD_Clear();
+
+//设置当前字符显示属性
+VOID  CD_SetCharAttr(BYTE cAttr);
+
+VOID CD_GotoHome();
 
 #ifdef __cplusplus
 }

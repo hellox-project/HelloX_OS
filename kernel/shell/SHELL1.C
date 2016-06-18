@@ -26,16 +26,9 @@
 //Handler of version command.
 DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	/*GotoHome();
-	ChangeLine();
-	PrintStr(VERSION_INFO);
-	GotoHome();
-	ChangeLine();
-	PrintStr(SLOGAN_INFO);*/
-	
-	//CD_ChangeLine();
-	PrintLine(VERSION_INFO);
-	PrintLine(SLOGAN_INFO);
+	PrintLine(HELLOX_VERSION_INFO);
+	PrintLine(HELLOX_SLOGAN_INFO);
+	PrintLine(HELLOX_SPECIAL_INFO);
 
 	return S_OK;
 }
@@ -238,9 +231,14 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	LPSTR strSysDiagApp  = "    sysdiag      : System or hardware diag application.";
 	LPSTR strFsApp       = "    fs           : File system operating application.";
 	LPSTR strFdiskApp    = "    fdisk        : Hard disk operating application.";
+	LPSTR strUsbVideo    = "    usbvideo     : USB video operations.";
 	LPSTR strNetApp      = "    network      : Network diagnostic application.";
 	LPSTR strLoadappApp  = "    loadapp      : Load application module and execute it.";
 	LPSTR strGUIApp      = "    gui          : Load GUI module and enter GUI mode.";
+#ifdef __CFG_APP_SSH
+	LPSTR strSSH         = "    ssh          : Start a new SSH session.";
+#endif
+
 #ifdef __CFG_APP_JVM
 	LPSTR strJvmApp      = "    jvm          : Start Java VM to run Java Application.";
 #endif  //__CFG_APP_JVM
@@ -259,10 +257,14 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	PrintLine(strIoCtrlApp);
 	PrintLine(strSysDiagApp);
 	PrintLine(strFsApp);
+	PrintLine(strUsbVideo);
 	PrintLine(strNetApp);
 	PrintLine(strFdiskApp);
 	PrintLine(strLoadappApp);
 	PrintLine(strGUIApp);
+#ifdef __CFG_APP_SSH
+	PrintLine(strSSH);
+#endif
 #ifdef __CFG_APP_JVM
 	PrintLine(strJvmApp);
 #endif //__CFG_APP_JVM
@@ -334,7 +336,6 @@ DWORD BatHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	LPSTR   pNextPos         = NULL;
 	DWORD   i                = 0;
 
-
 	//Construct the bat full path and name.
 	strcpy(szBatFile,"C:\\PTHOUSE\\");
 	pShortName = strstr(pCmdParaObj->Parameter[0],"./");
@@ -389,14 +390,15 @@ __TERMINAL:
 	return S_OK;
 }
 
-
 //Handler for GUI command,it only call LoadappHandler by given
 //the GUI module's name and it's start address after loaded into
 //memory.
 DWORD GUIHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
+	//Set current mode indicator to GRAPHIC.
+	System.ucReserved1 = 1;
 	RunDynamicAppModule("C:\\PTHOUSE\\hcngui.dll",pCmdParaObj);
-
+	//Restore current display mode to TEXT.
+	System.ucReserved1 = 0;
 	return S_OK;
-
 }

@@ -64,7 +64,6 @@ static BOOL StartRunApp(DWORD dwStartAddress,LPVOID p,LPSTR pAppName)
 		goto __TERMINAL;
 	}
 
-	
 	s_pAppMain = (PAPP_MAIN)dwStartAddress;
 	//Create a kernel thread to run the binary module.
 	hKernelThread = KernelThreadManager.CreateKernelThread(
@@ -131,7 +130,6 @@ BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
 	HANDLE        hFileObj     = NULL;	
 	LPBYTE        pAppBuf      = NULL;	
 	BOOL          bRunOk       = FALSE;	
-
 
 	while(bRunOk == FALSE)
 	{

@@ -484,9 +484,13 @@ static int usb_parse_config(struct usb_device *dev,
 	unsigned char *buffer, int cfgno)
 {
 	struct usb_descriptor_header *head;
+	struct usb_interface_descriptor* usb_int = NULL;
 	int index, ifno, epno, curr_if_num;
+	int cs_int_len = 0;
+	int int_assoc_index = 0;
 	u16 ep_wMaxPacketSize;
-	struct usb_interface *if_desc = NULL;
+	struct usb_interface* if_desc = NULL;
+	struct usb_interface* pri_if = NULL;  //First interface desc,in case of multiple alternate settings.
 
 	ifno = -1;
 	epno = -1;
@@ -495,16 +499,17 @@ static int usb_parse_config(struct usb_device *dev,
 	dev->configno = cfgno;
 	head = (struct usb_descriptor_header *) &buffer[0];
 	if (head->bDescriptorType != USB_DT_CONFIG) {
-		printf(" ERROR: NOT USB_CONFIG_DESC %x\r\n",
+		_hx_printf(" ERROR: NOT USB_CONFIG_DESC %x\r\n",
 			head->bDescriptorType);
 		return -EINVAL;
 	}
 	if (head->bLength != USB_DT_CONFIG_SIZE) {
-		printf("ERROR: Invalid USB CFG length (%d)\r\n", head->bLength);
+		_hx_printf("ERROR: Invalid USB CFG length (%d)\r\n", head->bLength);
 		return -EINVAL;
 	}
 	memcpy(&dev->config, head, USB_DT_CONFIG_SIZE);
 	dev->config.no_of_if = 0;
+	dev->config.no_of_if_assoc = 0;
 
 	index = dev->config.desc.bLength;
 	/* Ok the first entry must be a configuration entry,
@@ -514,67 +519,114 @@ static int usb_parse_config(struct usb_device *dev,
 		switch (head->bDescriptorType) {
 		case USB_DT_INTERFACE:
 			if (head->bLength != USB_DT_INTERFACE_SIZE) {
-				printf("ERROR: Invalid USB IF length (%d)\r\n",
+				_hx_printf("ERROR: Invalid USB IF length (%d)\r\n",
 					head->bLength);
 				break;
 			}
 			if (index + USB_DT_INTERFACE_SIZE >
 				dev->config.desc.wTotalLength) {
-				puts("USB IF descriptor overflowed buffer!\r\n");
+				_hx_printf("USB IF descriptor overflowed buffer!\r\n");
 				break;
 			}
-			if (((struct usb_interface_descriptor *) \
-				head)->bInterfaceNumber != curr_if_num) {
+			usb_int = (struct usb_interface_descriptor*)head;
+			if (usb_int->bInterfaceNumber != curr_if_num) {
 				/* this is a new interface, copy new desc */
 				ifno = dev->config.no_of_if;
 				if (ifno >= USB_MAXINTERFACES) {
-					puts("Too many USB interfaces!\r\n");
+					_hx_printf("%s:too many USB interfaces!\r\n",__func__);
 					/* try to go on with what we have */
 					return -EINVAL;
 				}
 				if_desc = &dev->config.if_desc[ifno];
 				dev->config.no_of_if++;
-				memcpy(if_desc, head,
-					USB_DT_INTERFACE_SIZE);
+				memcpy(if_desc, head,USB_DT_INTERFACE_SIZE);
 				if_desc->no_of_ep = 0;
 				if_desc->num_altsetting = 1;
-				curr_if_num =
-					if_desc->desc.bInterfaceNumber;
+				curr_if_num = if_desc->desc.bInterfaceNumber;
+				pri_if = if_desc;  //Save as primary interface.
 			}
 			else {
 				/* found alternate setting for the interface */
-				if (ifno >= 0) {
+				/*if (ifno >= 0) {
 					if_desc = &dev->config.if_desc[ifno];
 					if_desc->num_altsetting++;
+				}*/
+				/* Also save to interface desc slot. */
+				ifno = dev->config.no_of_if;
+				if (ifno >= USB_MAXINTERFACES) {
+					_hx_printf("%s:too many USB interfaces!\r\n", __func__);
+					return -EINVAL;
 				}
+				if_desc = &dev->config.if_desc[ifno];
+				dev->config.no_of_if++;
+				memcpy(if_desc, head, USB_DT_INTERFACE_SIZE);
+				if_desc->no_of_ep = 0;
+				if_desc->num_altsetting = 0;  //Mark it as alternate setting interface.
+				curr_if_num = if_desc->desc.bInterfaceNumber;
+				pri_if->num_altsetting++;
+				//Debugging.
+				debug("%s:find alternate setting[if_num = %d,ifno = %d,alt_set = %d,no_of_p = %d].\r\n",
+					__func__,
+					curr_if_num,
+					ifno,
+					usb_int->bAlternateSetting,
+					usb_int->bNumEndpoints);
 			}
 			break;
+		case USB_DT_INTERFACE_ASSOCIATION:
+			if (USB_MAXINTERFACEASSOC == int_assoc_index)
+			{
+				_hx_printf("%s:too many interface associations.\r\n", __func__);
+				break;
+			}
+			//Save the interface association to device config space.
+			memcpy(&dev->config.int_assoc[int_assoc_index], head, head->bLength);
+			_hx_printf("%s:add interface association[index = %d,len = %d] to device.\r\n", 
+				__func__,
+				int_assoc_index,
+				head->bLength);
+			int_assoc_index++;
+			dev->config.no_of_if_assoc++;
+			break;
+		case USB_DT_CS_INTERFACE:
+		case USB_DT_CS_ENDPOINT:
+			if (head->bLength > (USB_MAX_CSINTERFACE_LEN - cs_int_len))
+			{
+				_hx_printf("%s:no enough CS interface space[rest %d bytes,reqd %d bytes].\r\n",
+					__func__, (USB_MAX_CSINTERFACE_LEN - cs_int_len), head->bLength);
+				return -EINVAL;
+			}
+			//Save CS interface to USB device space.
+			memcpy(&dev->config.pClassSpecificInterfaces[cs_int_len], head, head->bLength);
+			cs_int_len += head->bLength;
+			debug("%s:parse CS interface with len = %d.\r\n", __func__, head->bLength);
+			break;
 		case USB_DT_ENDPOINT:
-			if (head->bLength != USB_DT_ENDPOINT_SIZE) {
-				printf("ERROR: Invalid USB EP length (%d)\r\n",
+			if ((head->bLength != USB_DT_ENDPOINT_SIZE) && (head->bLength != USB_DT_ENDPOINT_AUDIO_SIZE)) {
+				_hx_printf("ERROR: Invalid USB EP length (%d)\r\n",
 					head->bLength);
 				break;
 			}
 			if (index + USB_DT_ENDPOINT_SIZE >
 				dev->config.desc.wTotalLength) {
-				puts("USB EP descriptor overflowed buffer!\r\n");
+				_hx_printf("USB EP descriptor overflowed buffer!\r\n");
 				break;
 			}
 			if (ifno < 0) {
-				puts("Endpoint descriptor out of order!\r\n");
+				_hx_printf("Endpoint descriptor out of order!\r\n");
 				break;
 			}
 			epno = dev->config.if_desc[ifno].no_of_ep;
 			if_desc = &dev->config.if_desc[ifno];
 			if (epno > USB_MAXENDPOINTS) {
-				printf("Interface %d has too many endpoints!\r\n",
+				_hx_printf("Interface %d has too many endpoints!\r\n",
 					if_desc->desc.bInterfaceNumber);
 				return -EINVAL;
 			}
 			/* found an endpoint */
 			if_desc->no_of_ep++;
 			memcpy(&if_desc->ep_desc[epno], head,
-				USB_DT_ENDPOINT_SIZE);
+				head->bLength);
 			ep_wMaxPacketSize = get_unaligned(&dev->config.\
 				if_desc[ifno].\
 				ep_desc[epno].\
@@ -588,7 +640,7 @@ static int usb_parse_config(struct usb_device *dev,
 			break;
 		case USB_DT_SS_ENDPOINT_COMP:
 			if (head->bLength != USB_DT_SS_EP_COMP_SIZE) {
-				printf("ERROR: Invalid USB EPC length (%d)\r\n",
+				_hx_printf("ERROR: Invalid USB EPC length (%d)\r\n",
 					head->bLength);
 				break;
 			}
@@ -608,10 +660,8 @@ static int usb_parse_config(struct usb_device *dev,
 		default:
 			if (head->bLength == 0)
 				return -EINVAL;
-
-			debug("unknown Description Type : %x\r\n",
+			_hx_printf("unknown Description Type : %d\r\n",
 				head->bDescriptorType);
-
 #ifdef DEBUG
 			{
 				unsigned char *ch = (unsigned char *)head;
@@ -678,37 +728,50 @@ static int usb_get_descriptor(struct usb_device *dev, unsigned char type,
 /**********************************************************************
 * gets configuration cfgno and store it in the buffer
 */
-int usb_get_configuration_no(struct usb_device *dev,
-	unsigned char *buffer, int cfgno)
+unsigned char* usb_get_configuration_no(struct usb_device *dev, int cfgno)
 {
 	int result;
 	unsigned int length;
-	struct usb_config_descriptor *config;
+	struct usb_config_descriptor *config = NULL;
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, buffer, 16);
 
 	config = (struct usb_config_descriptor *)&buffer[0];
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, 9);
 	if (result < 9) {
 		if (result < 0)
-			printf("unable to get descriptor, error %lX\r\n",
+			_hx_printf("unable to get descriptor, error %lX\r\n",
 			dev->status);
 		else
-			printf("config descriptor too short " \
+			_hx_printf("config descriptor too short " \
 			"(expected %i, got %i)\r\n", 9, result);
-		return -EIO;
+		return NULL;
 	}
 	length = le16_to_cpu(config->wTotalLength);
 
-	if (length > USB_BUFSIZ) {
+	if (length > 2048) {
 		printf("%s: failed to get descriptor - too long: %d\r\n",
 			"usb_get_configuariton_no", length);
-		return -EIO;
+		return NULL;
 	}
 
-	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, length);
+	//Allocate buffer to contain configure descriptor,the caller's responsibility to release it.
+	config = (struct usb_config_descriptor*)aligned_malloc(length, ARCH_DMA_MINALIGN);
+	if (NULL == config)
+	{
+		_hx_printf("%s:failed to allocate mem[length = %d].\r\n", __func__, length);
+		return NULL;
+	}
+	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, config, length);
+	if (result < 0)
+	{
+		_hx_printf("%s:failed to get config descriptor.\r\n", __func__);
+		aligned_free(config);
+		return NULL;
+	}
 	debug("get_conf_no %d Result %d, wLength %d\r\n", cfgno, result, length);
 	config->wTotalLength = length; /* validated, with CPU byte order */
 
-	return result;
+	return (unsigned char*)config;
 }
 
 /********************************************************************
@@ -982,11 +1045,22 @@ struct usb_device *usb_get_dev_index(int index)
 int usb_alloc_new_device(struct udevice *controller, struct usb_device **devp)
 {
 	int i;
+	unsigned char* pCSInterface = NULL;
+
 	debug("New Device %d\n", USBManager.dev_index);
 	if (USBManager.dev_index == USB_MAX_DEVICE) {
-		printf("ERROR, too many USB Devices, max=%d\r\n", USB_MAX_DEVICE);
+		_hx_printf("ERROR, too many USB Devices, max=%d\r\n", USB_MAX_DEVICE);
 		return -ENOSPC;
 	}
+	//Allocate space to contain Class Specific Interfaces for USB device.
+	pCSInterface = _hx_malloc(USB_MAX_CSINTERFACE_LEN);
+	if (NULL == pCSInterface)
+	{
+		_hx_printf("%s:failed to allocate CS_Interface space.\r\n", __func__);
+		return -ENOMEM;
+	}
+	memset(pCSInterface, 0, USB_MAX_CSINTERFACE_LEN);
+
 	/* default Address is 0, real addresses start with 1 */
 	usb_dev[USBManager.dev_index].devnum = USBManager.dev_index + 1;
 	usb_dev[USBManager.dev_index].maxchild = 0;
@@ -997,6 +1071,8 @@ int usb_alloc_new_device(struct udevice *controller, struct usb_device **devp)
 	//dev_index++;
 	USBManager.dev_index++;
 	*devp = &usb_dev[USBManager.dev_index - 1];
+	//Assign Class Specific Interfaces space.
+	(*devp)->config.pClassSpecificInterfaces = pCSInterface;
 
 	return 0;
 }
@@ -1216,12 +1292,15 @@ struct usb_device *parent)
 
 int usb_select_config(struct usb_device *dev)
 {
-	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, tmpbuf, USB_BUFSIZ);
+	//ALLOC_CACHE_ALIGN_BUFFER(unsigned char, tmpbuf, USB_BUFSIZ);
 	int err;
+	unsigned char* pConfig = NULL;
 
 	err = get_descriptor_len(dev, USB_DT_DEVICE_SIZE, USB_DT_DEVICE_SIZE);
 	if (err)
+	{
 		return err;
+	}
 
 	/* correct le values */
 	__le16_to_cpus(&dev->descriptor.bcdUSB);
@@ -1230,14 +1309,17 @@ int usb_select_config(struct usb_device *dev)
 	__le16_to_cpus(&dev->descriptor.bcdDevice);
 
 	/* only support for one config for now */
-	err = usb_get_configuration_no(dev, tmpbuf, 0);
-	if (err < 0) {
-		printf("usb_new_device: Cannot read configuration, " \
+	pConfig = usb_get_configuration_no(dev, 0);
+	if (NULL == pConfig) {
+		_hx_printf("usb_new_device: Cannot read configuration, " \
 			"skipping device %04x:%04x\r\n",
 			dev->descriptor.idVendor, dev->descriptor.idProduct);
-		return err;
+		return -EIO;
 	}
-	usb_parse_config(dev, tmpbuf, 0);
+	usb_parse_config(dev, pConfig, 0);
+	//Should release the space of config descriptor returned by usb_get_configuration_no.
+	aligned_free(pConfig);
+
 	usb_set_maxpacket(dev);
 	/*
 	* we set the default configuration here

@@ -42,7 +42,7 @@ int access (const char* name, int m)
 	return S_OK;
 }
 
-int     chsize (int fd, long size)
+int chsize (int fd, long size)
 {
 	DWORD  dwFileSize = 0;
 
@@ -56,7 +56,7 @@ int     chsize (int fd, long size)
 	{
 		return size;
 	}
-	else if(size < dwFileSize)
+	else if((DWORD)size < dwFileSize)
 	{
 		long  dwOffset   = size;
 		

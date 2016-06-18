@@ -334,7 +334,7 @@ static void VirtualKeyHandler(KEY_UP_DOWN event,       //Key down or up.
 	
 	if(event == eKEYDOWN)  //Key is hold(make).
 	{
-		dmsg.wDevMsgType = VIRTUAL_KEY_DOWN;
+		dmsg.wDevMsgType = VIRTUAL_KEY_DOWN; 
 	}
 	else  //Key is released.
 	{

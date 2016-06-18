@@ -240,6 +240,7 @@ struct usb_ctrlrequest {
 #define USB_DT_CS_RADIO_CONTROL		0x23
 /* From the T10 UAS specification */
 #define USB_DT_PIPE_USAGE		0x24
+
 /* From the USB 3.0 spec */
 #define	USB_DT_SS_ENDPOINT_COMP		0x30
 
@@ -265,6 +266,23 @@ struct usb_descriptor_header {
 struct usb_descriptor_header {
 	__u8  bLength;
 	__u8  bDescriptorType;
+} __attribute__((packed));
+#endif
+
+/* All class specific interface descriptors have these 3 fields at the beginning */
+#ifdef __MS_VC__
+#pragma pack(push,1)
+struct usb_cs_interface_header {
+	__u8  bLength;
+	__u8  bDescriptorType;
+	__u8  bSubtype;
+};
+#pragma pack(pop)
+#else
+struct usb_cs_interface_header {
+	__u8  bLength;
+	__u8  bDescriptorType;
+	__u8  bSubtype;
 } __attribute__((packed));
 #endif
 

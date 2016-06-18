@@ -259,6 +259,12 @@ BOOL SwitchToGraphic()
 //Switch display mode to text.
 VOID SwitchToText()
 {
+	//Check if current display mode is GRAPHIC mode.
+	if(!IN_GRAPHIC_DISPLAY_MODE())
+	{
+		//Not in graphic mode,just return.
+		return;
+	}
 #ifdef __GCC__
 	__asm__(
 			"pushl	%%ebx	\n\t"

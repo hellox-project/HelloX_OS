@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 //
-//Hello China's basic data type.
+//HelloX's basic data type.
 //
 
 typedef unsigned char       BYTE;
@@ -87,6 +87,7 @@ typedef __u32 dma_addr_t;
 #define TRUE                0x00000001
 
 #define S_OK                0x00000000
+#define S_FALSE             0x00000001
 
 #define NULL                ((void*)0x00000000)
 

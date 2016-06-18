@@ -1122,7 +1122,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	*/
 	if (ctrl->periodic_list == NULL)
 	{
-		ctrl->periodic_list = memalign(4096, 1024 * 4);
+		ctrl->periodic_list = memalign(4096, USB_PERIODIC_LIST_LENGTH * 4);
 	}
 
 	if (!ctrl->periodic_list)
@@ -1132,13 +1132,13 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	}
 	debug("%s: periodic list base = %X.\r\n", __func__, ctrl->periodic_list);
 
-	for (i = 0; i < 1024; i++) {
+	for (i = 0; i < USB_PERIODIC_LIST_LENGTH; i++) {
 		ctrl->periodic_list[i] = cpu_to_hc32((unsigned long)periodic
 			| QH_LINK_TYPE_QH);
 	}
 
 	flush_dcache_range((unsigned long)ctrl->periodic_list,
-		ALIGN_END_ADDR(uint32_t, ctrl->periodic_list,1024));
+		ALIGN_END_ADDR(uint32_t, ctrl->periodic_list,USB_PERIODIC_LIST_LENGTH));
 
 	/* Set periodic list base address */
 	ehci_writel(&ctrl->hcor->or_periodiclistbase,
@@ -1169,7 +1169,6 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 		return -1;
 	}
 
-	debug("%s: start EHCI controller now...\r\n", __func__);
 	/* Start the host controller. */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
 	/*
@@ -1182,12 +1181,13 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);  //Unblock posted write.
 	mdelay(50);
 
-	debug("%s: Take control over all USB controller's ports...\r\n", __func__);
 	if (!(tweaks & EHCI_TWEAK_NO_INIT_CF)) {
 		/* take control over the ports */
 		cmd = ehci_readl(&ctrl->hcor->or_configflag);
 		cmd |= FLAG_CF;
 		ehci_writel(&ctrl->hcor->or_configflag, cmd);
+		debug("%s:set CF bit,cf_reg = %X,cmd = %X.\r\n", __func__,
+			&ctrl->hcor->or_configflag,cmd);
 	}
 	mdelay(50);
 
@@ -1200,16 +1200,13 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 
 #ifndef USB_EHCI_DISABLE_INTERRUPT
 	//Enable interrupt of the controller.
-	debug("%s: Enable all interrupts on EHCI controller...\r\n",__func__);
 	cmd = ehci_readl(&ctrl->hcor->or_usbintr);
 	cmd |= (INTR_UE | INTR_UEE | INTR_AAE | INTR_PCE | INTR_SEE | INTR_FLR);
 	ehci_writel(&ctrl->hcor->or_usbintr, cmd);
 #endif
 
 	reg = HC_VERSION(ehci_readl(&ctrl->hccr->cr_capbase));
-	_hx_printf("USB EHCI %x.%02x\r\n", reg >> 8, reg & 0xff);
 	reg = ehci_readl(&ctrl->hccr->cr_hccparams);
-	_hx_printf("USB capabilities: %X.\r\n", reg);
 
 	return 0;
 }
@@ -1320,13 +1317,6 @@ int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 		goto done;
 	}
 
-	//Shutdown the EHCI controller,since it may turned on in BIOS phase.
-	//if (ehci_shutdown(ctrl))
-	//{
-	//	_hx_printf("%s: can not shutdown the EHCI controller.\r\n", __func__);
-	//	goto done;
-	//}
-
 	/* EHCI spec section 4.1 */
 	if (ehci_reset(ctrl))
 	{
@@ -1367,7 +1357,6 @@ done:
 static int _ehci_submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int length)
 {
-
 	if (usb_pipetype(pipe) != PIPE_BULK) {
 		debug("non-bulk pipe (type=%lu)", usb_pipetype(pipe));
 		return -1;
@@ -1409,7 +1398,7 @@ int ehci_enable_periodic(struct ehci_ctrl *ctrl)
 		_hx_printf("EHCI failed: timeout when enabling periodic list\r\n");
 		return -ETIMEDOUT;
 	}
-	udelay(1000);
+	udelay(USB_DEFAULT_SETTLE_TIME);
 	return 0;
 }
 

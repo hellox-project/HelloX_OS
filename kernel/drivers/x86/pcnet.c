@@ -921,6 +921,7 @@ __TERMINAL:
 * packet from the interface into the pbuf.
 *
 */
+
 static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 {
 	__ETHERNET_BUFFER* pEthBuff = NULL;
@@ -943,6 +944,8 @@ static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 	{
 		return NULL;
 	}
+
+
 
 	//Received a pakcet,delivery it to IP stack.
 	if (len > 0)

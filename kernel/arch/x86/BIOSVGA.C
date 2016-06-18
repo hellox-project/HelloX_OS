@@ -21,6 +21,8 @@
 #define  BIOS_VGABUF_COLUMS  80
 #define  BIOS_VGABUF_LINES   25
 
+static WORD   s_CharAttr     = 0x0700;
+static BOOL   s_bAllowScroll = TRUE;
 //This module will be available if and only if DDF is enabled.
 #ifdef __CFG_SYS_DDF
 
@@ -53,12 +55,22 @@ WORD* _VGA_GetDisplayAddr(WORD nX,WORD nY)
 	return (WORD*)(s_szVgaInfo.pVideoAddr+nAddrOffset);
 }
 
+VOID  VGA_EnabledScroll(BOOL bAllowScroll)
+{
+	s_bAllowScroll = bAllowScroll;
+}
+
 VOID  _VGA_ScrollLine(BOOL bScrollUp)
 {
 	WORD* pBaseAddr  = _VGA_GetDisplayAddr(0,0);
 	WORD* pNextLine  = pBaseAddr+s_szVgaInfo.Colums;
 	WORD* pEndLine   = pBaseAddr+(s_szVgaInfo.LastLine-1)*s_szVgaInfo.Colums;
 
+	if(s_bAllowScroll == FALSE)
+	{
+		return; 
+	}
+	
 	if(bScrollUp)
 	{
 		INT nMoveLen = ((s_szVgaInfo.LastLine-1)*s_szVgaInfo.Colums)*2;
@@ -67,7 +79,7 @@ VOID  _VGA_ScrollLine(BOOL bScrollUp)
 		memcpy(pBaseAddr,pNextLine,nMoveLen);
 		for(i=0;i<s_szVgaInfo.Colums;i++)
 		{
-			pEndLine[i] = 0x700;
+			pEndLine[i] = s_CharAttr;
 		}		
 	}
 	else
@@ -186,7 +198,7 @@ BOOL  VGA_PrintChar(CHAR ch)
 		return FALSE;
 	}
 
-	*pVideoBuf =  ch|0x700;
+	*pVideoBuf =  ch|s_CharAttr;
 	CursorX ++;
 
 	if(CursorX >= s_szVgaInfo.Colums)
@@ -214,7 +226,7 @@ BOOL VGA_PrintString(LPCSTR pString,BOOL cl)
 
 	while(*pos != 0)
 	{
-		WORD  wch   = 0x700;
+		WORD  wch   = s_CharAttr;
 	
 		wch += (BYTE)*pos;
 		*pVideoBuf =  wch;
@@ -222,7 +234,7 @@ BOOL VGA_PrintString(LPCSTR pString,BOOL cl)
 		pVideoBuf ++;
 		pos       ++;
 
-		//�Ƿ�����
+		//
 		CursorX   ++;
 		if(CursorX >= s_szVgaInfo.Colums)
 		{
@@ -265,6 +277,33 @@ BOOL   VGA_GetCursorPos(WORD* pCursorX,WORD* pCursorY)
 	if(NULL != pCursorY)
 	{
 		*pCursorY = s_szVgaInfo.CursorY;
+	}
+
+	return TRUE;
+}
+
+BOOL VGA_GetScreen(LPSTR pScreenBuf,INT nBufLen)
+{
+	WORD*  pVideoBuf = _VGA_GetDisplayAddr(0,0);
+	INT    i         = 0;
+	
+	for(i=0;i<nBufLen;i++)
+	{		
+		WORD  ch   = *pVideoBuf&0xFF;
+
+		pVideoBuf ++;
+		if(ch < 0x20 || ch >  0x7E /*|| ch == 0x5F*/)
+		{
+			continue;
+		}
+
+		pScreenBuf[i] = (CHAR)ch;		
+		
+		if((DWORD)pVideoBuf >= BIOS_VGABUF_ADDR+BIOS_VGABUF_LEN)
+		{
+			break;
+		}
+
 	}
 
 	return TRUE;
@@ -316,7 +355,7 @@ BOOL  VGA_DelString(WORD CursorX,WORD CursorY,INT nDelLen)
 
 	for(i=0;i<nDelLen;i++)
 	{
-		*pVideoBuf =  0x700;
+		*pVideoBuf =  s_CharAttr;
 
 		pVideoBuf ++;
 		if((DWORD)pVideoBuf >= BIOS_VGABUF_ADDR+BIOS_VGABUF_LEN)
@@ -387,12 +426,17 @@ BOOL  VGA_Clear()
 
 	for(i=0;i<BIOS_VGABUF_LEN/2;i++)
 	{
-		pVideoBuf[i] = 0x700;
+		pVideoBuf[i] = s_CharAttr;
 	}
 
 	return TRUE;
 }
 
+VOID VGA_SetCharAttr(BYTE bAttr)
+{
+	s_CharAttr = bAttr << 8;	
+
+}
 BOOL InitializeVGA(void)
 {
 	s_szVgaInfo.pVideoAddr = (BYTE*)BIOS_VGABUF_ADDR;

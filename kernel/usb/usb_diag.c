@@ -5,9 +5,12 @@
 //    Module Funciton           : 
 //                                Diagnostic code of USB functions are put
 //                                into this file.
-//    Last modified Author      : 
-//    Last modified Date        : 
-//    Last modified Content     :
+//    Last modified Author      : Garry
+//    Last modified Date        : Feb 08,2016
+//    Last modified Content     : Now it's the first day morning,1 o'clock of the
+//                                monkey year,2016,according to China's traditional
+//                                calendar.Wish HelloX OS can get take off in this
+//                                year,and wish anything go peace...
 //                                1. 
 //    Lines number              :
 //***********************************************************************/
@@ -66,26 +69,101 @@ static int usb_set_port_feature(struct usb_device *dev, int port, int feature)
 		port, NULL, 0, USB_CNTL_TIMEOUT);
 }
 
+//Show out an end point.
+static void ShowEndPoint(struct usb_endpoint_descriptor* pEndPoint)
+{
+	char* format = "    ep# = %d,direct = %s,attr = %s,max_pksz = %d,multi = %d,bInt = %d.\r\n";
+	__u8 epnum = get_unaligned(&pEndPoint->bEndpointAddress) & 0xF;
+	char* dir = (get_unaligned(&pEndPoint->bEndpointAddress) & 0x80) ? "in" : "out";
+	char* attr = NULL;
+	__u16 max_pk_size = get_unaligned(&pEndPoint->wMaxPacketSize);
+	__u16 multi = 0;
+	__u8 Interval = get_unaligned(&pEndPoint->bInterval);
+
+	//Set attribute value.
+	switch (get_unaligned(&pEndPoint->bmAttributes) & 3)
+	{
+	case 0:
+		attr = "ctrl";
+		break;
+	case 1:
+		attr = "iso";
+		break;
+	case 2:
+		attr = "bulk";
+		break;
+	case 3:
+		attr = "int";
+		break;
+	}
+
+	//Just show it,but wMaxPacketSize should be splitted as multi and packet size.
+	multi = (max_pk_size >> 11) & 0x03;
+	multi += 1;
+	max_pk_size &= 0x7FF;
+	_hx_printf(format, epnum, dir, attr, max_pk_size,multi, Interval);
+}
+
+//Dump out one USB interface's information.
+static void ShowUsbInt(__USB_INTERFACE_FUNCTION* pIntFunc)
+{
+	struct usb_endpoint_descriptor* pEndpoint = NULL;
+	int i = 0, j = 0;
+
+	_hx_printf("  Int_class/Int_subclass/Int_proto: 0x%X/0x%X/0x%X\r\n",
+		pIntFunc->pPrimaryInterface->desc.bInterfaceClass,
+		pIntFunc->pPrimaryInterface->desc.bInterfaceSubClass,
+		pIntFunc->pPrimaryInterface->desc.bInterfaceProtocol);
+	//Show all endpoints,include the primary interface and it's alternate settings.
+	_hx_printf("  Endpoint list(Pri):\r\n");
+	for (i = 0; i < pIntFunc->pPrimaryInterface->no_of_ep; i++)
+	{
+		pEndpoint = &pIntFunc->pPrimaryInterface->ep_desc[i];
+		ShowEndPoint(pEndpoint);
+	}
+	for (i = 0; i < pIntFunc->nAlternateNum; i++)  //Show 6 alternate settings.
+	{
+		_hx_printf("  Endpoint list(alt_set %d):\r\n", i + 1);
+		for (j = 0; j < pIntFunc->pAltInterfaces[i]->no_of_ep; j++)
+		{
+			pEndpoint = &pIntFunc->pAltInterfaces[i]->ep_desc[j];
+			ShowEndPoint(pEndpoint);
+		}
+	}
+	return;
+}
+
+//Dump out one USB interface association information.
+static void ShowUsbIntAssoc(__USB_INTERFACE_ASSOCIATION* pIntAssoc)
+{
+	int i;
+	for (i = 0; i < pIntAssoc->nIntAssocNum; i++)
+	{
+		ShowUsbInt(&pIntAssoc->Interfaces[i]);
+	}
+	return;
+}
+
 //Print out one USB device's information
 void ShowUsbDevice(int index)
 {
 	struct usb_device* pDev = NULL;
 	__PHYSICAL_DEVICE* pPhyDev = USBManager.pUsbDeviceRoot;
+	//struct usb_interface* pUsbInt = NULL;
+	__USB_INTERFACE_ASSOCIATION* pIntAssoc = NULL;
+	__USB_INTERFACE_FUNCTION* pIntFunc = NULL;
+	int i = 0;
 
-	if ((index < 0) || (index >= USBManager.dev_index))
+	if (0 == USBManager.nPhysicalDevNum)  //No USB physical device.
 	{
-		_hx_printf("  Please specify a valid address value,range from [0] to [%d].\r\n",
-			USBManager.dev_index - 1);
 		return;
 	}
-	/*while (pPhyDev)
+	if (index >= USBManager.nPhysicalDevNum)
 	{
-		if (index == pPhyDev->dwNumber)
-		{
-			break;
-		}
-		pPhyDev = pPhyDev->lpNext;
-	}*/
+		_hx_printf("  Please specify a valid address value,range from [0] to [%d].\r\n",
+			USBManager.nPhysicalDevNum - 1);
+		return;
+	}
 	while (index)
 	{
 		pPhyDev = pPhyDev->lpNext;
@@ -101,27 +179,42 @@ void ShowUsbDevice(int index)
 		BUG();
 		return;
 	}
-	//pDev = USBManager.UsbDevArray[index];
+
 	pDev = (struct usb_device*)pPhyDev->lpPrivateInfo;
+	pIntAssoc = (__USB_INTERFACE_ASSOCIATION*)pPhyDev->Resource[0].Dev_Res.usbIntAssocBase;
+	if (NULL == pIntAssoc)
+	{
+		BUG();
+		return;
+	}
 
 	if (NULL == pDev)
 	{
 		BUG();
 	}
 
-	printf("  Index#: %u\r\n  Dev_Num: %d\r\n  Manufacturer: %s\r\n  Product: %s\r\n  Serial: %s\r\n",
+	_hx_printf("  Index#: %u\r\n  Dev_Name: %s\r\n  Manufacturer: %s\r\n  Product: %s\r\n  Serial: %s\r\n",
 		index,
-		pDev->devnum,
+		pPhyDev->strName,
 		pDev->mf,
 		pDev->prod,
 		pDev->serial);
-	printf("  Class/Subclass/Proto: %d/%d/%d\r\n", pDev->descriptor.bDeviceClass,
+	_hx_printf("  Class/Subclass/Proto: %d/%d/%d\r\n", pDev->descriptor.bDeviceClass,
 		pDev->descriptor.bDeviceSubClass,
 		pDev->descriptor.bDeviceProtocol);
-	printf("  Vendor/Product/Device: 0x%X/0x%X/0x%X\r\n", pDev->descriptor.idVendor,
+	_hx_printf("  Vendor/Product/Device: 0x%X/0x%X/0x%X\r\n", pDev->descriptor.idVendor,
 		pDev->descriptor.idProduct,
 		pDev->descriptor.bcdDevice);
-
+	if (1 == pIntAssoc->nIntAssocNum)  //Not interface association.
+	{
+		_hx_printf("  Normal USB interface function.\r\n");
+		ShowUsbInt(&pIntAssoc->Interfaces[0]);
+	}
+	else
+	{
+		_hx_printf("  Interface assoc with [%d] interfaces.\r\n", pIntAssoc->nIntAssocNum);
+		ShowUsbIntAssoc(pIntAssoc);
+	}
 	return;
 }
 

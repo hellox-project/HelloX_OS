@@ -19,5 +19,3 @@ append -s hcngui.bin -a HZK16 -b 30000
 cd ..
 cd ..\bin
 copy ..\gui\guimaker\hcngui.bin .\import\pthouse
-del vdisk.vhd
-make_usb_boot -make_vhd

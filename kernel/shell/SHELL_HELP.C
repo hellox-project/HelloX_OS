@@ -520,7 +520,7 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 				}
 				break;
 			case KERNEL_MESSAGE_VKEYDOWN:
-				{					
+				{	
 					OnVkKeyControl(pShellInfo,bt);
 				}
 				break;

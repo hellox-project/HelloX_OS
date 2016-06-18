@@ -536,7 +536,6 @@ static DWORD GetPhysicalMemorySize(__COMMON_OBJECT* lpThis)
 	return ((__SYSTEM*)lpThis)->dwPhysicalMemorySize;
 }
 
-
 //
 //This routine is the default interrupt handler.
 //If no entity(such as device driver) install an interrupt handler,this handler
@@ -555,9 +554,9 @@ static VOID DefaultIntHandler(LPVOID lpEsp,UCHAR ucVector)
 	PrintLine(strBuffer);
 	_hx_sprintf(strBuffer,"  Total unhandled interrupt times = %d.",dwTotalNum);
 	PrintLine(strBuffer);
+
 	return;
 }
-
 
 static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 							  LPVOID           lpEsp,
@@ -657,7 +656,6 @@ __RETFROMINT:
 	}
 	return;
 }
-
 
 //Default handler of Exception.
 static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
@@ -966,8 +964,8 @@ __SYSTEM System = {
 	0,                        //dwNextTimerTick,
 	0,                        //ucIntNestLeve;
 	0,                        //bSysInitialized;
-	0,
-	0,                        //ucReserved3;
+	0,                        //ucReserved1;
+	0,                        //ucReserved2;
 	0,                        //dwPhysicalMemorySize,
 	BeginInitialize,          //BeginInitialize,
 	EndInitialize,            //EndInitialize,

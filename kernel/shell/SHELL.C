@@ -58,6 +58,8 @@ extern DWORD MemHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handles the mem
 extern DWORD SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj);      //Handles the sysinfo command.
 extern DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj);
+extern DWORD TelnetHandler(__CMD_PARA_OBJ* lpCmdObj);
+extern DWORD Ssh2Handler(__CMD_PARA_OBJ* lpCmdObj);
 extern DWORD GUIHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handler for GUI command,resides in
 extern DWORD BatHandler(__CMD_PARA_OBJ* pCmdParaObj);
 //extern DWORD FileWriteTest(__CMD_PARA_OBJ* pCmdParaObj); 
@@ -95,6 +97,12 @@ __CMD_OBJ  CmdObj[] = {
 	{"sysdiag"  ,    SysDiagApp},
 	{"loadapp"  ,    LoadappHandler},
 	{"la"       ,    LoadappHandler},
+#ifdef __CFG_APP_TELNET
+	{"telnet"   ,    TelnetHandler},
+#endif
+#ifdef __CFG_APP_SSH
+	{"ssh"      ,    Ssh2Handler},
+#endif
 	{"gui"      ,    GUIHandler},
 #ifdef __CFG_APP_JVM  //Java VM is enabled.
 	{"jvm"      ,    JvmHandler},
@@ -105,9 +113,6 @@ __CMD_OBJ  CmdObj[] = {
 	{"cls"      ,    ClsHandler},
 	//You can add your specific command and it's handler here.
 	//{'yourcmd',    CmdHandler},
-	 {"fw"      ,   FileWriteTest},
-	 {"fr"      ,   FileReadTest},
-	
 	{"debug"    ,    DebugHandler},
 //	{"test"    ,    FileWriteTest},
 	//The last element of this array must be NULL.
@@ -788,7 +793,7 @@ DWORD ShellEntryPoint(LPVOID pData)
 {
 	StrCpy(DEF_PROMPT_STR,&s_szPrompt[0]);
 	_hx_printf("\r\n");
-	_hx_printf("%s\r\n",VERSION_INFO);
+	_hx_printf("%s\r\n",HELLOX_VERSION_INFO);
 	_hx_printf("\r\n");
 	
 	Shell_Msg_Loop(s_szPrompt,CommandParser,QueryCmdName);

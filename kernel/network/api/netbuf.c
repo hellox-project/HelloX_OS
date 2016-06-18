@@ -103,13 +103,13 @@ netbuf_delete(struct netbuf *buf)
  * @return pointer to the allocated memory
  *         NULL if no memory could be allocated
  */
-void *
-netbuf_alloc(struct netbuf *buf, u16_t size)
+void * netbuf_alloc(struct netbuf *buf, u16_t size)
 {
   LWIP_ERROR("netbuf_alloc: invalid buf", (buf != NULL), return NULL;);
 
   /* Deallocate any previously allocated memory. */
-  if (buf->p != NULL) {
+  if (buf->p != NULL) 
+  {
     pbuf_free(buf->p);
   }
   buf->p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RAM);

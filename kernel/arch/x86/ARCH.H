@@ -82,12 +82,12 @@ VOID __MicroDelay(DWORD dwmSeconds);
 
 //Simulate a NOP instruction.
 #ifdef __I386__
-#define NOP() \
+#define __NOP() \
 __asm{    \
 	nop   \
 }
 #else
-#define NOP()
+#define __NOP()
 #endif
 
 //Port operating routines for x86 architecture.

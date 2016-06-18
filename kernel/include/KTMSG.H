@@ -31,8 +31,8 @@ extern "C" {
 //Keyboard messages.
 #define KERNEL_MESSAGE_AKEYDOWN       0x01     //ASCII key down.
 #define KERNEL_MESSAGE_AKEYUP         0x02     //ASCII key up.
-#define KERNEL_MESSAGE_VKEYDOWN       0x10     //Virtual key down.
-#define KERNEL_MESSAGE_VKEYUP         0x11     //Virtual key up.
+#define KERNEL_MESSAGE_VKEYDOWN       0xCB     //Virtual key down.0x10
+#define KERNEL_MESSAGE_VKEYUP         0xCC     //Virtual key up.0x11
 
 //Mouse messages.
 #define KERNEL_MESSAGE_LBUTTONDOWN    0x20     //Left button down.

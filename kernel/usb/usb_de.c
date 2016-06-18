@@ -16,6 +16,19 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
+#include <pci_drv.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <align.h>
+
+#include "errno.h"
+#include "usb_defs.h"
+#include "usbdescriptors.h"
+#include "ch9.h"
+#include "usb.h"
+#include "ehci.h"
+#include "usbiso.h"
 
 #if defined(__CFG_SYS_USB) && defined(__CFG_DRV_USBSTORAGE)
 #include "usbdev_storage.h"
@@ -27,6 +40,10 @@
 
 #if defined(__CFG_SYS_USB) && defined(__CFG_DRV_USBKBD)
 #include "usbkbd.h"
+#endif
+
+#if defined(__CFG_SYS_USB) && defined(__CFG_DRV_UVC)
+#include "uvc.h"
 #endif
 
 //Each USB driver should put one entry routine into this array,
@@ -47,6 +64,11 @@ __DRIVER_ENTRY_ARRAY UsbDriverEntryArray[] = {
 #if defined(__CFG_SYS_USB) && defined(__CFG_DRV_USBKBD)
 	//USB keyboard driver.
 	{ USBKeyboard_DriverEntry, "USB_Kbd" },
+#endif
+
+#if defined(__CFG_SYS_USB) && defined(__CFG_DRV_UVC)
+	//USB Video Class driver.
+	{ UVC_DriverEntry, "UVC_Driver" },
 #endif
 
 	//Terminator of the driver entry array.

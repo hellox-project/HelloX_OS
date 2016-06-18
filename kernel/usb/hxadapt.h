@@ -17,7 +17,7 @@
 
 //Use Microsoft Visual Studio as compiler.Just use "define __GCC__" replacing this
 //if you use GCC as compiler.
-#define __MS_VC__
+//#define __MS_VC__
 
 //#define DEBUG  //Enable debugging.
 
