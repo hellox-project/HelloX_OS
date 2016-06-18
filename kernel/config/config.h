@@ -27,10 +27,10 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.79"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.790(Beta),build in 2016/05/07,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.80"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.800(Beta),build in 2016/06/18,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
-#define HELLOX_SPECIAL_INFO "Nickname:babygirl,to mark Sophia,my little girl's birdth in 2016/04/19."
+#define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
 //************************************************************************
 //
