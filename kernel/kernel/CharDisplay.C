@@ -192,6 +192,14 @@ VOID  CD_GetString(WORD nCursorX,WORD nCursorY,LPSTR pString,INT nBufLen)
 #endif
 }
 
+//得到整个屏幕字符串
+VOID  CD_GetScreen(LPSTR pBuf,INT nBufLen)
+{
+#ifdef __I386__
+	VGA_GetScreen(pBuf,nBufLen);	
+#endif
+}
+
 //删除字符串
 VOID  CD_DelString(WORD nCursorX,WORD nCursorY,INT nDelLen)
 {
@@ -218,4 +226,12 @@ VOID  CD_Clear()
 #ifdef __CFG_SYS_CONSOLE
 	Console.ClearScreen();
 #endif
+}
+
+//设置当前字符显示属性
+VOID  CD_SetCharAttr(BYTE cAttr)
+{
+	#ifdef __I386__
+		VGA_SetCharAttr(cAttr);
+	#endif
 }

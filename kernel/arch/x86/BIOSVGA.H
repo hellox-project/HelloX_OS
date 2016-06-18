@@ -26,8 +26,10 @@ BOOL  VGA_PrintChar(CHAR ch);
 BOOL  VGA_PrintString(LPCSTR pString,BOOL cl);
 BOOL  VGA_GetCursorPos(WORD* pCursorX,WORD* pCursorY);
 BOOL  VGA_GetString(WORD CursorX,WORD CursorY,LPSTR pString,INT nBufLen);
+BOOL  VGA_GetScreen(LPSTR pScreenBuf,INT nBufLen);
 BOOL  VGA_DelString(WORD CursorX,WORD CursorY,INT nDelLen);
 BOOL  VGA_DelChar(INT nDelMode);
 BOOL  VGA_Clear(void);
+VOID  VGA_SetCharAttr(BYTE bAttr);
 
 #endif  //__BIOSVGA_H__

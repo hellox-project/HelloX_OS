@@ -22,6 +22,7 @@
 #include "fibonacci.h" //A test application to calculate Fibonacci sequence.
 #include "lwip/ip_addr.h"
 #include "network.h"   //Network diagnostic application.
+#include "usbvideo.h"  //USB video diagnostic application.
 
 __EXTERNAL_COMMAND ExtCmdArray[] = {
 	{"fs",NULL,FALSE,fsEntry},
@@ -30,6 +31,9 @@ __EXTERNAL_COMMAND ExtCmdArray[] = {
 	{"fibonacci",NULL,FALSE,Fibonacci},
 	{"hypertrm",NULL,FALSE,Hypertrm},
 	{"hyptrm2",NULL,FALSE,Hyptrm2},
+#if defined(__CFG_DRV_UVC) && defined(__CFG_SYS_USB)
+	{ "usbvideo", NULL, FALSE, UsbVideoStart },
+#endif
 
 #if defined(__CFG_NET_IPv4) || defined(__CFG_NET_IPv6)
 	{"network",NULL,FALSE,networkEntry},

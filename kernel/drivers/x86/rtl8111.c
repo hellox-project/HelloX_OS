@@ -447,9 +447,7 @@ static BOOL RTL8111_Interrupt(LPVOID lpESP, LPVOID lpParam)
 
 		if ((status & rtl8111_intr_mask) == 0)
 		{
-			_hx_printf("%s:Interrupt masked but raised,status = %X.\r\n"
-				__func__,
-				status);
+			//_hx_printf("%s:Interrupt masked but raised,status = %X.\r\n"__func__,status);
 			break;
 		}
 
@@ -468,7 +466,7 @@ static BOOL RTL8111_Interrupt(LPVOID lpESP, LPVOID lpParam)
 		//RxFIFO overflow or RxDesc overflow.
 		if (status & (RxOverflow | RxFIFOOver))
 		{
-			RxOverflowHandler(priv, status);
+			//RxOverflowHandler(priv, status);
 		}
 
 		// Tx interrupt

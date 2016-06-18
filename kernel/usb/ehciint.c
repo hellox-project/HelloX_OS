@@ -25,38 +25,52 @@
 #include "ch9.h"
 #include "usb.h"
 #include "ehci.h"
+#include "usbiso.h"
 
 //Handlers to handle transfer competion interrupt.
 static VOID OnXferCompletion(struct ehci_ctrl* pUsbCtrl)
 {
 	struct int_queue* pIntQueue = pUsbCtrl->pIntQueueFirst;
-	if (NULL == pIntQueue)
+	__USB_ISO_DESCRIPTOR* pIsoDesc = pUsbCtrl->pIsoDescFirst;
+
+	if ((NULL == pIntQueue) && (NULL == pIsoDesc))
 	{
-		debug("Warning: No pending int queue but interrupt raised.\r\n");
+		debug("Warning: No pending transaction but interrupt raised.\r\n");
 		return;
 	}
-	if (pIntQueue->QueueIntHandler)
+	if (pIsoDesc)
 	{
-		pIntQueue->QueueIntHandler(pIntQueue);
-	}
-	switch (pIntQueue->dwStatus)
-	{
-	case INT_QUEUE_STATUS_COMPLETED:
-	case INT_QUEUE_STATUS_ERROR:
-	case INT_QUEUE_STATUS_TIMEOUT:
-	case INT_QUEUE_STATUS_CANCELED:
-		//Remove the queue element from pending list.
-		pUsbCtrl->pIntQueueFirst = pIntQueue->pNext;
-		if (NULL == pUsbCtrl->pIntQueueFirst)
+		if (NULL == pIsoDesc->ISOXferIntHandler)
 		{
-			pUsbCtrl->pIntQueueLast = NULL;
+			BUG();
 		}
-		pIntQueue->pNext = NULL;
-		//Wakeup the pending kernel thread.
-		SetEvent(pIntQueue->hEvent);
-		break;
-	default:
-		break;
+		pIsoDesc->ISOXferIntHandler(pIsoDesc);
+	}
+	if (pIntQueue)
+	{
+		if (pIntQueue->QueueIntHandler)
+		{
+			pIntQueue->QueueIntHandler(pIntQueue);
+		}
+		switch (pIntQueue->dwStatus)
+		{
+		case INT_QUEUE_STATUS_COMPLETED:
+		case INT_QUEUE_STATUS_ERROR:
+		case INT_QUEUE_STATUS_TIMEOUT:
+		case INT_QUEUE_STATUS_CANCELED:
+			//Remove the queue element from pending list.
+			pUsbCtrl->pIntQueueFirst = pIntQueue->pNext;
+			if (NULL == pUsbCtrl->pIntQueueFirst)
+			{
+				pUsbCtrl->pIntQueueLast = NULL;
+			}
+			pIntQueue->pNext = NULL;
+			//Wakeup the pending kernel thread.
+			SetEvent(pIntQueue->hEvent);
+			break;
+		default:
+			break;
+		}
 	}
 	debug("Exit %s with int queue status = 0x%X.\r\n", __func__,
 		pIntQueue->dwStatus);
@@ -106,7 +120,7 @@ unsigned long EHCIIntHandler(LPVOID pParam)
 	{
 		ulResult++;
 		OnXferCompletion(pUsbCtrl);
-		_hx_printf("%s: USB transfer complete interrupt,status = %X.\r\n", __func__, status);
+		//_hx_printf("%s: USB transfer complete interrupt,status = %X.\r\n", __func__, status);
 	}
 	if (status & INTR_UEE)
 	{
@@ -119,14 +133,19 @@ unsigned long EHCIIntHandler(LPVOID pParam)
 	if (status & INTR_FLR)
 	{
 		ulResult++;
+		//_hx_printf("%s:periodic list frame flip over.\r\n", __func__);
 		//Handler of FLR.
 	}
 	//Acknowledge the interrupt.
 	if (ulResult)
 	{
-		debug("%s: Interrupt handling over,result = %d,status = 0x%X.\r\n",
-			__func__, ulResult, status);
+		//debug("%s: Interrupt handling over,result = %d,status = 0x%X.\r\n",
+		//	__func__, ulResult, status);
 		ehci_writel(&pUsbCtrl->hcor->or_usbsts, status);
+	}
+	else
+	{
+		//_hx_printf("%s:USB interrupt mismatching,status = %X.\r\n", __func__, status);
 	}
 
 __TERMINAL:
@@ -236,7 +255,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 		return NULL;
 	}
 
-	result = malloc(sizeof(*result));
+	result = _hx_malloc(sizeof(*result));
 	if (!result) {
 		debug("ehci intr queue: out of memory\r\n");
 		goto fail1;
@@ -319,7 +338,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 				QT_TOKEN_DT(toggle) |
 				(elementsize << 16) |
 				(1 << 15) |   //Interrupt On Completion.
-				(3 << 10) |   //CERR bits.
+				//(3 << 10) |   //CERR bits.
 				((usb_pipein(pipe) ? 1 : 0) << 8) | /* IN/OUT token */
 				0x80); /* active */
 		}
@@ -328,7 +347,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 			td->qt_token = cpu_to_hc32(
 				QT_TOKEN_DT(toggle) |
 				(elementsize << 16) |
-				(3 << 10)           |   //CERR bits.
+				//(3 << 10)           |   //CERR bits.
 				((usb_pipein(pipe) ? 1 : 0) << 8) | /* IN/OUT token */
 				0x80); /* active */
 		}
@@ -439,7 +458,7 @@ void* EHCIPollIntQueue(struct usb_device *dev,struct int_queue *queue)
 	DWORD dwResult = 0;
 	void* pRet = NULL;
 
-	dwResult = WaitForThisObjectEx(queue->hEvent, 5);  //Wait for 5 millionseconds.
+	dwResult = WaitForThisObjectEx(queue->hEvent, USB_DEFAULT_XFER_TIMEOUT);
 	switch (dwResult)
 	{
 	case OBJECT_WAIT_RESOURCE:

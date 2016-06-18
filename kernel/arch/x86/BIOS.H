@@ -46,4 +46,8 @@ BOOL SwitchToGraphic(void);
 //Switch current display mode to text.
 VOID SwitchToText(void);
 
+//Check if current display mode is GRAPHIC,we use ucResvered1 as indicator of
+//display mode.
+#define IN_GRAPHIC_DISPLAY_MODE() (System.ucReserved1 == 1)
+
 #endif  //__BIOS_H__

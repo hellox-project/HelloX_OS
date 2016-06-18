@@ -83,13 +83,12 @@ typedef struct tag__RESOURCE{
 			WORD        wStartPort;
 			WORD        wEndPort;
 		}IOPort;                          //IO Port resource descriptor.
-
 		struct{
 			LPVOID      lpStartAddr;
 			LPVOID      lpEndAddr;
 		}MemoryRegion;                    //Memory region resource descriptor.
-
 		UCHAR ucVector;                   //Interrupt vector.
+		LPVOID usbIntAssocBase;           //Base address of USB interface association.
 	}Dev_Res;
 }__RESOURCE;
 

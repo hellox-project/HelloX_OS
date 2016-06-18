@@ -27,7 +27,7 @@
 
 //Enable or disable different USB specifications support.
 #define CONFIG_USB_EHCI
-//#define CONFIG_USB_OHCI
+#define CONFIG_USB_OHCI
 //#define CONFIG_USB_UHCI
 //#define CONFIG_USB_XHCI
 
@@ -56,18 +56,29 @@
 //Maximal static buffer size.
 #define USB_BUFSIZ 1024
 
+//USB periodic list length,it's value can be 256,512 and 1024 according spec.
+#define USB_PERIODIC_LIST_LENGTH 1024
+
+//Default settle time in us,used as short delay.
+#define USB_DEFAULT_SETTLE_TIME  1024
+
+//Default time out value in ms,for USB transfer.
+#define USB_DEFAULT_XFER_TIMEOUT 5000
+
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
-#define USB_MAXALTSETTING		128	/* Hard limit */
+#define USB_MAXALTSETTING		128	  /* Hard limit */
 
-#define USB_MAX_DEVICE			8  //At most 8 usb devices in system.
+#define USB_MAX_DEVICE			8     //At most 8 usb devices in system.
 #define USB_MAXCONFIG			8
-#define USB_MAXINTERFACES		8
-#define USB_MAXENDPOINTS		16
-#define USB_MAXCHILDREN			8	/* This is arbitrary */
-#define USB_MAX_HUB			    16
+#define USB_MAXINTERFACES		16
+#define USB_MAXINTERFACEASSOC   4     //Maximal 4 interface associations in one device.
+#define USB_MAXENDPOINTS		8
+#define USB_MAXCHILDREN			8	  /* This is arbitrary */
+#define USB_MAX_HUB			    8
+#define USB_MAX_CSINTERFACE_LEN 1024  //Length of Class Specific Interface space length.
 
-#define USB_CNTL_TIMEOUT        100 /* 100ms timeout */
+#define USB_CNTL_TIMEOUT        100   /* 100ms timeout */
 
 /*
 * This is the timeout to allow for submitting an urb in ms. We allow more
@@ -106,6 +117,7 @@ struct usb_interface {
 	__u8	no_of_ep;
 	__u8	num_altsetting;
 	__u8	act_altsetting;
+	__u8    int_processed;  //Set to 1 if the interface is scaned by USB Manager.
 
 	struct usb_endpoint_descriptor ep_desc[USB_MAXENDPOINTS];
 	/*
@@ -139,17 +151,25 @@ struct usb_interface {
 #pragma pack(push,1)
 struct usb_config {
 	struct usb_config_descriptor desc;
-
-	__u8	no_of_if;	/* number of interfaces */
+	__u8	no_of_if;	/* number of interfaces with alternate setting included. */
 	struct usb_interface if_desc[USB_MAXINTERFACES];
+	/* Contains Class Specific Interfaces. */
+	unsigned char* pClassSpecificInterfaces;
+	/* Interface associations of the USB device. */
+	struct usb_interface_assoc_descriptor int_assoc[USB_MAXINTERFACEASSOC];
+	__u8    no_of_if_assoc; /* How many interface association in this config. */
 };
 #pragma pack(pop)
 #else
 struct usb_config {
 	struct usb_config_descriptor desc;
-
 	__u8	no_of_if;	/* number of interfaces */
 	struct usb_interface if_desc[USB_MAXINTERFACES];
+	/* Contains Class Specific Interfaces. */
+	unsigned char* pClassSpecificInterfaces;
+	/* Interface associations of the USB device. */
+	struct usb_interface_assoc_descriptor int_assoc[USB_MAXINTERFACEASSOC];
+	__u8    no_of_if_assoc; /* How many interface association in this config. */
 } __attribute__((packed));
 #endif
 
@@ -329,6 +349,26 @@ typedef struct tag__COMMON_USB_CONTROLLER{
 #define USB_UHCI_VEND_ID	0x8086
 #define USB_UHCI_DEV_ID		0x7112
 
+/* Interface with it's alternate setting interface(s),combine together as
+   a USB interface function. */
+typedef struct tag__USB_INTERFACE_FUNCTION{
+	struct usb_interface* pPrimaryInterface;
+	int nAlternateNum;  //Alternate setting number.
+#define MAX_USB_ALTERNATE_NUM 16
+	struct usb_interface* pAltInterfaces[MAX_USB_ALTERNATE_NUM];
+}__USB_INTERFACE_FUNCTION;
+
+/* USB interface association. */
+typedef struct tag__USB_INTERFACE_ASSOCIATION{
+	int nIntAssocNum;  //How many interfaces in one interface association.
+#define MAX_USBINTERFACE_IN_ASSOC 2
+	__USB_INTERFACE_FUNCTION Interfaces[MAX_USBINTERFACE_IN_ASSOC];
+	__u8 bFunctionClass;
+	__u8 bFunctionSubClass;
+	__u8 bFunctionProtocol;
+	__u8 iFunction;
+}__USB_INTERFACE_ASSOCIATION;
+
 //USB Manager object,all USB controllers and USB devices,include USB hubs,
 //are managed by this system level object.
 typedef struct tag__USB_MANAGER{
@@ -337,6 +377,7 @@ typedef struct tag__USB_MANAGER{
 	//Alias of usb_dev global array.
 	struct usb_device* UsbDevArray[USB_MAX_DEVICE];
 	int dev_index;
+	int nPhysicalDevNum;  //How many USB physical device in system.
 
 	//Physical device list,each USB device has one element in this list.
 	__PHYSICAL_DEVICE* pUsbDeviceRoot;
@@ -400,7 +441,7 @@ int board_usb_cleanup(int index, enum usb_init_type init);
 int usb_stor_scan(int mode);
 int usb_stor_info(void);
 
-#endif
+#endif  //CONFIG_USB_STORAGE
 
 #ifdef CONFIG_USB_HOST_ETHER
 
@@ -434,8 +475,7 @@ int usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int transfer_len, int interval);
 int usb_disable_asynch(int disable);
 int usb_maxpacket(struct usb_device *dev, unsigned long pipe);
-int usb_get_configuration_no(struct usb_device *dev, unsigned char *buffer,
-	int cfgno);
+unsigned char* usb_get_configuration_no(struct usb_device *dev, int cfgno);
 int usb_get_report(struct usb_device *dev, int ifnum, unsigned char type,
 	unsigned char id, void *buf, int size);
 int usb_get_class_descriptor(struct usb_device *dev, int ifnum,

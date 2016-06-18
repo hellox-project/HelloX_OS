@@ -66,17 +66,8 @@
     <Filter Include="Source Files\kthread">
       <UniqueIdentifier>{c23b14ee-55b9-4861-9d6c-61f9897b5be2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\jvm">
-      <UniqueIdentifier>{6432b8a3-cf23-4f8e-8b60-d4dea4988f4d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\jvm">
-      <UniqueIdentifier>{5d7e3cd5-2f3f-45d1-951e-314add1e05c2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\lib\sys">
       <UniqueIdentifier>{9ae9ad86-fd74-45f5-952d-505cf8f4c52b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\jvm\OS">
-      <UniqueIdentifier>{9b2777b6-45f4-4178-871a-27eb7c63381e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\bsdip">
       <UniqueIdentifier>{d45c3103-01e8-481b-9e83-bf10a1ee10c6}</UniqueIdentifier>
@@ -107,6 +98,12 @@
     </Filter>
     <Filter Include="Source Files\netcore">
       <UniqueIdentifier>{0c11a301-4ccd-4386-ad07-9d8fcdec5564}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ssh">
+      <UniqueIdentifier>{76571756-28f6-4808-afef-89292e44bcbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ssh_hdr">
+      <UniqueIdentifier>{a01f237b-e208-4386-a975-f297694910fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -443,90 +440,6 @@
     <ClCompile Include="kernel\process.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="jvm\jam.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\access.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\alloc.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\cast.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\class.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\dll.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\dll_ffi.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\excep.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\execute.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\frame.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\hash.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\hooks.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\jni.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\lock.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\natives.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\properties.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\reflect.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\resolve.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\shutdown.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\sig.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\symbol.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\thread.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\utf8.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\zip.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\interp\direct.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\interp\inlining.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\interp\engine\interp.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\interp\engine\interp2.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
     <ClCompile Include="lib\math.c">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
@@ -539,29 +452,8 @@
     <ClCompile Include="lib\setjmp.c">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
-    <ClCompile Include="jvm\jvm_str.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\jvm_init.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\jvm_time.c">
-      <Filter>Source Files\jvm</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\os\HelloX\os.c">
-      <Filter>Source Files\jvm\OS</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\os\HelloX\i386\dll_md.c">
-      <Filter>Source Files\jvm\OS</Filter>
-    </ClCompile>
-    <ClCompile Include="jvm\os\HelloX\i386\os_init.c">
-      <Filter>Source Files\jvm\OS</Filter>
-    </ClCompile>
     <ClCompile Include="lib\ctype.c">
       <Filter>Source Files\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\stat.c">
-      <Filter>Source Files\jvm</Filter>
     </ClCompile>
     <ClCompile Include="lib\pthread_mutex.c">
       <Filter>Source Files\lib</Filter>
@@ -667,6 +559,75 @@
     </ClCompile>
     <ClCompile Include="drivers\x86\rtl8111.c">
       <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\ehciiso.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\uvc_drv.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\uvc.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\fmt_ucmp.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\usbvideo.c">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\uvc_diag.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\Telnet.C">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\telnet2.c">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\ssh.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\ssh_msg.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\ssh_pkt.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\ssh_text.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshbn.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshdes.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshdh.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshdss.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshmd5.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshrsa.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshsh256.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshsh512.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sshsha.c">
+      <Filter>Source Files\ssh</Filter>
+    </ClCompile>
+    <ClCompile Include="shell\ssh2.c">
+      <Filter>Source Files\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh\sss_terminal.c">
+      <Filter>Source Files\shell</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -916,78 +877,6 @@
     <ClInclude Include="include\process.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
-    <ClInclude Include="jvm\alloc.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\class.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\config.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\excep.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\frame.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\hash.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\jam.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\jni.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\jni-internal.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\lock.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\natives.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\properties.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\reflect.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\sig.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\symbol.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\thread.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\zip.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\inlining.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\shared.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\engine\interp.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\engine\interp-direct.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\engine\interp-indirect.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\engine\interp-inlining.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\interp\engine\interp-threading.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
     <ClInclude Include="lib\limits.h">
       <Filter>Header Files\lib_hdr</Filter>
     </ClInclude>
@@ -999,12 +888,6 @@
     </ClInclude>
     <ClInclude Include="lib\math.h">
       <Filter>Header Files\lib_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\jvm_arch.h">
-      <Filter>Header Files\jvm</Filter>
-    </ClInclude>
-    <ClInclude Include="jvm\arch\i386.h">
-      <Filter>Header Files\jvm</Filter>
     </ClInclude>
     <ClInclude Include="lib\errno.h">
       <Filter>Header Files\lib_hdr</Filter>
@@ -1089,6 +972,33 @@
     </ClInclude>
     <ClInclude Include="drivers\x86\rtl8111.h">
       <Filter>Header Files\drv_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\uvc.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbiso.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\fmt_ucmp.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\usbvideo.h">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="shell\Telnet.H">
+      <Filter>Header Files\shell_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="ssh\ssh_def.h">
+      <Filter>Source Files\ssh</Filter>
+    </ClInclude>
+    <ClInclude Include="ssh\ssh_pkt.h">
+      <Filter>Source Files\ssh</Filter>
+    </ClInclude>
+    <ClInclude Include="ssh\sshbn.h">
+      <Filter>Source Files\ssh</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ssh\ssh.h">
+      <Filter>Header Files\ssh_hdr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

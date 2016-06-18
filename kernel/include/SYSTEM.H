@@ -114,7 +114,7 @@ BEGIN_DEFINE_OBJECT(__INTERRUPT_SLOT)
     volatile DWORD dwTotalInt;            //Total interrupt times since boot.
     volatile DWORD dwSuccHandledInt;      //Successfully handled interrupt number.
 	__INTERRUPT_OBJECT* lpFirstIntObject; //First interrupt object belong to this slot.
-	END_DEFINE_OBJECT(__INTERRUPT_SLOT)
+END_DEFINE_OBJECT(__INTERRUPT_SLOT)
 
 //Contains interrupt related statistics information for a specified interrupt vector.
 BEGIN_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
@@ -127,7 +127,6 @@ END_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
 //The following is the definition of system object.
 //
 BEGIN_DEFINE_OBJECT(__SYSTEM)
-    //__INTERRUPT_OBJECT*                   lpInterruptVector[MAX_INTERRUPT_VECTOR];
     __PRIORITY_QUEUE*                     lpTimerQueue;
 	__INTERRUPT_SLOT                      InterruptSlotArray[MAX_INTERRUPT_VECTOR];
 

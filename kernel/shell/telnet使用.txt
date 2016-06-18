@@ -1,0 +1,19 @@
+1.开启windows7 的telnet 服务（如果已经开启请忽略）
+
+  （1）进入  [控制面板\程序\],选择[打开或关闭windows功能],选择其中 telnet服务端 选项
+   (2) 进入到管理\服务 开启 windows的Telnet服务
+
+2.加入telnet相关文件并编译,制作成VHD. VirtualBox下配置好网络环境后加载VHD启动
+
+
+3.到命令行，输入telnet ip, port启动telnet访问.例如  telnet 192.168.110.1 23
+   (在我的机器上连接等待时间比较长，不知何故)
+
+4.看到 login:提示符时输入 telnet用户名并回车
+
+5.看到password:提示符时输入 telnet密码并回车[注意密码不回显，像linux那样]
+
+6.看到服务端返回信息后，正常操作telnet命令
+
+7.输入exit结束telnet访问
+

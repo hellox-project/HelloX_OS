@@ -1,8 +1,8 @@
 /*-
-* Copyright (c) 2007-2008, Juniper Networks, Inc.
+* Copyright (c) 2015 - 2016,Garry.Xin
 * All rights reserved.
 *
-* SPDX-License-Identifier:	GPL-2.0
+* License-Identifier: BSD License
 */
 
 #include <StdAfx.h>
@@ -18,8 +18,63 @@
 #include "usb.h"
 #include "ehci.h"
 
+//Obtain ECCP from HCCPARAMS.ECCP is the second byte in HCCPARAMS.
+#define ECCP_FROM_HCCPARAMS(hccparams) ((hccparams >> 8) & 0xFF)
+
+//OS owned semaphore in USBLEGSUP register.
+#define OS_OWN_USBLEGSUP(usblegsup) (usblegsup & (1 << 24))
+
+//BIOS owned semaphore in USBLEGSUP register.
+#define BIOS_OWN_USBLEGSUP(usblegsup) (usblegsup & (1 << 16))
+
 //Only available when EHCI function is enabled.
 #ifdef CONFIG_USB_EHCI
+
+//Obtain ownership from BIOS,since Pre-OS mechanism maybe supported
+//and used by BIOS,according to section 5 of EHCI spec.
+static BOOL ObtainOwnership(__PHYSICAL_DEVICE* pDev, struct ehci_hccr* hccr, struct ehci_hcor* hcor)
+{
+	u32 hccparams = 0;
+	u32 usblegsup = 0;      //Legacy support extended capability register.
+	int try_count = 100;
+	BOOL bResult = FALSE;
+
+	//Check if Pre-OS mechanism is supported.
+	hccparams = ehci_readl(&hccr->cr_hccparams);
+	debug("EHCI hccparams = %X.\r\n", hccparams);
+
+	if (0 == ECCP_FROM_HCCPARAMS(hccparams))
+	{
+		debug("EHCI:Extended capability is not supported.\r\n");
+		return TRUE;
+	}
+	if (ECCP_FROM_HCCPARAMS(hccparams) < 0x40)
+	{
+		_hx_printf("EHCI:Invalid extended capability register value(%X).\r\n",
+			ECCP_FROM_HCCPARAMS(hccparams));
+		return FALSE;
+	}
+	//Get USB Legacy Support Capability Register.
+	usblegsup = pDev->ReadDeviceConfig(pDev, ECCP_FROM_HCCPARAMS(hccparams), 4);
+	//usblegctrlsts = pDev->ReadDeviceConfig(pDev, ECCP_FROM_HCCPARAMS(hccparams) + 4, 4);
+	debug("EHCI ECCP reg = %d,leg_sup register = %X.\r\n", ECCP_FROM_HCCPARAMS(hccparams),usblegsup);
+	//Try to obtain ownership if not owned yet.
+	bResult = TRUE;
+	while (!OS_OWN_USBLEGSUP(usblegsup))
+	{
+		usblegsup |= (1 << 24);
+		pDev->WriteDeviceConfig(pDev, ECCP_FROM_HCCPARAMS(hccparams), usblegsup, 4);
+		mdelay(10);  //Wait for 10 ms.
+		usblegsup = pDev->ReadDeviceConfig(pDev, ECCP_FROM_HCCPARAMS(hccparams), 4);
+		if (0 == (try_count--))
+		{
+			_hx_printf("%s:can not obtain ownership of EHCI controller.\r\n", __func__);
+			bResult = FALSE;
+			break;
+		}
+	}
+	return bResult;
+}
 
 static BOOL ehci_pci_common_init(__PHYSICAL_DEVICE* pdev, struct ehci_hccr **ret_hccr,
 struct ehci_hcor **ret_hcor)
@@ -69,7 +124,7 @@ struct ehci_hcor **ret_hcor)
 				}
 				else  //Allocate successfully.
 				{
-					bResult = TRUE;
+					//bResult = TRUE;
 					break;
 				}
 			}
@@ -77,24 +132,27 @@ struct ehci_hcor **ret_hcor)
 	}
 #else
 	//Just mark the initialization process is successful.
-	bResult = TRUE;
+	//bResult = TRUE;
 #endif
 
 	//Get HCOR from HCCR.
 	hcor = (struct ehci_hcor *)((uint32_t)hccr +
 		HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
-	_hx_printf("USB: EHCI-PCI init hccr 0x%x and hcor 0x%x hc_length %d.\r\n",
+	debug("USB: EHCI-PCI init hccr 0x%x and hcor 0x%x hc_length %d.\r\n",
 		(uint32_t)hccr, (uint32_t)hcor,
 		(uint32_t)HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
 	*ret_hccr = hccr;
 	*ret_hcor = hcor;
 
-	/* enable busmaster */
+	/* Enable busmaster */
 	cmd = pdev->ReadDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, 4);
 	cmd |= 0x04;
 	pdev->WriteDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, cmd, 4);
+
+	//Acquire ownership from BIOS.
+	bResult = ObtainOwnership(pdev, hccr, hcor);
 
 __TERMINAL:
 	if (!bResult)  //Failure of initialization.

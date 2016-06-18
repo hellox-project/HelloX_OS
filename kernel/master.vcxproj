@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -20,13 +20,13 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -98,7 +98,7 @@
       <LinkDLL>true</LinkDLL>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <OutputFile>.\release\master.dll</OutputFile>
+      <OutputFile>Release\master.dll</OutputFile>
       <ImportLibrary>.\Release\master.lib</ImportLibrary>
       <AdditionalOptions> /ALIGN:64</AdditionalOptions>
       <BaseAddress>0x110000</BaseAddress>
@@ -107,6 +107,10 @@
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateMapFile>true</GenerateMapFile>
     </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -166,40 +170,6 @@
     <ClCompile Include="drivers\x86\MOUSE.C" />
     <ClCompile Include="drivers\x86\pcnet.c" />
     <ClCompile Include="drivers\x86\rtl8111.c" />
-    <ClCompile Include="jvm\access.c" />
-    <ClCompile Include="jvm\alloc.c" />
-    <ClCompile Include="jvm\cast.c" />
-    <ClCompile Include="jvm\class.c" />
-    <ClCompile Include="jvm\dll.c" />
-    <ClCompile Include="jvm\dll_ffi.c" />
-    <ClCompile Include="jvm\excep.c" />
-    <ClCompile Include="jvm\execute.c" />
-    <ClCompile Include="jvm\frame.c" />
-    <ClCompile Include="jvm\hash.c" />
-    <ClCompile Include="jvm\hooks.c" />
-    <ClCompile Include="jvm\interp\direct.c" />
-    <ClCompile Include="jvm\interp\engine\interp.c" />
-    <ClCompile Include="jvm\interp\engine\interp2.c" />
-    <ClCompile Include="jvm\interp\inlining.c" />
-    <ClCompile Include="jvm\jam.c" />
-    <ClCompile Include="jvm\jni.c" />
-    <ClCompile Include="jvm\jvm_init.c" />
-    <ClCompile Include="jvm\jvm_str.c" />
-    <ClCompile Include="jvm\jvm_time.c" />
-    <ClCompile Include="jvm\lock.c" />
-    <ClCompile Include="jvm\natives.c" />
-    <ClCompile Include="jvm\os\HelloX\i386\dll_md.c" />
-    <ClCompile Include="jvm\os\HelloX\i386\os_init.c" />
-    <ClCompile Include="jvm\os\HelloX\os.c" />
-    <ClCompile Include="jvm\properties.c" />
-    <ClCompile Include="jvm\reflect.c" />
-    <ClCompile Include="jvm\resolve.c" />
-    <ClCompile Include="jvm\shutdown.c" />
-    <ClCompile Include="jvm\sig.c" />
-    <ClCompile Include="jvm\symbol.c" />
-    <ClCompile Include="jvm\thread.c" />
-    <ClCompile Include="jvm\utf8.c" />
-    <ClCompile Include="jvm\zip.c" />
     <ClCompile Include="kernel\CharDisplay.C" />
     <ClCompile Include="kernel\process.c" />
     <ClCompile Include="kthread\idle.c" />
@@ -229,7 +199,6 @@
     <ClCompile Include="lib\sched.c" />
     <ClCompile Include="lib\setjmp.c" />
     <ClCompile Include="lib\signal.c" />
-    <ClCompile Include="lib\stat.c" />
     <ClCompile Include="lib\stdio.c" />
     <ClCompile Include="lib\string.c" />
     <ClCompile Include="lib\sysmem.c" />
@@ -253,6 +222,7 @@
     <ClCompile Include="shell\SHELL.C" />
     <ClCompile Include="shell\SHELL1.C" />
     <ClCompile Include="shell\SHELL_HELP.C" />
+    <ClCompile Include="shell\ssh2.c" />
     <ClCompile Include="shell\STAT_S.C" />
     <ClCompile Include="shell\SYSD_S.C" />
     <ClCompile Include="osentry\DRVENTRY.C" />
@@ -318,13 +288,32 @@
     <ClCompile Include="network\api\tcpip.c" />
     <ClCompile Include="network\core\timers.c" />
     <ClCompile Include="network\core\udp.c" />
+    <ClCompile Include="shell\Telnet.C" />
+    <ClCompile Include="shell\telnet2.c" />
+    <ClCompile Include="shell\usbvideo.c" />
+    <ClCompile Include="ssh\ssh.c" />
+    <ClCompile Include="ssh\sshbn.c" />
+    <ClCompile Include="ssh\sshdes.c" />
+    <ClCompile Include="ssh\sshdh.c" />
+    <ClCompile Include="ssh\sshdss.c" />
+    <ClCompile Include="ssh\sshmd5.c" />
+    <ClCompile Include="ssh\sshrsa.c" />
+    <ClCompile Include="ssh\sshsh256.c" />
+    <ClCompile Include="ssh\sshsh512.c" />
+    <ClCompile Include="ssh\sshsha.c" />
+    <ClCompile Include="ssh\ssh_msg.c" />
+    <ClCompile Include="ssh\ssh_pkt.c" />
+    <ClCompile Include="ssh\ssh_text.c" />
+    <ClCompile Include="ssh\sss_terminal.c" />
     <ClCompile Include="syscall\SYSCALL.C" />
     <ClCompile Include="syscall\SYSCALL_IO.C" />
     <ClCompile Include="syscall\SYSCALL_KERNEL.C" />
     <ClCompile Include="syscall\SYSCALL_SOCKET.C" />
     <ClCompile Include="usb\ehciint.c" />
+    <ClCompile Include="usb\ehciiso.c" />
     <ClCompile Include="usb\ehci_pci.c" />
     <ClCompile Include="usb\ent_ary.c" />
+    <ClCompile Include="usb\fmt_ucmp.c" />
     <ClCompile Include="usb\usb.c" />
     <ClCompile Include="usb\usbkbd.c" />
     <ClCompile Include="usb\usbmgr.c" />
@@ -336,6 +325,9 @@
     <ClCompile Include="usb\usb_hub.c" />
     <ClCompile Include="usb\usb_ohci.c" />
     <ClCompile Include="usb\usb_storage.c" />
+    <ClCompile Include="usb\uvc.c" />
+    <ClCompile Include="usb\uvc_diag.c" />
+    <ClCompile Include="usb\uvc_drv.c" />
     <ClCompile Include="usb\xhci.c" />
     <ClCompile Include="usb\xhci_mem.c" />
     <ClCompile Include="usb\xhci_pci.c" />
@@ -376,6 +368,7 @@
     <ClInclude Include="INCLUDE\PERF.H" />
     <ClInclude Include="include\process.h" />
     <ClInclude Include="INCLUDE\RINGBUFF.H" />
+    <ClInclude Include="include\ssh\ssh.h" />
     <ClInclude Include="INCLUDE\STATCPU.H" />
     <ClInclude Include="INCLUDE\StdAfx.h" />
     <ClInclude Include="include\sysnet.h" />
@@ -390,32 +383,6 @@
     <ClInclude Include="arch\x86\ARCH.H" />
     <ClInclude Include="arch\x86\BIOS.H" />
     <ClInclude Include="arch\x86\SYN_MECH.H" />
-    <ClInclude Include="jvm\alloc.h" />
-    <ClInclude Include="jvm\arch\i386.h" />
-    <ClInclude Include="jvm\class.h" />
-    <ClInclude Include="jvm\config.h" />
-    <ClInclude Include="jvm\excep.h" />
-    <ClInclude Include="jvm\frame.h" />
-    <ClInclude Include="jvm\hash.h" />
-    <ClInclude Include="jvm\interp\engine\interp-direct.h" />
-    <ClInclude Include="jvm\interp\engine\interp-indirect.h" />
-    <ClInclude Include="jvm\interp\engine\interp-inlining.h" />
-    <ClInclude Include="jvm\interp\engine\interp-threading.h" />
-    <ClInclude Include="jvm\interp\engine\interp.h" />
-    <ClInclude Include="jvm\interp\inlining.h" />
-    <ClInclude Include="jvm\interp\shared.h" />
-    <ClInclude Include="jvm\jam.h" />
-    <ClInclude Include="jvm\jni-internal.h" />
-    <ClInclude Include="jvm\jni.h" />
-    <ClInclude Include="jvm\jvm_arch.h" />
-    <ClInclude Include="jvm\lock.h" />
-    <ClInclude Include="jvm\natives.h" />
-    <ClInclude Include="jvm\properties.h" />
-    <ClInclude Include="jvm\reflect.h" />
-    <ClInclude Include="jvm\sig.h" />
-    <ClInclude Include="jvm\symbol.h" />
-    <ClInclude Include="jvm\thread.h" />
-    <ClInclude Include="jvm\zip.h" />
     <ClInclude Include="kthread\idle.h" />
     <ClInclude Include="kthread\logcat.h" />
     <ClInclude Include="fs\FAT32.H" />
@@ -465,22 +432,30 @@
     <ClInclude Include="include\lwip\sockets.h" />
     <ClInclude Include="include\lwip\sys.h" />
     <ClInclude Include="include\arch\sys_arch.h" />
+    <ClInclude Include="shell\Telnet.H" />
+    <ClInclude Include="shell\usbvideo.h" />
+    <ClInclude Include="ssh\sshbn.h" />
+    <ClInclude Include="ssh\ssh_def.h" />
+    <ClInclude Include="ssh\ssh_pkt.h" />
     <ClInclude Include="syscall\K_API_DEF.H" />
     <ClInclude Include="syscall\SYSCALL.H" />
     <ClInclude Include="syscall\SYSCALL_KERNEL.H" />
     <ClInclude Include="usb\ch9.h" />
     <ClInclude Include="usb\ehci.h" />
     <ClInclude Include="usb\errno.h" />
+    <ClInclude Include="usb\fmt_ucmp.h" />
     <ClInclude Include="usb\hxadapt.h" />
     <ClInclude Include="usb\ohci.h" />
     <ClInclude Include="usb\scsi.h" />
     <ClInclude Include="usb\usb.h" />
     <ClInclude Include="usb\usbdescriptors.h" />
     <ClInclude Include="usb\usbdev_storage.h" />
+    <ClInclude Include="usb\usbiso.h" />
     <ClInclude Include="usb\usbkbd.h" />
     <ClInclude Include="usb\usbmouse.h" />
     <ClInclude Include="usb\usbroothubdes.h" />
     <ClInclude Include="usb\usb_defs.h" />
+    <ClInclude Include="usb\uvc.h" />
     <ClInclude Include="usb\xhci.h" />
   </ItemGroup>
   <ItemGroup>

@@ -346,16 +346,19 @@ static int _InterruptMessage(__PHYSICAL_DEVICE* pUsbDev, unsigned long pipe, voi
 	return pUsbCtrl->ctrlOps.submit_int_msg(dev, pipe, buffer, transfer_len, interval);
 }
 
-//Add a physical USB device into system,for each scaned USB device.
-static BOOL _AddUsbDevice(struct usb_device* pDevice)
+/* Parse of usb interface associations,one physical device will be initialized for 
+   each interface association. */
+static BOOL _ParseInterfaceAssoc(struct usb_device* pDevice)
 {
 	__PHYSICAL_DEVICE* pPhysicalDevice = NULL;
 	struct usb_device_descriptor* pDevDesc = NULL;
 	struct usb_config* pConfDesc = NULL;
-	struct usb_interface_descriptor* pIntDesc = NULL;
+	struct usb_interface* pUsbInt = NULL;
+	struct usb_interface_assoc_descriptor* pAssocDesc = NULL;
+	__USB_INTERFACE_ASSOCIATION* pIntAssoc = NULL;
 	BOOL bResult = FALSE;
 	DWORD dwFlags;
-	int usb_int_num = 0, i = 0, j = 0;
+	int usb_assoc_num = 0, i = 0, j = 0, k = 0, x = 0;
 
 	if (NULL == pDevice)
 	{
@@ -363,26 +366,97 @@ static BOOL _AddUsbDevice(struct usb_device* pDevice)
 	}
 	pDevDesc = &pDevice->descriptor;
 	pConfDesc = &pDevice->config;
-	usb_int_num = pConfDesc->desc.bNumInterfaces;
-	if (0 == usb_int_num)
+	usb_assoc_num = pConfDesc->no_of_if_assoc;
+	if (0 == usb_assoc_num)  //Now interface association in this device.
 	{
 		goto __TERMINAL;
 	}
 
-	//Add one physical device for each USB interface.
-	for (i = 0; i < usb_int_num; i++)
+	//Add one physical device for each USB interface association.
+	for (i = 0; i < usb_assoc_num; i++)
 	{
-		pIntDesc = &pConfDesc->if_desc[i].desc;
+		pAssocDesc = &pConfDesc->int_assoc[i];
+		if (USB_DT_INTERFACE_ASSOCIATION != pAssocDesc->bDescriptorType)
+		{
+			/* Should not occur,since we filled the interface association
+			   array one by one according to it's type... */
+			BUG();
+			goto __TERMINAL;
+		}
+
+		//Debugging.
+		_hx_printf("Process assoc_desc:first_int = %d,count = %d\r\n",
+			pAssocDesc->bFirstInterface,
+			pAssocDesc->bInterfaceCount);
+
 		//Alocate physical device.
 		pPhysicalDevice = (__PHYSICAL_DEVICE*)_hx_malloc(sizeof(__PHYSICAL_DEVICE));
 		if (NULL == pPhysicalDevice)
 		{
+			_hx_printf("%s:failed to allocate physical dev.\r\n", __func__);
 			break;
 		}
 		memzero(pPhysicalDevice, sizeof(__PHYSICAL_DEVICE));
 
+		//Allocate USB interface association object to contain all related
+		//information,such as interface(s).
+		pIntAssoc = (__USB_INTERFACE_ASSOCIATION*)_hx_malloc(sizeof(__USB_INTERFACE_ASSOCIATION));
+		if (NULL == pIntAssoc)
+		{
+			_hx_printf("%s:failed to allocate int assoc.\r\n", __func__);
+			break;
+		}
+		memzero(pIntAssoc, sizeof(__USB_INTERFACE_ASSOCIATION));
+
+		//Parse the interface association.
+		pIntAssoc->nIntAssocNum = pAssocDesc->bInterfaceCount;
+		pIntAssoc->bFunctionClass = pAssocDesc->bFunctionClass;
+		pIntAssoc->bFunctionSubClass = pAssocDesc->bFunctionSubClass;
+		pIntAssoc->bFunctionProtocol = pAssocDesc->bFunctionProtocol;
+		pIntAssoc->iFunction = pAssocDesc->iFunction;
+		for (j = 0; j < pIntAssoc->nIntAssocNum; j++)
+		{
+			if (MAX_USBINTERFACE_IN_ASSOC == j)
+			{
+				_hx_printf("%s:too many int in assoc[%d],skiped.\r\n", __func__, i);
+				break;
+			}
+			//Save all USB interface and it's alternate settings into assoc object.
+			x = 0;
+			for (k = 0; k < pConfDesc->no_of_if; k++)
+			{
+				pUsbInt = &pConfDesc->if_desc[k];
+				if (pUsbInt->desc.bInterfaceNumber == (pAssocDesc->bFirstInterface) + j)
+				{
+					//Debugging.
+					debug("Add int[num = %d,alt = %d,no_of_ep = %d] to assoc[first_int = %d].\r\n",
+						pUsbInt->desc.bInterfaceNumber,
+						pUsbInt->num_altsetting,
+						pUsbInt->no_of_ep,
+						pAssocDesc->bFirstInterface);
+					if (0 == pUsbInt->num_altsetting)  //Alternate setting.
+					{
+						pIntAssoc->Interfaces[j].pAltInterfaces[x++] = pUsbInt;
+						pIntAssoc->Interfaces[j].nAlternateNum++;
+						pUsbInt->int_processed = 1;    //Mark as processed.
+						if (MAX_USB_ALTERNATE_NUM == x)
+						{
+							_hx_printf("%s:too many alternate setting num with interface[%d].\r\n",
+								__func__, pUsbInt->desc.bInterfaceNumber);
+							break;
+						}
+					}
+					else //Primary USB interface.
+					{
+						pIntAssoc->Interfaces[j].pPrimaryInterface = pUsbInt;
+						pUsbInt->int_processed = 1;   //Mark as processed.
+					}
+				}
+			}
+		}
+
 		//The high part(16 bits) of dwNumber contains the USB device address,and
-		//the low part contains the USB interface ID.
+		//the low part contains the USB interface association ID.
 		pPhysicalDevice->dwNumber = pDevice->devnum;
 		pPhysicalDevice->dwNumber <<= 16;
 		pPhysicalDevice->dwNumber += i;
@@ -392,13 +466,16 @@ static BOOL _AddUsbDevice(struct usb_device* pDevice)
 		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bDeviceClass = pDevDesc->bDeviceClass;
 		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bDeviceSubClass = pDevDesc->bDeviceSubClass;
 		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bDeviceProtocol = pDevDesc->bDeviceProtocol;
-		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceClass = pIntDesc->bInterfaceClass;
-		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceSubClass = pIntDesc->bInterfaceSubClass;
-		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceProtocol = pIntDesc->bInterfaceProtocol;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceClass = pAssocDesc->bFunctionClass;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceSubClass = pAssocDesc->bFunctionSubClass;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceProtocol = pAssocDesc->bFunctionProtocol;
 		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.wVendorID = pDevDesc->idVendor;
 		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.wProductID = pDevDesc->idProduct;
 
+		//Save usb_device and usb interface's descriptor base to physical device object's
+		//local varialbes.
 		pPhysicalDevice->lpPrivateInfo = (LPVOID)pDevice;
+		pPhysicalDevice->Resource[0].Dev_Res.usbIntAssocBase = (LPVOID)pIntAssoc;
 		//Copy device name.
 		for (j = 0; j < MAX_DEV_NAME - 1; j++)
 		{
@@ -417,6 +494,7 @@ static BOOL _AddUsbDevice(struct usb_device* pDevice)
 		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 		pPhysicalDevice->lpNext = USBManager.pUsbDeviceRoot;
 		USBManager.pUsbDeviceRoot = pPhysicalDevice;
+		USBManager.nPhysicalDevNum++;
 		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 		debug("%s: Add one USB physical device [name = %s] into system.\r\n", __func__,
 			pPhysicalDevice->strName);
@@ -426,7 +504,7 @@ static BOOL _AddUsbDevice(struct usb_device* pDevice)
 	{
 		bResult = TRUE;
 	}
-	
+
 __TERMINAL:
 	if (!bResult)
 	{
@@ -437,6 +515,139 @@ __TERMINAL:
 		}
 	}
 	return bResult;
+}
+
+/* Parse USB interfaces belong to one USB device,one physical device will
+   be created and initialized accordingly. */
+static BOOL _ParseInterface(struct usb_device* pDevice)
+{
+	__PHYSICAL_DEVICE* pPhysicalDevice = NULL;
+	struct usb_device_descriptor* pDevDesc = NULL;
+	struct usb_config* pConfDesc = NULL;
+	struct usb_interface* pUsbInt = NULL;
+	struct usb_interface_assoc_descriptor* pAssocDesc = NULL;
+	__USB_INTERFACE_ASSOCIATION* pIntAssoc = NULL;
+	BOOL bResult = FALSE;
+	DWORD dwFlags;
+	int usb_int_num = 0, i = 0, j = 0, k = 0, x = 0;
+
+	if (NULL == pDevice)
+	{
+		goto __TERMINAL;
+	}
+	pDevDesc = &pDevice->descriptor;
+	pConfDesc = &pDevice->config;
+	usb_int_num = pConfDesc->no_of_if;
+	if (0 == usb_int_num)  //No USB interface in current device.
+	{
+		goto __TERMINAL;
+	}
+
+	//Parse USB interface one by one...
+	i = 0;
+	while (i < usb_int_num)
+	{
+		pUsbInt = &pConfDesc->if_desc[i];
+		if (pUsbInt->int_processed)  //Maybe already processed in ParseInterfaceAssoc routine.
+		{
+			i++;
+			continue;
+		}
+		if (pUsbInt->num_altsetting == 0)  //Alternate setting.
+		{
+			i++;
+			continue;
+		}
+		//Locate a primary USB interface,allocate physical device for it.
+		pPhysicalDevice = (__PHYSICAL_DEVICE*)_hx_malloc(sizeof(__PHYSICAL_DEVICE));
+		if (NULL == pPhysicalDevice)
+		{
+			_hx_printf("%s:failed to allocate physical dev.\r\n", __func__);
+			break;
+		}
+		memzero(pPhysicalDevice, sizeof(__PHYSICAL_DEVICE));
+
+		//The high part(16 bits) of dwNumber contains the USB device address,and
+		//the low part contains the USB interface association ID.
+		pPhysicalDevice->dwNumber = pDevice->devnum;
+		pPhysicalDevice->dwNumber <<= 16;
+		pPhysicalDevice->dwNumber += i;
+
+		pPhysicalDevice->DevId.dwBusType = BUS_TYPE_USB;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.ucMask = USB_IDENTIFIER_MASK_ALL;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bDeviceClass = pDevDesc->bDeviceClass;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bDeviceSubClass = pDevDesc->bDeviceSubClass;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bDeviceProtocol = pDevDesc->bDeviceProtocol;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceClass = pUsbInt->desc.bInterfaceClass;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceSubClass = pUsbInt->desc.bInterfaceSubClass;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.bInterfaceProtocol = pUsbInt->desc.bInterfaceProtocol;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.wVendorID = pDevDesc->idVendor;
+		pPhysicalDevice->DevId.Bus_ID.USB_Identifier.wProductID = pDevDesc->idProduct;
+
+		/* Also use usb interface association to handle normal interface,to make all
+		   unified. */
+		pIntAssoc = (__USB_INTERFACE_ASSOCIATION*)_hx_malloc(sizeof(__USB_INTERFACE_ASSOCIATION));
+		if (NULL == pIntAssoc)
+		{
+			_hx_printf("%s:failed to allocate int assoc.\r\n", __func__);
+			//Release the physical device object,since it no use any more.
+			_hx_free(pPhysicalDevice);
+			break;
+		}
+		memzero(pIntAssoc, sizeof(__USB_INTERFACE_ASSOCIATION));
+
+		pIntAssoc->nIntAssocNum = 1;
+		pIntAssoc->Interfaces[0].pPrimaryInterface = pUsbInt;
+		for (j = 1; j < pUsbInt->num_altsetting; j++)  //Add alternate setting interface one by one.
+		{
+			pIntAssoc->Interfaces[0].pAltInterfaces[j - 1] = pUsbInt + j;
+			pIntAssoc->Interfaces[0].nAlternateNum++;
+		}
+		//Skip the processed interface(s),include the primary interface and alternate setting.
+		i += pUsbInt->num_altsetting;
+
+		//Save usb_device and usb interface's descriptor base to physical device object's
+		//local varialbes.
+		pPhysicalDevice->lpPrivateInfo = (LPVOID)pDevice;
+		pPhysicalDevice->Resource[0].Dev_Res.usbIntAssocBase = (LPVOID)pIntAssoc;
+		
+		//Use interface function description as physical device name,if exists.
+		if (usb_string(pDevice, pUsbInt->desc.iInterface, pPhysicalDevice->strName, MAX_DEV_NAME) < 0)
+		{
+			//Failed to get usb interface description string,use device name.
+			for (j = 0; j < MAX_DEV_NAME - 1; j++)
+			{
+				if (pDevice->mf[j])
+				{
+					pPhysicalDevice->strName[j] = pDevice->mf[j];
+				}
+				else
+				{
+					break;
+				}
+			}
+			pPhysicalDevice->strName[j] = 0;
+		}
+
+		//Now add the physical device into USB Manager's global list.
+		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		pPhysicalDevice->lpNext = USBManager.pUsbDeviceRoot;
+		USBManager.pUsbDeviceRoot = pPhysicalDevice;
+		USBManager.nPhysicalDevNum++;
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		debug("%s: Add one USB physical device [name = %s] into system.\r\n", __func__,
+			pPhysicalDevice->strName);
+		bResult = TRUE;
+	}
+
+__TERMINAL:
+	return bResult;
+}
+
+//Add a physical USB device into system,for each scaned USB device.
+static BOOL _AddUsbDevice(struct usb_device* pDevice)
+{
+	return _ParseInterfaceAssoc(pDevice) | _ParseInterface(pDevice);
 }
 
 //Get a physical device corresponding a specified USB device identified by id.
@@ -483,6 +694,7 @@ __USB_MANAGER USBManager = {
 	{ 0 },    //CtrlArray.
 	{ 0 },    //UsbDevArray.
 	0,        //dev_index.
+	0,        //nPhysicalDevNum.
 	NULL,     //pUsbDeviceRoot.
 	NULL,     //UsbCoreThread.
 

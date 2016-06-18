@@ -57,8 +57,8 @@
 //Set the number of Tx and Rx buffers, using Log_2(# buffers).
 //Reasonable default values are 4 Tx buffers, and 16 Rx buffers.
 //That translates to 2 (4 == 2^^2) and 4 (16 == 2^^4).
-#define PCNET_LOG_TX_BUFFERS    0
-#define PCNET_LOG_RX_BUFFERS    2
+#define PCNET_LOG_TX_BUFFERS    2 //0
+#define PCNET_LOG_RX_BUFFERS    2 //2
 
 #define TX_RING_SIZE (1 << (PCNET_LOG_TX_BUFFERS))
 #define TX_RING_LEN_BITS ((PCNET_LOG_TX_BUFFERS) << 12)

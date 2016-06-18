@@ -17,15 +17,20 @@
 
 #define __CONFIG_H__  //Include switch.
 
+//Use Microsoft Visual Studio as compiler.Just use "define __GCC__" replacing this
+//if you use GCC as compiler.
+#define __MS_VC__
+
 //************************************************************************
 //
 //  Displayable information,such as version
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.79"
-#define VERSION_INFO "HelloX [Version 1.790(Beta),build in 2015/12/31,by Garry.Xin]"
-#define SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
+#define OS_VERSION   "    HelloX V1.80"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.800(Beta),build in 2016/06/18,by Garry.Xin]"
+#define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
+#define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
 //************************************************************************
 //
@@ -146,7 +151,7 @@
 //************************************************************************
 
 //Include IDE driver in OS.
-//#define __CFG_DRV_IDE
+#define __CFG_DRV_IDE
 
 //Include COM driver in OS.
 #define __CFG_DRV_COM
@@ -171,6 +176,9 @@
 
 //Include USB keyboard driver in OS kernel.
 #define __CFG_DRV_USBKBD
+
+//Include USB Video Class driver in OS kernel.
+#define __CFG_DRV_UVC
 
 //************************************************************************
 //
@@ -206,7 +214,7 @@
 #define __CFG_NET_PCNET
 
 //Include RTL8111 driver in OS.
-#define __CFG_NET_RTL8111
+//#define __CFG_NET_RTL8111
 
 //Include IPv6 network protocol in OS.
 //#define __CFG_NET_IPv6
@@ -216,6 +224,22 @@
 
 //Include ENC28J60 ethernet driver.
 //#define __CFG_NET_ENC28J60
+
+//************************************************************************
+//
+//  Pre-defined switches to control what kinds of application components
+//  will be included in system binary.
+//
+//************************************************************************
+
+//Enable or disable Java virtual machine in system.
+//#define __CFG_APP_JVM
+
+//Enable or disable SSH support in system.
+#define __CFG_APP_SSH
+
+//Enable or disable telnet support in system.
+#define __CFG_APP_TELNET
 
 //************************************************************************
 //
@@ -238,9 +262,6 @@
 //  More compiling switches can be added here.
 //
 //************************************************************************
-
-//Enable or disable Java virtual machine in system.
-//#define __CFG_APP_JVM
 
 #define _TIME_T_DEFINED
 

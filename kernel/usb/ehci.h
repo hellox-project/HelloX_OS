@@ -227,17 +227,10 @@ struct usb_linux_config_descriptor {
 
 #if defined CONFIG_EHCI_DESC_BIG_ENDIAN
 #define	ehci_readl(x)		(*((volatile u32 *)(x)))
-#define ehci_writel(a, b)	(*((volatile u32 *)(a)) = ((volatile u32)b))
+#define ehci_writel(a, b)	(*((volatile u32 *)(a)) = ((u32)b))
 #else
 #define ehci_readl(x)		cpu_to_le32((*((volatile u32 *)(x))))
-
-#ifdef __MS_VC__
-#define ehci_writel(a, b)	(*((volatile u32 *)(a)) = \
-					cpu_to_le32(((u32)b)))
-#else
-#define ehci_writel(a, b)	(*((volatile u32 *)(a)) = \
-					cpu_to_le32(((volatile u32)b)))
-#endif
+#define ehci_writel(a,b)    (*((volatile u32 *)(a)) = cpu_to_le32(((u32)b)))
 #endif
 
 #if defined CONFIG_EHCI_MMIO_BIG_ENDIAN
@@ -273,8 +266,6 @@ struct usb_linux_config_descriptor {
 * IMPORTANT: Software must ensure that no interface data structure
 * reachable by the EHCI host controller spans a 4K page boundary!
 *
-* Periodic transfers (i.e. isochronous and interrupt transfers) are
-* not supported.
 */
 
 /* Queue Element Transfer Descriptor (qTD). */
@@ -310,6 +301,65 @@ struct qTD {
 	uint32_t qt_buffer_hi[QT_BUFFER_CNT];	/* Appendix B */
 	/* pad struct for 32 byte alignment */
 	uint32_t unused[3];
+};
+
+//Isochronous Transfer Descriptor(iTD),must be aligned to 32 bytes boundary.
+struct iTD{
+	uint32_t lp_next;         //Next Link Pointer.
+#define ITD_NEXT_TERMINATE 1
+#define ITD_NEXT_TYPE_ITD  0
+#define ITD_NEXT_TYPE_QH   1
+#define ITD_NEXT_TYPE_SIDT 2
+#define ITD_NEXT_TYPE_FSTN 3
+#define ITD_NEXT_TYPE_GET(x) ((x >> 1) & 0x3)     //Get next type value giving lp_next.
+#define ITD_NEXT_TYPE_SET(v) ((v & 0x3) << 1)     //Set next type value.
+
+	uint32_t transaction[8]; //Transaction array,one for each xfer.
+#define ITD_TRANS_STATUS_GET(x) (x >> 28)         //Get transaction status value.
+#define ITD_TRANS_STATUS_SET(v) ((v & 0xF) << 28)
+#define ITD_TRANS_STATUS_XERR   1
+#define ITD_TRANS_STATUS_BABBLE 2
+#define ITD_TRANS_STATUS_DBE    4  //Data buffer error.
+#define ITD_TRANS_STATUS_ACT    8
+
+#define ITD_TRANS_XLEN_GET(x)   ((x >> 16) & 0xFFF)
+#define ITD_TRANS_XLEN_SET(v)   ((v & 0xFFF) << 16)
+
+#define ITD_TRANS_IOC_GET(x)    ((x >> 15) & 1)
+#define ITD_TRANS_IOC_SET(v)    ((v & 1) << 15)
+
+#define ITD_TRANS_PG_GET(x)     ((x >> 12) & 0x07)
+#define ITD_TRANS_PG_SET(v)     ((v & 0x07) << 12)
+
+#define ITD_TRANS_XOFFSET_GET(x) ((__U32)x & 0xFFF)
+#define ITD_TRANS_XOFFSET_SET(v) ((__U32)v & 0xFFF)
+
+	uint32_t pg_pointer[7];  //Buffer page pointers with control information.
+#define ITD_PGPTR_GET(x)        ((__U32)x & ~0xFFF)
+#define ITD_PGPTR_SET(v)        ((__U32)v & ~0xFFF)
+
+	//Get or set endpoint for a iTD,the iTD must be cleared to 0 before set.
+#define ITD_ENDPOINT_GET(itd)      ((itd->pg_pointer[0] >> 8) & 0xF)
+#define ITD_ENDPOINT_SET(ep)       ((ep & 0xF) << 8)
+
+	//Get or set device address for a iTD,the ITD must be clread before set.
+#define ITD_DEVADDR_GET(itd)       (itd->pg_pointer[0] & 0x7F)
+#define ITD_DEVADDR_SET(itd,addr)  (itd->pg_pointer[0] |= (addr & 0x7F))
+
+	//Get or set of xfer direction for a iTD.
+#define ITD_XFERDIR_GET(itd)       ((itd->pg_pointer[1] >> 11) & 1)
+#define ITD_XFERDIR_SET(dir)       ((dir & 1) << 11)
+
+	//Get or set of maximal packet size of iTD.
+#define ITD_MAX_PKTSZ_GET(itd)     (itd->pg_pointer[1] & 0x7FF)
+#define ITD_MAX_PKTSZ_SET(sz)      (sz & 0x7FF)
+
+	//Get or set of transaction number(MULTI) for a iTD.
+#define ITD_MULTI_GET(itd)         (itd->pg_pointer[2] & 3)
+#define ITD_MULTI_SET(multi)       (multi & 3)
+
+	//Extend page buffer pointer,according Appendix B of EHCI spec.
+	uint32_t ext_pg_pointer[7];
 };
 
 #define EHCI_PAGE_SIZE		4096
@@ -402,6 +452,9 @@ struct int_queue {
 	BOOL (*QueueIntHandler)(struct int_queue* pIntQueue);
 };
 
+//Isochronous transfer descriptor,defined in usbiso.h file.
+struct tag__USB_ISO_DESCRIPTOR;
+
 struct ehci_ctrl {
 	enum usb_init_type init;
 	struct ehci_hccr *hccr;	/* R/O registers, not need for volatile */
@@ -427,6 +480,10 @@ struct ehci_ctrl {
 	//Interrupt queue list pending on this EHCI Controller.
 	struct int_queue* pIntQueueFirst;
 	struct int_queue* pIntQueueLast;
+
+	//Isochronous transfer descriptor header and tail pointer.
+	struct tag__USB_ISO_DESCRIPTOR* pIsoDescFirst;
+	struct tag__USB_ISO_DESCRIPTOR* pIsoDescLast;
 };
 
 /**
