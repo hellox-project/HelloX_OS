@@ -17,6 +17,9 @@
 #define  SSH_SVR_TEXT            100
 #define  SSH_USER_LOGOUT         101
 #define  SSH_REQ_ACCOUNT         102
+#define  SSH_NETWORK_ERROR       103
+#define  SSH_AUTH_ERROR          104
+#define  SSH_OTHER_ERROR         105
 
 #ifdef __cplusplus
 extern "C" {

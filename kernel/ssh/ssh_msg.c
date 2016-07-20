@@ -21,6 +21,7 @@ extern  ssh_kexes ssh_diffiehellman_gex;
 
 static  ssh_signkey *hostkey_algs[] = { &ssh_rsa, &ssh_dss };
 
+
 static  ssh_mac *macs[] = 
 {
 	&ssh_hmac_sha256, /*&ssh_hmac_sha1, &ssh_hmac_sha1_96,*/ &ssh_hmac_md5
@@ -172,8 +173,7 @@ int ssh_step1(ssh_session*  ssh,Packet* pktin)
 	s->sccomp_tobe   = NULL;
 	s->warn_kex      = s->warn_cscipher = s->warn_sccipher = FALSE;
 
-	//PrintLine("setp1");
-
+	
 	pktin->savedpos += 16;						/* skip garbage cookie */
 	ssh_pkt_getstring(pktin, &str, &len);    /* key exchange algorithms */
 	if (!str) 
@@ -503,11 +503,11 @@ static void ssh2_channel_init(struct ssh_channel *c)
 {
     ssh_session* ssh = c->ssh;
 
-    c->localid = 0x100;// alloc_channel_id(ssh);
-    c->closes = 0;
-    c->pending_eof = FALSE;
+    c->localid         = 0x100;// alloc_channel_id(ssh);
+    c->closes          = 0;
+    c->pending_eof     = FALSE;
     c->throttling_conn = FALSE;
-    c->v.v2.locwindow = c->v.v2.locmaxwin = c->v.v2.remlocwin = OUR_V2_WINSIZE;
+    c->v.v2.locwindow  = c->v.v2.locmaxwin = c->v.v2.remlocwin = OUR_V2_WINSIZE;
 	
 	//ssh_is_simple(ssh) ? OUR_V2_BIGWIN : OUR_V2_WINSIZE;
     c->v.v2.chanreq_head = NULL;
@@ -554,6 +554,7 @@ int ssh_step8(ssh_session*  ssh,Packet* pktin)
 {	
 	ssh->setup = 8;
 	ssh->login = TRUE;
+	
 
 	return S_OK;
 }
@@ -561,8 +562,7 @@ int ssh_step8(ssh_session*  ssh,Packet* pktin)
 int ssh_step7(ssh_session*  ssh,Packet* pktin)
 {
 	Packet *pktout = NULL;
-
-	//s = ssh->trans_state;
+		
 	ssh->setup = 7;
 
 	ssh->mainchan = snewn(1,struct ssh_channel);
@@ -588,8 +588,7 @@ int ssh_step7(ssh_session*  ssh,Packet* pktin)
 	ssh2_pkt_adduint32(pktout, ssh->mainchan->remoteid);
 	ssh2_pkt_addstring(pktout, "shell");
 	ssh2_pkt_addbool(pktout, 1);
-	ssh2_pkt_send(ssh, pktout);
-	
+	ssh2_pkt_send(ssh, pktout);	
 
 	return S_OK;
 }
@@ -597,19 +596,22 @@ int ssh_step7(ssh_session*  ssh,Packet* pktin)
 int ssh_step6(ssh_session*  ssh,Packet* pktin)
 {
 	ssh2_transport_state* s;
+	ssh_callbk    pcall      = (ssh_callbk)ssh->pcb;
 
 	ssh->setup = 6;
 
 	if(pktin->type == SSH2_MSG_USERAUTH_FAILURE)
 	{		
-		return S_FALSE;
+		pcall(SSH_AUTH_ERROR,NULL,0,ssh->wp);					
+
+		return S_USERAUTH_ERR;
 	}
 	s = ssh->trans_state;
 
 	s->pktout = ssh2_chanopen_init("session");	
 	ssh2_pkt_send(ssh, s->pktout);
-		
-
+	
+	
 	return S_OK;
 }
 int ssh_step5(ssh_session*  ssh,Packet* pktin)
@@ -630,7 +632,8 @@ int ssh_step5(ssh_session*  ssh,Packet* pktin)
 	ssh2_pkt_addbool(s->pktout, FALSE);
 	ssh2_pkt_addstring(s->pktout, ssh->password);
 	ssh2_pkt_send_with_padding(ssh, s->pktout, 256);
-		
+	
+	
 	return S_OK;
 }
 
@@ -670,6 +673,8 @@ int ssh_step4(ssh_session*  ssh,Packet* pktin)
     ssh->sccomp = s->sccomp_tobe;
     ssh->sc_comp_ctx = ssh->sccomp->decompress_init();
 
+	
+	
     /*
      * Set IVs on server-to-client keys. Here we use the exchange
      * hash from the _first_ key exchange.
@@ -700,15 +705,14 @@ int ssh_step4(ssh_session*  ssh,Packet* pktin)
      */
     ssh->kex_in_progress = FALSE;
     //ssh->last_rekey = GETTICKCOUNT();
-
 	//s->done_service_req = FALSE;
 	//s->we_are_in = s->userauth_success = FALSE;
 
-     ssh->protocol_initial_phase_done = TRUE;
+    ssh->protocol_initial_phase_done = TRUE;
 	s->pktout = ssh2_pkt_init(SSH2_MSG_SERVICE_REQUEST);
 	ssh2_pkt_addstring(s->pktout, "ssh-userauth");
 	ssh2_pkt_send(ssh, s->pktout);
-		
+
 
 	return S_OK;
 }
@@ -742,13 +746,14 @@ int ssh_step3(ssh_session*  ssh,Packet* pktin)
 		return S_FALSE;	
 	}
 	
-	 s->K = dh_find_K(ssh->kex_ctx, s->f);
+
+	s->K = dh_find_K(ssh->kex_ctx, s->f);
 
      /* We assume everything from now on will be quick, and it might* involve user interaction. */
      //set_busy_status(ssh->frontend, BUSY_NOT);
 
-     hash_string(ssh->kex->hash, ssh->exhash, s->hostkeydata, s->hostkeylen);
-     if (!ssh->kex->pdata) 
+    hash_string(ssh->kex->hash, ssh->exhash, s->hostkeydata, s->hostkeylen);
+    if (!ssh->kex->pdata) 
 	 {
          if (!(ssh->remote_bugs & BUG_SSH2_OLDGEX))
                hash_uint32(ssh->kex->hash, ssh->exhash, DH_MIN_SIZE);
@@ -768,21 +773,20 @@ int ssh_step3(ssh_session*  ssh,Packet* pktin)
         freebn(s->g);
         freebn(s->p);
      }
-    
+     
+
 	 hash_mpint(ssh->kex->hash, ssh->exhash, s->K);	 
 	 ssh->kex->hash->final(ssh->exhash, s->exchange_hash);
-
 	 ssh->kex_ctx = NULL;
 
 	 if (!s->hkey || !ssh->hostkey->verifysig(s->hkey, s->sigdata, s->siglen, (char *)s->exchange_hash,		 ssh->kex->hash->hlen)) 
 	 {
-		 return S_FALSE;		 
-			 
+		 return S_FALSE;		 			 
 	 }
 
 	 s->keystr = ssh->hostkey->fmtkey(s->hkey);
-    if (!s->got_session_id) 
-	{
+     if (!s->got_session_id) 
+	 {
         /*
          * Authenticate remote host: verify host key. (We've already
          * checked the signature of the exchange hash.)
@@ -795,9 +799,8 @@ int ssh_step3(ssh_session*  ssh,Packet* pktin)
          * subsequent rekeys.
          */
         ssh->hostkey_str = s->keystr;
-    }
-
-	  ssh->hostkey->freekey(s->hkey);
+     }
+	 ssh->hostkey->freekey(s->hkey);
 
     /*
      * The exchange hash from the very first key exchange is also
@@ -818,44 +821,51 @@ int ssh_step3(ssh_session*  ssh,Packet* pktin)
     ssh2_pkt_send_noqueue(ssh, s->pktout);
     ssh->outgoing_data_size = 0;       /* start counting from here */
 
+
     /*
      * We've sent client NEWKEYS, so create and initialise
      * client-to-server session keys.
      */
     if (ssh->cs_cipher_ctx)
+	{
 		ssh->cscipher->free_context(ssh->cs_cipher_ctx);
+	}
     
 	ssh->cscipher = s->cscipher_tobe;
-    ssh->cs_cipher_ctx = ssh->cscipher->make_context();
+    ssh->cs_cipher_ctx = ssh->cscipher->make_context();	
 
     if (ssh->cs_mac_ctx)
+	{
 		ssh->csmac->free_context(ssh->cs_mac_ctx);
-    
+	}
+    	
 	ssh->csmac = s->csmac_tobe;
     ssh->cs_mac_ctx = ssh->csmac->make_context();
 
     if (ssh->cs_comp_ctx)
+	{
 		ssh->cscomp->compress_cleanup(ssh->cs_comp_ctx);
+	}
     ssh->cscomp = s->cscomp_tobe;
     ssh->cs_comp_ctx = ssh->cscomp->compress_init();
 
-    /*
+	/*
      * Set IVs on client-to-server keys. Here we use the exchange
      * hash from the _first_ key exchange.
      */
     {
-	unsigned char keyspace[SSH2_KEX_MAX_HASH_LEN * SSH2_MKKEY_ITERS];
-	//assert(sizeof(keyspace) >= ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
-	ssh2_mkkey(ssh,s->K,s->exchange_hash,'C',keyspace);
-	//assert((ssh->cscipher->keylen+7) / 8 <=	       ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
-	ssh->cscipher->setkey(ssh->cs_cipher_ctx, keyspace);
-	ssh2_mkkey(ssh,s->K,s->exchange_hash,'A',keyspace);
-	//assert(ssh->cscipher->blksize <=	       ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
-	ssh->cscipher->setiv(ssh->cs_cipher_ctx, keyspace);
-	ssh2_mkkey(ssh,s->K,s->exchange_hash,'E',keyspace);
-	//assert(ssh->csmac->len <=	       ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
-	ssh->csmac->setkey(ssh->cs_mac_ctx, keyspace);
-	smemclr(keyspace, sizeof(keyspace));
+		unsigned char keyspace[SSH2_KEX_MAX_HASH_LEN * SSH2_MKKEY_ITERS];
+		//assert(sizeof(keyspace) >= ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
+		ssh2_mkkey(ssh,s->K,s->exchange_hash,'C',keyspace);
+		//assert((ssh->cscipher->keylen+7) / 8 <=	       ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
+		ssh->cscipher->setkey(ssh->cs_cipher_ctx, keyspace);
+		ssh2_mkkey(ssh,s->K,s->exchange_hash,'A',keyspace);
+		//assert(ssh->cscipher->blksize <=	       ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
+		ssh->cscipher->setiv(ssh->cs_cipher_ctx, keyspace);
+		ssh2_mkkey(ssh,s->K,s->exchange_hash,'E',keyspace);
+		//assert(ssh->csmac->len <=	       ssh->kex->hash->hlen * SSH2_MKKEY_ITERS);
+		ssh->csmac->setkey(ssh->cs_mac_ctx, keyspace);
+		smemclr(keyspace, sizeof(keyspace));
     }
 
     /*
@@ -865,7 +875,7 @@ int ssh_step3(ssh_session*  ssh,Packet* pktin)
     ssh->queueing = FALSE;
     ssh2_pkt_queuesend(ssh);
 	
-	 
+
 	return S_OK;
 
 }
@@ -873,6 +883,7 @@ int ssh_step2(ssh_session*  ssh,Packet* pktin)
 {
 	ssh2_transport_state* s;
 
+	
 	s = ssh->trans_state;
 	ssh->setup = 2;
 
@@ -888,17 +899,21 @@ int ssh_step2(ssh_session*  ssh,Packet* pktin)
 	{
 		return S_FALSE;
     }
+	
     ssh->kex_ctx       = dh_setup_gex(s->p, s->g);
     s->kex_init_value  = SSH2_MSG_KEX_DH_GEX_INIT;
     s->kex_reply_value = SSH2_MSG_KEX_DH_GEX_REPLY;
       
     //set_busy_status(ssh->frontend, BUSY_CPU); /* this can take a while */
-    s->e = dh_create_e(ssh->kex_ctx, s->nbits * 2);
-    s->pktout = ssh2_pkt_init(s->kex_init_value);
-     
+    s->e      = dh_create_e(ssh->kex_ctx, s->nbits * 2);
+	
+    s->pktout = ssh2_pkt_init(s->kex_init_value);     
 	ssh2_pkt_addmp(s->pktout, s->e);
+		
+	
     ssh2_pkt_send_noqueue(ssh, s->pktout);
 
+	
     //set_busy_status(ssh->frontend, BUSY_WAITING); /* wait for server */	
 
 	return  S_OK;
@@ -1078,18 +1093,16 @@ int ssh_init_kexinfo(ssh_session*  ssh,Packet* pkt)
 int ssh_init_versioninfo(ssh_session*  ssh,uint8* data,int len)
 {
 	int verlen;
-
+		
 	strncpy(ssh->version,(char*)data,len);
-
 	verlen   = hx_strcspn(ssh->version, "\r\n");
 	ssh->v_s = snewn(verlen + 1, char);
 	memcpy(ssh->v_s, ssh->version, verlen);
 	ssh->v_s[verlen] = 0;
-
+		
 	ssh_send_version_info(ssh);
-
 	ssh_init_kexinfo(ssh,NULL);
-
+	
 	ssh->setup = 0;
 
 	return S_OK;
@@ -1124,14 +1137,62 @@ static ssh_step_func stepfunc[8] = {
 
 
 
+int ssh_set_window(ssh_session*  ssh,int len)
+{
+	struct ssh_channel* c = ssh->mainchan;
+	int    newwin   = 0;
+
+
+	c->v.v2.locwindow -= len;
+	c->v.v2.remlocwin -= len;
+
+	if (c->v.v2.remlocwin <= 0 && c->v.v2.throttle_state == UNTHROTTLED && c->v.v2.locmaxwin < 0x40000000)
+	{
+		c->v.v2.locmaxwin += OUR_V2_WINSIZE;
+	}
+
+	newwin = c->v.v2.locmaxwin;
+
+	if (newwin / 2 >= c->v.v2.locwindow) 
+	{
+		Packet *pktout;
+
+		if (newwin == c->v.v2.locmaxwin ) //&&   !(ssh->remote_bugs & BUG_CHOKES_ON_WINADJ)
+		{
+			pktout = ssh2_pkt_init(SSH2_MSG_CHANNEL_REQUEST);
+			ssh2_pkt_adduint32(pktout, ssh->mainchan->remoteid);
+			ssh2_pkt_addstring(pktout, "shell");
+			ssh2_pkt_addbool(pktout, 1);
+			ssh2_pkt_send(ssh, pktout);
+
+			if (c->v.v2.throttle_state != UNTHROTTLED)
+				c->v.v2.throttle_state = UNTHROTTLING;
+		}
+		else 
+		{
+			/* Pretend the WINDOW_ADJUST was acked immediately. */
+			c->v.v2.remlocwin = newwin;
+			c->v.v2.throttle_state = THROTTLED;
+		}
+
+		pktout = ssh2_pkt_init(SSH2_MSG_CHANNEL_WINDOW_ADJUST);
+		ssh2_pkt_adduint32(pktout, c->remoteid);
+		ssh2_pkt_adduint32(pktout, newwin - c->v.v2.locwindow);
+		ssh2_pkt_send(ssh, pktout);
+		c->v.v2.locwindow = newwin;
+	}
+
+	return S_OK;
+}
+
 int ssh_channel_msg(ssh_session* ssh,Packet* pktin)
 {
-	ssh_callbk    pcall       = (ssh_callbk)ssh->pcb;
-	uint32       localid      = ssh_pkt_getuint32(pktin);
-	char*        strbuf       = NULL;	
-	int          len          = 0;
-
+	ssh_callbk    pcall    = (ssh_callbk)ssh->pcb;
+	uint32       localid   = ssh_pkt_getuint32(pktin);
+	char*        strbuf    = NULL;	
+	int          len       = 0;
 	
+
 	if(pktin->type == SSH2_MSG_CHANNEL_EOF)		
 	{
 		pcall(SSH_USER_LOGOUT,NULL,0,ssh->wp);
@@ -1143,79 +1204,56 @@ int ssh_channel_msg(ssh_session* ssh,Packet* pktin)
 		return S_OK;
 	}
 
-	ssh_pkt_getstring(pktin, &strbuf, &len);
-	pcall(SSH_SVR_TEXT,strbuf,len,ssh->wp);
-
-	/*while(len > 0)
+	ssh_pkt_getstring(pktin, &strbuf, &len);	
+	if(len > 0)
 	{
-		int  outlen = sizeof(strout);
-
-		if(outlen > len)
-		{
-			outlen = len;
-		}
-		analyze_str(strbuf,outlen,strout);
-		pcall(SSH_SVR_TEXT,strout,ssh->wp);
-		
-		strbuf += outlen;
-		len -= outlen;
-	}*/
-	
+		pcall(SSH_SVR_TEXT,strbuf,len,ssh->wp);
+		ssh_set_window(ssh,len);
+	}
 
 	return S_OK;
 }
 
-
 int ssh_msg_analyze(ssh_session*  ssh,uint8* data,int len)
-{
-	Packet* pkt     = NULL;	
+{		
 	uint8*  datapos = data;	
-	int     datalen = len;
-	int     leftlen = len;
+	int     datalen = len;	
 	int     ret     = S_OK;
-		
+	
+	
 	if(ssh->version[0] == 0 )
-	{
+	{		
 		return ssh_init_versioninfo(ssh,data,datalen);
 	}
-	
-	//test
-	/*extern BOOL  s_TestData;
-	if(ssh->login != FALSE && s_TestData ) 
-	{
-		PrintLine("test");
-		return S_OK;
-	}*/
-
+		
 	while(datalen > 0)
 	{
-		int pktlen = 0;
+		Packet* pkt = ssh_read_packet(ssh,datapos,&datalen);
 
-		pkt = ssh_read_packet(ssh,datapos,&datalen);
 		if ( pkt )
 		{	
 			if(ssh->login == FALSE)
-			{
-				ssh_step_func pfunc = stepfunc[ssh->setup];
-				
-				ret = pfunc(ssh,pkt);
-				if(ret != S_OK)
-				{
-					ssh->error_id = ssh->setup;					
-					break;					
-				}
+			{				
+				ssh_step_func pfunc = stepfunc[ssh->setup];							
+				ret = pfunc(ssh,pkt);					
 			}
 			else
 			{					
-				ssh_channel_msg(ssh,pkt);				
+				ret = ssh_channel_msg(ssh,pkt);										
 			}				
 											
 			ssh_free_packet(pkt);
-			datapos = data+(len-datalen);
+			datapos = data+(len-datalen);						
+
+			if(ret != S_OK) 
+			{
+				ssh->error_id = ssh->setup;				
+				break;
+			}
 		}
 		else
 		{			
-			ret = S_PKT_ERR;			
+			ret = S_NEED_MORE_DATA;			
 			break;
 		}
 	}
