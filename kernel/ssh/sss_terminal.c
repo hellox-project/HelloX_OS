@@ -476,20 +476,69 @@ void terminal_CSI(int c)
 		case 'a':		/* HPR: move right N cols */
 			/* FALLTHROUGH */
 		case 'C':		/* CUF: Cursor right */ 
+			{
+			int  row,col;
+			int  movecol;
 
+			get_cursor_pos(&col,&row);
+			movecol = term->esc_args[0]?term->esc_args[0]:1;
+
+			set_cursor_pos(col+movecol,row);
+			}
 			break;
 		case 'D':       /* CUB: move left N cols */
+			{			
+			int  row,col;
+			int  movecol;
+
+			get_cursor_pos(&col,&row);
+			movecol = term->esc_args[0]?term->esc_args[0]:1;
+
+			set_cursor_pos(col-movecol,row);
+			}
 			break;
 		case 'E':       /* CNL: move down N lines and CR */
+			{
+			int  row,col;
+			int  moveline;
+			
+			get_cursor_pos(&col,&row);
+			moveline = term->esc_args[0]?term->esc_args[0]:1;
+
+			set_cursor_pos(0,row+moveline);
+			}
 
 			break;
 		case 'F':       /* CPL: move up N lines and CR */
+			{
+			int  row,col;
+			int  moveline;
+
+			get_cursor_pos(&col,&row);
+			moveline = term->esc_args[0]?term->esc_args[0]:1;
+
+			set_cursor_pos(0,row-moveline);
+
+			}
 			break;
 		case 'G':	      /* CHA */
 		case '`':       /* HPA: set horizontal posn */		
+			{
+			int  row,col;
+
+			get_cursor_pos(&col,&row);
+			col = term->esc_args[0]?term->esc_args[0]:1;
+			set_cursor_pos(col-1,row);
+			}
 			break;
 		case 'd':       /* VPA: set vertical posn */
+			{
+			int  row,col;
 
+			get_cursor_pos(&col,&row);
+			row = term->esc_args[0]?term->esc_args[0]:1;
+			set_cursor_pos(col,row-1);
+			}
 			break;
 		case 'H':	     /* CUP */
 		case 'f':      /* HVP: set horz and vert posns at once */			
@@ -785,17 +834,27 @@ void terminal_init()
 	
 }
 
+void terminal_uninit()
+{
+	if(term)
+	{
+		_hx_free(term->screen_buf);
+		_hx_free(term);		
+		term = NULL;
+	}
+}
+
 int  terminal_cmdline()
 {
 	return term->cmd_line;
 }
+
 void terminal_analyze(char* srcstr,int len)
 {	
 	char*        strpos   = srcstr;	
 	int          nchars   = len;
 	int          c        = 0;
-	
-	terminal_init();
+		
 	while (nchars > 0) 
 	{
 		c = *strpos++; nchars--;

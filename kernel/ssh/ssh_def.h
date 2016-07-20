@@ -121,8 +121,10 @@
 
 #define  SSH_NETBUF_LEN     2048//10240
 
-#define  S_PKT_ERR         S_FALSE+1
+#define  S_NEED_MORE_DATA  S_FALSE+1
 #define  S_LOGOUT          S_FALSE+2
+#define  S_USERAUTH_ERR    S_FALSE+3
+#define  S_OTHER_ERR       S_FALSE+4
 
 typedef unsigned char uint8;
 typedef unsigned int uint32;
@@ -193,13 +195,15 @@ enum {
     BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction suspended */
 };
 
-typedef enum {
+typedef enum 
+{
 	SSH2_PKTCTX_NOKEX,
 	SSH2_PKTCTX_DHGROUP,
 	SSH2_PKTCTX_DHGEX,
 	SSH2_PKTCTX_RSAKEX
 } Pkt_KCtx;
-typedef enum {
+typedef enum 
+{
 	SSH2_PKTCTX_NOAUTH,
 	SSH2_PKTCTX_PUBLICKEY,
 	SSH2_PKTCTX_PASSWORD,
@@ -209,7 +213,8 @@ typedef enum {
 
 
 
-typedef struct  {
+typedef struct  
+{
 	void *(*init)(void); /* also allocates context */
 	void (*bytes)(void *, void *, int);
 	void (*final)(void *, unsigned char *); /* also frees context */
@@ -566,8 +571,7 @@ typedef struct
 		
 	rdpkt2_state rdpkt2_state;
 	const  ssh_cipher *cipher;
-	void *v1_cipher_ctx;
-	void *crcda_ctx;
+	
 	ssh2_cipher *cscipher, *sccipher;
 	void *cs_cipher_ctx, *sc_cipher_ctx;
 	const  ssh_mac *csmac, *scmac;
@@ -593,11 +597,12 @@ typedef struct
 	unsigned long max_data_size;
 	int kex_in_progress;
 	unsigned long next_rekey, last_rekey;
-	char *deferred_rekey_reason;    /* points to STATIC string; don't free */
+	//char *deferred_rekey_reason;    /* points to STATIC string; don't free */
 	
 	Packet **queue;
 	int queuelen, queuesize;
 	int queueing;
+
 	unsigned char *deferred_send_data;
 	int deferred_len, deferred_size;
 

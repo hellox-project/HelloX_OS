@@ -164,12 +164,14 @@ void *dh_setup_gex(Bignum pval, Bignum gval)
 void dh_cleanup(void *handle)
 {
      dh_ctx *ctx = ( dh_ctx *)handle;
+
     freebn(ctx->x);
     freebn(ctx->e);
     freebn(ctx->p);
     freebn(ctx->g);
     freebn(ctx->q);
     freebn(ctx->qmask);
+
     sfree(ctx);
 }
 

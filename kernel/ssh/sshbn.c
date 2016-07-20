@@ -52,20 +52,25 @@ void bn_restore_invariant(Bignum b)
 Bignum copybn(Bignum orig)
 {
     Bignum b = snewn(orig[0] + 1, BignumInt);
-    if (!b)
-	abort();		       /* FIXME */
+
+    //if (!b)	abort();		       /* FIXME */
     memcpy(b, orig, (orig[0] + 1) * sizeof(*b));
+
     return b;
 }
 
 void freebn(Bignum b)
 {
-    /*
-     * Burn the evidence, just in case.
-     */
-    smemclr(b, sizeof(b[0]) * (b[0] + 1));
+	if(b)
+	{
+		   /*
+		* Burn the evidence, just in case.
+		*/
+		smemclr(b, sizeof(b[0]) * (b[0] + 1));
 
-    sfree(b);
+		sfree(b);
+	}
+ 
 }
 
 Bignum bn_power_2(int n)
@@ -76,6 +81,7 @@ Bignum bn_power_2(int n)
 
     ret = newbn(n / BIGNUM_INT_BITS + 1);
     bignum_set_bit(ret, n, 1);
+
     return ret;
 }
 

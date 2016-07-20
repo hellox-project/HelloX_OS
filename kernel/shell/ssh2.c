@@ -23,9 +23,12 @@
 #include "kapi.h"
 #include "string.h"
 #include "stdio.h"
+#include "stdlib.h"
 
-#define  ERROR_TIPS "ssh error :err_id=%d\r\n"
-#define  EXIT_TIPS  "press anykey exit ssh session"
+#define  TIPS_SSHERR  " ssh error :err_id=%d\r\n"
+#define  TIPS_AUTHERR   " username or password error\r\n"
+#define  TIPS_NETERR  " ssh disconnect\r\n"
+
 
 static  void* s_pSshObj        = NULL;
 static  BOOL  s_bSsh2Exit      = FALSE;
@@ -33,6 +36,8 @@ static  BOOL  s_bLoginOk       = FALSE;
 static  BYTE  s_KeyState[256]  = {0};
 
 //BOOL  s_TestData = FALSE;
+extern void terminal_init();
+extern void terminal_uninit();
 extern int  terminal_cmdline();
 extern void terminal_analyze(const char* srcstr,int len);
 
@@ -72,7 +77,8 @@ static BYTE  GetKeyInput(BOOL *pVk)
 		bKey = (BYTE)(Msg.dwParam);			
 		s_KeyState[bKey] = 1;
 
-	}else if( Msg.wCommand == KERNEL_MESSAGE_VKEYUP)
+	}
+	else if( Msg.wCommand == KERNEL_MESSAGE_VKEYUP)
 	{
 		s_KeyState[(BYTE)(Msg.dwParam)] = 0;
 	}
@@ -91,7 +97,7 @@ static BOOL  GetInputInfo(LPSTR pTips,BOOL bShow,LPSTR pInputBuf,INT len)
 	while(1)
 	{	
 		KeyCode = GetKeyInput(&bVk);
-		if(KeyCode == 0 && bVk) 
+		if(KeyCode == 0) //
 		{		
 			continue;
 		}
@@ -111,8 +117,14 @@ static BOOL  GetInputInfo(LPSTR pTips,BOOL bShow,LPSTR pInputBuf,INT len)
 		}
 		else
 		{
-			if(pos >= len-1) continue;
-			if(bShow == TRUE) CD_PrintChar(KeyCode);
+			if(pos >= len-1 || KeyCode<  0x20 ) 
+			{
+				continue;
+			}
+			if(bShow == TRUE) 
+			{
+				CD_PrintChar(KeyCode);
+			}
 
 			pInputBuf[pos ++] = (char)KeyCode;			
 		}		
@@ -140,16 +152,25 @@ int Ssh2_CallBack(unsigned int code,const char* txtbuf,unsigned int len,unsigned
 			break;
 		case SSH_USER_LOGOUT:
 			{			
-			PrintLine(EXIT_TIPS);
-			s_bSsh2Exit = TRUE;
+			s_bSsh2Exit = TRUE;			
 			}
 			break;
-		case SSH_ERROR:
-			{			
-			_hx_printf(ERROR_TIPS,ssh_get_errid(s_pSshObj));
-			PrintLine(EXIT_TIPS);
+		case SSH_NETWORK_ERROR:
+			{
 			s_bSsh2Exit = TRUE;
-			
+			_hx_printf(TIPS_NETERR);						
+			}
+			break;
+		case SSH_OTHER_ERROR:
+			{			
+			s_bSsh2Exit = TRUE;
+			_hx_printf(TIPS_SSHERR,ssh_get_errid(s_pSshObj));			
+			}
+			break;
+		case SSH_AUTH_ERROR:
+			{
+			s_bSsh2Exit = TRUE;
+			_hx_printf(TIPS_AUTHERR);						
 			}
 			break;
 	}
@@ -197,15 +218,11 @@ INT  MakeKeyMsg(BYTE bKeyCode,LPSTR pMsgBuf)
 		pMsgBuf[0]  = bKeyCode;
 		nMsgLen     = 1;
 	}
-	
-	//TEST
-	/*if(bKeyCode == VK_RETURN)
-	{
-		VGA_EnabledScroll(FALSE);
-	}*/
+
 
 	return nMsgLen;
 }
+
 
 INT  MakeVkeyMsg(BYTE bVKeyCode,LPSTR pMsgBuf)
 {
@@ -280,11 +297,13 @@ DWORD Ssh2SessionEntry(void* pSshObj)
 		{
 			nMsgLen = MakeKeyMsg(KeyCode,szInput);
 		}
+		
 		if(nMsgLen == 0) continue;
-			
+		
+		
 		if(ssh_send_msg(pSshObj,szInput,nMsgLen) < 0)
 		{
-			PrintLine("ssh2 disconnect!");
+			PrintLine(" Ssh disconnect!");
 			break;
 		}	
 	}
@@ -295,23 +314,34 @@ DWORD Ssh2SessionEntry(void* pSshObj)
 DWORD Ssh2Handler(__CMD_PARA_OBJ* lpCmdObj)
 {	
 	int    nConnectOk  = 0;
+	int    remote      = 1;
 
-	/*if(lpCmdObj->byParameterNum < 3)
+	//return MemCheckHandler(lpCmdObj);
+
+	if(lpCmdObj->byParameterNum < 3)
 	{
 		PrintLine("params input error!");
 		return SHELL_CMD_PARSER_TERMINAL;
-	}*/
+	}	
 	
 	s_bLoginOk  = FALSE;
 	s_bSsh2Exit = FALSE;
 	memset(s_KeyState,0,sizeof(s_KeyState));
 		
 	
-    //remote
-	s_pSshObj = ssh_new_seesion("123.57.191.213",2222,Ssh2_CallBack,0);	
+	s_pSshObj = ssh_new_seesion(lpCmdObj->Parameter[1],atoi(lpCmdObj->Parameter[2]),Ssh2_CallBack,0);	
 
-	//local
-	//s_pSshObj = ssh_new_seesion("192.168.70.129",22,Ssh2_CallBack,0);	
+	//if(remote)
+	//{
+		//remote 
+	//	s_pSshObj = ssh_new_seesion("123.57.191.213",2222,Ssh2_CallBack,0);	
+	//}
+	//else
+	//{
+		//local
+	//	s_pSshObj = ssh_new_seesion("192.168.70.129",22,Ssh2_CallBack,0);	
+	//}
+	
 	
 	if(!s_pSshObj)
 	{
@@ -319,33 +349,44 @@ DWORD Ssh2Handler(__CMD_PARA_OBJ* lpCmdObj)
 	}
 	else
 	{	
-		//CHAR  szUser[64] = {0};
-		//CHAR  szPass[64] = {0};
+		CHAR  szUser[64] = {0};
+		CHAR  szPass[64] = {0};
 		WORD  wRows,wCols;
 
-		//GetInputInfo("Please input username:",TRUE,szUser,sizeof(szUser)-1);		
-		//GetInputInfo("Please input password:",FALSE,szPass,sizeof(szPass)-1);
+		GetInputInfo(" Please Input Ssh Username:",TRUE,szUser,sizeof(szUser)-1);		
+		GetInputInfo(" Please Input Ssh Password:",FALSE,szPass,sizeof(szPass)-1);
 		
 		CD_GetDisPlayRang(&wRows,&wCols);
 		ssh_set_terminal(s_pSshObj,wRows,wCols);
 
-		ssh_set_account(s_pSshObj,"root","HelloXAdmin321");
-		//ssh_set_account(s_pSshObj,"root","hjf12345");
+		ssh_set_account(s_pSshObj,szUser,szPass);
 
+		/*if(remote)
+		{
+			ssh_set_account(s_pSshObj,"root","HelloXAdmin321");
+		}
+		else
+		{
+			ssh_set_account(s_pSshObj,"root","hjf12345");
+		}*/
+
+		terminal_init();		
 		nConnectOk = ssh_start_seesion(s_pSshObj);
 	}
 		
 	if(nConnectOk <= 0)
 	{
-		PrintLine("SSH2:connect faild");
-		ssh_free_seesion(s_pSshObj);
-		return SHELL_CMD_PARSER_TERMINAL;
+		PrintLine(" SSH2:connect faild");
 	}
-	
-	Ssh2SessionEntry(s_pSshObj);
+	else
+	{
+		Ssh2SessionEntry(s_pSshObj); //enter ssh session	
+	}	
 
-	//Sleep(100);
 	ssh_free_seesion(s_pSshObj);
-
+	terminal_uninit();
+	
 	return SHELL_CMD_PARSER_SUCCESS;	
 }
+
+

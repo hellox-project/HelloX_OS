@@ -74,9 +74,7 @@ Packet *ssh_read_packet(ssh_session* ssh,uint8* data,int* datalen)
 	Packet* pkt         = NULL;
 	static int     read_state      = S_OK;
 	
-		//continue last pkt read
-
-	
+	//continue last pkt read	
 	switch(read_state)
 	{
 		case PKT_SETP1:
@@ -714,9 +712,7 @@ void ssh2_pkt_send_noqueue(ssh_session* ssh,  Packet *pkt)
 void ssh2_pkt_queuesend(ssh_session* ssh)
 {
 	int i;
-
-	//assert(!ssh->queueing);
-
+		
 	for (i = 0; i < ssh->queuelen; i++)
 		ssh2_pkt_defer_noqueue(ssh, ssh->queue[i], FALSE);
 	ssh->queuelen = 0;
@@ -739,10 +735,13 @@ void ssh2_pkt_queue(ssh_session* ssh, Packet *pkt)
 void ssh2_pkt_send(ssh_session* ssh, Packet *pkt)
 {
 	if (ssh->queueing)
-
+	{
 		ssh2_pkt_queue(ssh, pkt);
+	}
 	else
+	{
 		ssh2_pkt_send_noqueue(ssh, pkt);
+	}
 }
 
 
