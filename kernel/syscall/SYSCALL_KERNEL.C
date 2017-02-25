@@ -253,6 +253,46 @@ static void   SC_GetEthernetInterfaceState(__SYSCALL_PARAM_BLOCK*  pspb)
 #endif
 }
 
+static void SC_GetSystemTime(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	__GetTime((BYTE*)PARAM(0));
+}
+
+static void SC_GotoHome(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	GotoHome();
+}
+
+static void SC_ChangeLine(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	ChangeLine();
+}
+
+static void SC_GotoPrev(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	GotoPrev();
+}
+
+static void SC_GetCursorPos(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	CD_GetCursorPos((WORD*)PARAM(0),
+		(WORD*)PARAM(1));
+}
+
+static void SC_SetCursorPos(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	CD_SetCursorPos((WORD)PARAM(0),
+		(WORD)PARAM(1));
+}
+
+static void SC_TerminateKernelThread(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	KernelThreadManager.TerminateKernelThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		(__COMMON_OBJECT*)PARAM(0),
+		(DWORD)PARAM(1));
+}
+
 void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
 {
 	pSysCallEntry[SYSCALL_CREATEKERNELTHREAD]        = SC_CreateKernelThread;
@@ -300,4 +340,11 @@ void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
 	pSysCallEntry[SYSCALL_SWITCHTOTEXT]              = SC_SwitchToText;
 	pSysCallEntry[SYSCALL_SETFOCUSTHREAD]            = SC_SetFocusThread;
 	pSysCallEntry[SYSCALL_GETETHERNETINTERFACESTATE] = SC_GetEthernetInterfaceState;
+	pSysCallEntry[SYSCALL_GETSYSTEMTIME]             = SC_GetSystemTime;
+	pSysCallEntry[SYSCALL_GOTOHOME]                  = SC_GotoHome;
+	pSysCallEntry[SYSCALL_CHANGELINE]                = SC_ChangeLine;
+	pSysCallEntry[SYSCALL_GETCURSORPOS]              = SC_GetCursorPos;
+	pSysCallEntry[SYSCALL_SETCURSORPOS]              = SC_SetCursorPos;
+	pSysCallEntry[SYSCALL_TERMINATEKERNELTHREAD]     = SC_TerminateKernelThread;
+	pSysCallEntry[SYSCALL_GOTOPREV]                  = SC_GotoPrev;
 }

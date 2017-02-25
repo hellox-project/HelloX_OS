@@ -52,6 +52,13 @@
 #define SYSCALL_SWITCHTOTEXT          0x35     //SwitchToText.
 #define SYSCALL_SETFOCUSTHREAD        0x36     //SetFocusThread.
 #define SYSCALL_GETETHERNETINTERFACESTATE 0x37 //GetEthernetInterfaceState.
+#define SYSCALL_GETSYSTEMTIME         0x38
+#define SYSCALL_GOTOHOME              0x39
+#define SYSCALL_CHANGELINE            0x3A
+#define SYSCALL_GETCURSORPOS          0x3B
+#define SYSCALL_SETCURSORPOS          0x3C
+#define SYSCALL_TERMINATEKERNELTHREAD 0x3D
+#define SYSCALL_GOTOPREV              0x3E
 
 // io id start
 #define SYSCALL_CREATEFILE            0x101     //CreateFile.

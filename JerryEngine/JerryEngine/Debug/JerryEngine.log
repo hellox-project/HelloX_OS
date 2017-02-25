@@ -1,0 +1,10 @@
+﻿Build started 2017/2/11 14:43:12.
+     1>Project "C:\HelloX\JavaScript\JerryEngine\JerryEngine\JerryEngine.vcxproj" on node 2 (ClCompile target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl- /O1 /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /RTC1 /MDd /GS- /arch:IA32 /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt jcontext\jcontext.c
+     1>cl : Command line error D8016: '/ZI' and '/O1' command-line options are incompatible
+     1>Done Building Project "C:\HelloX\JavaScript\JerryEngine\JerryEngine\JerryEngine.vcxproj" (ClCompile target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:00.42

@@ -27,8 +27,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.80"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.800(Beta),build in 2016/06/18,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.81"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.810(Beta),build in 2017/02/12,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
@@ -87,7 +87,7 @@
 //if the user does not give a stack size in CreateKernelThread calling,then
 //use this value as stack size.
 //
-#define DEFAULT_STACK_SIZE 0x00002000 //8k bytes.
+#define DEFAULT_STACK_SIZE 0x00008000 //32k bytes.
 
 //************************************************************************
 //
