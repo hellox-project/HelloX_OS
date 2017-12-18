@@ -442,7 +442,7 @@ void strtrim(char * dst,int flag)
 }
 
 //String copy,array bound is guaranteed.
-char* strncpy(char *dest,char *src,unsigned int n)
+char* strncpy(char *dest,const char *src,unsigned int n)
 {
 	char *strRtn=dest;
 	while(n && (*dest++=*src++))

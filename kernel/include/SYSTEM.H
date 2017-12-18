@@ -187,7 +187,7 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 											          LPVOID                   lpHandlerParam,
 													  DWORD                    dwTimerFlags
 											          );
-	VOID                                  (*CancelTimer)(__COMMON_OBJECT* lpThis,
+	BOOL                                  (*CancelTimer)(__COMMON_OBJECT* lpThis,
 		                                                 __COMMON_OBJECT* lpTimer);
 	BOOL                                  (*GetInterruptStat)(__COMMON_OBJECT* lpThis, UCHAR ucVector,
 		                                                      __INTERRUPT_VECTOR_STAT* pStat);

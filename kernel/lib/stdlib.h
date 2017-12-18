@@ -15,9 +15,17 @@
 #ifndef __STDLIB_H__
 #define __STDLIB_H__
 
-#ifndef __STDDEF_H__
 #include "stddef.h"
-#endif
+
+/**
+* Generate random number,the standard C routine.
+* Here we just simulate it,since it should be supported
+* by hardware to generate TRUE randomly number.
+*/
+#define RAND_MAX 0x7FFFFFFF
+
+long rand();
+void srand(unsigned long seed);
 
 //Standard C malloc/free/calloc routine.A dedicated prefix _hx_ is appended
 //before the standard name to distinguish the HX version and standard version.

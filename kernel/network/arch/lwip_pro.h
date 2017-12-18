@@ -23,13 +23,14 @@
 
 #define LWIP_PROTOCOL_NAME "lwip_IP"
 
-//Frame mask of the lwIP protocol,it tells the network core of HelloX what kind of
-//ethernet frames that lwIP is interesting.It's the combination of IP and ARP's type
-//value in Ethernet Frame Header.
-#define LWIP_FRAME_TYPE_MASK (0x800 | 0x806)
+/* Ethernet frame type of IP. */
+#define ETH_FRAME_TYPE_IP 0x0800
+
+/* Ethernet frame type of ARP. */
+#define ETH_FRAME_TYPE_ARP 0x0806
 
 //Initializer of the protocol object.
-BOOL lwipInitialize(struct tag_NETWORK_PROTOCOL* pProtocol);
+BOOL lwipInitialize(struct tag__NETWORK_PROTOCOL* pProtocol);
 
 //Check if the protocol can be bind a specific interface.
 BOOL lwipCanBindInterface(struct tag__NETWORK_PROTOCOL* pProtocol, LPVOID pInterface, DWORD* l2proto);

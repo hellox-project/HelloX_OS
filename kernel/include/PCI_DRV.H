@@ -52,6 +52,19 @@ BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr);
 #define PCI_CONFIG_OFFSET_HDRTYPE       0x0E
 #define PCI_CONFIG_OFFSET_BIST          0x0F
 
+//PCI command values.
+#define PCI_COMMAND_IO 0x1 /* Enable response in I/O space */
+#define PCI_COMMAND_MEMORY 0x2 /* Enable response in Memory space */
+#define PCI_COMMAND_MASTER 0x4 /* Enable bus mastering */
+#define PCI_COMMAND_SPECIAL 0x8 /* Enable response to special cycles */
+#define PCI_COMMAND_INVALIDATE 0x10 /* Use memory write and invalidate */
+#define PCI_COMMAND_VGA_PALETTE 0x20 /* Enable palette snooping */
+#define PCI_COMMAND_PARITY 0x40 /* Enable parity checking */
+#define PCI_COMMAND_WAIT 0x80 /* Enable address/data stepping */
+#define PCI_COMMAND_SERR 0x100 /* Enable SERR */
+#define PCI_COMMAND_FAST_BACK 0x200 /* Enable back-to-back writes */
+#define PCI_COMMAND_INTX_DISABLE 0x400 /* INTx Emulation Disable */
+
 //
 //Configure space content for normal PCI device(Header type 0).
 //
@@ -93,6 +106,15 @@ BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr);
 #define PCI_CONFIG_OFFSET_IOBASEUP      0x30
 #define PCI_CONFIG_OFFSET_IOLIMITUP     0x32
 #define PCI_CONFIG_OFFSET_BCONTROL      0x3E
+
+/* Alias of PCI command registers. */
+#define PCI_VENDOR_ID PCI_CONFIG_OFFSET_VENDOR
+#define PCI_DEVICE_ID PCI_CONFIG_OFFSET_DEVICE
+#define PCI_COMMAND PCI_CONFIG_OFFSET_COMMAND
+#define PCI_STATUS PCI_CONFIG_OFFSET_STATUS
+#define PCI_REVISION_ID PCI_CONFIG_OFFSET_REVISION
+#define PCI_SUBSYSTEM_VENDOR_ID PCI_CONFIG_OFFSET_SUBSYSID
+#define PCI_SUBSYSTEM_ID PCI_CONFIG_OFFSET_SYSID
 
 //
 //The following defines used to indicate which part of __IDENTIFIER structure is

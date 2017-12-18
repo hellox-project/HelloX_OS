@@ -69,12 +69,6 @@
     <Filter Include="Source Files\lib\sys">
       <UniqueIdentifier>{9ae9ad86-fd74-45f5-952d-505cf8f4c52b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\bsdip">
-      <UniqueIdentifier>{d45c3103-01e8-481b-9e83-bf10a1ee10c6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\bsd_hdr">
-      <UniqueIdentifier>{7a17f3ee-f237-47d6-8aaa-a729083628f8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\net_hdr">
       <UniqueIdentifier>{a890e948-fd9d-4f30-bbb4-02baa24bacf6}</UniqueIdentifier>
     </Filter>
@@ -629,6 +623,111 @@
     <ClCompile Include="ssh\sss_terminal.c">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
+    <ClCompile Include="usb\rtl8152.c">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\r8152_fw.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\r8152_e.c">
+      <Filter>Source Files\usb</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\hx_eth.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="user\dpi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="usb\usbasync.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\e1000.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\e1000_d.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\netentry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dhcp_srv\dhcp_srv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\oe_pro.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\rand.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\oemgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\tmo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\auth.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\chap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\chpms.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\fsm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\ipcp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\lcp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\magic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\md5.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\pap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\ppp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\ppp_oe.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\randm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\pppox\vj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\netglob.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\ebridge\ethbrg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\nat\easynat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\netmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\rdxtree.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\nat\hash.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\nat\nattcp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\nat\naticmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -928,9 +1027,6 @@
     <ClInclude Include="usb\usbdescriptors.h">
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
-    <ClInclude Include="usb\errno.h">
-      <Filter>Header Files\usb_hdr</Filter>
-    </ClInclude>
     <ClInclude Include="usb\ch9.h">
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
@@ -1000,6 +1096,120 @@
     <ClInclude Include="include\ssh\ssh.h">
       <Filter>Header Files\ssh_hdr</Filter>
     </ClInclude>
+    <ClInclude Include="usb\r8152.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usb_ether.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\mii.h">
+      <Filter>Header Files\netcore</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\r8152_e.h">
+      <Filter>Header Files\usb_hdr</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\hx_eth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\usbasync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\e1000.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stdbool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\e1000_d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pci_ids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\netcfg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\dhcp_srv\dhcp_srv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\oe_pro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\oemgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\tmo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\auth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\chap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\chpms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\fsm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\ipcp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\lcp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\magic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\md5.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\pap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\ppp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\ppp_impl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\pppdebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\randm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\pppox\vj.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\netglob.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\nat\nat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\ebridge\ethbrg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\netmgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="network\arch\lwipext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\rdxtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\nat\hash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\nat\nattcp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\nat\naticmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1020,5 +1230,8 @@
     <None Include="arch\x86\REALINIT.ASM">
       <Filter>Source Files\arch</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="netcore\pppox\readme.txt" />
   </ItemGroup>
 </Project>

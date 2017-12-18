@@ -37,11 +37,12 @@
 #define ENABLE_LOOPBACK (LWIP_NETIF_LOOPBACK || LWIP_HAVE_LOOPIF)
 
 #include "lwip/err.h"
-
 #include "lwip/ip_addr.h"
-
 #include "lwip/def.h"
 #include "lwip/pbuf.h"
+
+#include "netcfg.h"  /* For NAT function switch. */
+
 #if LWIP_DHCP
 struct dhcp;
 #endif
@@ -93,6 +94,10 @@ extern "C" {
 /** If set, the netif has IGMP capability.
  * Set by the netif driver in its init function. */
 #define NETIF_FLAG_IGMP         0x80U
+/** If set, easy NAT is enabled on this interface. */
+#ifdef __CFG_NET_NAT
+#define NETIF_FLAG_NAT          0x100U
+#endif /* __CFG_NET_NAT */
 
 /** Function prototype for netif init functions. Set up flags and output/linkoutput
  * callback functions in this function.
@@ -185,7 +190,13 @@ struct netif {
   /** link level hardware address of this interface */
   u8_t hwaddr[NETIF_MAX_HWADDR_LEN];
   /** flags (see NETIF_FLAG_ above) */
-  u8_t flags;
+  /* 
+   * We extend the flags to u32_t since more flags value
+   * are added under HelloX,u8_t can not hold all these
+   * values.
+   */
+  //u8_t flags;
+  u32_t flags;
   /** descriptive abbreviation */
   char name[2];
   /** number of this interface */

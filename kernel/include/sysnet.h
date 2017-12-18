@@ -22,9 +22,15 @@
 //into OS kernel,and initialize the stack.
 typedef BOOL (*__NETWORK_PROTOCOL_ENTRY)(VOID* pArg);
 
-//An entry routine is present for each enabled network protocol.
+/*
+* Unify entry point of network subsystem.
+* It will be called by OS_Entry routine in phase of system initialization,
+* then network modules will be initialized orderly in this routine.
+*/
+BOOL Net_Entry(VOID* pArg);
 
-#ifdef __CFG_NET_IPv4  //TCP/IP v4 stack is enabled.
+/* IPv4 stack initialization routine,will be invoked in Net_Entry routine. */
+#ifdef __CFG_NET_IPv4
 BOOL IPv4_Entry(VOID* pArg);
 #endif
 

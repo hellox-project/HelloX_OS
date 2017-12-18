@@ -160,7 +160,7 @@ static BOOL RTL8111_NIC_EUM()
 		if ((0 == intVector) && (0 == iobase))
 		{
 			_rtl8111_debug("%s: Find a device without valid resource.\r\n", __func__);
-			continue;  //Continue to process next device.
+			goto __TERMINAL;
 		}
 
 		//Now allocate a rtl8111_priv_t structure and fill the resource.
@@ -170,6 +170,7 @@ static BOOL RTL8111_NIC_EUM()
 			_rtl8111_debug("%s:allocate rtl8111 private structure failed.\r\n", __func__);
 			goto __TERMINAL;
 		}
+		memset(priv, 0, sizeof(rtl8111_priv_t));
 
 		priv->ioaddr = iobase;
 		priv->memaddr = (unsigned long)memAddr;
@@ -313,6 +314,7 @@ static int RTL8111_Send(rtl8111_priv_t* dev, char* buff, int len)
 
 		priv->cur_tx++;
 	}
+	__MicroDelay(1000);
 	return len;
 }
 
@@ -386,7 +388,8 @@ static BOOL RTL8111_RX_Interrupt(rtl8111_priv_t* priv)
 				memcpy(pEthBuff->srcMAC, buf, ETH_MAC_LEN);
 				buf += ETH_MAC_LEN;
 				pEthBuff->frame_type = _hx_ntohs(*(__u16*)buf);
-				pEthBuff->pEthernetInterface = pEthInt;
+				//pEthBuff->pEthernetInterface = pEthInt;
+				pEthBuff->pInInterface = pEthInt;
 				pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_INITIALIZED;
 			}
 			if (!EthernetManager.PostFrame(pEthInt, pEthBuff))
@@ -837,7 +840,8 @@ static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 			memcpy(pEthBuff->srcMAC, buf, ETH_MAC_LEN);
 			buf += ETH_MAC_LEN;
 			pEthBuff->frame_type = _hx_ntohs(*(__u16*)buf);
-			pEthBuff->pEthernetInterface = pInt;
+			//pEthBuff->pEthernetInterface = pInt;
+			pEthBuff->pInInterface = pInt;
 			pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_INITIALIZED;
 		}
 	}

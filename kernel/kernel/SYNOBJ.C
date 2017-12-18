@@ -473,12 +473,27 @@ DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 	DWORD                       dwPreviousStatus = 0;
 	DWORD                       dwFlags          = 0;
 
-	if(NULL == lpThis)    //Parameter check.
+	if (NULL == lpThis)    //Parameter check.
+	{
 		return 0;
+	}
 
 	lpMutex = (__MUTEX*)lpThis;
 
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/*
+	 * Check if is recursive obtaining.
+	 */
+	if (KernelThreadManager.lpCurrentKernelThread == lpMutex->lpCurrentOwner)
+	{
+		lpMutex->nCurrOwnCount--;
+		if (lpMutex->nCurrOwnCount > 0) /* Just return. */
+		{
+			dwPreviousStatus = lpMutex->dwMutexStatus;
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			return dwPreviousStatus;
+		}
+	}
 	if(lpMutex->dwWaitingNum > 0)    //If there are other kernel threads waiting for this object.
 	{
 		lpMutex->dwWaitingNum --;    //Decrement the counter.
@@ -487,6 +502,8 @@ DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 	{
 		dwPreviousStatus = lpMutex->dwMutexStatus;
 		lpMutex->dwMutexStatus = MUTEX_STATUS_FREE;  //Set to free.
+		lpMutex->lpCurrentOwner = NULL;
+		lpMutex->nCurrOwnCount = 0;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		return 0;
 	}
@@ -496,6 +513,8 @@ DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 	lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
 	lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
+	lpMutex->lpCurrentOwner = lpKernelThread;
+	lpMutex->nCurrOwnCount = 1;
 	KernelThreadManager.AddReadyKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		lpKernelThread);  //Put the kernel thread to ready queue.
@@ -525,12 +544,24 @@ static DWORD WaitForMutexObject(__COMMON_OBJECT* lpThis)
 	{
 		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;  //Modify the current status.
 		lpMutex->dwWaitingNum  ++;    //Increment the counter.
+		lpMutex->lpCurrentOwner = KernelThreadManager.lpCurrentKernelThread;
+		lpMutex->nCurrOwnCount  = 1;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		return OBJECT_WAIT_RESOURCE;  //The current kernel thread successfully occupy
 		                              //the mutex.
 	}
 	else    //The status of the mutex is occupied.
 	{
+		if (lpMutex->lpCurrentOwner == KernelThreadManager.lpCurrentKernelThread) //Recurse obtain.
+		{
+			lpMutex->nCurrOwnCount += 1;
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			return OBJECT_WAIT_RESOURCE;
+		}
+		/*
+		 * The mutex object is occupied and the current owner is not the
+		 * one try to obtain it.
+		 */
 		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
@@ -598,12 +629,23 @@ static DWORD WaitForMutexObjectEx(__COMMON_OBJECT* lpThis,DWORD dwMillionSecond)
 	{
 		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;
 		lpMutex->dwWaitingNum ++;
+		lpMutex->lpCurrentOwner = KernelThreadManager.lpCurrentKernelThread;
+		lpMutex->nCurrOwnCount = 1;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		//KernelThreadManager.ScheduleFromProc(NULL);  //Re-schedule here.
 		return OBJECT_WAIT_RESOURCE;
 	}
 	else  //The mutex is not free now.
 	{
+		/*
+		 * Check if recursive obtaining.
+		 */
+		if (lpMutex->lpCurrentOwner == KernelThreadManager.lpCurrentKernelThread)
+		{
+			lpMutex->nCurrOwnCount += 1;
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			return OBJECT_WAIT_RESOURCE;
+		}
 		if(0 == dwMillionSecond)
 		{
 			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
@@ -660,6 +702,8 @@ BOOL MutexInitialize(__COMMON_OBJECT* lpThis)
 	lpMutex->ReleaseMutex      = kReleaseMutex;
 	lpMutex->WaitForThisObjectEx = WaitForMutexObjectEx;
 	lpMutex->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
+	lpMutex->lpCurrentOwner    = NULL;
+	lpMutex->nCurrOwnCount     = 0;
 	bResult = TRUE;    //Successful to initialize the mutex object.
 
 __TERMINAL:

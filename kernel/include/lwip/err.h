@@ -66,11 +66,9 @@ typedef s8_t err_t;
 #define ERR_RST        -11   /* Connection reset.        */
 #define ERR_CLSD       -12   /* Connection closed.       */
 #define ERR_CONN       -13   /* Not connected.           */
-
 #define ERR_ARG        -14   /* Illegal argument.        */
-
 #define ERR_IF         -15   /* Low-level netif error    */
-
+#define ERR_UNKNOWN    -32   /* Unknown error.           */
 
 #ifdef LWIP_DEBUG
 extern const char *lwip_strerr(err_t err);

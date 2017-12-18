@@ -262,7 +262,6 @@ static BOOL SetPageFlags(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr,LPVOID lpP
 //
 //The implementation of ReleasePage routine.
 //
-
 static VOID ReleasePage(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 {
 	__PAGE_INDEX_MANAGER*        lpIndexMgr     = (__PAGE_INDEX_MANAGER*)lpThis;

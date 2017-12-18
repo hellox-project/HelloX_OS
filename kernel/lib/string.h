@@ -13,9 +13,11 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STRING__
-#define __STRING__
+#ifndef __STRING_H__
+#define __STRING_H__
 
+/* For basic HelloX data types. */
+#include <StdAfx.h>
 
 #define MAX_STRING_LEN 512       //Max string length.
 
@@ -62,7 +64,7 @@ int strcmp(const char* src,const char* dst);
 int strlen(const char* s);
 
 //Array bound guaranteed string operations.
-char* strncpy(char *dest,char *src,unsigned int n);
+char* strncpy(char *dest,const char *src,unsigned int n);
 int strncmp ( char * s1, char * s2, size_t n);
 
 //Flags to control the trimming.
@@ -79,4 +81,4 @@ void ToCapital(LPSTR lpszString);
 //Find the first bit in a given integer.
 int ffs(int x);
 
-#endif //string.h
+#endif //__STRING_H__

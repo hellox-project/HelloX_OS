@@ -56,6 +56,10 @@
 #include "lwip/stats.h"
 #include "arch/perf.h"
 
+/* For NAT support. */
+#include "netcfg.h"
+#include "nat/nat.h"
+
 #include <string.h>
 
 /** Set this to 0 in the rare case of wanting to call an extra function to
@@ -186,6 +190,19 @@ ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
     goto return_noroute;
   }
 
+  /*
+   * Apply out-going direction easy NAT if enabled.
+   * The packet's content maybe changed after NAT,
+   * such as source IP address,checksum,etc.But the
+   * destination IP address will keep unchanged.
+   */
+#ifdef __CFG_NET_NAT
+  if (netif->flags & NETIF_FLAG_NAT) /* easy NAT enabled on this if. */
+  {
+	  NatManager.enatPacketOut(p, netif);
+  }
+#endif //__CFG_NET_NAT
+
   /* decrement TTL */
   IPH_TTL_SET(iphdr, IPH_TTL(iphdr) - 1);
   /* send ICMP if TTL == 0 */
@@ -290,6 +307,22 @@ ip_input(struct pbuf *p, struct netif *inp)
     snmp_inc_ipindiscards();
     return ERR_OK;
   }
+
+  /* 
+   * Apply NAT if enabled.
+   * The content of p maybe modified after NAT,but
+   * the version,header length,total length will
+   * keep unchanged.
+   */
+#ifdef __CFG_NET_NAT
+  if (inp)
+  {
+	  if (inp->flags & NETIF_FLAG_NAT) /* NAT enabled on this if. */
+	  {
+		  NatManager.enatPacketIn(p, inp);
+	  }
+  }
+#endif //__CFG_NET_NAT.
 
   /* verify checksum */
 #if CHECKSUM_CHECK_IP
@@ -685,7 +718,7 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
     chk_sum = (chk_sum >> 16) + (chk_sum & 0xFFFF);
     chk_sum = (chk_sum >> 16) + chk_sum;
     chk_sum = ~chk_sum;
-    iphdr->_chksum = chk_sum; /* network order */
+    iphdr->_chksum = (u16_t)chk_sum; /* network order */
 #else /* CHECKSUM_GEN_IP_INLINE */
     IPH_CHKSUM_SET(iphdr, 0);
 #if CHECKSUM_GEN_IP

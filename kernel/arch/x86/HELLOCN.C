@@ -423,10 +423,40 @@ VOID __BUG(LPSTR lpszFileName,DWORD dwLineNum)
 	DWORD   dwFlags;
 	
 	//Print out fatal error information.
-	_hx_printf("\r\nBUG oencountered.\r\nFile name: %s\r\nCode Lines:%d",lpszFileName,dwLineNum);
-
+	_hx_printf("\r\nBUG oencountered.\r\n");
+	_hx_printf("File name : %s\r\nCode Lines : %d\r\n",lpszFileName,dwLineNum);
+	if (IN_INTERRUPT())  //In interrupt context.
+	{
+	}
+	else if (IN_SYSINITIALIZATION())  //In process of system initialization.
+	{
+	}
+	else  //In thread context.
+	{
+		_hx_printf("Current kthread: %s\r\n",
+			KernelThreadManager.lpCurrentKernelThread->KernelThreadName);
+	}
 	//Enter infinite loop.
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	while(TRUE);
+	while (TRUE)
+	{
+		HaltSystem(); /* Enter halt state to save energy. */
+	}
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+}
+
+/* Print logging header information,such as date,time,level... */
+void LogHeader(int level)
+{
+	BYTE   time[6];
+
+	/* Get time and date from arch spec API. */
+	__GetTime(&time[0]);
+	_hx_printf("[%d-%d-%d %d:%d:%d]",
+		time[0] + 2000,
+		time[1],
+		time[2],
+		time[3],
+		time[4],
+		time[5]);
 }

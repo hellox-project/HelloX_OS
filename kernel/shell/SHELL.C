@@ -55,7 +55,6 @@ __KERNEL_THREAD_OBJECT*  g_lpShellThread   = NULL;
 //The following handlers are moved to shell1.cpp.
 extern DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handles the version command.
 extern DWORD MemHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handles the memory command.
-extern DWORD SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj);      //Handles the sysinfo command.
 extern DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD TelnetHandler(__CMD_PARA_OBJ* lpCmdObj);
@@ -86,7 +85,6 @@ static DWORD FileReadTest(__CMD_PARA_OBJ* pCmdParaObj);
 __CMD_OBJ  CmdObj[] = {
 	{"version"  ,    VerHandler},
 	{"memory"   ,    MemHandler},
-	{"sysinfo"  ,    SysInfoHandler},
 	{"sysname"  ,    SysNameHandler},
 	{"help"     ,    HlpHandler},
 	{"cpuinfo"  ,    CpuHandler},
@@ -329,11 +327,21 @@ DWORD SysDiagApp(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	__KERNEL_THREAD_OBJECT*        lpSysDiagThread    = NULL;
 
+	/*
+	 * sysdiag app's priority level is set to HIGH,since
+	 * in some case the system may enter busying status by
+	 * dead loop or other abnormal conditions of other kernel
+	 * thread,with NORMAL priority.
+	 * So set the priority level to HIGH can guarantee the
+	 * sysdiag app will feedback user's input,otherwise
+	 * the app will not be scheduled since there is high
+	 * priority thread running(but in deadloop status).
+	 */
 	lpSysDiagThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
-		PRIORITY_LEVEL_NORMAL,
+		PRIORITY_LEVEL_HIGH,
 		SysDiagStart,
 		NULL,
 		NULL,
@@ -623,6 +631,9 @@ static DWORD Process2(LPVOID pData)
 
 DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
+	BUG_ON(TRUE); /* Test BUG macro. */
+
+#if 0
 	__PROCESS_OBJECT* pProcess1  = NULL;
 	__PROCESS_OBJECT* pProcess2  = NULL;
 	int round = 1000;
@@ -665,6 +676,7 @@ DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager,(__COMMON_OBJECT*)pProcess2);
 		_hx_printf("  Debug round [ %d ]run over.\r\n",round);
 	}
+#endif
 
 	return SHELL_CMD_PARSER_SUCCESS;
 }

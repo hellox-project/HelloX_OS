@@ -1,6 +1,6 @@
 ﻿/*-
 * Copyright (c) 2007-2008, Juniper Networks, Inc.
-* Copyright (c) 2008, Excito Elektronik i SkÃ¥ne AB
+* Copyright (c) 2008, Excito Elektronik....
 * Copyright (c) 2008, Michael Trimarchi <trimarchimichael@yahoo.it>
 *
 * All rights reserved.
@@ -21,6 +21,7 @@
 #include "usb.h"
 #include "errno.h"
 #include "ehci.h"
+#include "usbasync.h"
 
 //The source code inside this file only works when the EHCI is enabled.
 #ifdef CONFIG_USB_EHCI
@@ -186,12 +187,12 @@ static uint32_t *ehci_get_portsc_register(struct ehci_ctrl *ctrl, int port)
 	return portsc;
 }
 
-static int handshake(uint32_t *ptr, uint32_t mask, uint32_t done, int usec)
+int handshake(uint32_t *ptr, uint32_t mask, uint32_t done, int usec)
 {
 	uint32_t result;
 	do {
 		result = ehci_readl(ptr);
-		udelay(5);
+		udelay(2);
 		if (result == ~(uint32_t)0)
 		{
 			_hx_printf("%s: result = 0xFFFFFFFF.\r\n", __func__);
@@ -266,7 +267,7 @@ static int ehci_shutdown(struct ehci_ctrl *ctrl)
 	return ret;
 }
 
-static int ehci_td_buffer(struct qTD *td, void *buf, size_t sz)
+int ehci_td_buffer(struct qTD *td, void *buf, size_t sz)
 {
 	uint32_t delta, next;
 	uint32_t addr = (unsigned long)buf;
@@ -364,8 +365,41 @@ void ehci_update_endpt2_dev_n_port(struct usb_device *udev,struct QH *qh)
 		QH_ENDPT2_HUBADDR(parent_devnum));
 }
 
+static int ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
+	int length, struct devrequest *req)
+{
+	int ret = 0;
+	__USB_ASYNC_DESCRIPTOR* pAsyncDesc = usbCreateAsyncDescriptor(dev, pipe, buffer, length, req);
+	if (NULL == pAsyncDesc)
+	{
+		_hx_printf("%s:create async_desc failed.\r\n", __func__);
+		return -ENOMEM;
+	}
+	if (!usbStartAsyncXfer(pAsyncDesc,0))
+	{
+		usbStopAsyncXfer(pAsyncDesc);
+		usbDestroyAsyncDescriptor(pAsyncDesc);
+		dev->status = USB_ST_STALLED;
+#ifdef __DEBUG_USB_ASYNC
+		_hx_printf("%s: start async_xfer failed.\r\n", __func__);
+#endif
+		ret = pAsyncDesc->err_code;
+		return -ret;
+	}
+	int xfer_sz = pAsyncDesc->xfersize;
+#ifdef __DEBUG_USB_ASYNC
+	_hx_printf("%s: ctrl msg OK[len = %d].\r\n", __func__,
+		xfer_sz);
+#endif
+	usbStopAsyncXfer(pAsyncDesc);
+	usbDestroyAsyncDescriptor(pAsyncDesc);
+	dev->status = 0;
+	dev->act_len = xfer_sz;
+	return 0;
+}
+
 static int
-ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
+__ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 int length, struct devrequest *req)
 {
 	ALLOC_ALIGN_BUFFER(struct QH, qh, 1, USB_DMA_MINALIGN);
@@ -670,7 +704,7 @@ int length, struct devrequest *req)
 
 	/* Check that the TD processing happened */
 	if (QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_ACTIVE)
-		printf("EHCI timed out on TD - token=%#x\r\n", token);
+		debug("EHCI timed out on TD - token=%#x\r\n", token);
 
 	/* Disable async schedule. */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
@@ -757,7 +791,7 @@ static int ehci_submit_root(struct usb_device *dev, unsigned long pipe,
 	case USB_REQ_GET_STATUS | ((USB_RT_PORT | USB_DIR_IN) << 8) :
 	case USB_REQ_SET_FEATURE | ((USB_DIR_OUT | USB_RT_PORT) << 8) :
 	case USB_REQ_CLEAR_FEATURE | ((USB_DIR_OUT | USB_RT_PORT) << 8) :
-																	status_reg = ctrl->ops.get_portsc_register(ctrl, port - 1);
+		status_reg = ctrl->ops.get_portsc_register(ctrl, port - 1);
 		if (!status_reg)
 			return -1;
 		break;
@@ -1146,7 +1180,7 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 
 	reg = ehci_readl(&ctrl->hccr->cr_hcsparams);
 	descriptor.hub.bNbrPorts = HCS_N_PORTS(reg);
-	debug("Register %x NbrPorts %d\r\n", reg, descriptor.hub.bNbrPorts);
+	_hx_printf("Register %x NbrPorts %d\r\n", reg, descriptor.hub.bNbrPorts);
 
 	/* Port Indicators */
 	if (HCS_INDICATOR(reg))
@@ -1201,7 +1235,8 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 #ifndef USB_EHCI_DISABLE_INTERRUPT
 	//Enable interrupt of the controller.
 	cmd = ehci_readl(&ctrl->hcor->or_usbintr);
-	cmd |= (INTR_UE | INTR_UEE | INTR_AAE | INTR_PCE | INTR_SEE | INTR_FLR);
+	//cmd |= (INTR_UE | INTR_UEE | INTR_AAE | INTR_PCE | INTR_SEE | INTR_FLR);
+	cmd |= (INTR_UE | INTR_UEE | INTR_PCE | INTR_SEE | INTR_FLR);
 	ehci_writel(&ctrl->hcor->or_usbintr, cmd);
 #endif
 
@@ -1263,6 +1298,14 @@ static unsigned long _get_ctrl_status(void* common_ctrl,DWORD ctrlFlag)
 		return __readl(&pEhciCtrl->hcor->or_periodiclistbase);
 	case USB_CTRL_FLAG_EHCI_ALBASE:
 		return __readl(&pEhciCtrl->hcor->or_asynclistaddr);
+	case USB_CTRL_FLAG_EHCI_XFERERR:
+		return pEhciCtrl->nXferErrNum;
+	case USB_CTRL_FLAG_EHCI_XFERREQ:
+		return pEhciCtrl->nXferReqNum;
+	case USB_CTRL_FLAG_EHCI_XFERINT:
+		return pEhciCtrl->nXferIntNum;
+	case USB_CTRL_FLAG_EHCI_ASSN:
+		return pEhciCtrl->async_schedules;
 	default:
 		return -1;
 	}
@@ -1382,6 +1425,61 @@ static int _ehci_submit_control_msg(struct usb_device *dev, unsigned long pipe,
 	return ehci_submit_async(dev, pipe, buffer, length, setup);
 }
 
+/*
+ * Enable asynchronous transfer,set the ASYNCLISTADDR register
+ * before actually enable it.
+ */
+int ehci_enable_async(struct ehci_ctrl* ctrl,struct QH* qh)
+{
+	int ret = -EIO;
+	uint32_t cmd, usbsts;
+
+	/* Set async. queue head pointer. */
+	ehci_writel(&ctrl->hcor->or_asynclistaddr, (unsigned long)qh);
+
+	usbsts = ehci_readl(&ctrl->hcor->or_usbsts);
+	ehci_writel(&ctrl->hcor->or_usbsts, (usbsts & 0x3f));
+
+	/* Enable async. schedule. */
+	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
+	cmd |= CMD_ASE;
+	ehci_writel(&ctrl->hcor->or_usbcmd, cmd);
+
+	ret = handshake((uint32_t *)&ctrl->hcor->or_usbsts, STS_ASS, STS_ASS,
+		100 * 1000);
+	if (ret < 0) {
+		_hx_printf("EHCI fail timeout STS_ASS set\r\n");
+		goto __TERMINAL;
+	}
+	ret = 0;  //Mark operation success.
+
+__TERMINAL:
+	return ret;
+}
+
+int ehci_disable_async(struct ehci_ctrl* ctrl)
+{
+	uint32_t cmd;
+	int ret = -EIO;
+
+	/* Disable async schedule. */
+	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
+	cmd &= ~CMD_ASE;
+	ehci_writel(&ctrl->hcor->or_usbcmd, cmd);
+
+	ret = handshake((uint32_t *)&ctrl->hcor->or_usbsts, STS_ASS, 0,
+		100 * 1000);
+	if (ret < 0) {
+		_hx_printf("EHCI fail timeout STS_ASS reset\r\n");
+		goto __TERMINAL;
+	}
+	/* Mark the operation success. */
+	ret = 0;
+
+__TERMINAL:
+	return ret;
+}
+
 int ehci_enable_periodic(struct ehci_ctrl *ctrl)
 {
 	uint32_t cmd;
@@ -1459,13 +1557,23 @@ static int _ehci_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 static int submit_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	void *buffer, int length)
 {
-	return _ehci_submit_bulk_msg(dev, pipe, buffer, length);
+	struct ehci_ctrl* ctrl = ehci_get_ctrl(dev);
+	int ret = 0;
+	//WaitForThisObject(ctrl->hMutex);
+	ret = _ehci_submit_bulk_msg(dev, pipe, buffer, length);
+	//ReleaseMutex(ctrl->hMutex);
+	return ret;
 }
 
 static int submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int length, struct devrequest *setup)
 {
-	return _ehci_submit_control_msg(dev, pipe, buffer, length, setup);
+	struct ehci_ctrl* ctrl = ehci_get_ctrl(dev);
+	int ret = 0;
+	//WaitForThisObject(ctrl->hMutex);
+	ret = _ehci_submit_control_msg(dev, pipe, buffer, length, setup);
+	//ReleaseMutex(ctrl->hMutex);
+	return ret;
 }
 
 static int submit_int_msg(struct usb_device *dev, unsigned long pipe,

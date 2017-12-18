@@ -26,4 +26,7 @@ __u16 _hx_htons(__u16 n);
 __u32 _hx_ntohl(__u32 n);
 __u16 _hx_ntohs(__u16 n);
 
+/* Calculate check sum of IP protocol. */
+__u16 _hx_checksum(__u16* buffer, int size);
+
 #endif  //__HX_INET_H__

@@ -1,0 +1,44 @@
+之前的经典错误记录：
+1. Ethernet Buffer在挂接到sending list的时候，忘记初始化pNext指针，导致内存紊乱；
+2. 在usbStopAsyncDescriptor调用中，MarkDescriptorInactive调用参数误设置为FALSE，导致qTD激活；
+3. 设置AsyncDescriptor的status，与激活qTD，没有原子操作，导致中断丢失等问题；
+4. 实现Door bell机制时，对应的IAAD中断也开启，并在中断Handler中清除了IAAD相关标记，导致door bell超时；
+
+待确定问题：
+1. __R8152_Send中，如果单次发送一个frame，相比单次发送多个frame（pack到一起），成功率似乎要高很多；
+2. 在发送过程中，使用临时分配的内存，似乎成功率比使用固定内存缓冲区成功率要高很多：临时缓冲区下，同时ping 4K和9K报文，不丢包，不挂起。如果是固定缓冲区，则分别只ping通一次。但是该问题比昨天有进步，昨天ping 900字节，很短时间就死机。现在ping 900字节比较稳定；
+3. 临时分配缓冲区下，大网页flood，出现PCI bus故障；
+4. 把WaitForThisObjectEx修改为无限期等待，则会出现无法唤醒的情况，导致线程一直等待。什么情况下USB会一直等待，不引发中断？从打印出的token（WaitForThisObjectEx设置timeout）看，也是active比特没有被清除；
+
+20170512：
+1. 修改token status判断方法，由原来的overlay区域，修改为判断最后一个qTD。ping 延迟降低，本机ping GW丢包（丢包率50%左右）；
+2. 代码错误（timeout 分支在最前面增加了MarkDescriptorInactive调用，导致后面所有判断都返回TRUE，从而导致丢包。修改后，本机ping GW无丢包；
+3. 故障时内存最高峰：
+
+20170513：
+1. 在发送函数中，使用静态分配缓冲区，并在发送前设置等待1ms，没有明显效果；
+2. 修改为静态分配的数组：无效果，仍然停滞。说明与内存位置无关，而是与内存刷新有关（新分配的内存位置不同）；
+4. Show out the kernel thread,token,and other information in timeout branch of WaitForThisObjectEx routine;
+5. Change timeout value accordingly;
+6. Add system error output information(controller's status,PCI status,...);
+7. Clear overlay area status value to 0 in MarkDescriptorInactive routine;
+8. Add length adjustable xfer request by revising usbStartAsyncXfer routine,a new parameter is added;
+9. 把RemoveQueueHead调用，从usbStopAsyncXfer中，移到usbDestroyAsyncDescriptor中；
+
+定位三板斧：
+1. 修改MarkDescriptorInactive后，以现有code直接运行，注意观察输出（先单机，后网络）。该步骤要注意usbStartAsyncXfer已被修改。如有稳定结果，注意保存；
+2. 发送和接收进程，统一修改为不删除QH模式；
+3. 根据第二步表现，制定定位方法。
+
+20170515:
+1. 修改为不删除QH模式，如果只有一个USB网卡，一切正常，ping 4K报文延时在9到10ms。如果增加另外一个网卡，则现象如下：
+   1.1 如果另外一个网卡不连接网线，且首先被发现（名字是r8152_eth_if_0），则第二个网卡可以工作；
+   1.2 如果是第二个被发现的网卡，名字是1，则接网线的网卡也无法正常工作（可以看到收发成功，但是无法ping通过）；
+   1.3 如果两个网卡同时接网线，则第一个网卡无法收发报文，第二个正常（待确定)--已基本确定，第一个网卡刚开始正常，第二个网卡初始化并工作之后，第一个就无法收发，第二个正常；
+   1.3 初步总结：第二个网卡的数据（比如QH等），会对第一个造成影响，有“替代”第一个的现象。
+2. 
+
+20170516定位：
+1. 两个网卡都接网线，第一个网卡异常，第二个网卡是否正常；
+2. Use the no-stop version of recv and sending,but revise the deleting procedure of QH,make sure the asynclistaddr point to QH in EHCI controller;--No need since the door bell mechanism guarantees the synchronization of QH list;
+3. 

@@ -455,7 +455,6 @@ __TERMINAL:
 // 3. Destroy the kernel thread object by calling DestroyObject.
 //
 static
-
  VOID kDestroyKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpKernel)
 {
 	__KERNEL_THREAD_OBJECT*     lpKernelThread   = (__KERNEL_THREAD_OBJECT*)lpKernel;
@@ -494,7 +493,6 @@ static
 
 	ObjectManager.DestroyObject(&ObjectManager,
 		                        (__COMMON_OBJECT*)lpKernelThread);
-
 }
 
 //Enable or disable suspending on a specified kernel thread.
@@ -1246,8 +1244,10 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 		lpKernelThread->nMsgDroped += 1;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		//Show out a warning message.
-		//_hx_printf("Kernel Warning: Message queue of kthread [%s] is full.\r\n",
-		//	lpKernelThread->KernelThreadName);
+		_hx_printf("[k-warning]:Message queue of kthread [%s] is full,msg[cmd:%d,sendor:%s] droped.\r\n",
+			lpKernelThread->KernelThreadName,
+			lpMsg->wCommand,
+			KernelThreadManager.lpCurrentKernelThread->KernelThreadName);
 		goto __TERMINAL;
 	}
 	//Message queue not full,put the message to the queue.

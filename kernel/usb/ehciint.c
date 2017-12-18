@@ -26,18 +26,23 @@
 #include "usb.h"
 #include "ehci.h"
 #include "usbiso.h"
+#include "usbasync.h"
 
 //Handlers to handle transfer competion interrupt.
 static VOID OnXferCompletion(struct ehci_ctrl* pUsbCtrl)
 {
 	struct int_queue* pIntQueue = pUsbCtrl->pIntQueueFirst;
 	__USB_ISO_DESCRIPTOR* pIsoDesc = pUsbCtrl->pIsoDescFirst;
+	__USB_ASYNC_DESCRIPTOR* pAsyncDesc = pUsbCtrl->pAsyncDescFirst;
 
-	if ((NULL == pIntQueue) && (NULL == pIsoDesc))
+	if ((NULL == pIntQueue) && (NULL == pIsoDesc) && (NULL == pAsyncDesc))
 	{
 		debug("Warning: No pending transaction but interrupt raised.\r\n");
 		return;
 	}
+	/*
+	 * Check if the interrupt is raised by Isochronous xfer.
+	 */
 	if (pIsoDesc)
 	{
 		if (NULL == pIsoDesc->ISOXferIntHandler)
@@ -46,6 +51,27 @@ static VOID OnXferCompletion(struct ehci_ctrl* pUsbCtrl)
 		}
 		pIsoDesc->ISOXferIntHandler(pIsoDesc);
 	}
+
+	/*
+	 * Check if the interrupt is raised by asynchronous xfer.
+	 */
+	while (pAsyncDesc)
+	{
+		BUG_ON(NULL == pAsyncDesc->AsyncXferIntHandler);
+		/*
+		 * Invoke the interrupt hander of asynchronous xfer,returning TRUE means
+		 * the interrupt is raised by this descriptor and processed successfully.
+		 */
+		pAsyncDesc->AsyncXferIntHandler(pAsyncDesc);
+		/* 
+		 * Check the next descriptor. 
+		 */
+		pAsyncDesc = pAsyncDesc->pNext;
+	}
+
+	/*
+	 * Check if the interrupt is raised by interrupt xfer.
+	 */
 	if (pIntQueue)
 	{
 		if (pIntQueue->QueueIntHandler)
@@ -82,8 +108,10 @@ unsigned long EHCIIntHandler(LPVOID pParam)
 	__COMMON_USB_CONTROLLER* pCommCtrl = (__COMMON_USB_CONTROLLER*)pParam;
 	struct ehci_ctrl* pUsbCtrl = NULL;
 	unsigned long ulResult = 0;
-	unsigned long status = 0;
+	unsigned long status = 0, int_bit = 0;
 	unsigned long pciStatus = 0;
+	unsigned long ulOwn = 0; /* Raised by this controller if = 1. */
+	static int show_warn = 1;
 
 	if (NULL == pCommCtrl)
 	{
@@ -94,62 +122,115 @@ unsigned long EHCIIntHandler(LPVOID pParam)
 	{
 		BUG();
 	}
-	//Check if the interrupt is raised by this controller.
-	status = ehci_readl(&pUsbCtrl->hcor->or_usbsts);
-	if (status & INTR_AAE)
+	/*
+	 * Try to handle all interrupt(s) in a loop.
+	 */
+	while (TRUE)
 	{
-		ulResult++;
-		//Handler of AAE.
-	}
-	if (status & INTR_PCE)
-	{
-		ulResult++;
-		//Handler of PCE.
-	}
-	if (status & INTR_SEE)
-	{
-		pciStatus = pCommCtrl->pPhysicalDev->ReadDeviceConfig(pCommCtrl->pPhysicalDev,
-			PCI_CONFIG_OFFSET_COMMAND, 4);
-		_hx_printf("USB Controller [%d] system error,PCI status = %X.\r\n",
-			pCommCtrl->pPhysicalDev->dwNumber, pciStatus);
-		//Should reset the USB controller according USB EHCI specification.But now we let 
-		//it empty...
-		ulResult++;
-	}
-	if (status & INTR_UE)
-	{
-		ulResult++;
-		OnXferCompletion(pUsbCtrl);
-		//_hx_printf("%s: USB transfer complete interrupt,status = %X.\r\n", __func__, status);
-	}
-	if (status & INTR_UEE)
-	{
-		_hx_printf("USB Controller [Vendor = %X,Device = %X] encounters transfer error.\r\n",
-			pCommCtrl->pPhysicalDev->DevId.Bus_ID.PCI_Identifier.wVendor,
-			pCommCtrl->pPhysicalDev->DevId.Bus_ID.PCI_Identifier.wDevice);
-		ulResult++;
-		//Handler of UEE.
-	}
-	if (status & INTR_FLR)
-	{
-		ulResult++;
-		//_hx_printf("%s:periodic list frame flip over.\r\n", __func__);
-		//Handler of FLR.
-	}
-	//Acknowledge the interrupt.
-	if (ulResult)
-	{
-		//debug("%s: Interrupt handling over,result = %d,status = 0x%X.\r\n",
-		//	__func__, ulResult, status);
-		ehci_writel(&pUsbCtrl->hcor->or_usbsts, status);
-	}
-	else
-	{
-		//_hx_printf("%s:USB interrupt mismatching,status = %X.\r\n", __func__, status);
+		/*
+		 * Read and acknowledge status register immediately,
+		 * according EHCI spec.
+		 */
+		status = ehci_readl(&pUsbCtrl->hcor->or_usbsts);
+		//ehci_writel(&pUsbCtrl->hcor->or_usbsts, status);
+		if (status & INTR_AAE)
+		{
+			//ulResult++;
+			/*
+			 * Do not clear the AAE bit since it will be
+			 * refered by door bell mechanism in asynchronous
+			 * xfer.
+			 */
+		}
+		if (status & INTR_PCE)
+		{
+			ulResult++;
+			//Handler of PCE.
+			/*
+			 * Clear the status bit.
+			 */
+			int_bit = INTR_PCE;
+			ehci_writel(&pUsbCtrl->hcor->or_usbsts, int_bit);
+		}
+		if (status & INTR_SEE)
+		{
+			pciStatus = pCommCtrl->pPhysicalDev->ReadDeviceConfig(pCommCtrl->pPhysicalDev,
+				PCI_CONFIG_OFFSET_COMMAND, 4);
+			_hx_printf("USB Controller [%d] system error,PCI_status/Ctrl_status = %X/%X.\r\n",
+				pCommCtrl->pPhysicalDev->dwNumber, 
+				pciStatus,
+				ehci_readl(&pUsbCtrl->hcor->or_usbsts));
+			//Should reset the USB controller according USB EHCI specification.But now we let 
+			//it empty...
+			ulResult++;
+			/*
+			* Clear the status bit.
+			*/
+			int_bit = INTR_SEE;
+			ehci_writel(&pUsbCtrl->hcor->or_usbsts, int_bit);
+		}
+		if (status & INTR_UE)
+		{
+			/*
+			* Clear the status bit.
+			*/
+			int_bit = INTR_UE;
+			ehci_writel(&pUsbCtrl->hcor->or_usbsts, int_bit);
+			ulResult++;
+			OnXferCompletion(pUsbCtrl);
+			pUsbCtrl->nXferIntNum++;
+			//_hx_printf("%s: USB transfer complete interrupt,status = %X.\r\n", __func__, status);
+		}
+		if (status & INTR_UEE)
+		{
+			if (show_warn)
+			{
+				_hx_printf("USB Controller [Vendor = %X,Device = %X] encounters transfer error.\r\n",
+					pCommCtrl->pPhysicalDev->DevId.Bus_ID.PCI_Identifier.wVendor,
+					pCommCtrl->pPhysicalDev->DevId.Bus_ID.PCI_Identifier.wDevice);
+				/* No more warning will be showed out next time. */
+				show_warn = 0;
+			}
+			ulResult++;
+			pUsbCtrl->nXferErrNum++;
+			//Handler of UEE.
+			/*
+			* Clear the status bit.
+			*/
+			int_bit = INTR_UEE;
+			ehci_writel(&pUsbCtrl->hcor->or_usbsts, int_bit);
+		}
+		if (status & INTR_FLR)
+		{
+			ulResult++;
+			//_hx_printf("%s:periodic list frame flip over.\r\n", __func__);
+			//Handler of FLR.
+			/*
+			* Clear the status bit.
+			*/
+			int_bit = INTR_FLR;
+			ehci_writel(&pUsbCtrl->hcor->or_usbsts, int_bit);
+		}
+		//Acknowledge the interrupt.
+		if (ulResult)
+		{
+			//debug("%s: Interrupt handling over,result = %d,status = 0x%X.\r\n",
+			//	__func__, ulResult, status);
+			//ehci_writel(&pUsbCtrl->hcor->or_usbsts, status);
+			ulOwn = 1;
+			ulResult = 0;
+		}
+		else
+		{
+			/*
+			 * No more pending interrupt.
+			 */
+			break;
+		}
 	}
 
 __TERMINAL:
-	return ulResult;
+	return ulOwn;
 }
 
 //Update int queue status in interrupt,it is revised according the routine
@@ -193,9 +274,13 @@ static BOOL _ehciQueueIntHandler(struct int_queue* queue)
 	usb_settoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe), toggle);
 
 	if (!(cur->qh_link & QH_LINK_TERMINATE))
+	{
 		queue->current++;
+	}
 	else
+	{
 		queue->current = NULL;
+	}
 
 	invalidate_dcache_range((unsigned long)cur->buffer,
 		ALIGN_END_ADDR(char, cur->buffer,

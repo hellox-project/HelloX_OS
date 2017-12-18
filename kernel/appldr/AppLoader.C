@@ -109,7 +109,7 @@ static HANDLE OpenAppFile(LPSTR pAppFilePath)
 	
 	hBinFile = CreateFile(pAppFilePath,FILE_ACCESS_READ,0,NULL);
 	if(hBinFile == NULL)
-	{		
+	{
 		return NULL;
 	}
 
@@ -133,11 +133,10 @@ BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
 
 	while(bRunOk == FALSE)
 	{
-		
 		hFileObj = OpenAppFile(pAppFilePath);
 		if(hFileObj == NULL)
 		{
-			PrintLine("Can not open the specified app file.");
+			_hx_printf("Can not open the specified module[%s].",pAppFilePath);
 			break;
 		}
 		
@@ -149,31 +148,28 @@ BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
 				pAppBuf = pAppEntry->LoadApp(hFileObj); //(DWORD)pAppBuf);
 				break;
 			}
-
 			pAppEntry ++;			
 		}
 
-		//loadapp faild
+		//Load model failed.
 		if(pAppBuf == NULL)
 		{
-			PrintLine("LoadAppFile error.");
+			PrintLine("Load binary model error.");
 			break;
 		}
 				
-		if(StartRunApp((DWORD)pAppBuf,p,strrchr(pAppFilePath,'\\')) == FALSE)
+		if(!StartRunApp((DWORD)pAppBuf,p,strrchr(pAppFilePath,'\\')))
 		{
-			PrintLine("StartRunApp error.");
+			PrintLine("Failed to run binary model.");
 			break;
 		}
 		bRunOk = TRUE;
 	}
-	
 
 	CloseFile(hFileObj);
 	if(pAppBuf)
 	{
-	//	_hx_free(pAppBuf);
+		_hx_free(pAppBuf);
 	}
-
 	return bRunOk;
 }

@@ -93,19 +93,20 @@ static VOID ShowDevList()
 //
 //This routine is used to print out CPU statistics information.
 //
-static VOID ShowStatInfo()  //Display the statistics information.
+static VOID ShowStatInfo()
 {
 	__THREAD_STAT_OBJECT* lpStatObj = &StatCpuObject.IdleThreadStatObj;
 	CHAR Buff[256];
 
 	//Print table header.
-	PrintLine("      Thread Name  Thread ID  1s usage  60s usage  5m usage  Message recv/drop");
+	PrintLine("      Thread Name  Mem used   1s usage  60s usage  5m usage  Message recv/drop");
 	PrintLine("    -------------  ---------  --------  ---------  --------  -----------------");
 	//For each kernel thread,print out statistics information.
 	do{
-		_hx_sprintf(Buff,"    %13s  %9X  %6d.%d  %7d.%d  %6d.%d  %d/%d",
+		_hx_sprintf(Buff,"    %13s  %9d  %6d.%d  %7d.%d  %6d.%d  %d/%d",
 			lpStatObj->lpKernelThread->KernelThreadName,
-			lpStatObj->lpKernelThread->dwThreadID,
+			//lpStatObj->lpKernelThread->dwThreadID,
+			lpStatObj->lpKernelThread->dwTotalMemSize,
 			lpStatObj->wCurrPeriodRatio / 10,
 			lpStatObj->wCurrPeriodRatio % 10,
 			lpStatObj->wOneMinuteRatio  / 10,

@@ -18,6 +18,8 @@
 #ifndef __PROTO_H__
 #define __PROTO_H__
 
+#include "ethmgr.h"  /* For ethernet manager related definitions. */
+
 //Protocol object's definition,each network protocol in HelloX,is corresponding
 //one of this object.
 typedef struct tag__NETWORK_PROTOCOL{
@@ -27,10 +29,18 @@ typedef struct tag__NETWORK_PROTOCOL{
 #define NETWORK_PROTOCOL_TYPE_IPV4      0x01
 #define NETWORK_PROTOCOL_TYPE_IPV6      0x02
 #define NETWORK_PROTOCOL_TYPE_6LOWPAN   0x04
+#define NETWORK_PROTOCOL_TYPE_PPPOE     0x05
 #define NETWORK_PROTOCOL_TYPE_USERDEF   0xFF
 
+	/* Protocol private extension. */
+	void*      pProtoExtension;
+
+	/*
+	 * Interfaces that one protocol object should expose to
+	 * HelloX kernel. 
+	 */
 	//Initializer of the protocol object.
-	BOOL      (*Initialize)(struct tag_NETWORK_PROTOCOL* pProtocol);
+	BOOL      (*Initialize)(struct tag__NETWORK_PROTOCOL* pProtocol);
 
 	//Check if the protocol can be bind a specific interface.
 	BOOL      (*CanBindInterface)(struct tag__NETWORK_PROTOCOL* pProtocol, LPVOID pInterface,DWORD* ftm);

@@ -1,0 +1,905 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\ecma">
+      <UniqueIdentifier>{621c1932-9765-45a4-acd6-e452a97bc840}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ecma">
+      <UniqueIdentifier>{338cd204-0009-44d4-a8ee-8037021a2ff9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ecma\base">
+      <UniqueIdentifier>{792ed880-46e2-4ee7-8156-2c72087c9cfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ecma\builtin-objects">
+      <UniqueIdentifier>{a2ecd996-d173-4397-97a2-eb1229d235de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ecma\operations">
+      <UniqueIdentifier>{6fa470e4-cc4c-4a19-a785-8457c3b9f74c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ecma\base">
+      <UniqueIdentifier>{fb7797be-60c0-4511-8d6a-bde0344c44df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ecma\builtin-objects">
+      <UniqueIdentifier>{ba979901-bfce-42af-a68c-cddc731101f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ecma\operations">
+      <UniqueIdentifier>{8d3df53e-6a6e-49ca-b9f8-c2e103923633}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\jcontext">
+      <UniqueIdentifier>{67ad7169-c417-4ba8-a52a-90ba38d6a927}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\jcontext">
+      <UniqueIdentifier>{da61ae1f-cdb6-416a-950d-72721696d313}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\jmem">
+      <UniqueIdentifier>{2be9a1f1-87b3-4404-b0b9-f2a4289bab46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\jmem">
+      <UniqueIdentifier>{a360e1b6-76e1-4efa-bf4f-a026cdd9aa14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\jrt">
+      <UniqueIdentifier>{e1c63366-be2b-487b-87bf-ebdd7f1de9db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\jrt">
+      <UniqueIdentifier>{e2ce9f07-fcac-427d-b277-ec3cf75a26e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lit">
+      <UniqueIdentifier>{4f6b660b-f583-49ec-9e0e-6f93f8644570}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lit">
+      <UniqueIdentifier>{74324dd0-c6cb-4287-8c76-44bc3b978a03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parser">
+      <UniqueIdentifier>{630b01b6-8407-44b3-b36e-acbf95e2f311}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\parser">
+      <UniqueIdentifier>{18e08759-16f1-4ebf-bf26-b6983a7b9673}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parser\js">
+      <UniqueIdentifier>{9cac95ed-f675-4376-8ea4-ffcd26cca16d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parser\regexp">
+      <UniqueIdentifier>{c440626f-dbd1-45a5-981e-d7336a74ff1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\parser\js">
+      <UniqueIdentifier>{504aac99-9fc1-4647-85d7-cf77044677aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\parser\regexp">
+      <UniqueIdentifier>{bab01432-3d1e-4193-9fd8-20084748233b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\vm">
+      <UniqueIdentifier>{0eaa58d8-b71c-4760-a0a3-66add1451bc7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\vm">
+      <UniqueIdentifier>{0ab19fdd-0c16-4ec7-a4f1-7e300b33698c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\global">
+      <UniqueIdentifier>{58fb26b1-c0d7-49ac-aa8e-9c8996d2f3f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\global">
+      <UniqueIdentifier>{e080c328-c64c-42e0-9419-5c0261c82d54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\hxlib">
+      <UniqueIdentifier>{720d3121-cd47-4cf4-a2f8-e57bf0b30054}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hxlib">
+      <UniqueIdentifier>{b18bf2f9-40de-4d22-8a86-a94f3c8b555e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\hxlib\sys">
+      <UniqueIdentifier>{9461a831-1ee5-4cb0-afe8-15984167bb62}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ecma\base\ecma-alloc.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-gc.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-globals.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-helpers.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-init-finalize.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-lcache.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-literal-storage.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\base\ecma-property-hashmap.h">
+      <Filter>Header Files\ecma\base</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-array.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-arraybuffer.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-arraybuffer-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-array-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-boolean.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-boolean-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-date.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-date-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-error.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-error-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-evalerror.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-evalerror-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-function.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-function-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-global.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-helpers.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-internal-routines-template.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-json.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-math.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-number.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-number-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-object.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-object-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-rangeerror.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-rangeerror-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-referenceerror.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-referenceerror-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-regexp.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-regexp-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtins.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtins.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtins-internal.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-string.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-string-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-syntaxerror.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-syntaxerror-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-typeerror.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-typeerror-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-type-error-thrower.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-urierror.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\builtin-objects\ecma-builtin-urierror-prototype.inc.h">
+      <Filter>Header Files\ecma\builtin-objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-arraybuffer-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-array-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-boolean-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-comparison.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-conversion.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-eval.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-exceptions.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-function-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-lex-env.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-number-arithmetic.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-number-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-objects.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-objects-arguments.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-objects-general.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-reference.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-regexp-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-string-object.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="ecma\operations\ecma-try-catch-macro.h">
+      <Filter>Header Files\ecma\operations</Filter>
+    </ClInclude>
+    <ClInclude Include="jcontext\jcontext.h">
+      <Filter>Header Files\jcontext</Filter>
+    </ClInclude>
+    <ClInclude Include="jmem\jmem-allocator.h">
+      <Filter>Header Files\jmem</Filter>
+    </ClInclude>
+    <ClInclude Include="jmem\jmem-allocator-internal.h">
+      <Filter>Header Files\jmem</Filter>
+    </ClInclude>
+    <ClInclude Include="jmem\jmem-config.h">
+      <Filter>Header Files\jmem</Filter>
+    </ClInclude>
+    <ClInclude Include="jmem\jmem-heap.h">
+      <Filter>Header Files\jmem</Filter>
+    </ClInclude>
+    <ClInclude Include="jmem\jmem-poolman.h">
+      <Filter>Header Files\jmem</Filter>
+    </ClInclude>
+    <ClInclude Include="jrt\jrt.h">
+      <Filter>Header Files\jrt</Filter>
+    </ClInclude>
+    <ClInclude Include="jrt\jrt-bit-fields.h">
+      <Filter>Header Files\jrt</Filter>
+    </ClInclude>
+    <ClInclude Include="jrt\jrt-libc-includes.h">
+      <Filter>Header Files\jrt</Filter>
+    </ClInclude>
+    <ClInclude Include="jrt\jrt-types.h">
+      <Filter>Header Files\jrt</Filter>
+    </ClInclude>
+    <ClInclude Include="lit\lit-char-helpers.h">
+      <Filter>Header Files\lit</Filter>
+    </ClInclude>
+    <ClInclude Include="lit\lit-globals.h">
+      <Filter>Header Files\lit</Filter>
+    </ClInclude>
+    <ClInclude Include="lit\lit-magic-strings.h">
+      <Filter>Header Files\lit</Filter>
+    </ClInclude>
+    <ClInclude Include="lit\lit-magic-strings.inc.h">
+      <Filter>Header Files\lit</Filter>
+    </ClInclude>
+    <ClInclude Include="lit\lit-strings.h">
+      <Filter>Header Files\lit</Filter>
+    </ClInclude>
+    <ClInclude Include="lit\lit-unicode-ranges.inc.h">
+      <Filter>Header Files\lit</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\js\byte-code.h">
+      <Filter>Header Files\parser\js</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\js\common.h">
+      <Filter>Header Files\parser\js</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\js\js-lexer.h">
+      <Filter>Header Files\parser\js</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\js\js-parser.h">
+      <Filter>Header Files\parser\js</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\js\js-parser-internal.h">
+      <Filter>Header Files\parser\js</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\js\js-parser-limits.h">
+      <Filter>Header Files\parser\js</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\regexp\re-bytecode.h">
+      <Filter>Header Files\parser\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\regexp\re-compiler.h">
+      <Filter>Header Files\parser\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\regexp\re-parser.h">
+      <Filter>Header Files\parser\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="vm\opcodes.h">
+      <Filter>Header Files\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="vm\vm.h">
+      <Filter>Header Files\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="vm\vm-defines.h">
+      <Filter>Header Files\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="vm\vm-stack.h">
+      <Filter>Header Files\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files\global</Filter>
+    </ClInclude>
+    <ClInclude Include="jerry-api.h">
+      <Filter>Header Files\global</Filter>
+    </ClInclude>
+    <ClInclude Include="jerry-internal.h">
+      <Filter>Header Files\global</Filter>
+    </ClInclude>
+    <ClInclude Include="jerry-port.h">
+      <Filter>Header Files\global</Filter>
+    </ClInclude>
+    <ClInclude Include="jerry-snapshot.h">
+      <Filter>Header Files\global</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\ctype.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\errno.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\inttypes.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\io.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\kapi.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\limits.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\math.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\pthread.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sched.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\setjmp.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\signal.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdarg.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdbool.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stddef.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdint.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdio.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdlib.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\string.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\time.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\time_pri.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\cpu.h">
+      <Filter>Header Files\hxlib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\stat.h">
+      <Filter>Header Files\hxlib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\types.h">
+      <Filter>Header Files\hxlib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\utsname.h">
+      <Filter>Header Files\hxlib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\ide.h">
+      <Filter>Header Files\hxlib\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\__hxcomm.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ecma\base\ecma-alloc.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-gc.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-conversion.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-errol.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-external-pointers.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-number.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-string.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-value.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-helpers-values-collection.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-init-finalize.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-lcache.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-literal-storage.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\base\ecma-property-hashmap.c">
+      <Filter>Source Files\ecma\base</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-array.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-arraybuffer.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-arraybuffer-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-array-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-boolean.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-boolean-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-date.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-date-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-error.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-error-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-evalerror.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-evalerror-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-function.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-function-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-global.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-helpers.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-helpers-date.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-helpers-error.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-helpers-json.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-json.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-math.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-number.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-number-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-object.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-object-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-rangeerror.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-rangeerror-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-referenceerror.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-referenceerror-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-regexp.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-regexp-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtins.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-string.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-string-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-syntaxerror.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-syntaxerror-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-typeerror.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-typeerror-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-type-error-thrower.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-urierror.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\builtin-objects\ecma-builtin-urierror-prototype.c">
+      <Filter>Source Files\ecma\builtin-objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-arraybuffer-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-array-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-boolean-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-comparison.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-conversion.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-eval.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-exceptions.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-function-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-get-put-value.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-lex-env.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-number-arithmetic.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-number-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-objects.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-objects-arguments.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-objects-general.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-reference.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-regexp-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="ecma\operations\ecma-string-object.c">
+      <Filter>Source Files\ecma\operations</Filter>
+    </ClCompile>
+    <ClCompile Include="jcontext\jcontext.c">
+      <Filter>Source Files\jcontext</Filter>
+    </ClCompile>
+    <ClCompile Include="jmem\jmem-allocator.c">
+      <Filter>Source Files\jmem</Filter>
+    </ClCompile>
+    <ClCompile Include="jmem\jmem-heap.c">
+      <Filter>Source Files\jmem</Filter>
+    </ClCompile>
+    <ClCompile Include="jmem\jmem-poolman.c">
+      <Filter>Source Files\jmem</Filter>
+    </ClCompile>
+    <ClCompile Include="jrt\jrt-fatals.c">
+      <Filter>Source Files\jrt</Filter>
+    </ClCompile>
+    <ClCompile Include="lit\lit-char-helpers.c">
+      <Filter>Source Files\lit</Filter>
+    </ClCompile>
+    <ClCompile Include="lit\lit-magic-strings.c">
+      <Filter>Source Files\lit</Filter>
+    </ClCompile>
+    <ClCompile Include="lit\lit-strings.c">
+      <Filter>Source Files\lit</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\byte-code.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\common.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-lexer.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-parser.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-parser-expr.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-parser-mem.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-parser-scanner.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-parser-statm.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\js\js-parser-util.c">
+      <Filter>Source Files\parser\js</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\regexp\re-bytecode.c">
+      <Filter>Source Files\parser\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\regexp\re-compiler.c">
+      <Filter>Source Files\parser\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\regexp\re-parser.c">
+      <Filter>Source Files\parser\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\opcodes.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\opcodes-ecma-arithmetics.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\opcodes-ecma-bitwise.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\opcodes-ecma-equality.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\opcodes-ecma-relational.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\vm.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="vm\vm-stack.c">
+      <Filter>Source Files\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="jerry.c">
+      <Filter>Source Files\global</Filter>
+    </ClCompile>
+    <ClCompile Include="jerry-snapshot.c">
+      <Filter>Source Files\global</Filter>
+    </ClCompile>
+    <ClCompile Include="hellox-port.c">
+      <Filter>Source Files\global</Filter>
+    </ClCompile>
+    <ClCompile Include="entry.c">
+      <Filter>Source Files\global</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\acos.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\asin.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\atan.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\atan2.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\atox.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\ceil.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\copysign.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\ctype.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\errno.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\exp.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\fabs.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\finite.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\getenv.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\io.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\kapi.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\log.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\math.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\memory.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\nextafter.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pow.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pthread.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pthread_mutex.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pthread_other.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\rand.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\scalbn.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\sched.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\setjmp.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\signal.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\sqrt.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\stat.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\stdio.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\string.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\sysmem.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\time.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\trig.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

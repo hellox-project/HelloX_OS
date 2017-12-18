@@ -14,9 +14,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __KAPI_H__
-#include <kapi.h>
-#endif
+#include "kapi.h"
 
 HANDLE CreateKernelThread(DWORD dwStackSize,
 						  DWORD dwInitStatus,
@@ -148,9 +146,9 @@ HANDLE SetTimer(DWORD dwTimerID,
 		dwTimerFlags);
 }
 
-VOID CancelTimer(HANDLE hTimer)
+BOOL CancelTimer(HANDLE hTimer)
 {
-	System.CancelTimer(
+	return System.CancelTimer(
 		(__COMMON_OBJECT*)&System,
 		hTimer);
 }

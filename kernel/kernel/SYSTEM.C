@@ -24,9 +24,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
 #include "system.h"
 #include "types.h"
 #include "../syscall/syscall.h"
@@ -208,7 +206,6 @@ __TERMINAL:
 
 	return TRUE;
 }
-
 
 //
 //The implementation of kConnectInterrupt routine of Interrupt Object.
@@ -690,7 +687,10 @@ static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 			 _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
 			 _hx_printf("Please power off the system and reboot it.\r\n");
 			 __ENTER_CRITICAL_SECTION(NULL,dwFlags);
-			 while(1); //Make a dead loop.
+			 while (1)
+			 {
+				 HaltSystem(); /* Enter halt state to avoid CPU busy looping. */
+			 }
 			 __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
          }
          return;
@@ -824,28 +824,35 @@ __TERMINAL:
 	return (__COMMON_OBJECT*)lpTimerObject;
 }
 
-//
-//kCancelTimer implementation.
-//This routine is used to cancel timer.
-//
-static VOID kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
+/*
+ * Cancel a kernel timer.The return value indicates if
+ * the timer is cancelled successfully,since the timer
+ * maybe triggered and destroyed before this routine is
+ * called.
+ */
+static BOOL kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 {
-	__SYSTEM*                  lpSystem       = NULL;
-	DWORD                      dwPriority     = 0;
+	__SYSTEM*                  lpSystem = NULL;
+	DWORD                      dwPriority = 0;
 	DWORD                      dwFlags;
-	__TIMER_OBJECT*            lpTimerObject  = NULL;
+	__TIMER_OBJECT*            lpTimerObject = NULL;
+	BOOL                       bDestroyed = FALSE;
 
-	if((NULL == lpThis) || (NULL == lpTimer))
-	{
-		return;
-	}
-
+	BUG_ON((NULL == lpThis) || (NULL == lpTimer));
+	
 	lpSystem = (__SYSTEM*)lpThis;
-	//if(((__TIMER_OBJECT*)lpTimer)->dwTimerFlags != TIMER_FLAGS_ALWAYS)
-	//	return;
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpSystem->lpTimerQueue->DeleteFromQueue((__COMMON_OBJECT*)lpSystem->lpTimerQueue,
-		lpTimer);
+	if (!lpSystem->lpTimerQueue->DeleteFromQueue(
+		(__COMMON_OBJECT*)lpSystem->lpTimerQueue,
+		lpTimer))
+	{
+		/* 
+		 * Can not find the timer object in queue,it maybe 
+		 * destroyed before this routine is called,maybe deleted in
+		 * timer interrupt handler.
+		 */
+		bDestroyed = TRUE;
+	}
 	lpTimerObject = (__TIMER_OBJECT*)
 		lpSystem->lpTimerQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpSystem->lpTimerQueue,
@@ -870,10 +877,11 @@ static VOID kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 
 __DESTROY_TIMER:  //Destroy the timer object.
-	ObjectManager.DestroyObject(&ObjectManager,
-		lpTimer);
-
-	return;
+	if (!bDestroyed)
+	{
+		ObjectManager.DestroyObject(&ObjectManager, lpTimer);
+	}
+	return (!bDestroyed);
 }
 
 //Hardware platform initialization routine,implemented in arch_xxx.c file and will be called

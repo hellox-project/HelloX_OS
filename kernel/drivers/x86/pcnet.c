@@ -439,7 +439,8 @@ static VOID RxInterruptHandler(pcnet_priv_t* priv)
 			memcpy(pEthBuff->srcMAC, buf, ETH_MAC_LEN);
 			buf += ETH_MAC_LEN;
 			pEthBuff->frame_type = _hx_ntohs(*(__u16*)buf);
-			pEthBuff->pEthernetInterface = pEthInt;
+			//pEthBuff->pEthernetInterface = pEthInt;
+			pEthBuff->pInInterface = pEthInt;
 			pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_INITIALIZED;
 		}
 		if (!EthernetManager.PostFrame(pEthInt, pEthBuff))
@@ -908,6 +909,7 @@ static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
 	{
 		goto __TERMINAL;
 	}
+	pInt->ifState.dwFrameSendSuccess += 1;
 	bResult = TRUE;
 
 __TERMINAL:
@@ -966,7 +968,8 @@ static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 			memcpy(pEthBuff->srcMAC, buf, ETH_MAC_LEN);
 			buf += ETH_MAC_LEN;
 			pEthBuff->frame_type = _hx_ntohs(*(__u16*)buf);
-			pEthBuff->pEthernetInterface = pInt;
+			//pEthBuff->pEthernetInterface = pInt;
+			pEthBuff->pInInterface = pInt;
 			pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_INITIALIZED;
 		}
 	}
@@ -1040,7 +1043,7 @@ BOOL PCNet_Drv_Initialize(LPVOID pData)
 			(LPVOID)dev,
 			Ethernet_Int_Init,
 			Ethernet_SendFrame,
-			Ethernet_RecvFrame,
+			NULL, // Ethernet_RecvFrame,
 			Ethernet_Ctrl);
 		if (NULL == dev->pEthInt)
 		{

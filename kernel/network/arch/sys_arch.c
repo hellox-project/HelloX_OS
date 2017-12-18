@@ -11,9 +11,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
 
 #include "ktmgr.h"
 #include "heap.h"
@@ -113,9 +111,9 @@ err_t sys_mbox_trypost(sys_mbox_t* mbox,void* msg)
 	}
 	if(OBJECT_WAIT_TIMEOUT == dwRetVal)
 	{
-		return ERR_MEM;
+		return ERR_TIMEOUT;
 	}
-	return 0;
+	return ERR_UNKNOWN;
 }
 
 //Post a message into mailbox.
@@ -255,6 +253,12 @@ u32_t sys_now(void)
 void sys_init()
 {
 	return;
+}
+
+//Get the system tick counter since boot.
+u32_t sys_jiffies()
+{
+	return System.dwClockTickCounter;
 }
 
 //Net protocol intialize routine,it's called in process of OS initialization

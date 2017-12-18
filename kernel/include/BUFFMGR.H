@@ -86,17 +86,19 @@ typedef struct tag__BUFFER_CONTROL_BLOCK{
                                               //set this bit.
 
 typedef struct tag__FREE_BUFFER_HEADER{
-	DWORD                  dwFlags;
-	DWORD                  dwBlockSize;
+	DWORD                    dwFlags;
+	DWORD                    dwBlockSize;
+	__KERNEL_THREAD_OBJECT*  pOwnerThread;
 	struct tag__FREE_BUFFER_HEADER*  lpNextBlock;
 	struct tag__FREE_BUFFER_HEADER*  lpPrevBlock;
 }__FREE_BUFFER_HEADER;
 
 typedef struct tag__USED_BUFFER_HEADER{
-	DWORD                  dwFlags;
-	DWORD                  dwBlockSize;
-	DWORD                  dwReserved1; //Reserved dword,currently used as block identifier.
-	DWORD                  dwReserved2;
+	DWORD                    dwFlags;
+	DWORD                    dwBlockSize;
+	__KERNEL_THREAD_OBJECT*  pOwnerThread; //Owner thread of this memory block.
+	DWORD                    dwReserved1;  //Reserved dword,currently used as block identifier.
+	DWORD                    dwReserved2;
 }__USED_BUFFER_HEADER;
 
 //Structure to describe system memory regions,one for each region.
