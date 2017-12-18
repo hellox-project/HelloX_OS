@@ -17,24 +17,14 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
+#include <stdio.h>
 
-#ifndef __FSSTR_H__
 #include "fsstr.h"
-#endif
-
-#ifndef __FAT32_H__
 #include "fat32.h"
-#endif
-
-#include "../lib/stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
-
-
 
 //A helper routine used to convert a string from lowercase to capital.
 //The string should be terminated by a zero,i.e,a C string.
@@ -47,12 +37,13 @@ VOID ToCapital(LPSTR lpszString)
 	{
 		return;
 	}
-	while(lpszString[nIndex++])
+	while(lpszString[nIndex])
 	{
 		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
 		{
 			lpszString[nIndex] += 'A' - 'a';
 		}
+		nIndex++;
 	}
 }
 

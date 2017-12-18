@@ -21,11 +21,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "netcfg.h"
 #include "ethmgr.h"
 #include "proto.h"
 
 #ifdef __CFG_NET_IPv4
-#include "../network/arch/lwip_pro.h"
+#include "arch/lwip_pro.h"
+#endif
+
+#ifdef __CFG_NET_PPPOE
+#include "pppox/oe_pro.h"
 #endif
 
 //Network protocol array,each layer3 protocol in system should put one entry
@@ -35,6 +40,7 @@ __NETWORK_PROTOCOL NetworkProtocolArray[] = {
 	{
 		LWIP_PROTOCOL_NAME,                    //protocol's name.
 		NETWORK_PROTOCOL_TYPE_IPV4,            //L3 protocol's type.
+		NULL,                                  //Protocol extension.
 		lwipInitialize,                        //Initialize.
 		lwipCanBindInterface,                  //CanBindInterface.
 		lwipAddEthernetInterface,              //AddEthernetInterface.
@@ -50,6 +56,27 @@ __NETWORK_PROTOCOL NetworkProtocolArray[] = {
 		lwipRenewDHCP,                         //RenewDHCP.
 		lwipGetDHCPConfig                      //GetDHCPConfig.
 	},
-#endif
+#endif //__CFG_NET_IPv4
+#ifdef __CFG_NET_PPPOE
+	{
+		PPPOE_PROTOCOL_NAME,                    //protocol's name.
+		NETWORK_PROTOCOL_TYPE_PPPOE,            //L3 protocol's type.
+		NULL,                                   //Protocol extension.
+		pppoeInitialize,                        //Initialize.
+		pppoeCanBindInterface,                  //CanBindInterface.
+		pppoeAddEthernetInterface,              //AddEthernetInterface.
+		pppoeDeleteEthernetInterface,           //DeleteEthernetInterface.
+		pppoeDeliveryFrame,                     //DeliveryFrame.
+		pppoeSetIPAddress,                      //SetIPAddress.
+		pppoeShutdownInterface,                 //ShutdownInterface.
+		pppoeUnshutdownInterface,               //UnshutdownInterface.
+		pppoeResetInterface,                    //ResetInterface.
+		pppoeStartDHCP,                         //StartDHCP.
+		pppoeStopDHCP,                          //StopDHCP.
+		pppoeReleaseDHCP,                       //ReleaseDHCP.
+		pppoeRenewDHCP,                         //RenewDHCP.
+		pppoeGetDHCPConfig                      //GetDHCPConfig.
+	},
+#endif //__CFG_NET_PPPOE
 	{ 0 }  //The last one must be 0.
 };

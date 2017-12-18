@@ -31,7 +31,7 @@
 #endif
 
 //Ethernet interface name of PCNet.
-#define PCNET_INT_NAME "PCNet Ethernet Interface[%d]"
+#define PCNET_INT_NAME "pcnet_eth_if_%d"
 
 //Device name of the PCNet NIC,please be aware that the
 //device name is different to ethernet interface name.

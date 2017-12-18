@@ -22,9 +22,38 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <lwip/inet.h>
 
+#include "hx_eth.h"
 #include "ethmgr.h"
+#include "ebridge/ethbrg.h"
 #include "proto.h"
+
+/*
+* A local helper routine to show an ethernet frame.
+*/
+static void ShowEthernetFrame(__ETHERNET_BUFFER* pBuffer)
+{
+	if (NULL == pBuffer)
+	{
+		return;
+	}
+	_hx_printf("Frame: d_mac[%X-%X-%X-%X-%X-%X], s_mac[%X-%X-%X-%X-%X-%X], type = %X,len = %d.\r\n",
+		pBuffer->dstMAC[0],
+		pBuffer->dstMAC[1],
+		pBuffer->dstMAC[2],
+		pBuffer->dstMAC[3],
+		pBuffer->dstMAC[4],
+		pBuffer->dstMAC[5],
+		pBuffer->srcMAC[0],
+		pBuffer->srcMAC[1],
+		pBuffer->srcMAC[2],
+		pBuffer->srcMAC[3],
+		pBuffer->srcMAC[4],
+		pBuffer->srcMAC[5],
+		pBuffer->frame_type,
+		pBuffer->act_length);
+}
 
 //A helper routine to refresh DHCP configurations of the given interface.
 static void dhcpRestart(__ETHERNET_INTERFACE* pEthInt, __NETWORK_PROTOCOL* pProtocol, __ETH_INTERFACE_STATE* pifState)
@@ -47,7 +76,7 @@ static void dhcpRestart(__ETHERNET_INTERFACE* pEthInt, __NETWORK_PROTOCOL* pProt
 	}
 
 #ifdef __ETH_DEBUG
-	_hx_printf("  dhcpRestart: Begin to entry.\r\n"); 
+	_hx_printf("  dhcpRestart: Begin to entry.\r\n");
 #endif
 	if (!pifState->bDhcpCltEnabled)  //DHCP is not enabled.
 	{
@@ -86,7 +115,7 @@ static void dhcpRestart(__ETHERNET_INTERFACE* pEthInt, __NETWORK_PROTOCOL* pProt
 }
 
 //Configure a given interface by applying the given parameters.
-static void netifConfig(__ETHERNET_INTERFACE* pif,UCHAR proto, __ETH_INTERFACE_STATE* pifState, __ETH_IP_CONFIG* pifConfig)
+static void netifConfig(__ETHERNET_INTERFACE* pif, UCHAR proto, __ETH_INTERFACE_STATE* pifState, __ETH_IP_CONFIG* pifConfig)
 {
 	int proto_num = 0;
 	__NETWORK_PROTOCOL* pProtocol = NULL;
@@ -116,13 +145,13 @@ static void netifConfig(__ETHERNET_INTERFACE* pif,UCHAR proto, __ETH_INTERFACE_S
 	}
 	if (NULL == pL3Interface)
 	{
-		_hx_printf("  The interface [%d] is not bound to protocol [%].\r\n",
+		_hx_printf("  The interface [%s] is not bound to protocol [%d].\r\n",
 			pif->ethName, proto);
 		return;
 	}
 
 #ifdef __ETH_DEBUG
-	_hx_printf("  %s: Begin to compare flags and locate proper routine.\r\n",__func__);
+	_hx_printf("  %s: Begin to compare flags and locate proper routine.\r\n", __func__);
 #endif
 	//Configure the interface according different DHCP flags.
 	if (pifConfig->dwDHCPFlags & ETH_DHCPFLAGS_DISABLE)
@@ -156,7 +185,7 @@ static void netifConfig(__ETHERNET_INTERFACE* pif,UCHAR proto, __ETH_INTERFACE_S
 		_hx_printf("  netifConfig: DHCP Restart is required.\r\n");
 #endif
 		//pifState->bDhcpCltEnabled = TRUE;
-		dhcpRestart(pif,pProtocol, pifState);
+		dhcpRestart(pif, pProtocol, pifState);
 		_hx_printf("\r\n  DHCP restarted on interface [%s].\r\n", pifConfig->ethName);
 	}
 	if (pifConfig->dwDHCPFlags & ETH_DHCPFLAGS_RENEW)
@@ -204,15 +233,18 @@ static void _eth_if_input(__ETHERNET_INTERFACE* pEthInt)
 			{
 				break;
 			}
-			//_hx_printf("  %s: Received ethernet frame,type = %X,length = %d.\r\n",
-			//	__func__,p->frame_type, p->act_length);
 			//Update interface statistics.
 			pEthInt->ifState.dwFrameRecv++;
 			pEthInt->ifState.dwTotalRecvSize += p->act_length;
 			//Delivery the frame to layer 3.
 			for (index = 0; index < MAX_BIND_PROTOCOL_NUM; index++)
 			{
-				if (pEthInt->Proto_Interface[index].frame_type_mask & p->frame_type)
+				if (pEthInt->Proto_Interface[index].frame_type_mask == 0)
+				{
+					continue;
+				}
+				if ((pEthInt->Proto_Interface[index].frame_type_mask & p->frame_type) ==
+					p->frame_type)
 				{
 					pProtocol = pEthInt->Proto_Interface[index].pProtocol;
 					if (NULL == pProtocol)
@@ -301,7 +333,18 @@ static void ifDHCPAssist(__ETHERNET_INTERFACE* pEthInt)
 			memcpy(&ethConf.dnssrv_2, &dhcp.dns_server2, sizeof(__COMMON_NETWORK_ADDRESS));
 			if (pProtocol->SetIPAddress(pL3Interface, &ethConf))
 			{
-				_hx_printf("Config IP address on ethernet interface [%s] OK.\r\n", pEthInt->ethName);
+				/*
+				* Show IP address information.
+				* Separate the printing since inet_ntoa use static
+				* buffer to hold the result,one print with 2 invokes
+				* of inet_ntoa yeilds same string output of ip_addr
+				* and ip_mask.
+				*/
+				_hx_printf("\r\nDHCP: Assigned ip_addr[%s/",
+					inet_ntoa(ethConf.ipaddr.Address.ipv4_addr));
+				_hx_printf("%s] to net_if[%s].\r\n",
+					inet_ntoa(ethConf.mask.Address.ipv4_addr),
+					pEthInt->ethName);
 				pEthInt->ifState.bDhcpCltOK = TRUE;
 				//Save the ethernet interface's configuration.
 				memcpy(&pEthInt->ifState.IpConfig.ipaddr, &dhcp.network_addr,
@@ -345,33 +388,49 @@ static BOOL _PostFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pBuffer
 	{
 		return FALSE;
 	}
-	if (pEthInt != pBuffer->pEthernetInterface)
+	//if (pEthInt != pBuffer->pEthernetInterface)
+	if (pEthInt != pBuffer->pInInterface)
 	{
 		return FALSE;
 	}
-	if (pBuffer->pNext != NULL)
-	{
-		return FALSE;
-	}
+	/*
+	 * This routine is called by NIC driver,so any ethernent buffer
+	 * object delivered to this routine should be newly constructed,
+	 * thus it's next pointer must be NULL.
+	 */
+	BUG_ON(pBuffer->pNext != NULL);
+
 	//Link the ethernet buffer object to list,and send a message to ethernet core
 	//thread if is the fist buffer object.
 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 	if (NULL == EthernetManager.pBufferFirst)
 	{
-		//We send the post frame message to ethernet core thread first,
-		//since it may fail,we will give up in this case...
+		if (NULL != EthernetManager.pBufferLast)
+		{
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			BUG();
+		}
+		//Link the buffer object to list before send POSTFRAME message.
+		EthernetManager.pBufferFirst = pBuffer;
+		EthernetManager.pBufferLast = pBuffer;
+		EthernetManager.nBuffListSize += 1;
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+
+		//Then send the post frame message to ethernet core thread,make it noticed to
+		//process the incoming packet.
+		//Since it may fail,we will give up in this case...
 		msg.wCommand = ETH_MSG_POSTFRAME;
 		msg.wParam = 0;
 		msg.dwParam = (DWORD)pBuffer;
 		if (!SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg))
 		{
+			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			EthernetManager.pBufferFirst = NULL;
+			EthernetManager.pBufferLast = NULL;
+			EthernetManager.nBuffListSize -= 1;
 			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 			return FALSE;
 		}
-		//Link the buffer object to list.
-		EthernetManager.pBufferFirst = pBuffer;
-		EthernetManager.pBufferLast = pBuffer;
-		EthernetManager.nBuffListSize += 1;
 	}
 	else
 	{
@@ -389,9 +448,59 @@ static BOOL _PostFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pBuffer
 		EthernetManager.pBufferLast->pNext = pBuffer;
 		EthernetManager.pBufferLast = pBuffer;
 		EthernetManager.nBuffListSize += 1;
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	return TRUE;
+}
+
+//A helper routine to delivery an ethernet frame to local layer 3 protocol,such
+//as IP,...
+static BOOL _Delivery2Local(__ETHERNET_BUFFER* pEthBuffer)
+{
+	BOOL bDeliveryResult = FALSE;
+	__ETHERNET_INTERFACE* pEthInt = NULL;
+	__NETWORK_PROTOCOL* pProtocol = NULL;
+	int index = 0;
+
+	/* 
+	 * Here is something wrong that should be reviewed further
+	 * insight,since it leads memory leak.
+	 * Just mark it.
+	 */
+
+	if (NULL == pEthBuffer)
+	{
+		goto __TERMINAL;
+	}
+	//pEthInt = pEthBuffer->pEthernetInterface;
+	pEthInt = pEthBuffer->pInInterface;
+
+	for (index = 0; index < MAX_BIND_PROTOCOL_NUM; index++)
+	{
+		if (0 == pEthInt->Proto_Interface[index].frame_type_mask)
+		{
+			/* Protocol slot is empty,skip. */
+			continue;
+		}
+		if ((pEthInt->Proto_Interface[index].frame_type_mask & pEthBuffer->frame_type) ==
+			pEthBuffer->frame_type)
+		{
+			pProtocol = pEthInt->Proto_Interface[index].pProtocol;
+			if (NULL == pProtocol)
+			{
+				BUG();
+			}
+			bDeliveryResult = pProtocol->DeliveryFrame(pEthBuffer, pEthInt->Proto_Interface[index].pL3Interface);
+			if (bDeliveryResult)
+			{
+				pEthInt->ifState.dwFrameRecvSuccess++;
+				break;
+			}
+		}
+	}
+
+__TERMINAL:
+	return bDeliveryResult;
 }
 
 //Handler the Post Frame message.
@@ -399,10 +508,9 @@ static BOOL _PostFrameHandler()
 {
 	__ETHERNET_BUFFER* pBuffer = NULL;
 	__ETHERNET_INTERFACE* pEthInt = NULL;
-	__NETWORK_PROTOCOL* pProtocol = NULL;
 	BOOL bDeliveryResult = FALSE;
-	int index = 0;
 	DWORD dwFlags;
+	BOOL bShouldReturn = FALSE;
 
 	while (TRUE)
 	{
@@ -410,7 +518,7 @@ static BOOL _PostFrameHandler()
 		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 		if (NULL == EthernetManager.pBufferFirst)  //No frame pending.
 		{
-			if (EthernetManager.pBufferLast)  //Check again.
+			if (EthernetManager.pBufferLast)  //Double check.
 			{
 				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 				BUG();
@@ -419,11 +527,21 @@ static BOOL _PostFrameHandler()
 			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 			return FALSE;
 		}
+		bShouldReturn = FALSE;
 		pBuffer = EthernetManager.pBufferFirst;
 		EthernetManager.pBufferFirst = pBuffer->pNext;
 		if (NULL == pBuffer->pNext)
 		{
 			EthernetManager.pBufferLast = NULL;
+			/* 
+			 * Should return,since we encounter empty condition of
+			 * buffer list. Otherwise may lead the message queue full
+			 * netCore thread,cause the NIC driver will drop a msg
+			 * to netCore when it makes the buffer list to no-empty
+			 * from empty.Just check the implementation code of
+			 * PostFrame routine of EthernetManager object.
+			 */
+			bShouldReturn = TRUE;
 		}
 		EthernetManager.nBuffListSize -= 1;
 		if (EthernetManager.nBuffListSize < 0)
@@ -433,33 +551,138 @@ static BOOL _PostFrameHandler()
 		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 
 		//Update interface statistics.
-		pEthInt = pBuffer->pEthernetInterface;
+		//pEthInt = pBuffer->pEthernetInterface;
+		pEthInt = pBuffer->pInInterface;
 		if (NULL == pEthInt)  //Should not occur.
 		{
 			BUG();
-			return FALSE;
 		}
 		pEthInt->ifState.dwFrameRecv++;
 		pEthInt->ifState.dwTotalRecvSize += pBuffer->act_length;
-		//Delivery the frame to layer 3.
-		for (index = 0; index < MAX_BIND_PROTOCOL_NUM; index++)
+
+		//Process the frame according to it's destination MAC address.
+		if (Eth_MAC_Match(pEthInt->ethMac, pBuffer->dstMAC))
 		{
-			if (pEthInt->Proto_Interface[index].frame_type_mask & pBuffer->frame_type)
-			{
-				pProtocol = pEthInt->Proto_Interface[index].pProtocol;
-				if (NULL == pProtocol)
-				{
-					BUG();
-				}
-				bDeliveryResult = pProtocol->DeliveryFrame(pBuffer, pEthInt->Proto_Interface[index].pL3Interface);
-				if (bDeliveryResult)
-				{
-					pEthInt->ifState.dwFrameRecvSuccess++;
-					break;
-				}
-			}
+			bDeliveryResult = _Delivery2Local(pBuffer);  //Delivery to local.
+			EthernetManager.DestroyEthernetBuffer(pBuffer);
 		}
-		//Release the Ethernet Buffer object.
+		else
+		{
+			//Broadcast or multicast frame also should be delivered to local.
+			if (Eth_MAC_BM(pBuffer->dstMAC))
+			{
+				bDeliveryResult = _Delivery2Local(pBuffer);
+			}
+#ifdef __CFG_NET_EBRG
+			/*
+			 * Delivery the ethernet frame to bridging thread.
+			 * The buffer object will be released in bridging
+			 * function if delivering is successful.
+			 */
+			if (Do_Bridging(pBuffer))
+			{
+				continue; //Continue to process next frame.
+			}
+			else /* Should destroy the frame here. */
+#endif
+			{
+				EthernetManager.DestroyEthernetBuffer(pBuffer);
+			}
+			/*
+			* The old ethernet buffer should be released here.
+			*/
+		}
+		if (bShouldReturn)
+		{
+			goto __TERMINAL;
+		}
+	}
+
+__TERMINAL:
+	return TRUE;
+}
+
+/*
+* Handler of the ETH_MSG_BROADCAST in eth_core thread.
+*/
+static BOOL __BroadcastHandler()
+{
+	__ETHERNET_BUFFER* pBuffer = NULL;
+	__ETHERNET_BUFFER* pNewBuff = NULL;
+	__ETHERNET_INTERFACE* pRecvInt = NULL;
+	__ETHERNET_INTERFACE* pEthInt = NULL;
+	BOOL bDeliveryResult = FALSE;
+	int index = 0;
+	DWORD dwFlags;
+
+	while (TRUE)
+	{
+		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		if (NULL == EthernetManager.pBroadcastFirst)  //No frame pending.
+		{
+			if (EthernetManager.pBroadcastLast)  //Check again.
+			{
+				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+				BUG();
+				return FALSE;
+			}
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			return FALSE;
+		}
+		/*
+		* Fetch one frame buffer from broadcast list and delete it from list.
+		*/
+		pBuffer = EthernetManager.pBroadcastFirst;
+		EthernetManager.pBroadcastFirst = pBuffer->pNext;
+		if (NULL == pBuffer->pNext)  //Last frame buffer.
+		{
+			EthernetManager.pBroadcastLast = NULL;
+		}
+		EthernetManager.nBroadcastSize -= 1;
+		BUG_ON(EthernetManager.nBroadcastSize < 0);
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+
+		//pRecvInt = pBuffer->pEthernetInterface;
+		pRecvInt = pBuffer->pInInterface;
+		BUG_ON(NULL == pRecvInt);
+		BUG_ON(KERNEL_OBJECT_SIGNATURE != pBuffer->dwSignature);
+
+		/*
+		* Broadcast the ethernet frame to all port(s) except the receiving
+		* one.
+		*/
+		for (index = 0; index < EthernetManager.nIntIndex; index++)
+		{
+			pEthInt = &EthernetManager.EthInterfaces[index];
+			if (pEthInt->ifState.dwInterfaceStatus == ETHERNET_INTERFACE_STATUS_UNKNOWN)
+			{
+				continue;  //Maybe empty slot.
+			}
+			if (pEthInt->ifState.dwInterfaceStatus == ETHERNET_INTERFACE_STATUS_DOWN)
+			{
+				continue;  //Skip the down interface.
+			}
+			if (pEthInt == pRecvInt)
+			{
+				continue;  //Skip the receiving interface.
+			}
+			BUG_ON(NULL == pEthInt->SendFrame);
+
+			//Now use the default ehernet send buffer to sendout the frame.
+			memcpy(&pEthInt->SendBuffer, pBuffer, sizeof(__ETHERNET_BUFFER));
+			//pEthInt->SendBuffer.pEthernetInterface = pEthInt; //Mark the out interface.
+			pEthInt->SendBuffer.pOutInterface = pEthInt; //Mark the out interface.
+			BUG_ON(KERNEL_OBJECT_SIGNATURE != pEthInt->SendBuffer.dwSignature);
+			if (pEthInt->SendFrame(pEthInt))
+			{
+				//pEthInt->ifState.dwFrameSendSuccess += 1;
+			}
+			pEthInt->ifState.dwFrameSend += 1;
+			pEthInt->ifState.dwTotalSendSize += pBuffer->act_length;
+		}
+		/*
+		* Destroy the ethernet frame object.
+		*/
 		EthernetManager.DestroyEthernetBuffer(pBuffer);
 	}
 	return TRUE;
@@ -536,28 +759,21 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 					break;
 				}
 				//Commit the configurations to interface.
-				netifConfig(pEthInt,pifConfig->protoType,pifState, pifConfig);
+				netifConfig(pEthInt, pifConfig->protoType, pifState, pifConfig);
 				KMemFree(pifConfig, KMEM_SIZE_TYPE_ANY, 0);
 				break;
-
-			case ETH_MSG_SEND:                //Send a link level frame.
+			case ETH_MSG_BROADCAST:  //Broadcast an ethernet frame.
+				__BroadcastHandler();
+				break;
+			case ETH_MSG_SEND: //Send a link level frame.
 				pEthBuffer = (__ETHERNET_BUFFER*)msg.dwParam;
-				if (NULL == pEthBuffer)  //Use the default send buffer.
-				{
-					BUG();
-					break;
-				}
-				pEthInt = (__ETHERNET_INTERFACE*)pEthBuffer->pEthernetInterface;
-				if (NULL == pEthInt)
-				{
-					BUG();
-					break;
-				}
-				if (NULL == pEthInt->SendFrame)
-				{
-					BUG();
-					break;
-				}
+				BUG_ON(NULL == pEthBuffer);
+				BUG_ON(KERNEL_OBJECT_SIGNATURE != pEthBuffer->dwSignature);
+
+				//pEthInt = (__ETHERNET_INTERFACE*)pEthBuffer->pEthernetInterface;
+				pEthInt = pEthBuffer->pOutInterface;
+				BUG_ON(NULL == pEthInt);
+				BUG_ON(NULL == pEthInt->SendFrame);
 				if (pEthInt->ifState.dwInterfaceStatus & ETHERNET_INTERFACE_STATUS_DOWN)
 				{
 					break;
@@ -571,10 +787,14 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 					EthernetManager.DestroyEthernetBuffer(pEthBuffer);
 				}
 				//Now try to send the frame.
+				if (pEthInt->SendBuffer.dwSignature != KERNEL_OBJECT_SIGNATURE)
+				{
+					BUG();
+				}
 				if (pEthInt->SendFrame(pEthInt))
 				{
 					//Update statistics info.
-					pEthInt->ifState.dwFrameSendSuccess += 1;
+					//pEthInt->ifState.dwFrameSendSuccess += 1;
 				}
 				pEthInt->ifState.dwFrameSend += 1;
 				pEthInt->ifState.dwTotalSendSize += tot_len;
@@ -688,22 +908,32 @@ static BOOL SendFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pEthBuff
 	if (pEthBuff)
 	{
 		//Validate the pEthBuff object.
+		if (pEthBuff->dwSignature != KERNEL_OBJECT_SIGNATURE)
+		{
+			BUG();
+		}
 		if (pEthBuff->act_length > pEthBuff->buff_length)
 		{
 			BUG();
 		}
-		pEthBuff->pEthernetInterface = pEthInt;
+		//pEthBuff->pEthernetInterface = pEthInt;
+		pEthBuff->pOutInterface = pEthInt;
 		msg.dwParam = (DWORD)pEthBuff;
 		pSendBuff = pEthBuff;
 	}
 	else  //Use the embedded Ethernet Buffer object in Ethernet Interface.
 	{
 		//Validate the default Ethernet Buffer object.
+		if (pEthInt->SendBuffer.dwSignature != KERNEL_OBJECT_SIGNATURE)
+		{
+			BUG();
+		}
 		if (pEthInt->SendBuffer.act_length > pEthInt->SendBuffer.buff_length)
 		{
 			BUG();
 		}
-		pEthInt->SendBuffer.pEthernetInterface = pEthInt;
+		//pEthInt->SendBuffer.pEthernetInterface = pEthInt;
+		pEthInt->SendBuffer.pOutInterface = pEthInt;
 		msg.dwParam = (DWORD)(&pEthInt->SendBuffer);
 		pSendBuff = &pEthInt->SendBuffer;
 	}
@@ -712,15 +942,21 @@ static BOOL SendFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pEthBuff
 	{
 		_hx_printf("%s:frame length[%d] may exceed.\r\n", pSendBuff->act_length);
 	}
-	//_hx_printf("%s:send out a frame with length = %d.\r\n", __func__,
-	//	pSendBuff->act_length);
-	SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg);
+	/*
+	* Send a message to ethernet core tread to trigger frame
+	* sending.
+	* Message queue full or other reason may lead to failure.
+	*/
+	if (!SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg))
+	{
+		return FALSE;
+	}
 	return TRUE;
 }
 
 //Implementation of AddEthernetInterface,which is called by Ethernet Driver to register an interface
 //object.
-static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName,char* mac,LPVOID pIntExtension,
+static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName, char* mac, LPVOID pIntExtension,
 	__ETHOPS_INITIALIZE Init,
 	__ETHOPS_SEND_FRAME SendFrame,
 	__ETHOPS_RECV_FRAME RecvFrame,
@@ -758,8 +994,9 @@ static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName,char* mac,LPVOID
 	pEthInt->SendBuffer.buff_length = ETH_DEFAULT_MTU + ETH_HEADER_LEN;
 	pEthInt->SendBuffer.buff_status = ETHERNET_BUFFER_STATUS_FREE;
 	pEthInt->SendBuffer.frame_type = 0;
-	pEthInt->SendBuffer.pEthernetInterface = NULL;
+	//pEthInt->SendBuffer.pEthernetInterface = pEthInt;  //Point back.
 	pEthInt->SendBuffer.pNext = NULL;
+	pEthInt->SendBuffer.dwSignature = KERNEL_OBJECT_SIGNATURE;
 
 	//Copy ethernet name,do not use strxxx routine for safety.
 	while (ethName[index] && (index < MAX_ETH_NAME_LEN))
@@ -787,6 +1024,9 @@ static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName,char* mac,LPVOID
 	pEthInt->SendFrame = SendFrame;
 	pEthInt->RecvFrame = RecvFrame;
 	pEthInt->IntControl = IntCtrl;
+
+	//Sending queue(list) size.
+	pEthInt->nSendingQueueSz = 0;
 
 	//Bind to protocols.
 	i = 0;
@@ -830,11 +1070,13 @@ static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName,char* mac,LPVOID
 		}
 	}
 
+#ifdef __CFG_NET_DHCP
 	//Restart DHCP process on the ethernet interface for each L3 protocol.
 	for (index = 0; index < MAX_BIND_PROTOCOL_NUM; index++)
 	{
 		dhcpRestart(pEthInt, pEthInt->Proto_Interface[index].pProtocol, &pEthInt->ifState);
 	}
+#endif
 
 	bResult = TRUE;
 
@@ -850,7 +1092,7 @@ __TERMINAL:
 				pProtocol = pEthInt->Proto_Interface[index].pProtocol;
 				if (pProtocol)
 				{
-					pProtocol->DeleteEthernetInterface(pEthInt, 
+					pProtocol->DeleteEthernetInterface(pEthInt,
 						pEthInt->Proto_Interface[index].pL3Interface);
 				}
 			}
@@ -860,6 +1102,16 @@ __TERMINAL:
 		}
 	}
 	return pEthInt;
+}
+
+/*
+* Delete an interface from system,it's the reverse operation of
+* AddEthernetInterface.
+*/
+static BOOL DeleteEthernetInterface(__ETHERNET_INTERFACE* pEthInt)
+{
+	_hx_printf("Warning: Routine[%s] is not implemented yet.\r\n", __func__);
+	return FALSE;
 }
 
 //Config a specified interface,such as it's IP address,DNS server,DHCP
@@ -888,7 +1140,7 @@ static BOOL ConfigInterface(char* ethName, __ETH_IP_CONFIG* pConfig)
 	strcpy(pifConfig->ethName, ethName);
 
 #ifdef __ETH_DEBUG
-	_hx_printf("  %s: Try to send message to core thread.\r\n",__func__);
+	_hx_printf("  %s: Try to send message to core thread.\r\n", __func__);
 #endif	
 	//Delivery a message to ethernet core thread.
 	msg.wCommand = ETH_MSG_SETCONF;
@@ -909,6 +1161,38 @@ __TERMINAL:
 	return bResult;
 }
 
+/*
+ * Local helper to show all protocol(s) that bound to
+ * a specified ethernet interface.
+ * This routine is called by ShowIf.
+ */
+static void ShowBinding(__ETHERNET_INTERFACE* pEthInt)
+{
+	__NETWORK_PROTOCOL* pProtocol = NULL;
+	struct __PROTO_INTERFACE_BIND* pBinding = NULL;
+	int i = 0, bind_count = 0;
+
+	BUG_ON(NULL == pEthInt);
+
+	_hx_printf("  Protocol(s) bound:\r\n");
+	for (i = 0; i < MAX_BIND_PROTOCOL_NUM; i++)
+	{
+		pBinding = &pEthInt->Proto_Interface[i];
+		if (NULL == pBinding->pProtocol)
+		{
+			continue;
+		}
+		BUG_ON(NULL == pBinding->pL3Interface);
+		pProtocol = pBinding->pProtocol;
+		_hx_printf("    %s\r\n", pProtocol->szProtocolName);
+		bind_count++;
+	}
+	if (0 == bind_count) /* No protocol bound to this interface. */
+	{
+		_hx_printf("    [No protocol bound]\r\n");
+	}
+}
+
 //Display all ethernet interface's statistics information.
 static VOID ShowInt(char* ethName)
 {
@@ -920,7 +1204,7 @@ static VOID ShowInt(char* ethName)
 		for (index = 0; index < EthernetManager.nIntIndex; index++)
 		{
 			pState = &EthernetManager.EthInterfaces[index].ifState;
-			_hx_printf("  \r\n");
+			ShowBinding(&EthernetManager.EthInterfaces[index]);
 			_hx_printf("  Statistics information for interface '%s':\r\n",
 				EthernetManager.EthInterfaces[index].ethName);
 			_hx_printf("    Send frame #       : %d\r\n", pState->dwFrameSend);
@@ -929,6 +1213,10 @@ static VOID ShowInt(char* ethName)
 			_hx_printf("    Receive frame #    : %d\r\n", pState->dwFrameRecv);
 			_hx_printf("    Success recv #     : %d\r\n", pState->dwFrameRecvSuccess);
 			_hx_printf("    Receive bytes size : %d\r\n", pState->dwTotalRecvSize);
+			_hx_printf("    Bridged frame #    : %d\r\n", pState->dwFrameBridged);
+			_hx_printf("    Tx error number    : %d\r\n", pState->dwTxErrorNum);
+			_hx_printf("    Sending Queue Sz   : %d\r\n",
+				EthernetManager.EthInterfaces[index].nSendingQueueSz);
 		}
 	}
 	else //Show a specified ethernet interface.
@@ -1183,16 +1471,59 @@ static __ETHERNET_BUFFER* _CreateEthernetBuffer(int buff_length)
 	}
 	//Create OK,initialize it.
 	pEthBuff->pNext = NULL;
+	pEthBuff->dwSignature = KERNEL_OBJECT_SIGNATURE;
 	pEthBuff->act_length = buff_length;
 	pEthBuff->buff_length = ETH_DEFAULT_MTU + ETH_HEADER_LEN;
 	pEthBuff->frame_type = 0;
 	pEthBuff->buff_status = ETHERNET_BUFFER_STATUS_FREE;
-	pEthBuff->pEthernetInterface = NULL;
+	//pEthBuff->pEthernetInterface = NULL;
+	pEthBuff->pInInterface = NULL;
+	pEthBuff->pOutInterface = NULL;
 	memset(pEthBuff->srcMAC, 0, sizeof(pEthBuff->srcMAC));
 	memset(pEthBuff->dstMAC, 0, sizeof(pEthBuff->dstMAC));
+	EthernetManager.nTotalEthernetBuffs += 1;
 
 __TERMINAL:
 	return pEthBuff;
+}
+
+//Clone a new ethernet buffer by giving a existing one.
+static __ETHERNET_BUFFER* _CloneEthernetBuffer(__ETHERNET_BUFFER* pEthBuff)
+{
+	__ETHERNET_BUFFER* pNewEthBuff = NULL;
+
+	if (NULL == pEthBuff)
+	{
+		goto __TERMINAL;
+	}
+	//Buffer length should be fixed as ETH_DEFAULT_MTU + ETH_HEADER_LEN currently.
+	if ((ETH_DEFAULT_MTU + ETH_HEADER_LEN) != pEthBuff->buff_length)
+	{
+		BUG();
+	}
+	if (KERNEL_OBJECT_SIGNATURE != pEthBuff->dwSignature)
+	{
+		BUG();
+	}
+
+	pNewEthBuff = (__ETHERNET_BUFFER*)_hx_malloc(sizeof(__ETHERNET_BUFFER));
+	if (NULL == pNewEthBuff)
+	{
+		goto __TERMINAL;
+	}
+	memcpy(pNewEthBuff, pEthBuff, sizeof(__ETHERNET_BUFFER));
+	/*
+	* Reset pNext pointer.
+	*/
+	pNewEthBuff->pNext = NULL;
+
+	/*
+	* Update total ethernet buffer counter.
+	*/
+	EthernetManager.nTotalEthernetBuffs += 1;
+
+__TERMINAL:
+	return pNewEthBuff;
 }
 
 //Destroy a specified Ethernet Buffer object.
@@ -1202,14 +1533,126 @@ static VOID _DestroyEthernetBuffer(__ETHERNET_BUFFER* pEthBuff)
 	{
 		return;
 	}
+	BUG_ON(KERNEL_OBJECT_SIGNATURE != pEthBuff->dwSignature);
 	//Buffer length should be fixed as ETH_DEFAULT_MTU + ETH_HEADER_LEN currently.
-	if ((ETH_DEFAULT_MTU + ETH_HEADER_LEN)!= pEthBuff->buff_length)
+	BUG_ON((ETH_DEFAULT_MTU + ETH_HEADER_LEN) != pEthBuff->buff_length);
+
+	/*
+	 * Clear all object key memeber's value before release,since it will
+	 * trigger assert mechanism in case of bug,such as a destroyed ethernet buffer
+	 * is miss used by invalid pointer.
+	 */
+	pEthBuff->act_length = 0;
+	pEthBuff->buff_length = 0;
+	pEthBuff->dwSignature = 0;
+	pEthBuff->pNext = NULL;
+	pEthBuff->pInInterface = pEthBuff->pOutInterface = NULL;
+
+	_hx_free(pEthBuff);
+
+	/*
+	* Decrease total ethernet buffer number in system.
+	*/
+	EthernetManager.nTotalEthernetBuffs--;
+}
+
+static BOOL __BroadcastEthernetFrame(__ETHERNET_BUFFER* pBuffer)
+{
+	DWORD dwFlags;
+	__KERNEL_THREAD_MESSAGE msg;
+
+	if (NULL == pBuffer)
+	{
+		return FALSE;
+	}
+	if (KERNEL_OBJECT_SIGNATURE != pBuffer->dwSignature)
 	{
 		BUG();
-		return;
 	}
-	//Release it.
-	_hx_free(pEthBuff);
+
+	/*
+	* Reset the next pointer,since it maybe not NULL.
+	*/
+	pBuffer->pNext = NULL;
+
+	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	if (NULL == EthernetManager.pBroadcastFirst) /* No thread frame in list yet. */
+	{
+		if (NULL != EthernetManager.pBroadcastLast)
+		{
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			BUG();
+		}
+		//Link the buffer object to list before send POSTFRAME message.
+		EthernetManager.pBroadcastFirst = pBuffer;
+		EthernetManager.pBroadcastLast = pBuffer;
+		EthernetManager.nBroadcastSize += 1;
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+
+		//Then send the post frame message to ethernet core thread,make it noticed to
+		//process the incoming packet.
+		//Since it may fail,we will give up in this case...
+		msg.wCommand = ETH_MSG_BROADCAST;
+		msg.wParam = 0;
+		msg.dwParam = (DWORD)pBuffer;
+		if (!SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg))
+		{
+			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			EthernetManager.pBroadcastFirst = NULL;
+			EthernetManager.pBroadcastLast = NULL;
+			EthernetManager.nBroadcastSize -= 1;
+			EthernetManager.nDropedBcastSize += 1;
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			return FALSE;
+		}
+	}
+	else
+	{
+		if (NULL == EthernetManager.pBroadcastLast)
+		{
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			BUG();
+		}
+		//Exceed the maximal buffer list size.
+		if (EthernetManager.nBroadcastSize > MAX_ETH_BCASTQUEUESZ)
+		{
+			EthernetManager.nDropedBcastSize += 1;
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			return FALSE;
+		}
+		EthernetManager.pBroadcastLast->pNext = pBuffer;
+		EthernetManager.pBroadcastLast = pBuffer;
+		EthernetManager.nBroadcastSize += 1;
+		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	}
+	return TRUE;
+}
+
+static __ETHERNET_INTERFACE* GetEthernetInterface(char* name)
+{
+	__ETHERNET_INTERFACE* pEthInt = NULL;
+	int i = 0;
+
+	BUG_ON(NULL == name);
+
+	for (i = 0; i < MAX_ETH_INTERFACE_NUM; i++)
+	{
+		pEthInt = &EthernetManager.EthInterfaces[i];
+		if (strcmp(pEthInt->ethName, name) == 0)
+		{
+			break;
+		}
+	}
+	if (i == MAX_ETH_INTERFACE_NUM) /* Ethernet interface can not be found. */
+	{
+		return NULL;
+	}
+	return pEthInt;
+}
+
+static VOID ReleaseEthernetInterface(__ETHERNET_INTERFACE* pEthInt)
+{
+	return;
 }
 
 /*
@@ -1226,19 +1669,32 @@ struct __ETHERNET_MANAGER EthernetManager = {
 	NULL,                   //Buffer list tail.
 	0,                      //nBuffListSize.
 
-	Initialize,             //Initialize.
-	AddEthernetInterface,   //AddEthernetInterface.
-	ConfigInterface,        //ConfigInterface.
-	Rescan,                 //Rescan.
-	Assoc,                  //Assoc.
-	Delivery,               //Delivery.
-	SendFrame,              //SendFrame.
-	_TriggerReceive,        //TriggerReceive.
-	_PostFrame,             //PostFrame.
-	ShowInt,                //ShowInt.
-	ShutdownInterface,      //ShutdownInterface.
-	UnshutInterface,        //UnshutInterface.
+	NULL,                   //Broadcast list header.
+	NULL,                   //Broadcast list tail.
+	0,                      //nBroadcastSize.
+	0,                      //nDropedBcastSize.
+
+	0,                      //nTotalEthernetBuffs.
+	0,                      //nDrvSendingQueueSz.
+
+	Initialize,               //Initialize.
+	AddEthernetInterface,     //AddEthernetInterface.
+	GetEthernetInterface,     //GetEthernetInterface.
+	ReleaseEthernetInterface, //ReleaseEthernetInterface.
+	DeleteEthernetInterface,  //DeleteEthernetInterface.
+	ConfigInterface,          //ConfigInterface.
+	Rescan,                   //Rescan.
+	Assoc,                    //Assoc.
+	Delivery,                 //Delivery.
+	SendFrame,                //SendFrame.
+	__BroadcastEthernetFrame, //BroadcastEthernetFrame.
+	_TriggerReceive,          //TriggerReceive.
+	_PostFrame,               //PostFrame.
+	ShowInt,                  //ShowInt.
+	ShutdownInterface,        //ShutdownInterface.
+	UnshutInterface,          //UnshutInterface.
 	_GetEthernetInterfaceState,    //GetEthernetInterfaceState.
 	_CreateEthernetBuffer,         //CreateEthernetBuffer.
+	_CloneEthernetBuffer,          //CloneEthernetBuffer.
 	_DestroyEthernetBuffer         //DestroyEthernetBuffer.
 };

@@ -12,22 +12,20 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
-
-#ifndef __STDLIB_H__
-#include "stdlib.h"      //For memory allocation.
-#endif
-
-#ifndef __STDIO_H__
-#include "stdio.h"
-#endif
+#include <StdAfx.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifndef __LWIPOPTS_H__
 
 //Swich of debugging functions.
 //#define LWIP_DEBUG           1
+
+//Switch of IP debugging function.
+//#define IP_DEBUG             1
+
+//Turn PPP debugging switch on.
+//#define PPP_DEBUG            1
 
 //Use binary semaphore for mutex.
 #define LWIP_COMPAT_MUTEX    1
@@ -55,6 +53,24 @@
 
 //Enable or disable DNS functions in lwIP.
 #define LWIP_DNS             1
+
+//Enable PPP support in system.
+#define PPP_SUPPORT          1
+
+//Enable PPPoE support in system.
+#define PPPOE_SUPPORT        1
+
+//Enable PAP authentication.
+#define PAP_SUPPORT          1
+
+//Disable PPPoS support.
+#define PPPOS_SUPPORT        0
+
+//Enable IP routing function.
+#define IP_FORWARD           1
+
+//Maximal fragmented IP packet.
+#define IP_REASS_MAX_PBUFS   64
 
 //Change the default value(3) to larger number,since DHCP is enabled.
 #define MEMP_NUM_SYS_TIMEOUT 8

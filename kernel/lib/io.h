@@ -133,6 +133,21 @@ extern "C" {
 #define stdout NULL
 #define stderr NULL
 
+ /*
+  * Hardware IO operations.
+  */
+#ifndef __BYTEORD_H__
+#include <byteord.h>
+#endif
+#if defined(__CFG_CPU_LE)
+#define readb(x)		cpu_to_le32((*((volatile __u8 *)(x))))
+#define writeb(a,b)    (*((volatile __u8 *)(a)) = cpu_to_le32(((__u8)b)))
+#define readw(x)		cpu_to_le32((*((volatile __u16 *)(x))))
+#define writew(a,b)    (*((volatile __u16 *)(a)) = cpu_to_le32(((__u16)b)))
+#define readl(x)		cpu_to_le32((*((volatile __u32 *)(x))))
+#define writel(a,b)    (*((volatile __u32 *)(a)) = cpu_to_le32(((__u32)b)))
+#endif
+
 #ifdef	__cplusplus
 }
 #endif

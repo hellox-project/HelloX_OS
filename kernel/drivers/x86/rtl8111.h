@@ -323,7 +323,7 @@ struct rtl8111_priv{
 	struct rtl8111_priv* next;
 	int available;                 //If the NIC is available.
 	__ETHERNET_INTERFACE* pEthInt; //Ethernet Interface associated to RTL8111 NIC.
-	char macAddr[6];               //MAC address of this interface.
+	unsigned char macAddr[6];      //MAC address of this interface.
 
 	unsigned long ioaddr;          //IO port base address.
 	unsigned long memaddr;         //Memory mapping base.

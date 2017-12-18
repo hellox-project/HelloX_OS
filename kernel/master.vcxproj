@@ -20,7 +20,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -49,6 +49,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
+    <IgnoreImportLibrary>true</IgnoreImportLibrary>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\Debug\</OutDir>
@@ -164,6 +165,8 @@
     <ClCompile Include="appldr\AppLoader_STM32.C" />
     <ClCompile Include="arch\x86\BIOSVGA.C" />
     <ClCompile Include="drivers\x86\com.c" />
+    <ClCompile Include="drivers\x86\e1000.c" />
+    <ClCompile Include="drivers\x86\e1000_d.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
     <ClCompile Include="drivers\x86\IDEHD.C" />
     <ClCompile Include="drivers\x86\KEYBRD.C" />
@@ -196,6 +199,8 @@
     <ClCompile Include="lib\pthread.c" />
     <ClCompile Include="lib\pthread_mutex.c" />
     <ClCompile Include="lib\pthread_other.c" />
+    <ClCompile Include="lib\rand.c" />
+    <ClCompile Include="lib\rdxtree.c" />
     <ClCompile Include="lib\sched.c" />
     <ClCompile Include="lib\setjmp.c" />
     <ClCompile Include="lib\signal.c" />
@@ -203,10 +208,36 @@
     <ClCompile Include="lib\string.c" />
     <ClCompile Include="lib\sysmem.c" />
     <ClCompile Include="lib\time.c" />
+    <ClCompile Include="netcore\dhcp_srv\dhcp_srv.c" />
+    <ClCompile Include="netcore\ebridge\ethbrg.c" />
     <ClCompile Include="netcore\ethentry.c" />
     <ClCompile Include="netcore\ethmgr.c" />
+    <ClCompile Include="netcore\hx_eth.c" />
     <ClCompile Include="netcore\hx_inet.c" />
+    <ClCompile Include="netcore\nat\easynat.c" />
+    <ClCompile Include="netcore\nat\hash.c" />
+    <ClCompile Include="netcore\nat\naticmp.c" />
+    <ClCompile Include="netcore\nat\nattcp.c" />
+    <ClCompile Include="netcore\netentry.c" />
+    <ClCompile Include="netcore\netglob.c" />
+    <ClCompile Include="netcore\netmgr.c" />
+    <ClCompile Include="netcore\pppox\auth.c" />
+    <ClCompile Include="netcore\pppox\chap.c" />
+    <ClCompile Include="netcore\pppox\chpms.c" />
+    <ClCompile Include="netcore\pppox\fsm.c" />
+    <ClCompile Include="netcore\pppox\ipcp.c" />
+    <ClCompile Include="netcore\pppox\lcp.c" />
+    <ClCompile Include="netcore\pppox\magic.c" />
+    <ClCompile Include="netcore\pppox\md5.c" />
+    <ClCompile Include="netcore\pppox\oe_pro.c" />
+    <ClCompile Include="netcore\pppox\oemgr.c" />
+    <ClCompile Include="netcore\pppox\pap.c" />
+    <ClCompile Include="netcore\pppox\ppp.c" />
+    <ClCompile Include="netcore\pppox\ppp_oe.c" />
+    <ClCompile Include="netcore\pppox\randm.c" />
+    <ClCompile Include="netcore\pppox\vj.c" />
     <ClCompile Include="netcore\protos.c" />
+    <ClCompile Include="netcore\tmo.c" />
     <ClCompile Include="network\arch\lwip_pro.c" />
     <ClCompile Include="shell\EXTCMD.C" />
     <ClCompile Include="shell\FDISK.C" />
@@ -314,7 +345,11 @@
     <ClCompile Include="usb\ehci_pci.c" />
     <ClCompile Include="usb\ent_ary.c" />
     <ClCompile Include="usb\fmt_ucmp.c" />
+    <ClCompile Include="usb\r8152_e.c" />
+    <ClCompile Include="usb\r8152_fw.c" />
+    <ClCompile Include="usb\rtl8152.c" />
     <ClCompile Include="usb\usb.c" />
+    <ClCompile Include="usb\usbasync.c" />
     <ClCompile Include="usb\usbkbd.c" />
     <ClCompile Include="usb\usbmgr.c" />
     <ClCompile Include="usb\usbmouse.c" />
@@ -332,10 +367,13 @@
     <ClCompile Include="usb\xhci_mem.c" />
     <ClCompile Include="usb\xhci_pci.c" />
     <ClCompile Include="usb\xhci_ring.c" />
+    <ClCompile Include="user\dpi.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\BIOSVGA.H" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
+    <ClInclude Include="drivers\x86\e1000.h" />
+    <ClInclude Include="drivers\x86\e1000_d.h" />
     <ClInclude Include="drivers\x86\pcnet.h" />
     <ClInclude Include="drivers\x86\rtl8111.h" />
     <ClInclude Include="include\align.h" />
@@ -365,6 +403,7 @@
     <ClInclude Include="INCLUDE\OBJQUEUE.H" />
     <ClInclude Include="INCLUDE\PAGEIDX.H" />
     <ClInclude Include="INCLUDE\PCI_DRV.H" />
+    <ClInclude Include="include\pci_ids.h" />
     <ClInclude Include="INCLUDE\PERF.H" />
     <ClInclude Include="include\process.h" />
     <ClInclude Include="INCLUDE\RINGBUFF.H" />
@@ -394,9 +433,11 @@
     <ClInclude Include="lib\limits.h" />
     <ClInclude Include="lib\math.h" />
     <ClInclude Include="lib\pthread.h" />
+    <ClInclude Include="lib\rdxtree.h" />
     <ClInclude Include="lib\sched.h" />
     <ClInclude Include="lib\setjmp.h" />
     <ClInclude Include="lib\signal.h" />
+    <ClInclude Include="lib\stdbool.h" />
     <ClInclude Include="lib\stddef.h" />
     <ClInclude Include="lib\stdint.h" />
     <ClInclude Include="lib\stdio.h" />
@@ -408,9 +449,38 @@
     <ClInclude Include="lib\time.h" />
     <ClInclude Include="lib\time_pri.h" />
     <ClInclude Include="lib\unistd.h" />
+    <ClInclude Include="netcore\dhcp_srv\dhcp_srv.h" />
+    <ClInclude Include="netcore\ebridge\ethbrg.h" />
     <ClInclude Include="netcore\ethmgr.h" />
+    <ClInclude Include="netcore\hx_eth.h" />
     <ClInclude Include="netcore\hx_inet.h" />
+    <ClInclude Include="netcore\mii.h" />
+    <ClInclude Include="netcore\nat\hash.h" />
+    <ClInclude Include="netcore\nat\nat.h" />
+    <ClInclude Include="netcore\nat\naticmp.h" />
+    <ClInclude Include="netcore\nat\nattcp.h" />
+    <ClInclude Include="netcore\netcfg.h" />
+    <ClInclude Include="netcore\netglob.h" />
+    <ClInclude Include="netcore\netmgr.h" />
+    <ClInclude Include="netcore\pppox\auth.h" />
+    <ClInclude Include="netcore\pppox\chap.h" />
+    <ClInclude Include="netcore\pppox\chpms.h" />
+    <ClInclude Include="netcore\pppox\fsm.h" />
+    <ClInclude Include="netcore\pppox\ipcp.h" />
+    <ClInclude Include="netcore\pppox\lcp.h" />
+    <ClInclude Include="netcore\pppox\magic.h" />
+    <ClInclude Include="netcore\pppox\md5.h" />
+    <ClInclude Include="netcore\pppox\oe_pro.h" />
+    <ClInclude Include="netcore\pppox\oemgr.h" />
+    <ClInclude Include="netcore\pppox\pap.h" />
+    <ClInclude Include="netcore\pppox\ppp.h" />
+    <ClInclude Include="netcore\pppox\pppdebug.h" />
+    <ClInclude Include="netcore\pppox\ppp_impl.h" />
+    <ClInclude Include="netcore\pppox\randm.h" />
+    <ClInclude Include="netcore\pppox\vj.h" />
     <ClInclude Include="netcore\proto.h" />
+    <ClInclude Include="netcore\tmo.h" />
+    <ClInclude Include="network\arch\lwipext.h" />
     <ClInclude Include="network\arch\lwip_pro.h" />
     <ClInclude Include="shell\EXTCMD.H" />
     <ClInclude Include="shell\FDISK.H" />
@@ -442,12 +512,14 @@
     <ClInclude Include="syscall\SYSCALL_KERNEL.H" />
     <ClInclude Include="usb\ch9.h" />
     <ClInclude Include="usb\ehci.h" />
-    <ClInclude Include="usb\errno.h" />
     <ClInclude Include="usb\fmt_ucmp.h" />
     <ClInclude Include="usb\hxadapt.h" />
     <ClInclude Include="usb\ohci.h" />
+    <ClInclude Include="usb\r8152.h" />
+    <ClInclude Include="usb\r8152_e.h" />
     <ClInclude Include="usb\scsi.h" />
     <ClInclude Include="usb\usb.h" />
+    <ClInclude Include="usb\usbasync.h" />
     <ClInclude Include="usb\usbdescriptors.h" />
     <ClInclude Include="usb\usbdev_storage.h" />
     <ClInclude Include="usb\usbiso.h" />
@@ -455,6 +527,7 @@
     <ClInclude Include="usb\usbmouse.h" />
     <ClInclude Include="usb\usbroothubdes.h" />
     <ClInclude Include="usb\usb_defs.h" />
+    <ClInclude Include="usb\usb_ether.h" />
     <ClInclude Include="usb\uvc.h" />
     <ClInclude Include="usb\xhci.h" />
   </ItemGroup>
@@ -465,6 +538,9 @@
     <None Include="Authors.txt" />
     <None Include="README.md" />
     <None Include="revise.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="netcore\pppox\readme.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

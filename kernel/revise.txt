@@ -1,2 +1,29 @@
 The following code lines marked with the following sentence should be revised later:
 //Should revise later.
+在IP协议往外发送Ethernet frame的时候，固定的设置了frame type为IP（0800），还可能是ARP；
+判断MAC地址是否为multicast的时候，需确认字节顺序是否正确（OK）；
+BUG()宏需要进一步增加信息，以确保发生时能够获取到更多的信息；
+曾经发生过一次BUG()，是sysmem.c中，_hx_free函数引发，具体原因待定；
+EthernetManager中传递EthernetBuffer，导致EthernetBuffer拷贝次数过多，影响性能，需要进一步优化；
+Check enable_periodic() routine's invoking sequence in usbCreateIsoDescriptor() routine,since
+it may not enable the periodic scheduling according current code; -- usbStartISOXfer will start it;
+
+//20170423:
+1. Should set only the last one qTD's IOC to 1 when create asynchronous xfer descriptor,but now
+   all qTDs(if there are) IOC are set to 1;
+2. Door bell mechanism should be added in the scenario of removing QH from qh list,to avoide the
+   case that QH is released but it's copy is in HC cache;
+3. Kernel synobject should support recursive operation;
+4. EHCI Isochronous xfer,enable/disable periodic_schedule routine,the periodic_schedules number should
+   be re-checked to see if the increment and decrement are matching;
+5. 
+
+20170430:
+1. When set the timeout value to 20 in WaitForThisObjectEx in usbasync.c file,memory leaking exists(from
+   the memory command's output);
+2. 
+
+20170526:
+1. The interrupt handler of USB interrupt xfer should be revised,since it only process one interrupt
+   queue currently(if clause is used,should use while clause in OnXferCompletion routine in ehciint.c file);
+2. 

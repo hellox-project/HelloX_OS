@@ -116,7 +116,7 @@ extern "C" {
     { \
         if(CACHE_FLUSH_WRITEBACK == flags) \
 		        { \
-            __asm wbinvd \
+			__asm wbinvd \
 			__asm nop \
 			__asm nop \
 			__asm nop \

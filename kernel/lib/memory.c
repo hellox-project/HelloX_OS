@@ -6,7 +6,7 @@
 // Memory manipulating functions,memcpy,memset,...
 //------------------------------------------------------------------------
 
-void* memcpy (void * dst,const void * src,size_t count	)
+void* memcpy (void * dst,const void * src,size_t count)
 {
 	void * ret = dst;
 

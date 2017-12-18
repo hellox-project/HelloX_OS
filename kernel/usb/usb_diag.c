@@ -26,6 +26,7 @@
 #include "usbdescriptors.h"
 #include "ch9.h"
 #include "usb.h"
+#include "ehci.h"
 
 //USB base class description array.
 static struct UsbBaseDesc{
@@ -152,6 +153,9 @@ void ShowUsbDevice(int index)
 	//struct usb_interface* pUsbInt = NULL;
 	__USB_INTERFACE_ASSOCIATION* pIntAssoc = NULL;
 	__USB_INTERFACE_FUNCTION* pIntFunc = NULL;
+	struct ehci_ctrl* ctrl = NULL;
+	__COMMON_USB_CONTROLLER* pCommCtrl = NULL;
+	ALLOC_CACHE_ALIGN_BUFFER(struct usb_port_status, port_status, 1);
 	int i = 0;
 
 	if (0 == USBManager.nPhysicalDevNum)  //No USB physical device.
@@ -167,11 +171,7 @@ void ShowUsbDevice(int index)
 	while (index)
 	{
 		pPhyDev = pPhyDev->lpNext;
-		if (NULL == pPhyDev)
-		{
-			BUG();
-			return;
-		}
+		BUG_ON(NULL == pPhyDev);
 		index--;
 	}
 	if (!pPhyDev)
@@ -181,16 +181,17 @@ void ShowUsbDevice(int index)
 	}
 
 	pDev = (struct usb_device*)pPhyDev->lpPrivateInfo;
-	pIntAssoc = (__USB_INTERFACE_ASSOCIATION*)pPhyDev->Resource[0].Dev_Res.usbIntAssocBase;
-	if (NULL == pIntAssoc)
-	{
-		BUG();
-		return;
-	}
+	BUG_ON(NULL == pDev);
 
-	if (NULL == pDev)
+	pIntAssoc = (__USB_INTERFACE_ASSOCIATION*)pPhyDev->Resource[0].Dev_Res.usbIntAssocBase;
+	BUG_ON(NULL == pIntAssoc);
+
+	pCommCtrl = (__COMMON_USB_CONTROLLER*)pDev->controller;
+	BUG_ON(NULL == pCommCtrl);
+	if (USB_CONTROLLER_EHCI == pCommCtrl->dwCtrlType) /* EHCI controller. */
 	{
-		BUG();
+		ctrl = (struct ehci_ctrl*)pCommCtrl->pUsbCtrl;
+		BUG_ON(NULL == ctrl);
 	}
 
 	_hx_printf("  Index#: %u\r\n  Dev_Name: %s\r\n  Manufacturer: %s\r\n  Product: %s\r\n  Serial: %s\r\n",
@@ -199,6 +200,20 @@ void ShowUsbDevice(int index)
 		pDev->mf,
 		pDev->prod,
 		pDev->serial);
+	_hx_printf("  Port index: %d.\r\n", pDev->portnr);
+	if (pDev->parent)
+	{
+		int ret = usb_get_port_status(pDev->parent, pDev->portnr, port_status);
+		if (ret < 0)
+		{
+			_hx_printf("  Get port status failed.\r\n");
+		}
+		else
+		{
+			_hx_printf("  Devide port status: 0x%X/0x%X.\r\n", 
+				port_status->wPortChange, port_status->wPortStatus);
+		}
+	}
 	_hx_printf("  Class/Subclass/Proto: %d/%d/%d\r\n", pDev->descriptor.bDeviceClass,
 		pDev->descriptor.bDeviceSubClass,
 		pDev->descriptor.bDeviceProtocol);
@@ -361,7 +376,7 @@ void ShowUsbPort(int index)
 	for (i = 0; i < pUsbDev->maxchild; i++)
 	{
 		ret = usb_get_port_status(pUsbDev, i + 1, port_status);
-		if (!ret)
+		if (ret < 0)
 		{
 			_hx_printf("  Error: Failed to get port [%d]'s status.\r\n", i);
 			return;
@@ -476,6 +491,14 @@ void ShowUsbCtrlStatus()
 				USB_CTRL_FLAG_EHCI_PLBASE));
 			_hx_printf("    al_base:   %X\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
 				USB_CTRL_FLAG_EHCI_ALBASE));
+			_hx_printf("    xfer err:  %d\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_XFERERR));
+			_hx_printf("    xfer req:  %d\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_XFERREQ));
+			_hx_printf("    xfer int:  %d\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_XFERINT));
+			_hx_printf("    axfer_n:   %d\r\n", pCtrl->ctrlOps.get_ctrl_status(pCtrl,
+				USB_CTRL_FLAG_EHCI_ASSN));
 		}
 	}
 }

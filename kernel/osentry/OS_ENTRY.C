@@ -29,7 +29,6 @@
 #include "statcpu.h"
 #include "modmgr.h"
 #include "console.h"
-#include "lwip/tcpip.h"
 #include "stdio.h"
 #include "buffmgr.h"
 
@@ -440,14 +439,15 @@ void __OS_Entry()
 
 #endif  //__CFG_SYS_LOGCAT.
 
-#ifdef __CFG_NET_IPv4  //IPv4 network protocol is enabled.
-
-	if(!IPv4_Entry(NULL))
+	/* Initialize network subsystem if enabled. */
+#ifdef __CFG_NET_ENABLE
+	if (!Net_Entry(NULL))
 	{
-		pszErrorMsg = "INIT ERROR: Can not initialize IPv4 protocol function.";
+		pszErrorMsg = "INIT ERROR: Can not initialize network subsystem.";
 		goto __TERMINAL;
 	}
 #endif
+
 	_hx_printf("\r\n");
 	_hx_printf("Loading process is successful.\r\n");
 	_hx_printf("\r\n");

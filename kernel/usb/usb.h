@@ -27,7 +27,7 @@
 
 //Enable or disable different USB specifications support.
 #define CONFIG_USB_EHCI
-#define CONFIG_USB_OHCI
+//#define CONFIG_USB_OHCI
 //#define CONFIG_USB_UHCI
 //#define CONFIG_USB_XHCI
 
@@ -43,6 +43,10 @@
 
 #ifdef __CFG_DRV_KEYBOARD
 #define CONFIG_USB_KEYBOARD
+#endif
+
+#ifdef __CFG_DRV_USBNETWORK
+#define CONFIG_USB_HOST_ETHER
 #endif
 
 //#define CONFIG_USB_HOST_ETHER
@@ -63,7 +67,7 @@
 #define USB_DEFAULT_SETTLE_TIME  1024
 
 //Default time out value in ms,for USB transfer.
-#define USB_DEFAULT_XFER_TIMEOUT 5000
+#define USB_DEFAULT_XFER_TIMEOUT 1000
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
@@ -85,7 +89,7 @@
 * time for a BULK device to react - some are slow.
 */
 //#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
-#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? (5000  / SYSTEM_TIME_SLICE) : (1000 / SYSTEM_TIME_SLICE))
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? (50  / SYSTEM_TIME_SLICE) : (100 / SYSTEM_TIME_SLICE))
 
 /* device request (setup) */
 #ifdef __MS_VC__
@@ -241,7 +245,8 @@ struct usb_device {
 	/* parent hub, or NULL if this is the root hub */
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
-	void *controller;		/* hardware controller private data */
+	void* controller;		/* hardware controller private data */
+	void* phy_dev;          /* Point back to physical device. */
 #endif
 	/* slot_id - for xHCI enabled devices */
 	unsigned int slot_id;
@@ -327,6 +332,10 @@ typedef struct tag__USB_CONTROLLER_OPERATIONS{
 #define USB_CTRL_FLAG_EHCI_CF       0x08
 #define USB_CTRL_FLAG_EHCI_PLBASE   0x10
 #define USB_CTRL_FLAG_EHCI_ALBASE   0x20
+#define USB_CTRL_FLAG_EHCI_XFERERR  0x40
+#define USB_CTRL_FLAG_EHCI_XFERREQ  0x80
+#define USB_CTRL_FLAG_EHCI_XFERINT  0x100
+#define USB_CTRL_FLAG_EHCI_ASSN     0x200
 
 //Common USB controller object to unify all types of USB controllers.
 typedef struct tag__COMMON_USB_CONTROLLER{
@@ -434,20 +443,16 @@ int board_usb_init(int index, enum usb_init_type init);
 int board_usb_cleanup(int index, enum usb_init_type init);
 
 #ifdef CONFIG_USB_STORAGE
-
 #define USB_MAX_STOR_DEV 2
 //For debugging,comments the following code line.
 //block_dev_desc_t *usb_stor_get_dev(int index);
 int usb_stor_scan(int mode);
 int usb_stor_info(void);
-
 #endif  //CONFIG_USB_STORAGE
 
 #ifdef CONFIG_USB_HOST_ETHER
-
 #define USB_MAX_ETH_DEV 5
 int usb_host_eth_scan(int mode);
-
 #endif
 
 #ifdef CONFIG_USB_KEYBOARD

@@ -317,7 +317,7 @@ int usb_hub_port_connect_change(struct usb_device *dev, int port)
 
 	ret = usb_alloc_new_device(dev->controller, &usb);
 	if (ret) {
-		printf("cannot create new device: ret=%d", ret);
+		_hx_printf("cannot create new device: ret = %d.\r\n", ret);
 		return ret;
 	}
 

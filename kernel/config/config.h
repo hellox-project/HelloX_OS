@@ -27,8 +27,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.81"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.810(Beta),build in 2017/02/12,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.82"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.820(Beta),build in 2017/12/09,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
@@ -163,13 +163,16 @@
 //#define __CFG_DRV_SDIO
 
 //Include MOUSE driver in OS.
-#define __CFG_DRV_MOUSE
+//#define __CFG_DRV_MOUSE
 
 //Include Key board driver in OS.
 #define __CFG_DRV_KEYBOARD
 
 //Include USB mass storage driver in OS.
 #define __CFG_DRV_USBSTORAGE
+
+//Include USB Network device driver in OS.
+#define __CFG_DRV_USBNETWORK
 
 //Include USB mouse driver in OS kernel.
 #define __CFG_DRV_USBMOUSE
@@ -178,7 +181,7 @@
 #define __CFG_DRV_USBKBD
 
 //Include USB Video Class driver in OS kernel.
-#define __CFG_DRV_UVC
+//#define __CFG_DRV_UVC
 
 //************************************************************************
 //
@@ -204,8 +207,17 @@
 //
 //************************************************************************
 
+//Enable network subsystem in OS.
+#define __CFG_NET_ENABLE
+
 //Include ethernet manager in OS.
 #define __CFG_NET_ETHMGR
+
+//Enable ethernet bridging.
+//#define __CFG_NET_EBRG
+
+//Enable IP dhcp function.
+#define __CFG_NET_DHCP
 
 //Include IPv4 network protocol in OS.
 #define __CFG_NET_IPv4
@@ -215,6 +227,9 @@
 
 //Include RTL8111 driver in OS.
 //#define __CFG_NET_RTL8111
+
+//Include E1000 driver in OS.
+//#define __CFG_NET_E1000
 
 //Include IPv6 network protocol in OS.
 //#define __CFG_NET_IPv6
@@ -236,10 +251,10 @@
 //#define __CFG_APP_JVM
 
 //Enable or disable SSH support in system.
-#define __CFG_APP_SSH
+//#define __CFG_APP_SSH
 
 //Enable or disable telnet support in system.
-#define __CFG_APP_TELNET
+//#define __CFG_APP_TELNET
 
 //************************************************************************
 //

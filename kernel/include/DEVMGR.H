@@ -158,6 +158,14 @@ typedef struct tag__SYSTEM_BUS      __SYSTEM_BUS;
 #define BUS_TYPE_SDIO            0x00000020
 #define BUS_TYPE_I2C             0x00000040
 
+/*
+ * Address translation between PCI bus and memory.
+ */
+#define PCI_TO_VIRTUAL_MEMORY(dev,ptr) ((void*)ptr)
+#define PCI_TO_PHYSICAL_MEMORY(dev,ptr) ((void*)ptr)
+#define VIRTUAL_MEMORY_TO_PCI(dev,ptr) ((void*)ptr)
+#define PHYSICAL_MEMORY_TO_PCI(dev,ptr) ((void*)ptr)
+
 //
 //The definition of device manager object.
 //This object is a global object,all physical device releated operations,are offered

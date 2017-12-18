@@ -169,7 +169,7 @@ HANDLE SetTimer(DWORD dwTimerID,
 
 //Cancel the timer object set by SetTimer.
 //Only ALWAYS timer object can be canceled.
-VOID CancelTimer(HANDLE hTimer);
+BOOL CancelTimer(HANDLE hTimer);
 
 //Create an event object to synchronize kernel thread's execution.
 HANDLE CreateEvent(BOOL bInitialStatus);

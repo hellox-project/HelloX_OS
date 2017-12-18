@@ -41,6 +41,10 @@
 #include "x86/rtl8111.h"
 #endif
 
+#ifdef __CFG_NET_E1000   //Intel e1000 NIC.
+#include "x86/e1000_d.h"
+#endif
+
 __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] = 
 {
 #ifdef __CFG_NET_MARVELLAN
@@ -57,6 +61,10 @@ __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] =
 
 #ifdef __CFG_NET_RTL8111
 	{ RTL8111_Drv_Initialize, NULL },
+#endif
+
+#ifdef __CFG_NET_E1000
+	{ E1000_Drv_Initialize, NULL },
 #endif
 
   //Please add your ethernet driver's entry here.

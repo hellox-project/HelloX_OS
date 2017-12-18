@@ -203,9 +203,33 @@ extern "C" {
 
 	VOID ErrorHandler(DWORD dwLevel, DWORD dwReason, LPSTR pszMsg);
 
+	/* LOG levels. */
+#define LOG_LEVEL_INFO    0x01
+#define LOG_LEVEL_WARN    0x02
+#define LOG_LEVEL_ERROR   0x03
+#define LOG_LEVEL_FATAL   0x04
+
+	/* Show out log header information. */
+	void LogHeader(int level);
+
+	/* Macro to print out log information. */
+#define __LOG LogHeader(0); _hx_printf
+
 	VOID __BUG(LPSTR, DWORD);
 #define BUG() \
 	__BUG(__FILE__,__LINE__)
+
+#define BUG_ON(cond) \
+    do{ \
+        if(cond){ \
+            BUG(); \
+		        } \
+	    }while(0)
+
+	/* Show warning message when a empty routine is called. */
+#define UNIMPLEMENTED_ROUTINE_CALLED \
+	_hx_printf("[ERROR]:Unimplemented routine[%s] called,file:%s.\r\n",\
+        __FUNCTION__,__FILE__);
 
 #define ERROR_LEVEL_FATAL       0x00000001
 #define ERROR_LEVEL_CRITICAL    0x00000002

@@ -15,11 +15,9 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
-
-#include "types.h"
+#include <StdAfx.h>
+#include <types.h>
+#include <stdio.h>
 #include <buffmgr.h>
 
 //Only __CFG_SYS_MMFBL switch is defined the following code is available.
@@ -221,8 +219,18 @@ __TERMINAL:
 		{
 			pControlBlock->dwAllocTimesSuccH += 1;
 		}
+		/* 
+		 * Accumulate the just allocated block into 
+		 * owner thread's total memory usage counter.
+		 */
+		lpUsedHeader->pOwnerThread = KernelThreadManager.lpCurrentKernelThread;
+		if (lpUsedHeader->pOwnerThread)
+		{
+			lpUsedHeader->pOwnerThread->dwTotalMemSize += lpUsedHeader->dwBlockSize;
+		}
 	}
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+
 	//For debugging.
 	if(pControlBlock->dwAllocTimesSuccL > pControlBlock->dwAllocTimesL)
 	{
@@ -368,7 +376,8 @@ static void ReleaseAndCombine(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuf
 //
 static VOID Free(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuffer)
 {
-	__USED_BUFFER_HEADER*       lpUsedHeader  = NULL;
+	__USED_BUFFER_HEADER* lpUsedHeader  = NULL;
+	DWORD dwFlags;
 
 	//Parameters check.
 	if((NULL == pControlBlock) || (NULL == lpBuffer))
@@ -386,6 +395,36 @@ static VOID Free(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuffer)
 	{
 		return;
 	}
+
+	/*
+	 * Decrement the memory block from the owner's usage counter.
+	 */
+	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	if (lpUsedHeader->pOwnerThread)
+	{
+		/*
+		 * Even the pointer of owner kernel thread is not NULL,the kernel
+		 * thread object maybe destroyed already,so we check it first.
+		 * This check can not guarantee the kernel thread object MUST BE
+		 * exist,but in most case it should work.
+		 * In the rare case that a destroyed kernel thread object pass
+		 * the checking,we just accept now,and the code snippet will be
+		 * removed after memory leaking issue is located.
+		 */
+		if ((KERNEL_OBJECT_SIGNATURE == lpUsedHeader->pOwnerThread->dwObjectSignature) &&
+			(lpUsedHeader->pOwnerThread->lpInitStackPointer))
+			{
+				BUG_ON(lpUsedHeader->pOwnerThread->dwTotalMemSize < lpUsedHeader->dwBlockSize);
+				lpUsedHeader->pOwnerThread->dwTotalMemSize -= lpUsedHeader->dwBlockSize;
+			}
+		else
+		{
+			__LOG("Memory owner destroyed[block_sz = %d,curr:%s]\r\n",
+				lpUsedHeader->dwBlockSize,
+				KernelThreadManager.lpCurrentKernelThread->KernelThreadName);
+		}
+	}
+	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 
 	ReleaseAndCombine(pControlBlock,lpBuffer);
 	//Update free routine's calling number.

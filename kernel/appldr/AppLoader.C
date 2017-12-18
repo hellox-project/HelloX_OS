@@ -109,7 +109,7 @@ static HANDLE OpenAppFile(LPSTR pAppFilePath)
 	
 	hBinFile = CreateFile(pAppFilePath,FILE_ACCESS_READ,0,NULL);
 	if(hBinFile == NULL)
-	{		
+	{
 		return NULL;
 	}
 
@@ -136,7 +136,7 @@ BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
 		hFileObj = OpenAppFile(pAppFilePath);
 		if(hFileObj == NULL)
 		{
-			PrintLine("Can not open the specified app file.");
+			_hx_printf("Can not open the specified module[%s].",pAppFilePath);
 			break;
 		}
 		

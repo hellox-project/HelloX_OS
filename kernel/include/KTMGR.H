@@ -240,8 +240,8 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	volatile UCHAR                       ucMsgQueueTrial;
 	volatile UCHAR                       ucCurrentMsgNum;
 	UCHAR                                ucAligment;
-	UINT                                 nMsgReceived;  //How many messages received from start.
-	UINT                                 nMsgDroped;    //Messages droped,caused by queue full or others.
+	volatile UINT                        nMsgReceived;  //How many messages received from start.
+	volatile UINT                        nMsgDroped;    //Messages droped,caused by queue full or others.
 	__PRIORITY_QUEUE*                    lpMsgWaitingQueue;
 
 	DWORD                                dwUserData;    //User private data.
@@ -537,12 +537,13 @@ VOID EventUninitialize(__COMMON_OBJECT*);          //and uninitializing routine.
 //
 //The definition of MUTEX object.
 //
-
 BEGIN_DEFINE_OBJECT(__MUTEX)
     INHERIT_FROM_COMMON_OBJECT                  //Inherit from __COMMON_OBJECT.
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT  //Inherit from common synchronization object.
 	volatile DWORD     dwMutexStatus;
     volatile DWORD     dwWaitingNum;
+	__KERNEL_THREAD_OBJECT* lpCurrentOwner;     //Current owner of the mutex object.
+	volatile int       nCurrOwnCount;           //Current owner counter.
     __PRIORITY_QUEUE* lpWaitingQueue;
     DWORD             (*ReleaseMutex)(__COMMON_OBJECT* lpThis);
 	DWORD             (*WaitForThisObjectEx)(__COMMON_OBJECT* lpThis,

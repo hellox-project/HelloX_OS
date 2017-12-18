@@ -225,7 +225,7 @@ static BOOL CodeReLocate(DWORD dwNewImageBase, DWORD dwRelocBlockVa, DWORD dwOld
 		pRelocBlock = (PIMAGE_BASE_RELOCATION)((LPBYTE)pRelocBlock + pRelocBlock->SizeOfBlock);
 		//_hx_printf("Block= %X\r\n",(LPBYTE)pRelocBlock);
 
-		if (NULL == pRelocBlock->VirtualAddress)
+		if (NULL == (VOID*)pRelocBlock->VirtualAddress)
 		{
 			break;
 		}
