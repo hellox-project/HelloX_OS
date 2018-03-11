@@ -22,8 +22,6 @@
 #include "hellocn.h"
 #include "kapi.h"
 
-
-
 __THREAD_HOOK_ROUTINE  lpCreateHook        = NULL;
 __THREAD_HOOK_ROUTINE  lpBeginScheduleHook = NULL;
 __THREAD_HOOK_ROUTINE  lpEndScheduleHook   = NULL;
@@ -59,6 +57,7 @@ static DWORD CreateHook(__KERNEL_THREAD_OBJECT*  lpKernelThread,DWORD* lpdwUserD
 		return 0;
 	}
 	//Initialize this object.
+	memset(lpStatObj, 0, sizeof(__THREAD_STAT_OBJECT));
 	lpStatObj->lpKernelThread     = lpKernelThread;
 	lpStatObj->CurrPeriodCycle.dwHighPart = 0;
 	lpStatObj->CurrPeriodCycle.dwLowPart  = 0;
@@ -101,7 +100,13 @@ static DWORD BeginScheduleHook(__KERNEL_THREAD_OBJECT* lpKernelThread,
 		return 0;
 	}
 
-	__GetTsc(&lpStatObj->PreviousTsc);  //Save current time stamp counter.
+	/* Save current time stamp counter. */
+	__GetTsc(&lpStatObj->PreviousTsc);
+#if defined(__SYSDIAG_TRACE_STACK)
+	/* Save the context to snapshot for tracing. */
+	memcpy(&lpStatObj->KernelThreadContext, lpStatObj->lpKernelThread->lpKernelThreadContext,
+		sizeof(__KERNEL_THREAD_CONTEXT));
+#endif
 
 	return 1L;
 }
@@ -300,4 +305,3 @@ __STAT_CPU_OBJECT StatCpuObject = {
 	DoStat,                      //DoStat.
 	ShowStat                     //ShowStat.
 };
-

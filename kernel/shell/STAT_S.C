@@ -122,6 +122,30 @@ static VOID ShowStatInfo()
 	}while(lpStatObj != &StatCpuObject.IdleThreadStatObj);
 }
 
+/* Show out kernel thread's context information if enabled. */
+#if defined(__SYSDIAG_TRACE_STACK)
+static void ShowStackTrace()
+{
+	__THREAD_STAT_OBJECT* lpStatObj = &StatCpuObject.IdleThreadStatObj;
+
+	//Print table header.
+	_hx_printf("  Kernel thread's stack:\r\n");
+	/* Show out each kernel thread's stack context. */
+	do{
+		_hx_printf("    name:%s, stk/base:0x%0X/0x%0X[size:%d], eip:0x%0X\r\n",
+#define __STAT_THREAD_MEMBER(x) (lpStatObj->lpKernelThread)->x
+			__STAT_THREAD_MEMBER(KernelThreadName),
+			__STAT_THREAD_MEMBER(lpKernelThreadContext),
+			__STAT_THREAD_MEMBER(lpInitStackPointer),
+			(DWORD)__STAT_THREAD_MEMBER(lpInitStackPointer) - (DWORD)__STAT_THREAD_MEMBER(lpKernelThreadContext),
+			__STAT_THREAD_MEMBER(lpKernelThreadContext->dwEIP)
+			);
+#undef __STAT_THREAD_MEMBER
+		lpStatObj = lpStatObj->lpNext;
+	} while (lpStatObj != &StatCpuObject.IdleThreadStatObj);
+}
+#endif
+
 //
 //Entry point of the statistics kernel thread.
 //
@@ -157,6 +181,11 @@ DWORD StatThreadRoutine(LPVOID lpData)
 			case STAT_MSG_LISTDEV:  //List the device information.
 				ShowDevList();
 				break;
+#if defined(__SYSDIAG_TRACE_STACK)
+			case STAT_MSG_TRACESTACK:
+				ShowStackTrace();
+				break;
+#endif
 			case STAT_MSG_TERMINAL:  //Should exit.
 				goto __EXIT;
 			default:

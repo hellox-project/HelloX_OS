@@ -1397,18 +1397,10 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 		return FALSE;
 	}
 	ss = (struct ueth_data*)pEthInt->pIntExtension;
-	if (NULL == ss)
-	{
-		BUG();
-	}
-	if (pEthInt->SendBuffer.buff_length != ETH_DEFAULT_MTU + ETH_HEADER_LEN)
-	{
-		BUG();
-	}
-	if (pEthInt->SendBuffer.dwSignature != KERNEL_OBJECT_SIGNATURE)
-	{
-		BUG();
-	}
+	BUG_ON(NULL == ss);
+	BUG_ON(pEthInt->SendBuffer.buff_length != ETH_DEFAULT_MTU + ETH_HEADER_LEN);
+	BUG_ON(pEthInt->SendBuffer.dwSignature != KERNEL_OBJECT_SIGNATURE);
+
 	if (NULL == ss->pTxThread)  /* Not created yet,in process of initialization. */
 	{
 		return FALSE;

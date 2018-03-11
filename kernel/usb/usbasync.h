@@ -22,7 +22,7 @@
 /*
  * Maximal data length of asynchronous xfer,in bytes.
  */
-#define USB_ASYNC_MAX_LENGTH (1024 * 16)  //16K bytes.
+#define USB_ASYNC_MAX_LENGTH (1024 * 64)  //16K bytes.
 
 //Queue head struct,defined in ehci.h file.
 struct QH;

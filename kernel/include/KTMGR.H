@@ -49,10 +49,12 @@ DECLARE_PREDEFINED_OBJECT(__EVENT)
 //Kernel thread's context.
 //This structure is obsolete now,and it's definition is not right even.So please
 //do not use it directly.
+#if 0
 BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
     DWORD           dwEFlags;
-    WORD            wCS;
-	WORD            wReserved;
+    //WORD            wCS;
+	//WORD            wReserved;
+	DWORD           dwCSnRsvd;
 	DWORD           dwEIP;
 	DWORD           dwEAX;
 	DWORD           dwEBX;
@@ -62,6 +64,19 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
 	DWORD           dwEDI;
 	DWORD           dwEBP;
 	DWORD           dwESP;
+	END_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
+#endif
+BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
+	DWORD dwEBP;
+	DWORD dwEDI;
+	DWORD dwESI;
+	DWORD dwEDX;
+	DWORD dwECX;
+	DWORD dwEBX;
+	DWORD dwEAX;
+	DWORD dwEIP;
+	DWORD dwCSnRsvd;
+	DWORD dwEFlags;
 END_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
 
 //

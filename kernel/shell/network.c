@@ -62,6 +62,7 @@ static DWORD setif(__CMD_PARA_OBJ*);      //Set a given interface's configuratio
 #ifdef __CFG_NET_DHCP_SERVER
 static DWORD dhcpd(__CMD_PARA_OBJ*);      //DHCP Server control command.
 #endif
+static DWORD ylight(__CMD_PARA_OBJ*);     //Entry routine of yeelight controlling.
 
 #ifdef __CFG_NET_PPPOE                    //PPPoE control command.
 static DWORD pppoe(__CMD_PARA_OBJ*);
@@ -97,6 +98,7 @@ static struct __FDISK_CMD_MAP{
 #ifdef __CFG_NET_NAT
 	{ "nat",        nat,       "  nat      : NAT control commands." },
 #endif
+	{ "light",      ylight,    "  light    : Control command of yeelight." },
 	{ "help",       help,      "  help     : Print out this screen." },
 	{ "exit",       _exit,     "  exit     : Exit the application." },
 	{ NULL,		   NULL,      NULL}
@@ -534,6 +536,25 @@ static void ipstat()
 	_hx_printf("  general err    : %d\r\n", lwip_stats.ip.err);
 }
 
+/* Show out TCP statistics counter. */
+static void tcpstat()
+{
+	/* Just show out lwIP statistics counter. */
+	_hx_printf("TCP statistics counter:\r\n");
+	_hx_printf("  rx             : %d\r\n", lwip_stats.tcp.recv);
+	_hx_printf("  tx             : %d\r\n", lwip_stats.tcp.xmit);
+	_hx_printf("  forwarded      : %d\r\n", lwip_stats.tcp.fw);
+	_hx_printf("  droped         : %d\r\n", lwip_stats.tcp.drop);
+	_hx_printf("  invalid length : %d\r\n", lwip_stats.tcp.lenerr);
+	_hx_printf("  checksum err   : %d\r\n", lwip_stats.tcp.chkerr);
+	_hx_printf("  routing err    : %d\r\n", lwip_stats.tcp.rterr);
+	_hx_printf("  out of memory  : %d\r\n", lwip_stats.tcp.memerr);
+	_hx_printf("  options err    : %d\r\n", lwip_stats.tcp.opterr);
+	_hx_printf("  protocol err   : %d\r\n", lwip_stats.tcp.proterr);
+	_hx_printf("  cachehit       : %d\r\n", lwip_stats.tcp.cachehit);
+	_hx_printf("  general err    : %d\r\n", lwip_stats.tcp.err);
+}
+
 /* Show out link layer statistics counter. */
 static void linkstat()
 {
@@ -558,6 +579,7 @@ static void netstatUsage(char* sub_cmd)
 	_hx_printf("Usage:\r\n");
 	_hx_printf("  netstat [ip] : Show IP layer statistics counter.\r\n");
 	_hx_printf("  netstat [link] : Show link layer statistics counter.\r\n");
+	_hx_printf("  netstat [tcp] : Show tcp statistics counter.\r\n");
 	return;
 }
 
@@ -565,6 +587,7 @@ static void netstatUsage(char* sub_cmd)
 typedef enum{
 	ip,
 	link,
+	tcp,
 }__NETSTAT_SUB_CMD;
 
 /* Entry point of netstat command. */
@@ -596,6 +619,12 @@ static DWORD netstat(__CMD_PARA_OBJ* lpCmdObj)
 			index++;
 			sub_cmd = link;
 		}
+		else if (strcmp(pCurCmdObj->Parameter[index], "tcp") == 0)
+		{
+			/* Obtain interface name. */
+			index++;
+			sub_cmd = tcp;
+		}
 		else
 		{
 			netstatUsage(NULL);
@@ -611,6 +640,9 @@ static DWORD netstat(__CMD_PARA_OBJ* lpCmdObj)
 		break;
 	case link:
 		linkstat();
+		break;
+	case tcp:
+		tcpstat();
 		break;
 	default:
 		break;
@@ -1214,6 +1246,15 @@ static DWORD nat(__CMD_PARA_OBJ* lpCmdObj)
 	}
 
 __TERMINAL:
+	return NET_CMD_SUCCESS;
+}
+
+/* yeelight control command. */
+extern BOOL ylight_entry();
+static DWORD ylight(__CMD_PARA_OBJ* lpCmdObj)
+{
+	__LOG("Enter yeelight program...\r\n");
+	ylight_entry();
 	return NET_CMD_SUCCESS;
 }
 

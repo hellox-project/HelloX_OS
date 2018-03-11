@@ -23,5 +23,6 @@ DWORD StatThreadRoutine(LPVOID lpData); //Entry point of the statistics thread.
 #define STAT_MSG_TERMINAL        0x1003
 #define STAT_MSG_LISTDEV         0x1004
 #define STAT_MSG_SHOWMEMINFO     0x1005
+#define STAT_MSG_TRACESTACK      0x1006
 
 

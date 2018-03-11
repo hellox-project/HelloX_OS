@@ -158,15 +158,19 @@ static void pppoeStatusCallback(void* ctx, int errCode, void* arg)
 		_hx_printf("  primary DNS: %s\r\n", inet_ntoa(pAddrs->dns1));
 		_hx_printf("  secondary DNS: %s\r\n", inet_ntoa(pAddrs->dns2));
 		break;
+		/* Log out error information,according error code. */
+	case PPPERR_AUTHFAIL:
+		__LOG("PPPoE authentication failed.\r\n");
+		break;
+	case PPPERR_CONNECT:
+		__LOG("PPPoE connection lost.\r\n");
 	case PPPERR_PARAM:
 	case PPPERR_OPEN:
 	case PPPERR_DEVICE:
 	case PPPERR_ALLOC:
 	case PPPERR_USER:
-	case PPPERR_CONNECT:
-	case PPPERR_AUTHFAIL:
 	case PPPERR_PROTOCOL:
-		_hx_printf("PPP connect error[code = %d]\r\n", errCode);
+		__LOG("PPP connect error[code = %d]\r\n", errCode);
 		break;
 	default:
 		break;

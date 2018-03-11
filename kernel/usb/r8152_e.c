@@ -890,6 +890,7 @@ static int Init_R8152(struct usb_device *dev, unsigned int ifnum)
 		goto __TERMINAL;
 	}
 
+#if 0
 	/* Create the dedicated status polling thread. */
 	_hx_sprintf(recv_name, "%s%d", R8152_DAMON_NAME_BASE, ss->ef_idx);
 	ss->pDamonThread = KernelThreadManager.CreateKernelThread(
@@ -905,6 +906,7 @@ static int Init_R8152(struct usb_device *dev, unsigned int ifnum)
 	{
 		goto __TERMINAL;
 	}
+#endif
 
 	/* Link the management data structure into global list. */
 	ss->pNext = global_list;

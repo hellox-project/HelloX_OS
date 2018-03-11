@@ -27,6 +27,11 @@
 * 2015-01-30     bernard      release to RT-Thread RTOS.
 */
 
+/*
+ * Ported to HelloX by Garry.Xin,and revised according HelloX's network
+ * framework.
+ */
+
 #include <StdAfx.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -42,6 +47,7 @@
 #include "hx_inet.h"
 #include "hx_eth.h"
 #include "dhcp_srv.h"
+#include "netglob.h"   /* Obtain DNS server. */
 
 /* we need some routines in the DHCP of lwIP */
 #undef  LWIP_DHCP
@@ -525,13 +531,37 @@ static DWORD dhcpd_thread_entry(void *parameter)
 				*dhcp_opt++ = DHCPD_SERVER_IPADDR2;
 				*dhcp_opt++ = 1;
 
-				// DHCP_OPTION_DNS_SERVER, use the default DNS server address in lwIP
-				*dhcp_opt++ = DHCP_OPTION_DNS_SERVER;
-				*dhcp_opt++ = 4;
-				*dhcp_opt++ = 208;
-				*dhcp_opt++ = 67;
-				*dhcp_opt++ = 222;
-				*dhcp_opt++ = 222;
+				if ((0 == NetworkGlobal.dns_primary.addr) &&
+					(0 == NetworkGlobal.dns_secondary.addr))
+				{
+					// DHCP_OPTION_DNS_SERVER, use the default DNS server address if no 
+					// DNS server address is obtained.
+					*dhcp_opt++ = DHCP_OPTION_DNS_SERVER;
+					*dhcp_opt++ = 4;
+					*dhcp_opt++ = 208;
+					*dhcp_opt++ = 67;
+					*dhcp_opt++ = 222;
+					*dhcp_opt++ = 222;
+				}
+				else
+				{
+					/* Use the obtained DNS server. */
+					*dhcp_opt++ = DHCP_OPTION_DNS_SERVER;
+					uint8_t* pOptLen = dhcp_opt++;
+					*pOptLen = 0;
+					if (NetworkGlobal.dns_primary.addr)
+					{
+						*pOptLen += 4;
+						memcpy(dhcp_opt, &NetworkGlobal.dns_primary.addr, 4);
+						dhcp_opt += 4;
+					}
+					if (NetworkGlobal.dns_secondary.addr)
+					{
+						*pOptLen += 4;
+						memcpy(dhcp_opt, &NetworkGlobal.dns_secondary.addr, 4);
+						dhcp_opt += 4;
+					}
+				}
 
 				// DHCP_OPTION_LEASE_TIME
 				*dhcp_opt++ = DHCP_OPTION_LEASE_TIME;

@@ -578,11 +578,7 @@ int strtol(const char *nptr, char **endptr, int base)
       ret = sign ? LONG_MIN : LONG_MAX;
    else if (sign)
       ret = -ret;
-  
-   /*
-      ���ַ�����Ϊ�գ���*endptr����ָ��nptr����
-      ����ָ��ֵ������*endptr����nptr���׵�ַ��
-   */
+
    if (endptr != 0)
       *endptr = (char *)(flag ?(p - 1) : nptr);
  
@@ -895,4 +891,43 @@ strchr (s, c_in)
     }
 
   return NULL;
+}
+
+char*  strtok(char* string_org, const char* demial)
+{
+	static unsigned char* last;
+	unsigned char* str;
+	const unsigned char* ctrl = (const unsigned char*)demial;
+	unsigned char map[32];
+	int count;
+
+	for (count = 0; count <32; count++){
+		map[count] = 0;
+	}
+	do {
+		map[*ctrl >> 3] |= (1 << (*ctrl & 7));
+	} while (*ctrl++);
+	if (string_org){
+		str = (unsigned char*)string_org;
+	}
+	else{
+		str = last;
+	}
+	while ((map[*str >> 3] & (1 << (*str & 7))) && *str){
+		str++;
+	}
+	string_org = (char*)str;
+	for (; *str; str++){
+		if (map[*str >> 3] & (1 << (*str & 7))){
+			*str++ = '\0';
+			break;
+		}
+	}
+	last = str;
+	if (string_org == (char*)str){
+		return NULL;
+	}
+	else{
+		return string_org;
+	}
 }

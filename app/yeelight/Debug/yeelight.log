@@ -1,0 +1,110 @@
+﻿Build started 2018/2/23 12:24:44.
+     1>Project "C:\HelloX\personal\HelloX_OS\app\yeelight\yeelight.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt hxlib\acos.c hxlib\asin.c hxlib\atan.c hxlib\atan2.c hxlib\atox.c hxlib\ceil.c hxlib\copysign.c hxlib\ctype.c hxlib\errno.c hxlib\exp.c hxlib\fabs.c hxlib\finite.c hxlib\getenv.c hxlib\inet.c hxlib\io.c hxlib\ip_addr.c hxlib\kapi.c hxlib\log.c hxlib\math.c hxlib\memory.c hxlib\nextafter.c hxlib\pow.c hxlib\pthread.c hxlib\pthread_mutex.c hxlib\pthread_other.c hxlib\rand.c hxlib\scalbn.c hxlib\sched.c hxlib\setjmp.c hxlib\signal.c hxlib\sockets.c hxlib\sqrt.c hxlib\stat.c hxlib\stdio.c hxlib\string.c hxlib\sysmem.c hxlib\time.c hxlib\trig.c
+         trig.c
+         time.c
+         sysmem.c
+         string.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\string.c(239): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\string.c(267): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+         stdio.c
+         stat.c
+         sqrt.c
+         sockets.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(63): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(71): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(84): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(92): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+         signal.c
+         setjmp.c
+         sched.c
+         scalbn.c
+         rand.c
+         pthread_other.c
+         pthread_mutex.c
+         pthread.c
+         pow.c
+         nextafter.c
+         memory.c
+         math.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\math.c(31): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\math.c(296): warning C4018: '<' : signed/unsigned mismatch
+         Generating Code...
+         Compiling...
+         log.c
+         kapi.c
+         ip_addr.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(63): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(71): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(84): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(92): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+         io.c
+         inet.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(63): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(71): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(84): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(92): warning C4103: 'c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+         getenv.c
+         finite.c
+         fabs.c
+         exp.c
+         errno.c
+         ctype.c
+         copysign.c
+         ceil.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\ceil.c(117): warning C4018: '<' : signed/unsigned mismatch
+         atox.c
+         atan2.c
+     1>c:\hellox\personal\hellox_os\app\yeelight\hxlib\atan2.c(78): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+         atan.c
+         asin.c
+         acos.c
+         Generating Code...
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\HelloX\personal\HelloX_OS\app\yeelight\Debug\yeelight.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\HelloX\personal\HelloX_OS\app\yeelight\Debug\yeelight.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\HelloX\personal\HelloX_OS\app\yeelight\Debug\yeelight.lib" /MACHINE:X86 Debug\acos.obj
+         Debug\asin.obj
+         Debug\atan.obj
+         Debug\atan2.obj
+         Debug\atox.obj
+         Debug\ceil.obj
+         Debug\copysign.obj
+         Debug\ctype.obj
+         Debug\errno.obj
+         Debug\exp.obj
+         Debug\fabs.obj
+         Debug\finite.obj
+         Debug\getenv.obj
+         Debug\inet.obj
+         Debug\io.obj
+         Debug\ip_addr.obj
+         Debug\kapi.obj
+         Debug\log.obj
+         Debug\math.obj
+         Debug\memory.obj
+         Debug\nextafter.obj
+         Debug\pow.obj
+         Debug\pthread.obj
+         Debug\pthread_mutex.obj
+         Debug\pthread_other.obj
+         Debug\rand.obj
+         Debug\scalbn.obj
+         Debug\sched.obj
+         Debug\setjmp.obj
+         Debug\signal.obj
+         Debug\sockets.obj
+         Debug\sqrt.obj
+         Debug\stat.obj
+         Debug\stdio.obj
+         Debug\string.obj
+         Debug\sysmem.obj
+         Debug\time.obj
+         Debug\trig.obj
+     1>MSVCRTD.lib(MSVCR120D.dll) : error LNK2005: _exit already defined in sched.obj
+     1>MSVCRTD.lib(crtexe.obj) : error LNK2019: unresolved external symbol _main referenced in function ___tmainCRTStartup
+     1>C:\HelloX\personal\HelloX_OS\app\yeelight\Debug\yeelight.exe : fatal error LNK1120: 1 unresolved externals
+     1>Done Building Project "C:\HelloX\personal\HelloX_OS\app\yeelight\yeelight.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:04.57

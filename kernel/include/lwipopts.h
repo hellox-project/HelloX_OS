@@ -54,6 +54,12 @@
 //Enable or disable DNS functions in lwIP.
 #define LWIP_DNS             1
 
+//Enable IGMP function in lwIP.
+#define LWIP_IGMP            1
+
+/* Define LWIP_RAND according lwIP's code. */
+#define LWIP_RAND rand
+
 //Enable PPP support in system.
 #define PPP_SUPPORT          1
 
@@ -188,4 +194,3 @@
 #define X32_F "x"
 
 #endif  //__LWIPOPTS_H__
-

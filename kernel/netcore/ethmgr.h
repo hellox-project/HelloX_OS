@@ -170,6 +170,8 @@ typedef struct tag__ETH_INTERFACE_STATE{
 	DWORD              dwFrameBridged;      //Frame numbers that bridged out from this int.
 	DWORD              dwTxErrorNum;        //Transmition error number.
 	DWORD              dwRxErrorNum;        //Receive error number.
+	DWORD              dwRxMcastNum;        //Multicast frames received at this interface.
+	DWORD              dwTxMcastNum;        //Multicast frames send out through this if.
 }__ETH_INTERFACE_STATE;
 
 //Maximal protocols one Ethernet Interface can bind to.

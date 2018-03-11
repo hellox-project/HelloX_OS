@@ -99,24 +99,24 @@ extern "C" {
 	#define __DISABLE_INTERRUPT()
 #endif
 
-//
-//This macro is used to flush cache's content to memory,or just invalidate a range of
-//cache content,according the flags parameter.
-//Cache invalidating is not necessary under x86 platform,since the cache snooping is
-//implemented in CPU,so we let it empty when the flags value is CACHE_FLUSH_INVALIDATE.
-//
+/*
+* This macro is used to flush cache's content to memory,or just invalidate a range of
+* cache content,according the flags parameter.
+* Cache invalidating is not necessary under x86 platform,since the cache snooping is
+* implemented in CPU,so we let it empty when the flags value is CACHE_FLUSH_INVALIDATE.
+*/
 //Flags to control the cache flushing.
 #define CACHE_FLUSH_WRITEBACK   0x00000001
 #define CACHE_FLUSH_INVALIDATE  0x00000002
 #ifdef __I386__
 #ifdef __GCC__
-#define __FLUSH_CACHE(addr,leng,flags)  {__asm__ ("wbinvd \n\t"::);}
+#define __FLUSH_CACHE(addr,leng,flags)  {__asm__ ("nop \n\t"::);}
 #else
 #define __FLUSH_CACHE(addr,leng,flags) \
     { \
         if(CACHE_FLUSH_WRITEBACK == flags) \
 		        { \
-			__asm wbinvd \
+			/* __asm wbinvd */ \
 			__asm nop \
 			__asm nop \
 			__asm nop \
@@ -131,19 +131,19 @@ extern "C" {
 #define __FLUSH_CACHE(addr,leng,flags)
 #endif
 
-//
-//This macros is used as a barrier.
-//In some CPU,the write operations may not be committed into memory or cache,but 
-//be queued in WRITE BUFFER on the CPU,so,in order to commit the write operation
-//immediately,the following macro should be used.
-//For example,the following code:
-// ... ...
-// WriteMemory(0xCFFFFFFF,90);
-// WriteMemory(0xCFFFFFFC,90);
-// ... ...
-//0xCFFFFFFF and 0xCFFFFFFC are device mapped control port,in order to commit the
-//writing operations into device immediately,the following macro must be called.
-//
+/*
+* This macros is used as a barrier.
+* In some CPU,the write operations may not be committed into memory or cache,but 
+* be queued in WRITE BUFFER on the CPU,so,in order to commit the write operation
+* immediately,the following macro should be used.
+* For example,the following code:
+*  ... ...
+*  WriteMemory(0xCFFFFFFF,90);
+*  WriteMemory(0xCFFFFFFC,90);
+*  ... ...
+* 0xCFFFFFFF and 0xCFFFFFFC are device mapped control port,in order to commit the
+* writing operations into device immediately,the following macro must be called.
+*/
 #ifdef __I386__
 #ifdef __GCC__
 #define __BARRIER() __asm__("LOCK addl $0, (%%esp) \n\t"::);

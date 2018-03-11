@@ -136,7 +136,7 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	return S_OK;
 }
 
-//Handler for loadapp command.
+/* Load the specified application into memory and run it. */
 DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {	
 	__CMD_PARA_OBJ* pAppParaObj        = NULL;
@@ -164,6 +164,11 @@ DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	 */
 	strcpy(FullPathName, pCmdParaObj->Parameter[1]);
 	ToCapital(FullPathName);
+	/* 
+	 * The app's filepath and name,and it's associated parameters,specified
+	 * by the user when load the application,are all bounce to the application
+	 * main kernel thread.
+	 */
 	pAppParaObj = CopyParameterObj(pCmdParaObj,1);
 	RunDynamicAppModule(FullPathName,pAppParaObj);
 	

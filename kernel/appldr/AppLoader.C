@@ -41,7 +41,6 @@ static  PAPP_MAIN   s_pAppMain = NULL;
 static DWORD AppEntryPoint(LPVOID pData)
 {
 	__CMD_PARA_OBJ* pCmdParaObj = (__CMD_PARA_OBJ*)pData;
-	
 
 	if (NULL == pData)
 	{
@@ -51,10 +50,9 @@ static DWORD AppEntryPoint(LPVOID pData)
 	{
 		return s_pAppMain(pCmdParaObj->byParameterNum, pCmdParaObj->Parameter);
 	}
-		
 }
 
-static BOOL StartRunApp(DWORD dwStartAddress,LPVOID p,LPSTR pAppName)
+static BOOL StartRunApp(DWORD dwStartAddress,LPVOID pParamBlock,LPSTR pAppName)
 {
 	__KERNEL_THREAD_OBJECT*   hKernelThread  = NULL;
 	BOOL                      bResult        = FALSE;
@@ -64,15 +62,21 @@ static BOOL StartRunApp(DWORD dwStartAddress,LPVOID p,LPSTR pAppName)
 		goto __TERMINAL;
 	}
 
+	_hx_printf("Run [%s] at 0x%X.\r\n", pAppName, dwStartAddress);
 	s_pAppMain = (PAPP_MAIN)dwStartAddress;
-	//Create a kernel thread to run the binary module.
+	/* 
+	 * Create the dedicated kernel thread to hold the application 
+	 * module,it's the main thread of the application.
+	 * More kernel thread(s) can be bring up by the application in
+	 * this main kernel thread.
+	 */
 	hKernelThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
 		PRIORITY_LEVEL_NORMAL,
 		(__KERNEL_THREAD_ROUTINE)AppEntryPoint,
-		p,
+		pParamBlock,
 		NULL,
 		pAppName);
 
@@ -81,25 +85,29 @@ static BOOL StartRunApp(DWORD dwStartAddress,LPVOID p,LPSTR pAppName)
 		goto __TERMINAL;
 	}
 
-	//Switch input focus to the thread.
+	/* 
+	 * Give current user input focus to the application,so application 
+	 * can capture the user's input,include keyboard,mouse,and other interrupt
+	 * driven device(s).
+	 */
 	DeviceInputManager.SetFocusThread(
 		(__COMMON_OBJECT*)&DeviceInputManager,
 		(__COMMON_OBJECT*)hKernelThread);
-	hKernelThread->WaitForThisObject((__COMMON_OBJECT*)hKernelThread);  //Block shell to wait module over.
+	/* Shell will pause and wait for the application to run over. */
+	hKernelThread->WaitForThisObject((__COMMON_OBJECT*)hKernelThread);
 	
-	//Destroy the module's kernel thread.
+	/* Destroy the application kernel thread afater run over. */
 	KernelThreadManager.DestroyKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)hKernelThread);
 
-	//Switch back input focus to shell.
+	/* Obtain back the input focus,to shell again. */
 	DeviceInputManager.SetFocusThread(
 		(__COMMON_OBJECT*)&DeviceInputManager,
 		NULL);
 	bResult = TRUE;
 
 __TERMINAL:
-
 	return bResult;
 }
 
@@ -123,13 +131,19 @@ static HANDLE OpenAppFile(LPSTR pAppFilePath)
 	return hBinFile;
 }
 
-// load and run app module 
-BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
+/* 
+ * Load the application file into memory,check it,and run it if everything
+ * is OK.
+ * 
+ */
+BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID pParamBlock)
 {
-	__APP_ENTRY*  pAppEntry    = AppEntryArray;	
-	HANDLE        hFileObj     = NULL;	
-	LPBYTE        pAppBuf      = NULL;	
-	BOOL          bRunOk       = FALSE;	
+	__APP_ENTRY* pAppEntry = AppEntryArray;	
+	HANDLE hFileObj = NULL;
+	char* thread_name = NULL;
+	int i = 0;
+	LPBYTE pAppBuf = NULL;
+	BOOL bRunOk = FALSE;
 
 	while(bRunOk == FALSE)
 	{
@@ -139,28 +153,53 @@ BOOL RunDynamicAppModule(LPSTR pAppFilePath,LPVOID p)
 			_hx_printf("Can not open the specified module[%s].",pAppFilePath);
 			break;
 		}
-		
-		// look up app format
+
+		/* Load the app module according it's format. */
 		while(pAppEntry->CheckFormat)
 		{
 			if(pAppEntry->CheckFormat(hFileObj))
 			{
-				pAppBuf = pAppEntry->LoadApp(hFileObj); //(DWORD)pAppBuf);
+				pAppBuf = pAppEntry->LoadApp(hFileObj);
 				break;
 			}
 			pAppEntry ++;			
 		}
 
-		//Load model failed.
+		/* Can not load the app module into memory. */
 		if(pAppBuf == NULL)
 		{
-			PrintLine("Load binary model error.");
+			_hx_printf("Load binary module error.");
 			break;
 		}
-				
-		if(!StartRunApp((DWORD)pAppBuf,p,strrchr(pAppFilePath,'\\')))
+		/* Construct the corresponding kernel thread's name. */
+		thread_name = strrchr(pAppFilePath, '\\');
+		if (NULL == thread_name)
 		{
-			PrintLine("Failed to run binary model.");
+			_hx_printf("Can not obtain a valid name from[%s].\r\n",
+				pAppFilePath);
+			break;
+		}
+		if (strlen(thread_name) < 2) /* Name is too short. */
+		{
+			_hx_printf("Obtained a too short name[%d].\r\n", thread_name);
+			break;
+		}
+		/* Skip the first slash character. */
+		thread_name += 1;
+		/* Omit the last surfix(.exe). */
+		while (thread_name[i])
+		{
+			if ('.' == thread_name[i])
+			{
+				thread_name[i] = 0;
+				break;
+			}
+			i++;
+		}
+		/* Everything is in place,try to start the module now. */
+		if(!StartRunApp((DWORD)pAppBuf,pParamBlock,thread_name))
+		{
+			_hx_printf("Failed to run binary module.");
 			break;
 		}
 		bRunOk = TRUE;

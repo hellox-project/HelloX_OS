@@ -29,6 +29,60 @@
 #include "errno.h"
 
 /*
+* Mark a asynchronous xfer inactive(i.e,pause to advance by controller),or
+* activate it,according the bInactive parameter.
+*/
+static void MarkDescriptorInactive(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, BOOL bInactive)
+{
+	int nqtd = 0;
+	struct qTD* ptd = NULL;
+	int i = 0;
+	uint32_t token;
+
+	BUG_ON(NULL == pAsyncDesc);
+	ptd = pAsyncDesc->pFirstTD;
+	BUG_ON(NULL == ptd);
+
+	/* Total qTD number associated to this descriptor. */
+	nqtd = pAsyncDesc->qtd_counter;
+
+	if (bInactive)  //Should mark the descriptor inactive.
+	{
+		/*
+		* Halt the QH to let HC skip this one,so as to modify the qTD(s)
+		* linked to this QH.
+		*/
+		pAsyncDesc->QueueHead->qh_overlay.qt_token |= QT_TOKEN_STATUS(QT_TOKEN_STATUS_HALTED);
+		__BARRIER();
+		flush_dcache_range(pAsyncDesc->QueueHead, pAsyncDesc->QueueHead + 1);
+		for (i = 0; i < nqtd; i++)
+		{
+			token = hc32_to_cpu(ptd[i].qt_token);
+			token &= ~0xFF; //QT_TOKEN_STATUS(QT_TOKEN_STATUS_ACTIVE);  //Clear the active bit.
+			ptd[i].qt_token = cpu_to_hc32(token);
+			flush_dcache_range(&ptd[i], &ptd[i] + 1);
+		}
+	}
+	else //Restart the descriptor.
+	{
+		for (i = 0; i < nqtd; i++)
+		{
+			token = hc32_to_cpu(ptd[i].qt_token);
+			token &= ~0xFF;  //Clear all status bits.
+			token |= QT_TOKEN_STATUS(QT_TOKEN_STATUS_ACTIVE);  //Set the active bit.
+			ptd[i].qt_token = cpu_to_hc32(token);
+			flush_dcache_range(&ptd[i], &ptd[i] + 1);
+		}
+		/* Update QH overlay to active. */
+		pAsyncDesc->QueueHead->qh_overlay.qt_next = cpu_to_hc32((unsigned long)ptd);
+		pAsyncDesc->QueueHead->qh_overlay.qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
+		__BARRIER();
+		pAsyncDesc->QueueHead->qh_overlay.qt_token = 0;
+		flush_dcache_range(pAsyncDesc->QueueHead, pAsyncDesc->QueueHead + 1);
+	}
+}
+
+/*
 * Helper routine to insert a Queue Head into EHCI queue head list.
 */
 static BOOL AddQueueHead(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
@@ -56,6 +110,23 @@ static BOOL AddQueueHead(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	flush_dcache_range((unsigned long)pQueueHead, ALIGN_END_ADDR(struct QH, pQueueHead, 1));
 	flush_dcache_range((unsigned long)pCurrQH, ALIGN_END_ADDR(struct QH, pCurrQH, 1));
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+
+	//Start asynchronous schedule if not yet.
+	WaitForThisObject(ctrl->hMutex);
+	if (ctrl->async_schedules == 0)
+	{
+		if (ehci_enable_async(ctrl, /*pAsyncDesc->QueueHead*/ &ctrl->qh_list) < 0)
+		{
+			_hx_printf("%s: enable async_xfer failed.\r\n", __func__);
+			ReleaseMutex(ctrl->hMutex);
+			return FALSE;
+		}
+#ifdef __DEBUG_USB_ASYNC
+		_hx_printf("%s: async_xfer enabled.\r\n", __func__);
+#endif
+	}
+	ctrl->async_schedules++;
+	ReleaseMutex(ctrl->hMutex);
 
 	return TRUE;
 }
@@ -172,10 +243,28 @@ static BOOL RemoveQueueHead(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	}
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 
-	/* Apply door bell mechanism according EHCI spec. */
 	if (!bNoFind)
 	{
+		/* Apply door bell mechanism according EHCI spec. */
 		_async_door_bell(pAsyncDesc);
+
+		//Disable asynchronous schedule if no more xfer requirement.
+		WaitForThisObject(ctrl->hMutex);
+		if (ctrl->async_schedules > 0)
+		{
+			ctrl->async_schedules--;
+			if (0 == ctrl->async_schedules)
+			{
+				ehci_disable_async(ctrl);
+#ifdef __DEBUG_USB_ASYNC
+				_hx_printf("EHCI async_xfer stoped.\r\n");
+#endif
+			}
+		}
+		ReleaseMutex(ctrl->hMutex);
+#ifdef __DEBUG_USB_ASYNC
+		_hx_printf("%s: stop async_xfer success.\r\n", __func__);
+#endif
 	}
 	if (bNoFind)
 	{
@@ -458,13 +547,14 @@ static BOOL ConstructAsyncXferData(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 		tdp = &qtd[qtd_counter++].qt_next;
 	}
 
-	//ctrl->qh_list.qh_link = cpu_to_hc32((unsigned long)qh | QH_LINK_TYPE_QH);
 	/* Save the qTD counter actually used. */
 	pAsyncDesc->qtd_counter = qtd_counter;
 	/*
 	* Link the queue head struct into controller's queue head list.
+	* Mark it inactive before do it.
 	*/
-	//AddQueueHead(pAsyncDesc);
+	MarkDescriptorInactive(pAsyncDesc, TRUE);
+	AddQueueHead(pAsyncDesc);
 
 	/* Flush dcache */
 	flush_dcache_range((unsigned long)&ctrl->qh_list,
@@ -489,53 +579,6 @@ __TERMINAL:
 		pAsyncDesc->pLastTD = NULL;
 	}
 	return bResult;
-}
-
-/*
-* Mark a asynchronous xfer inactive,i.e,pause to advance by controller.
-*/
-static void MarkDescriptorInactive(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, BOOL bInactive)
-{
-	int nqtd = 0;
-	struct qTD* ptd = NULL;
-	int i = 0;
-	uint32_t token;
-
-	if (NULL == pAsyncDesc)
-	{
-		BUG();
-	}
-	ptd = pAsyncDesc->pFirstTD;
-	if (NULL == ptd)
-	{
-		BUG();
-	}
-	//nqtd = pAsyncDesc->num_qtd;
-	nqtd = pAsyncDesc->qtd_counter;
-
-	if (bInactive)  //Should mark the descriptor inactive.
-	{
-		/* Clear overlay area status bits. */
-		//pAsyncDesc->QueueHead->qh_overlay.qt_token &= ~0xFF;
-		for (i = 0; i < nqtd; i++)
-		{
-			token = hc32_to_cpu(ptd[i].qt_token);
-			token &= ~0xFF; //QT_TOKEN_STATUS(QT_TOKEN_STATUS_ACTIVE);  //Clear the active bit.
-			ptd[i].qt_token = cpu_to_hc32(token);
-			flush_dcache_range(&ptd[i], &ptd[i] + 1);
-		}
-	}
-	else            //Should restart the descriptor.
-	{
-		for (i = 0; i < nqtd; i++)
-		{
-			token = hc32_to_cpu(ptd[i].qt_token);
-			token &= ~0xFF;  //Clear all status bits.
-			token |= QT_TOKEN_STATUS(QT_TOKEN_STATUS_ACTIVE);  //Set the active bit.
-			ptd[i].qt_token = cpu_to_hc32(token);
-			flush_dcache_range(&ptd[i], &ptd[i] + 1);
-		}
-	}
 }
 
 /*
@@ -786,10 +829,10 @@ static BOOL Update_qTD(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 	flush_dcache_range(ptd, ptd + 1);
 
 	/* Update queue head overlay area accordingly. */
-	memset(&pAsyncDesc->QueueHead->qh_overlay, 0, sizeof(struct qTD));
-	pAsyncDesc->QueueHead->qh_overlay.qt_next = cpu_to_hc32((unsigned long)ptd);
-	pAsyncDesc->QueueHead->qh_overlay.qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
-	flush_dcache_range(pAsyncDesc->QueueHead, pAsyncDesc->QueueHead + 1);
+	//memset(&pAsyncDesc->QueueHead->qh_overlay, 0, sizeof(struct qTD));
+	//pAsyncDesc->QueueHead->qh_overlay.qt_next = cpu_to_hc32((unsigned long)ptd);
+	//pAsyncDesc->QueueHead->qh_overlay.qt_altnext = cpu_to_hc32(QT_NEXT_TERMINATE);
+	//flush_dcache_range(pAsyncDesc->QueueHead, pAsyncDesc->QueueHead + 1);
 
 	bResult = TRUE;
 
@@ -869,7 +912,6 @@ BOOL usbStartAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 	*/
 	ResetEvent(pAsyncDesc->hEvent);
 
-	WaitForThisObject(pEhciCtrl->hMutex);
 	/*
 	* Set descriptor's status to INPROCESS,and mark the
 	* qh active.
@@ -881,37 +923,18 @@ BOOL usbStartAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 	pEhciCtrl->nXferReqNum++;
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 
-	/* Add the qh into controller's scheduling list. */
-	AddQueueHead(pAsyncDesc);
-
 #ifdef __DEBUG_USB_ASYNC
 	_hx_printf("%s: start async_xfer...\r\n", __func__);
 #endif
-
-	//Start asynchronous schedule if not yet.
-	if (pEhciCtrl->async_schedules == 0)
-	{
-		if (ehci_enable_async(pEhciCtrl, /*pAsyncDesc->QueueHead*/ &pEhciCtrl->qh_list) < 0)
-		{
-			_hx_printf("%s: enable async_xfer failed.\r\n", __func__);
-			ReleaseMutex(pEhciCtrl->hMutex);
-			return FALSE;
-		}
-#ifdef __DEBUG_USB_ASYNC
-		_hx_printf("%s: async_xfer enabled.\r\n", __func__);
-#endif
-	}
-	pEhciCtrl->async_schedules++;
-	ReleaseMutex(pEhciCtrl->hMutex);
 
 	/*
 	* Wait the transaction to be finished.
 	*/
 	dwResult = WaitForThisObjectEx(pAsyncDesc->hEvent, 25000);
-	//dwResult = WaitForThisObject(pAsyncDesc->hEvent);
 	switch (dwResult)
 	{
 	case OBJECT_WAIT_RESOURCE:
+		invalidate_dcache_range(pAsyncDesc->QueueHead, pAsyncDesc->QueueHead + 1);
 		token = cpu_to_le32(pAsyncDesc->QueueHead->qh_overlay.qt_token);
 		debug("%s: TOKEN=%#x\r\n", __func__, token);
 		switch (QT_TOKEN_GET_STATUS(token) &
@@ -936,7 +959,6 @@ BOOL usbStartAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 		/*
 		* Accumulate the total xfer bytes.
 		*/
-		//pAsyncDesc->xfersize = pAsyncDesc->bufflength;
 		pAsyncDesc->xfersize = pAsyncDesc->reqlength;
 		for (int i = 0; i < pAsyncDesc->qtd_counter; i++)
 		{
@@ -992,7 +1014,6 @@ BOOL usbStartAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 			/*
 			* Accumulate the total xfer bytes.
 			*/
-			//pAsyncDesc->xfersize = pAsyncDesc->bufflength;
 			pAsyncDesc->xfersize = pAsyncDesc->reqlength;
 			for (int i = 0; i < pAsyncDesc->qtd_counter; i++)
 			{
@@ -1073,28 +1094,6 @@ BOOL usbStopAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	* Mark the descriptor inactive.
 	*/
 	MarkDescriptorInactive(pAsyncDesc, TRUE);
-
-	WaitForThisObject(pEhciCtrl->hMutex);
-	//Disable asynchronous schedule if no more xfer requirement.
-	if (pEhciCtrl->async_schedules > 0)
-	{
-		pEhciCtrl->async_schedules--;
-		if (0 == pEhciCtrl->async_schedules)
-		{
-			ehci_disable_async(pEhciCtrl);
-#ifdef __DEBUG_USB_ASYNC
-			_hx_printf("EHCI async_xfer stoped.\r\n");
-#endif
-		}
-	}
-	/*
-	* Remove the corresponding queue head from EHCI controller QH list.
-	*/
-	RemoveQueueHead(pAsyncDesc);
-	ReleaseMutex(pEhciCtrl->hMutex);
-#ifdef __DEBUG_USB_ASYNC
-	_hx_printf("%s: stop async_xfer success.\r\n", __func__);
-#endif
 	return TRUE;
 }
 
@@ -1129,7 +1128,7 @@ BOOL usbDestroyAsyncDescriptor(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	* Remove queue head from controller's schduling
 	* list.
 	*/
-	//RemoveQueueHead(pAsyncDesc);
+	RemoveQueueHead(pAsyncDesc);
 
 	//Detach the descriptor from global list.
 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);

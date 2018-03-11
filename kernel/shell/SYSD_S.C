@@ -39,6 +39,7 @@ static DWORD overload(__CMD_PARA_OBJ*);
 static DWORD pcilist(__CMD_PARA_OBJ*);
 static DWORD devinfo(__CMD_PARA_OBJ*);
 static DWORD cpuload(__CMD_PARA_OBJ*);
+static DWORD showstk(__CMD_PARA_OBJ*);
 static DWORD devlist(__CMD_PARA_OBJ*);
 static DWORD showint(__CMD_PARA_OBJ*);
 #ifdef __CFG_SYS_USB
@@ -65,6 +66,7 @@ static struct __SHELL_CMD_MAP{
 	{"pcilist",           pcilist,          "  pcilist              : List all PCI device(s) of the system."},
 	{"devinfo",           devinfo,          "  devinfo              : Print out information about a PCI device."},
 	{"cpuload",           cpuload,          "  cpuload              : Display CPU statistics information."},
+	{"showstk",           showstk,          "  showstk              : Show kernel thread's context information." },
 	{"devlist",           devlist,          "  devlist              : List all devices' information in the system."},
 	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
 #ifdef __CFG_SYS_USB
@@ -653,6 +655,16 @@ static DWORD cpuload(__CMD_PARA_OBJ* pcpo)
 	__KERNEL_THREAD_MESSAGE msg;
 
 	msg.wCommand = STAT_MSG_SHOWSTATINFO;
+	KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpStatKernelThread,
+		&msg);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+static DWORD showstk(__CMD_PARA_OBJ* pcpo)
+{
+	__KERNEL_THREAD_MESSAGE msg;
+
+	msg.wCommand = STAT_MSG_TRACESTACK;
 	KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpStatKernelThread,
 		&msg);
 	return SHELL_CMD_PARSER_SUCCESS;

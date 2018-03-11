@@ -76,6 +76,8 @@ void strtrim(char * dst,int flag);
 
 int strtol(const char *nptr, char **endptr, int base);
 
+char*  strtok(char* string_org, const char* demial);
+
 void ToCapital(LPSTR lpszString);
 
 //Find the first bit in a given integer.

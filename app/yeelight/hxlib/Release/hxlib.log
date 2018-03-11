@@ -1,0 +1,71 @@
+﻿Build started 2018/2/22 21:42:49.
+     1>Project "C:\HelloX\personal\HelloX_OS\hxlib\hxlib.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O1 /Oy- /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt atox.c getenv.c inet.c memory.c rand.c sockets.c stat.c stdio.c string.c sysmem.c time.c
+         atox.c
+         getenv.c
+         inet.c
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(63): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(71): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(84): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(92): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+         memory.c
+         rand.c
+         sockets.c
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(63): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(71): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(84): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+     1>c:\hellox\personal\hellox_os\hxlib\ip_addr.h(92): warning C4103: 'c:\hellox\personal\hellox_os\hxlib\ip_addr.h' : alignment changed after including header, may be due to missing #pragma pack(pop)
+         stat.c
+         stdio.c
+         string.c
+     1>string.c(239): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+     1>string.c(267): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+         sysmem.c
+         time.c
+         Generating Code...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:"C:\HelloX\personal\HelloX_OS\hxlib\Release\hxlib.lib" /NOLOGO /LTCG Release\acos.obj
+         Release\asin.obj
+         Release\atan.obj
+         Release\atan2.obj
+         Release\atox.obj
+         Release\ceil.obj
+         Release\copysign.obj
+         Release\ctype.obj
+         Release\errno.obj
+         Release\exp.obj
+         Release\fabs.obj
+         Release\finite.obj
+         Release\getenv.obj
+         Release\inet.obj
+         Release\io.obj
+         Release\ip_addr.obj
+         Release\kapi.obj
+         Release\log.obj
+         Release\math.obj
+         Release\memory.obj
+         Release\nextafter.obj
+         Release\pow.obj
+         Release\pthread.obj
+         Release\pthread_mutex.obj
+         Release\pthread_other.obj
+         Release\rand.obj
+         Release\scalbn.obj
+         Release\sched.obj
+         Release\setjmp.obj
+         Release\signal.obj
+         Release\sockets.obj
+         Release\sqrt.obj
+         Release\stat.obj
+         Release\stdio.obj
+         Release\string.obj
+         Release\sysmem.obj
+         Release\time.obj
+         Release\trig.obj
+         hxlib.vcxproj -> C:\HelloX\personal\HelloX_OS\hxlib\Release\hxlib.lib
+     1>Done Building Project "C:\HelloX\personal\HelloX_OS\hxlib\hxlib.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.29

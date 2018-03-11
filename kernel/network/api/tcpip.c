@@ -115,6 +115,8 @@ tcpip_thread(void *arg)
 				if (0 == pExt->nIncomePktSize) /* No pending packet. */
 				{
 					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+					BUG_ON(NULL != pExt->pIncomePktFirst);
+					BUG_ON(NULL != pExt->pIncomePktLast);
 					break;
 				}
 				else /* Incoming list is not empty. */
@@ -122,11 +124,13 @@ tcpip_thread(void *arg)
 					/* Fetch one pending IP packet. */
 					pIncomPkt = pExt->pIncomePktFirst;
 					pExt->pIncomePktFirst = pIncomPkt->pNext;
+					pExt->nIncomePktSize--;
 					if (NULL == pIncomPkt->pNext) /* Last one. */
 					{
-						pExt->pIncomePktFirst = pExt->pIncomePktLast = NULL;
+						/* Incoming pkt size must be 0. */
+						BUG_ON(pExt->nIncomePktSize != 0);
+						pExt->pIncomePktLast = NULL;
 					}
-					pExt->nIncomePktSize--;
 					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 				}
 				/* Process it. */

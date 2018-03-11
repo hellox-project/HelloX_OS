@@ -419,9 +419,10 @@ static VOID Free(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuffer)
 			}
 		else
 		{
-			__LOG("Memory owner destroyed[block_sz = %d,curr:%s]\r\n",
+			__LOG("Memory owner destroyed[block_sz = %d,curr:%s,int:%d]\r\n",
 				lpUsedHeader->dwBlockSize,
-				KernelThreadManager.lpCurrentKernelThread->KernelThreadName);
+				KernelThreadManager.lpCurrentKernelThread->KernelThreadName,
+				System.ucCurrInt);
 		}
 	}
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);

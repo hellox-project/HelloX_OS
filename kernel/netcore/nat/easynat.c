@@ -33,6 +33,7 @@
 #include "lwip/tcp_impl.h"
 #include "lwip/inet.h"
 #include "lwip/inet_chksum.h"
+#include "lwip/stats.h"
 
 #include "hx_inet.h"
 #include "netcfg.h"
@@ -544,6 +545,71 @@ static BOOL _OutPacketMatch(struct ip_hdr* pHdr, __EASY_NAT_ENTRY* pNatEntry)
 	return FALSE;
 }
 
+/* 
+ * Validate a TCP segment's checksum,return TRUE if pass the validation,
+ * FALSE will be returned otherwise.
+ */
+static BOOL validateTCPChksum(struct ip_hdr* p, struct pbuf* pb)
+{
+	struct tcp_hdr* pTcpHdr = NULL;
+	int iph_len = IPH_HL(p);
+	int chksum_old = 0, chksum_new = 0;
+	ip_addr_t src, dest;
+
+	iph_len *= 4;
+	/* Locate TCP header. */
+	pTcpHdr = (struct tcp_hdr*)((char*)p + iph_len);
+
+	/* Validate pbuf object. */
+	if (pb->tot_len < (iph_len + sizeof(struct tcp_hdr)))
+	{
+		return FALSE;
+	}
+
+	/*
+	* Preserve TCP segment's check sum value before re-calculate
+	* the value.
+	*/
+	chksum_old = pTcpHdr->chksum;
+	ip_addr_copy(src, p->src);
+	ip_addr_copy(dest, p->dest);
+	pbuf_header(pb, -iph_len); /* move to TCP header. */
+	pTcpHdr->chksum = 0; /* Reset the original check sum. */
+	/* Recalculate the segment's checksum value. */
+	chksum_new = inet_chksum_pseudo(pb, &src, &dest, IP_PROTO_TCP,
+		pb->tot_len);
+	pbuf_header(pb, iph_len); /* move back. */
+	if (chksum_new != chksum_old)
+	{
+		IP_STATS_INC(tcp.chkerr);
+		IP_STATS_INC(tcp.drop);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/* Local helper to validate the IP packet. */
+static BOOL validatePacket(struct pbuf* p, __PACKET_DIRECTION dir)
+{
+	struct ip_hdr *pHdr = NULL;
+	pHdr = (struct ip_hdr*)p->payload;
+
+	/* Packet with unspecified source or destination IP address 
+	 * will be droped.
+	 */
+	if ((0 == pHdr->src.addr) || (0 == pHdr->dest.addr))
+	{
+		return FALSE;
+	}
+	/* Validate the TCP checksum if payload is a TCP segment. */
+	if (IP_PROTO_TCP == pHdr->_proto)
+	{
+		return validateTCPChksum(pHdr, p);
+	}
+
+	return TRUE;
+}
+
 /* Packet in direction process for easy NAT. */
 static BOOL enatPacketIn(struct pbuf* p, struct netif* in_if)
 {
@@ -740,6 +806,7 @@ static BOOL PurgeNatEntry(__EASY_NAT_ENTRY* pEntry)
 	if (NULL == pHashList) /* Maybe caused by invalid pEntry. */
 	{
 		ReleaseMutex(NatManager.lock);
+		__LOG("NAT entry not in RDX tree[key = %d].\r\n", hash_key);
 		goto __TERMINAL;
 	}
 	if (pHashList == pEntry) /* First one is the delete target. */
@@ -778,6 +845,7 @@ static BOOL PurgeNatEntry(__EASY_NAT_ENTRY* pEntry)
 		if (NULL == pHashList) /* Can not find pEntry in hash list. */
 		{
 			ReleaseMutex(NatManager.lock);
+			__LOG("NAT entry not in hash list[key = %d].\r\n", hash_key);
 			goto __TERMINAL;
 		}
 		/* Delete pEntry from hash list. */
@@ -840,12 +908,13 @@ static BOOL enatEnable(char* if_name, BOOL bEnable, BOOL bSetDefault)
 /* Periodic timer handler of NAT. */
 static void PeriodicTimerHandler()
 {
-	__EASY_NAT_ENTRY* pEntry = NatManager.entryList.pNext;
+	__EASY_NAT_ENTRY* pEntry = NULL;
 	__EASY_NAT_ENTRY* pPurge = NULL;
 	unsigned long time_out = 0;
 
 	/* Scan every NAT entry in system. */
 	WaitForThisObject(NatManager.lock);
+	pEntry = NatManager.entryList.pNext;
 	while (pEntry != &NatManager.entryList)
 	{
 		pEntry->ms += NAT_ENTRY_SCAN_PERIOD;
@@ -863,6 +932,12 @@ static void PeriodicTimerHandler()
 		default:
 			time_out = NAT_ENTRY_TIMEOUT_DEF;
 			break;
+		}
+		/* For debugging purpose. */
+		if (NULL == pEntry->pNext)
+		{
+			ShowNatEntry(pEntry);
+			BUG_ON(NULL == pEntry->pNext);
 		}
 		if (pEntry->ms > time_out) /* Should purge the entry. */
 		{

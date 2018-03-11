@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\sys">
+      <UniqueIdentifier>{3d822b5c-660e-4033-8136-fa8539295c0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\arch">
+      <UniqueIdentifier>{e65f62bf-3a62-4653-97a1-455b6d37d88f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ctype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="errno.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inttypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="limits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sched.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="setjmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="signal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stddef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="time_pri.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unistd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sys\stat.h">
+      <Filter>Header Files\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="sys\types.h">
+      <Filter>Header Files\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="sys\utsname.h">
+      <Filter>Header Files\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="stdarg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sys\cpu.h">
+      <Filter>Header Files\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="kapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdbool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sockets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ip_addr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\bpstruct.h">
+      <Filter>Header Files\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\epstruct.h">
+      <Filter>Header Files\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="inet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="atox.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ctype.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="errno.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="getenv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="math.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="setjmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="string.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sysmem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="time.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="acos.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="asin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atan2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ceil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="copysign.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="exp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fabs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="finite.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nextafter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scalbn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sqrt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trig.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rand.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pthread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pthread_mutex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pthread_other.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="signal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sched.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kapi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sockets.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ip_addr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

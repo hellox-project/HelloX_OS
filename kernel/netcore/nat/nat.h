@@ -134,8 +134,8 @@ typedef enum {
 /* Timer ID of periodic timer of NAT. */
 #define NAT_PERIODIC_TIMER_ID 2048
 
-/* Packet validating before apply NAT,will be implemented later. */
-#define NAT_PACKET_VALIDATE(pkt,dir) (TRUE)
+/* Packet validating before apply NAT. */
+#define NAT_PACKET_VALIDATE(pkt,dir) validatePacket(pkt,dir)
 
 /* Statistics variable of easy. */
 typedef struct{

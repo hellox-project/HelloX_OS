@@ -571,6 +571,10 @@ static BOOL _PostFrameHandler()
 			//Broadcast or multicast frame also should be delivered to local.
 			if (Eth_MAC_BM(pBuffer->dstMAC))
 			{
+				if (Eth_MAC_Multicast(pBuffer->dstMAC))
+				{
+					pEthInt->ifState.dwRxMcastNum ++;
+				}
 				bDeliveryResult = _Delivery2Local(pBuffer);
 			}
 #ifdef __CFG_NET_EBRG
@@ -1215,6 +1219,8 @@ static VOID ShowInt(char* ethName)
 			_hx_printf("    Receive bytes size : %d\r\n", pState->dwTotalRecvSize);
 			_hx_printf("    Bridged frame #    : %d\r\n", pState->dwFrameBridged);
 			_hx_printf("    Tx error number    : %d\r\n", pState->dwTxErrorNum);
+			_hx_printf("    Recv mcast frame # : %d\r\n", pState->dwRxMcastNum);
+			_hx_printf("    Send mcast frame # : %d\r\n", pState->dwTxMcastNum);
 			_hx_printf("    Sending Queue Sz   : %d\r\n",
 				EthernetManager.EthInterfaces[index].nSendingQueueSz);
 		}

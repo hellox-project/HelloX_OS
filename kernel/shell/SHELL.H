@@ -28,15 +28,10 @@ typedef struct HIS_CMD_OBJ
 	CHAR    CmdStr[64];  //Command text.
 } HIS_CMD_OBJ;
 
-
-
-#define CMD_PARAMETER_COUNT   16             //The max count of parameter.
-
+#define CMD_PARAMETER_COUNT   16            //The max count of parameter.
 #define CMD_PARAMETER_LEN     64            //The max length of one parameter.
-
 #define CMD_MAX_LEN           64            //The max length of one command input. 
-
-#define HISCMD_MAX_COUNT      16             //The max Count of one history command . 
+#define HISCMD_MAX_COUNT      16            //The max Count of one history command . 
 
 //Command paramter object,countains the parameters and function labels of one
 //command.

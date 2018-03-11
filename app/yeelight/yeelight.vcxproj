@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{AE5F5B71-2810-4328-B846-E4BFE8443D28}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>yeelight</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)\hxlib;$(IncludePath)</IncludePath>
+    <TargetName>ylight</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <AdditionalIncludeDirectories>hxlib</AdditionalIncludeDirectories>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AssemblerOutput>All</AssemblerOutput>
+      <StringPooling>true</StringPooling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EntryPointSymbol>_hx_entry</EntryPointSymbol>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalOptions>/ALIGN:64 %(AdditionalOptions)</AdditionalOptions>
+      <GenerateMapFile>true</GenerateMapFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="hxlib\arch\bpstruct.h" />
+    <ClInclude Include="hxlib\arch\epstruct.h" />
+    <ClInclude Include="hxlib\ctype.h" />
+    <ClInclude Include="hxlib\errno.h" />
+    <ClInclude Include="hxlib\hellox.h" />
+    <ClInclude Include="hxlib\inet.h" />
+    <ClInclude Include="hxlib\inttypes.h" />
+    <ClInclude Include="hxlib\io.h" />
+    <ClInclude Include="hxlib\ip_addr.h" />
+    <ClInclude Include="hxlib\limits.h" />
+    <ClInclude Include="hxlib\math.h" />
+    <ClInclude Include="hxlib\pthread.h" />
+    <ClInclude Include="hxlib\sched.h" />
+    <ClInclude Include="hxlib\setjmp.h" />
+    <ClInclude Include="hxlib\signal.h" />
+    <ClInclude Include="hxlib\socket\sockets.h" />
+    <ClInclude Include="hxlib\stdarg.h" />
+    <ClInclude Include="hxlib\stdbool.h" />
+    <ClInclude Include="hxlib\stddef.h" />
+    <ClInclude Include="hxlib\stdint.h" />
+    <ClInclude Include="hxlib\stdio.h" />
+    <ClInclude Include="hxlib\stdlib.h" />
+    <ClInclude Include="hxlib\string.h" />
+    <ClInclude Include="hxlib\sys\cpu.h" />
+    <ClInclude Include="hxlib\sys\ide.h" />
+    <ClInclude Include="hxlib\sys\stat.h" />
+    <ClInclude Include="hxlib\sys\types.h" />
+    <ClInclude Include="hxlib\sys\utsname.h" />
+    <ClInclude Include="hxlib\time.h" />
+    <ClInclude Include="hxlib\time_pri.h" />
+    <ClInclude Include="hxlib\unistd.h" />
+    <ClInclude Include="hxlib\__hxcomm.h" />
+    <ClInclude Include="src\yeelight.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hxlib\acos.c" />
+    <ClCompile Include="hxlib\asin.c" />
+    <ClCompile Include="hxlib\atan.c" />
+    <ClCompile Include="hxlib\atan2.c" />
+    <ClCompile Include="hxlib\atox.c" />
+    <ClCompile Include="hxlib\ceil.c" />
+    <ClCompile Include="hxlib\copysign.c" />
+    <ClCompile Include="hxlib\ctype.c" />
+    <ClCompile Include="hxlib\errno.c" />
+    <ClCompile Include="hxlib\exp.c" />
+    <ClCompile Include="hxlib\fabs.c" />
+    <ClCompile Include="hxlib\finite.c" />
+    <ClCompile Include="hxlib\getenv.c" />
+    <ClCompile Include="hxlib\hellox\cli.c" />
+    <ClCompile Include="hxlib\hellox\hellox.c" />
+    <ClCompile Include="hxlib\inet.c" />
+    <ClCompile Include="hxlib\io.c" />
+    <ClCompile Include="hxlib\ip_addr.c" />
+    <ClCompile Include="hxlib\log.c" />
+    <ClCompile Include="hxlib\math.c" />
+    <ClCompile Include="hxlib\memory.c" />
+    <ClCompile Include="hxlib\nextafter.c" />
+    <ClCompile Include="hxlib\pow.c" />
+    <ClCompile Include="hxlib\pthread.c" />
+    <ClCompile Include="hxlib\pthread_mutex.c" />
+    <ClCompile Include="hxlib\pthread_other.c" />
+    <ClCompile Include="hxlib\rand.c" />
+    <ClCompile Include="hxlib\scalbn.c" />
+    <ClCompile Include="hxlib\sched.c" />
+    <ClCompile Include="hxlib\setjmp.c" />
+    <ClCompile Include="hxlib\signal.c" />
+    <ClCompile Include="hxlib\socket\sockets.c" />
+    <ClCompile Include="hxlib\sqrt.c" />
+    <ClCompile Include="hxlib\stat.c" />
+    <ClCompile Include="hxlib\stdio.c" />
+    <ClCompile Include="hxlib\string.c" />
+    <ClCompile Include="hxlib\sysmem.c" />
+    <ClCompile Include="hxlib\time.c" />
+    <ClCompile Include="hxlib\trig.c" />
+    <ClCompile Include="src\yeelight.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

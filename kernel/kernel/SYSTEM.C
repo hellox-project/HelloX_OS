@@ -857,8 +857,10 @@ static BOOL kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 		lpSystem->lpTimerQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpSystem->lpTimerQueue,
 		&dwPriority);
-	if(NULL == lpTimerObject)    //There is not any timer object to be processed.
+	if(NULL == lpTimerObject)    //No timer object pending to be processed yet.
 	{
+		/* Reset next timer tick counter. */
+		lpSystem->dwNextTimerTick = 0;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		goto __DESTROY_TIMER;
 	}
@@ -968,6 +970,7 @@ static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis, UCHAR ucVector, __INTERRU
 __SYSTEM System = {
 	NULL,                     //lpTimerQueue.
 	{0},                      //InterruptSlotArray[MAX_INTERRUPT_VECTOR].
+	0,                        //ucCurrInt.
 	0,                        //dwClockTickCounter,
 	0,                        //dwNextTimerTick,
 	0,                        //ucIntNestLeve;
@@ -1005,8 +1008,10 @@ __SYSTEM System = {
 
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
-	//PrintLine("GeneralIntHandler");
 	UCHAR    ucVector = (BYTE)(dwVector);
+
+	/* Save current interrupt or exception vector value. */
+	System.ucCurrInt = ucVector;
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
 	{

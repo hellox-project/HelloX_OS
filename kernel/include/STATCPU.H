@@ -16,16 +16,16 @@
 #ifndef __STATCPU_H__
 #define __STATCPU_H__
 
-
 #include "types.h"
 #include "ktmgr.h"
 #include "kmemmgr.h"
 
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//Enable or disable kernel thread tracking.
+#define __SYSDIAG_TRACE_STACK
 
 #define GET_KERNEL_MEMORY(size)   KMemAlloc(size,KMEM_SIZE_TYPE_ANY)
 #define FREE_KERNEL_MEMORY(p)     KMemFree(p,KMEM_SIZE_TYPE_ANY,0)
@@ -42,7 +42,12 @@ typedef struct tag__THREAD_STAT_OBJECT{
 	__U64                     CurrPeriodCycle;
 	__U64                     PreviousTsc;
 
+	/* The target kernel thread object. */
 	__KERNEL_THREAD_OBJECT*   lpKernelThread;
+#if defined(__SYSDIAG_TRACE_STACK)
+	/* Target thread's context snapshot. */
+	__KERNEL_THREAD_CONTEXT   KernelThreadContext;
+#endif
 
 	WORD                      wQueueHdr;
 	WORD                      wQueueTail;

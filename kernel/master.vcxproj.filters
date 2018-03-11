@@ -728,6 +728,9 @@
     <ClCompile Include="netcore\nat\naticmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="user\ylight.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">

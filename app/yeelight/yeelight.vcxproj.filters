@@ -1,0 +1,240 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hxlib\arch\bpstruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\arch\epstruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\cpu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\ide.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\stat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sys\utsname.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\__hxcomm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\ctype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\errno.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\inet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\inttypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\ip_addr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\limits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\sched.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\setjmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\signal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdarg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdbool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stddef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\stdlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\time_pri.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\unistd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\yeelight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\socket\sockets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\hellox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hxlib\acos.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\asin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\atan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\atan2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\atox.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\ceil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\copysign.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\ctype.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\errno.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\exp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\fabs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\finite.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\getenv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\inet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\io.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\ip_addr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\log.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\math.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\memory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\nextafter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pthread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pthread_mutex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\pthread_other.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\rand.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\scalbn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\sched.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\setjmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\signal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\sqrt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\stat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\stdio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\string.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\sysmem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\time.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\trig.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\yeelight.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\socket\sockets.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\hellox\hellox.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\hellox\cli.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

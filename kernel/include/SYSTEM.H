@@ -129,6 +129,7 @@ END_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
 BEGIN_DEFINE_OBJECT(__SYSTEM)
     __PRIORITY_QUEUE*                     lpTimerQueue;
 	__INTERRUPT_SLOT                      InterruptSlotArray[MAX_INTERRUPT_VECTOR];
+	volatile UCHAR                        ucCurrInt; /* Current interrupt or exception vector. */
 
 	volatile DWORD                        dwClockTickCounter;    //Records how many clock
 	                                                             //tickes have occured since

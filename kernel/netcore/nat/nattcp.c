@@ -36,9 +36,9 @@
 /* Adjust the TCP mss value according interface's MTU. */
 static void AdjustMSS(__EASY_NAT_ENTRY* pEntry, struct tcp_hdr* pTcpHdr)
 {
-	char* tcp_opt = NULL;
+	unsigned char* tcp_opt = NULL;
 	int data_off = 0, total_opt_len = 0;
-	char opt_len = 0;
+	unsigned char opt_len = 0;
 	u16_t mss = 0, old_mss = 0;
 
 	/* Get data offset from TCP header. */
@@ -48,7 +48,7 @@ static void AdjustMSS(__EASY_NAT_ENTRY* pEntry, struct tcp_hdr* pTcpHdr)
 		return;
 	}
 	total_opt_len = data_off - TCP_FIXED_HEADER_LEN;
-	tcp_opt = ((char*)pTcpHdr + TCP_FIXED_HEADER_LEN);
+	tcp_opt = ((unsigned char*)pTcpHdr + TCP_FIXED_HEADER_LEN);
 	while (total_opt_len)
 	{
 		switch (*tcp_opt) /* Option kind value. */
@@ -76,6 +76,11 @@ static void AdjustMSS(__EASY_NAT_ENTRY* pEntry, struct tcp_hdr* pTcpHdr)
 			return;
 		default:
 			opt_len = *(tcp_opt + 1);
+			/* Option's length can not be 0. */
+			if (0 == opt_len)
+			{
+				return;
+			}
 			tcp_opt += opt_len;
 			if (total_opt_len < opt_len) /* Ilegal case. */
 			{

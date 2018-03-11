@@ -102,11 +102,16 @@ BOOL Eth_MAC_Multicast(__u8* mac)
 	{
 		return FALSE;
 	}
-	if (!(mac[0] & 0x01))
+	/* Broadcast addr is not multicast. */
+	if (Eth_MAC_Broadcast(mac))
 	{
 		return FALSE;
 	}
-	return TRUE;
+	if (0x01 & mac[0]) /* The first bit is 1. */
+	{
+		return TRUE;
+	}
+	return FALSE;
 }
 
 /*

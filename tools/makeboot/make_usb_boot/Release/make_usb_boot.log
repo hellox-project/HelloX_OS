@@ -1,0 +1,60 @@
+﻿  stdafx.cpp
+  common.cpp
+  Fat32FileAccess.cpp
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(65): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(71): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(75): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(64): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdio.h(1772): note: see declaration of 'sprintf'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(289): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(317): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(324): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(342): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(343): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(366): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(746): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(757): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(768): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(843): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(853): warning C4996: 'strcmpi': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strcmpi. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(548): note: see declaration of 'strcmpi'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(949): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(89): note: see declaration of 'strcat'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(968): warning C4996: 'strcmpi': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strcmpi. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(548): note: see declaration of 'strcmpi'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(1209): warning C4101: 'DirEntry': unreferenced local variable
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(1596): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(1647): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(1724): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(132): note: see declaration of 'strcpy'
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\fat32fileaccess.cpp(1719): warning C4101: 'DirName': unreferenced local variable
+  format.cpp
+  Import.cpp
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\import.cpp(206): warning C4293: '<<': shift count negative or too big, undefined behavior
+  make_usb_boot.cpp
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(26): warning C4838: conversion from 'int' to 'CHAR' requires a narrowing conversion
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(26): warning C4309: 'initializing': truncation of constant value
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(379): warning C4244: 'argument': conversion from 'UINT64' to 'UINT', possible loss of data
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(394): warning C4244: 'argument': conversion from 'UINT64' to 'UINT', possible loss of data
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(539): warning C4018: '<': signed/unsigned mismatch
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(655): warning C4244: 'argument': conversion from 'UINT64' to 'UINT', possible loss of data
+c:\hellox\personal\hellox_os\tools\makeboot\make_usb_boot\make_usb_boot.cpp(672): warning C4244: 'argument': conversion from 'UINT64' to 'UINT', possible loss of data
+  Generating code
+  All 192 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  make_usb_boot.vcxproj -> C:\HelloX\personal\HelloX_OS\tools\makeboot\Release\make_usb_boot.exe

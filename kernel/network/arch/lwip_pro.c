@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "hx_eth.h"
 #include "ethmgr.h"
 #include "proto.h"
 #include "lwip/opt.h"
@@ -151,6 +152,11 @@ static err_t eth_level_output(struct netif* netif, struct pbuf* p)
 	pEthBuff = &pEthInt->SendBuffer;
 	pbuf_to_ethbuf(p, pEthBuff);
 	pEthBuff->pOutInterface = pEthInt;
+	/* Update interface statistics counter. */
+	if (Eth_MAC_Multicast(&pEthBuff->Buffer[0]))
+	{
+		pEthInt->ifState.dwTxMcastNum++;
+	}
 	if(!pEthInt->SendFrame(pEthInt))
 	{
 		LINK_STATS_INC(link.err);
@@ -241,6 +247,8 @@ static err_t _ethernet_if_init(struct netif *netif)
 	/* device capabilities */
 	/* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
 	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+	/* Enable IGMP or multicasting in all ethernet interface(s). */
+	netif->flags |= NETIF_FLAG_IGMP;
 	//Set the MAC address of this interface.
 	memcpy(netif->hwaddr, pEthInt->ethMac, ETH_MAC_LEN);
 

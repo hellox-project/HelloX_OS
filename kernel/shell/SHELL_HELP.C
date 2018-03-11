@@ -80,7 +80,6 @@ __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 	}
 	memzero(pObjBuffer,sizeof(__CMD_PARA_OBJ));
 	
-
 	while(*pCmdPos)
 	{
 		if(' ' == *pCmdPos )

@@ -10,22 +10,18 @@
  *
  */
 
+#include <stdio.h>
+
 #include "lwip/opt.h"
-
-#if LWIP_RAW /* don't build if not configured for use in lwipopts.h */
-
 #include "lwip/mem.h"
 #include "lwip/raw.h"
 #include "lwip/icmp.h"
 #include "lwip/netif.h"
 #include "lwip/sys.h"
-#include "lwip/timers.h"
 #include "lwip/inet_chksum.h"
 
 #include "lwip/ip_addr.h"
 #include "lwip/sockets.h"
-#include "lwip/inet.h"
-#include "stdio.h"
 #include "network.h"
 
 /**
@@ -212,35 +208,32 @@ void ping_Entry(void *arg)
   lwip_setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
   _hx_printf("\r\n  Ping %s with %d bytes packet:\r\n",inet_ntoa(pParam->targetAddr),pParam->size);
   while (1)
+  {
+	//ping_target = PING_TARGET; //ping gw
+	//IP4_ADDR(&ping_target, 127,0,0,1); //ping loopback.
+	if (ping_send(s, &pParam->targetAddr,pParam->size) == ERR_OK)
 	{
-		//ping_target = PING_TARGET; //ping gw
-		//IP4_ADDR(&ping_target, 127,0,0,1); //ping loopback.
-    if (ping_send(s, &pParam->targetAddr,pParam->size) == ERR_OK)
-		{
-			//printf(" ping_Entry : Send out packet,addr = %s,size = %d\r\n",inet_ntoa(pParam->targetAddr),pParam->size);
-      ping_time = sys_now();
-      ping_recv(s);
-	    ping_pkt_seq ++;
-    }
-	  else
-	  {
-	    PrintLine("   ping : Send out packet failed.");
-    }
-    //sys_msleep(PING_DELAY);
+		//printf(" ping_Entry : Send out packet,addr = %s,size = %d\r\n",inet_ntoa(pParam->targetAddr),pParam->size);
+		ping_time = sys_now();
+		ping_recv(s);
+		ping_pkt_seq ++;
+	}
+	else
+	{
+		PrintLine("   ping : Send out packet failed.");
+	}
 
-	  //Try the specified times.
-	  pParam->count --;
-	  if(0 == pParam->count)
-	  {
-		  break;
-	  }
+	//Try the specified times.
+	pParam->count --;
+	if(0 == pParam->count)
+	{
+	 break;
+	}
   }
-	//Show ping statistics.
-	_hx_printf("\r\n");
-	_hx_printf("  ping statistics: total send = %d,received = %d,%d loss.\r\n",
-	  ping_pkt_seq,ping_succ,(ping_pkt_seq - ping_succ));
+  //Show ping statistics.
+  _hx_printf("\r\n");
+  _hx_printf("  ping statistics: total send = %d,received = %d,%d loss.\r\n",
+  ping_pkt_seq,ping_succ,(ping_pkt_seq - ping_succ));
   //Close socket.
   lwip_close(s);
 }
-
-#endif /* LWIP_RAW */

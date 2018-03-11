@@ -193,43 +193,46 @@ static BOOL CodeReLocate(DWORD dwNewImageBase, DWORD dwRelocBlockVa, DWORD dwOld
 	while (TRUE)
 	{
 		nRelocNum = (pRelocBlock->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / 2;
-
 		//_hx_printf("Blockaddr=%X  SizeOfBlock= 0x%X,num=%d\r\n",pRelocBlock,pRelocBlock->SizeOfBlock, nRelocNum);
-
 		pRelocData = (WORD*)((LPBYTE)pRelocBlock + sizeof(IMAGE_BASE_RELOCATION));
 		for (i = 0; i<nRelocNum; i++)
 		{
 			DWORD*   pRelocAddress = NULL;
 			WORD     nPageOff = 0;
 
-
 			if (((*pRelocData) >> 12) == IMAGE_REL_BASED_HIGHLOW)
 			{
 				nPageOff = (*pRelocData) & 0xFFF;
-
 				pRelocAddress = (DWORD*)(dwNewImageBase + pRelocBlock->VirtualAddress + nPageOff);
-
 				//if(nRelocNum <= 2)
 				//{
 				//	_hx_printf("VirtualAddress=0x%X,pRelocAddress= 0x%X\r\n",pRelocBlock->VirtualAddress,*pRelocAddress);
 				//}
-
 				*pRelocAddress = *pRelocAddress - dwOldImageBase + dwNewImageBase;
 			}
-
-			//next data 
+			else
+			{
+				/* 
+				 * Show a warning since we don't process other relocation type,but 
+				 * the type of 0 is skiped since it's only the pad of relacation table,
+				 * to make sure the whole size of the table is align with double word
+				 * boundary.
+				 */
+				if ((*pRelocData) >> 12)
+				{
+					_hx_printf("%s:Unknown relocate type[%d].\r\n", __FUNCTION__,
+						(*pRelocData) >> 12);
+				}
+			}
 			pRelocData++;
 		}
-
 		// next block
 		pRelocBlock = (PIMAGE_BASE_RELOCATION)((LPBYTE)pRelocBlock + pRelocBlock->SizeOfBlock);
 		//_hx_printf("Block= %X\r\n",(LPBYTE)pRelocBlock);
-
 		if (NULL == (VOID*)pRelocBlock->VirtualAddress)
 		{
 			break;
 		}
-
 	}
 
 	return TRUE;
@@ -283,7 +286,6 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	 * some IDE will put some sections in the end of file,this extra space is used
 	 * to determine the end of image.So set the whole memory block to zero.
 	 */
-	//pRunBuffer = (LPBYTE)_hx_malloc(ImageOptionalHeader->SizeOfImage);
 	pRunBuffer = (LPBYTE)_hx_aligned_malloc(ImageOptionalHeader->SizeOfImage + 8, 64);
 	if (NULL == pRunBuffer)
 	{
@@ -294,15 +296,18 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	//copy jmp command and address to app buf      
 	memcpy(pRunBuffer, &szFillHeader, dwHxHeadSize);
 
-	/*_hx_printf("SA=0x%X,FA=0x%X,ImageBase=0x%X,AddressOfEntryPoint=0x%X,BaseOfCode=0x%X,BaseOfData=0x%X\r\n",
-	ImageOptionalHeader->SectionAlignment,
-	ImageOptionalHeader->FileAlignment,
-	ImageOptionalHeader->ImageBase,
-	ImageOptionalHeader->AddressOfEntryPoint,
-	ImageOptionalHeader->BaseOfCode,
-	ImageOptionalHeader->BaseOfData);*/
+#if 0
+	/* Show out module layout info,just for debugging. */
+	_hx_printf("SA=0x%X,FA=0x%X,ImageBase=0x%X,AddressOfEntryPoint=0x%X,BaseOfCode=0x%X,BaseOfData=0x%X\r\n",
+		ImageOptionalHeader->SectionAlignment,
+		ImageOptionalHeader->FileAlignment,
+		ImageOptionalHeader->ImageBase,
+		ImageOptionalHeader->AddressOfEntryPoint,
+		ImageOptionalHeader->BaseOfCode,
+		ImageOptionalHeader->BaseOfData);
+#endif
 
-	//read section table	
+	/* Load the section table into memory. */
 	dwOffset = dwOffset + sizeof(IMAGE_NT_HEADERS);
 	SetFilePointer(hFileObj, &dwOffset, 0, FILE_FROM_BEGIN);
 	dwSectNum = ImageNtHeader.FileHeader.NumberOfSections;
@@ -319,10 +324,12 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 		goto __TERMINAL;
 	}
 
-	/*_hx_printf("dwSectNum=0x%X,dwSecTableSize=0x%X\r\n",
-	dwSectNum,
-	dwSecTableSize
-	);*/
+#if 0
+	/* Show out section information,just for debugging. */
+	_hx_printf("dwSectNum=0x%X,dwSecTableSize=0x%X\r\n",
+		dwSectNum,
+		dwSecTableSize);
+#endif
 
 	for (dwIndex = 0; dwIndex < dwSectNum; dwIndex++)
 	{
@@ -332,42 +339,36 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 		LPBYTE  pMemAddr = pRunBuffer + dwMemOffset;
 
 		SetFilePointer(hFileObj, &dwFileOffset, 0, FILE_FROM_BEGIN);
-
-		/*for(i=0;i<dwSecSize/512;i++)
-		{
-		ReadFile(hFileObj,512,pMemAddr,&dwReadSize);
-		pMemAddr += 512;
-		}*/
 		if (!ReadFile(hFileObj, dwSecSize, pMemAddr, &dwReadSize))
 		{
 			goto __TERMINAL;
 		}
-
-		/*_hx_printf("sec name=%s,FO=0x%X,MO=0x%X,Size=%d\r\n",
-		pSectionHdr->Name,
-		dwFileOffset,
-		dwMemOffset,
-		dwSecSize
-		);*/
-
+#if 0
+		_hx_printf("Section name=%s,FO=0x%X,MO=0x%X,Size=%d\r\n",
+			pSectionHdr->Name,
+			dwFileOffset,
+			dwMemOffset,
+			dwSecSize);
+#endif
 		pSectionHdrPos++;
 	}
 
-	// is need relocate
+	/* Relocate the code. */
 	if ((DWORD)pRunBuffer != ImageOptionalHeader->ImageBase)
 	{
 		DWORD dwRelocBlockVa = ImageOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
 		if (dwRelocBlockVa != 0)
 		{
 			/*_hx_printf("dwRelocBlockVa=0x%X,ImageBase=0x%X,pRunBuffer=%X\r\n",
-			dwRelocBlockVa,
-			ImageOptionalHeader->ImageBase,
-			(DWORD)pRunBuffer);*/
+				dwRelocBlockVa,
+				ImageOptionalHeader->ImageBase,
+				(DWORD)pRunBuffer);*/
+			/* Relocate the code. */
 			CodeReLocate((DWORD)pRunBuffer, dwRelocBlockVa, ImageOptionalHeader->ImageBase);
 		}
 	}
 	
-	_hx_printf("Load PE module OK,size = %d,begin to run.\r\n", ImageOptionalHeader->SizeOfImage);
+	_hx_printf("Load PE module OK,size = %d.\r\n", ImageOptionalHeader->SizeOfImage);
 	bResult = TRUE;
 
 __TERMINAL:

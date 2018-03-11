@@ -28,13 +28,12 @@
 
 //A static array to contain system call range.
 static __SYSCALL_RANGE SyscallRange[SYSCALL_RANGE_NUM] = {0};
-
-static  SYSCALL_ENTRY  s_szScCallArray[SYSCALL_MAX_COUNT]  = {0};
+static SYSCALL_ENTRY  s_szScCallArray[SYSCALL_MAX_COUNT] = {0};
 
 //Register all call 
-void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry);
-void  RegisterIoEntry(SYSCALL_ENTRY* pSysCallEntry);
-void  RegisterSocketEntry(SYSCALL_ENTRY* pSysCallEntry);
+void RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry);
+void RegisterIoEntry(SYSCALL_ENTRY* pSysCallEntry);
+void RegisterSocketEntry(SYSCALL_ENTRY* pSysCallEntry);
 
 //System call used by other kernel module to register their system
 //call range.
@@ -102,9 +101,14 @@ BOOL SyscallHandler(LPVOID lpEsp,LPVOID lpParam)
 	__SYSCALL_PARAM_BLOCK*  pspb     = (__SYSCALL_PARAM_BLOCK*)lpEsp;
 	SYSCALL_ENTRY           pScEntry = NULL; 
 
-	if(NULL == lpEsp || pspb->dwSyscallNum >= SYSCALL_MAX_COUNT)
+	if (NULL == lpEsp)
 	{
-		PrintLine("SyscallHandler error");
+		return FALSE;
+	}
+	if(pspb->dwSyscallNum >= SYSCALL_MAX_COUNT)
+	{
+		__LOG("Invalid system call ID[call_id = %d].\r\n",
+			pspb->dwSyscallNum);
 		return FALSE;
 	}
 	
