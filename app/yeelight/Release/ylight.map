@@ -1,36 +1,36 @@
  ylight
 
- Timestamp is 5aa49e8a (Sun Mar 11 11:12:10 2018)
+ Timestamp is 5aaa72fc (Thu Mar 15 21:19:56 2018)
 
  Preferred load address is 00400000
 
  Start         Length     Name                   Class
- 0001:00000000 00002fb5H .text$mn                CODE
+ 0001:00000000 00002fc5H .text$mn                CODE
  0002:00000000 00000000H .idata$5                DATA
- 0002:00000000 00000974H .rdata                  DATA
- 0002:00000974 00000000H .edata                  DATA
- 0002:00000974 000000f4H .rdata$zzzdbg           DATA
- 0002:00000a68 00000000H .idata$2                DATA
- 0002:00000a68 00000000H .idata$3                DATA
- 0002:00000a68 00000000H .idata$4                DATA
- 0002:00000a68 00000000H .idata$6                DATA
- 0003:00000000 00000098H .data                   DATA
- 0003:00000098 00000098H .bss                    DATA
+ 0002:00000000 00000334H .rdata                  DATA
+ 0002:00000334 00000000H .edata                  DATA
+ 0002:00000334 000000f4H .rdata$zzzdbg           DATA
+ 0002:00000428 00000000H .idata$2                DATA
+ 0002:00000428 00000000H .idata$3                DATA
+ 0002:00000428 00000000H .idata$4                DATA
+ 0002:00000428 00000000H .idata$6                DATA
+ 0003:00000000 00000988H .data                   DATA
+ 0003:00000988 000000a0H .bss                    DATA
  0004:00000000 00000060H .rsrc$01                DATA
  0004:00000060 00000180H .rsrc$02                DATA
 
   Address         Publics by Value              Rva+Base       Lib:Object
 
- 0000:00000000       ___guard_fids_count        00000000     <absolute>
- 0000:00000000       ___enclave_config          00000000     <absolute>
- 0000:00000000       ___guard_longjmp_count     00000000     <absolute>
  0000:00000000       ___guard_iat_table         00000000     <absolute>
- 0000:00000000       ___guard_iat_count         00000000     <absolute>
- 0000:00000000       ___hybrid_auxiliary_iat    00000000     <absolute>
  0000:00000000       ___guard_longjmp_table     00000000     <absolute>
- 0000:00000000       ___hybrid_code_map         00000000     <absolute>
+ 0000:00000000       ___hybrid_auxiliary_iat    00000000     <absolute>
+ 0000:00000000       ___guard_fids_count        00000000     <absolute>
  0000:00000000       ___guard_fids_table        00000000     <absolute>
+ 0000:00000000       ___enclave_config          00000000     <absolute>
+ 0000:00000000       ___guard_iat_count         00000000     <absolute>
+ 0000:00000000       ___guard_longjmp_count     00000000     <absolute>
  0000:00000000       ___hybrid_code_map_count   00000000     <absolute>
+ 0000:00000000       ___hybrid_code_map         00000000     <absolute>
  0000:00000000       ___safe_se_handler_table   00000000     <absolute>
  0000:00000000       ___dynamic_value_reloc_table 00000000     <absolute>
  0000:00000000       ___safe_se_handler_count   00000000     <absolute>
@@ -84,89 +84,34 @@
  0001:00001e70       _strtok                    00402130 f   string.obj
  0001:00002020       __hx_free                  004022e0 f   sysmem.obj
  0001:00002090       __hx_malloc                00402350 f   sysmem.obj
- 0001:00002840       __hx_main                  00402b00 f   yeelight.obj
- 0001:00002f00       __ftol2_sse                004031c0 f   MSVCRT:_ftol2_.obj
- 0001:00002f09       __ftol2_pentium4           004031c9 f   MSVCRT:_ftol2_.obj
- 0001:00002f1c       __ftol2_sse_excpt          004031dc f   MSVCRT:_ftol2_.obj
- 0001:00002f40       __ftol2                    00403200 f   MSVCRT:_ftol2_.obj
- 0002:00000070       ??_C@_04LIFAFMCE@?$FL?$CFs?$FN?$AA@ 004032f0     cli.obj
- 0002:00000078       ??_C@_0CF@IJPEGGNK@Too?5many?5or?5too?5few?5arguments?$FL?$CFd@ 004032f8     cli.obj
- 0002:000000a0       ??_C@_0CA@HLNEMOAC@Argument?5should?5not?5be?5empty?4?$AN?6?$AA@ 00403320     cli.obj
- 0002:000000c0       ??_C@_0CA@CNNKFALJ@Can?5not?5obtain?5name?5from?$FL?$CFs?$FN?4?$AN?6?$AA@ 00403340     cli.obj
- 0002:000000e0       ??_C@_0CH@ONAAHOCI@Application?5file?5name?5too?5short?$FL@ 00403360     cli.obj
- 0002:00000108       ??_C@_0DC@FADMLJML@?$AN?6BUG?5oencountered?4?$AN?6File?5name?3?5@ 00403388     hellox.obj
- 0002:0000013c       ??_C@_0BE@INJFJMDH@?$FL?$CFd?9?$CFd?9?$CFd?5?$CFd?3?$CFd?3?$CFd?$FN?$AA@ 004033bc     hellox.obj
- 0002:00000150       _ip_addr_any               004033d0     ip_addr.obj
- 0002:00000154       _ip_addr_broadcast         004033d4     ip_addr.obj
- 0002:00000198       ??_C@_0CF@DLEKIKA@0123456789abcdefghijklmnopqrstuv@ 00403418     stdio.obj
- 0002:000001c0       ??_C@_0CF@GDODPGFN@0123456789ABCDEFGHIJKLMNOPQRSTUV@ 00403440     stdio.obj
- 0002:000001e8       ??_C@_06CBHGEMFM@?$DMNULL?$DO?$AA@ 00403468     stdio.obj
- 0002:000001f0       ??_C@_0DJ@JNNEMNGL@c?3?2hellox?2personal?2hellox_os?2app@ 00403470     sysmem.obj
- 0002:0000022c       ___dnames                  004034ac     time.obj
- 0002:00000244       ___mnames                  004034c4     time.obj
- 0002:00000448       ??_C@_0BA@DNNGICBF@HTTP?11?41?5200?5OK?$AA@ 004036c8     yeelight.obj
- 0002:00000458       ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@ 004036d8     yeelight.obj
- 0002:00000494       ??_C@_08EEABGAIP@yeelight?$AA@ 00403714     yeelight.obj
- 0002:000004a0       ??_C@_0BH@HGHOBMCE@?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?$AN?6?$AA@ 00403720     yeelight.obj
- 0002:000004b8       ??_C@_08DELEFJBK@id?3?5?$CFs?$AN?6?$AA@ 00403738     yeelight.obj
- 0002:000004c4       ??_C@_08MMEFGGML@ip?3?5?$CFs?$AN?6?$AA@ 00403744     yeelight.obj
- 0002:000004d0       ??_C@_0L@PIBEHDPH@port?3?5?$CFd?$AN?6?$AA@ 00403750     yeelight.obj
- 0002:000004dc       ??_C@_0CM@NIFJBDJE@?$HL?$CCid?$CC?3?$CC?$CFs?$CC?0?$CCmethod?$CC?3?$CCtoggle?$CC?0?$CCpa@ 0040375c     yeelight.obj
- 0002:00000508       ??_C@_0CA@KLBIHOJL@Can?5not?5create?5socket?5object?4?$AN?6?$AA@ 00403788     yeelight.obj
- 0002:00000528       ??_C@_0CN@OAKNKFDD@Can?5not?5connect?5to?5light?5object?$FL@ 004037a8     yeelight.obj
- 0002:00000558       ??_C@_0BO@NPJCALFH@Connect?5to?5light?5object?5OK?4?$AN?6?$AA@ 004037d8     yeelight.obj
- 0002:00000578       ??_C@_0CB@DDIPKHPP@Failed?5to?5send?5toggle?5command?4?$AN?6@ 004037f8     yeelight.obj
- 0002:0000059c       ??_C@_0CB@MBPHKCID@Failed?5to?5recv?5resp?$FLret?5?$DN?5?$CFd?$FN?4?$AN?6@ 0040381c     yeelight.obj
- 0002:000005c0       ??_C@_0CN@PHCHOKIN@Received?5status?5update?5message?$FLs@ 00403840     yeelight.obj
- 0002:000005f0       ??_C@_0BD@PCKCGHAM@Status?5update?3?$CFs?$AN?6?$AA@ 00403870     yeelight.obj
- 0002:00000604       ??_C@_02PCIJFNDE@?$AN?6?$AA@ 00403884     yeelight.obj
- 0002:00000608       ??_C@_08KDOEBHGA@Location?$AA@ 00403888     yeelight.obj
- 0002:00000614       ??_C@_02EGCJHIOB@id?$AA@   00403894     yeelight.obj
- 0002:00000618       ??_C@_04MEMAJGDJ@name?$AA@ 00403898     yeelight.obj
- 0002:00000620       ??_C@_0CA@JMCBIEPM@?$AN?6A?5new?5light?5found?$FLid?5?$DN?5?$CFs?$FN?4?$AN?6?$AA@ 004038a0     yeelight.obj
- 0002:00000640       ??_C@_0CH@CPEAOEE@Failed?5to?5set?5periodic?5timer?5obj@ 004038c0     yeelight.obj
- 0002:00000668       ??_C@_0O@NGDBLNOO@ylight_search?$AA@ 004038e8     yeelight.obj
- 0002:00000678       ??_C@_0BO@IGAGLHOP@?$CFs?3failed?5to?5create?5socket?4?$AN?6?$AA@ 004038f8     yeelight.obj
- 0002:00000698       ??_C@_0CD@GKFDFANO@?$CFs?3failed?5to?5set?5sock?8s?5timeout?4@ 00403918     yeelight.obj
- 0002:000006bc       ??_C@_0O@DPNDNAHN@192?4168?4169?41?$AA@ 0040393c     yeelight.obj
- 0002:000006cc       ??_C@_0CI@KJBPHAMN@?$CFs?3failed?5to?5set?5out?5going?5inter@ 0040394c     yeelight.obj
- 0002:000006f4       ??_C@_0BA@CBMJEEJH@239?4255?4255?4250?$AA@ 00403974     yeelight.obj
- 0002:00000704       ??_C@_0CO@KGNPGLJH@?$CFs?3failed?5to?5join?5multicast?5grou@ 00403984     yeelight.obj
- 0002:00000734       ??_C@_0CI@PENFDHGF@?$CFs?3failed?5to?5bind?5to?5local?5inter@ 004039b4     yeelight.obj
- 0002:00000760       ??_C@_0FF@FBGGPKPL@M?9SEARCH?5?$CK?5HTTP?11?41?$AN?6HOST?3?5239?42@ 004039e0     yeelight.obj
- 0002:000007b8       ??_C@_0BN@FNGCAHAH@?$CFs?3failed?5to?5send?5request?4?$AN?6?$AA@ 00403a38     yeelight.obj
- 0002:000007d8       ??_C@_0CK@PBKIGACE@Yeelight?5controller?5for?5HelloX?$FLv@ 00403a58     yeelight.obj
- 0002:00000804       ??_C@_08DLKNFOKI@YEELIGHT?$AA@ 00403a84     yeelight.obj
- 0002:00000810       ??_C@_0CF@HBGJCFMO@Failed?5to?5create?5searching?5threa@ 00403a90     yeelight.obj
- 0002:00000838       ??_C@_04DONFEANM@list?$AA@ 00403ab8     yeelight.obj
- 0002:00000840       ??_C@_04MKNBDEPB@exit?$AA@ 00403ac0     yeelight.obj
- 0002:00000848       ??_C@_06MBEFLBGA@turnon?$AA@ 00403ac8     yeelight.obj
- 0002:00000850       ??_C@_07HAMHLJHA@turnoff?$AA@ 00403ad0     yeelight.obj
- 0002:00000858       ??_C@_04PCJFHION@help?$AA@ 00403ad8     yeelight.obj
- 0002:00000860       ??_C@_0CK@NGFOKCMD@?5?5list?5?5?5?5?3?5Show?5out?5all?5found?5b@ 00403ae0     yeelight.obj
- 0002:0000088c       ??_C@_0CI@BDNJHNCO@?5?5turnon?5?5?3?5Turn?5on?5a?5specified?5@ 00403b0c     yeelight.obj
- 0002:000008b4       ??_C@_0CJ@LLFNANIG@?5?5turnoff?5?3?5Turn?5off?5a?5specified@ 00403b34     yeelight.obj
- 0002:000008e0       ??_C@_0CE@OOIGHMBB@?5?5exit?5?5?5?5?3?5Exit?5the?5application@ 00403b60     yeelight.obj
- 0002:00000904       ??_C@_0BF@MJDKECEM@?5?5Unknown?5command?4?$AN?6?$AA@ 00403b84     yeelight.obj
- 0003:00000004       ___ctype                   00403d04     ctype.obj
- 0003:00000014       __lpdays                   00403d14     time.obj
- 0003:00000048       __days                     00403d48     time.obj
- 0003:0000007c       __timezone                 00403d7c     time.obj
- 0003:00000080       __daylight                 00403d80     time.obj
- 0003:00000084       __dstbias                  00403d84     time.obj
- 0003:00000088       _okmsg                     00403d88     yeelight.obj
- 0003:0000008c       __fltused                  00403d8c     MSVCRT:fltused.obj
- 0003:00000090       ___isa_enabled             00403d90     MSVCRT:_cpu_disp_.obj
- 0003:00000098       _errno                     00403d98     errno.obj
- 0003:00000128       ___isa_available           00403e28     MSVCRT:_cpu_disp_.obj
- 0003:0000012c       ___favor                   00403e2c     MSVCRT:_cpu_disp_.obj
+ 0001:00002850       __hx_main                  00402b10 f   yeelight.obj
+ 0001:00002f10       __ftol2_sse                004031d0 f   MSVCRT:_ftol2_.obj
+ 0001:00002f19       __ftol2_pentium4           004031d9 f   MSVCRT:_ftol2_.obj
+ 0001:00002f2c       __ftol2_sse_excpt          004031ec f   MSVCRT:_ftol2_.obj
+ 0001:00002f50       __ftol2                    00403210 f   MSVCRT:_ftol2_.obj
+ 0002:00000078       _ip_addr_any               00403338     ip_addr.obj
+ 0002:0000007c       _ip_addr_broadcast         0040333c     ip_addr.obj
+ 0002:000000c0       ___dnames                  00403380     time.obj
+ 0002:000000d8       ___mnames                  00403398     time.obj
+ 0003:00000064       ___ctype                   00403764     ctype.obj
+ 0003:00000260       __lpdays                   00403960     time.obj
+ 0003:00000294       __days                     00403994     time.obj
+ 0003:000002c8       __timezone                 004039c8     time.obj
+ 0003:000002cc       __daylight                 004039cc     time.obj
+ 0003:000002d0       __dstbias                  004039d0     time.obj
+ 0003:000002d8       _okmsg                     004039d8     yeelight.obj
+ 0003:00000974       __fltused                  00404074     MSVCRT:fltused.obj
+ 0003:00000980       ___isa_enabled             00404080     MSVCRT:_cpu_disp_.obj
+ 0003:00000990       _errno                     00404090     errno.obj
+ 0003:00000a20       ___isa_available           00404120     MSVCRT:_cpu_disp_.obj
+ 0003:00000a24       ___favor                   00404124     MSVCRT:_cpu_disp_.obj
 
  entry point at        0001:00000130
 
  Static symbols
 
- 0002:ffffcd80       .idata$6                   00400000     kernel32:KERNEL32.dll
- 0000:ffffbe40       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0002:ffffcd40       .idata$6                   00400000     kernel32:KERNEL32.dll
+ 0000:ffffbb40       .debug$S                   00400000     kernel32:KERNEL32.dll
  0001:000000b0       _isdigit                   00400370 f   atox.obj
  0001:000000d0       _isspace                   00400390 f   atox.obj
  0001:00000110       _ShowPrompt                004003d0 f   cli.obj
@@ -187,30 +132,118 @@
  0001:00002370       _ParseResponse             00402630 f   yeelight.obj
  0001:00002590       _ShowLight                 00402850 f   yeelight.obj
  0001:00002610       _ToggleYlight              004028d0 f   yeelight.obj
- 0001:00002a90       _getvalue                  00402d50 f   yeelight.obj
- 0001:00002b70       _ylight_search             00402e30 f   yeelight.obj
- 0001:00002f00       $$000000                   004031c0     MSVCRT:_ftol2_.obj
- 0002:00000000       _atanhi                    00403280     atan.obj
- 0002:00000020       _atanlo                    004032a0     atan.obj
- 0002:00000040       _halF                      004032c0     exp.obj
- 0002:00000050       _ln2HI                     004032d0     exp.obj
- 0002:00000060       _ln2LO                     004032e0     exp.obj
- 0002:00000158       _Zero                      004033d8     math.obj
- 0002:00000168       _bp                        004033e8     pow.obj
- 0002:00000178       _dp_h                      004033f8     pow.obj
- 0002:00000188       _dp_l                      00403408     pow.obj
- 0002:00000270       _init_jk                   004034f0     trig.obj
- 0002:00000280       _PIo2                      00403500     trig.obj
- 0002:000002c0       _ipio2                     00403540     trig.obj
- 0002:000003c8       _npio2_hw                  00403648     trig.obj
- 0003:00000000       __ctype                    00403d00     ctype.obj
- 0003:00000008       _next                      00403d08     rand.obj
- 0003:0000000c       _digits                    00403d0c     stdio.obj
- 0003:00000010       _upper_digits              00403d10     stdio.obj
- 0003:000000a0       _cmd_buffer                00403da0     cli.obj
- 0003:000000a8       _prompt_string             00403da8     cli.obj
- 0003:000000ec       ?str@?1??ipaddr_ntoa@@9@9  00403dec     ip_addr.obj
- 0003:000000fc       ?last@?1??strtok@@9@9      00403dfc     string.obj
- 0003:00000100       _tb                        00403e00     time.obj
- 0003:00000124       _pLightObject              00403e24     yeelight.obj
- 0004:00000060       $R000000                   00403ea0     * linker generated manifest res *
+ 0001:00002aa0       _getvalue                  00402d60 f   yeelight.obj
+ 0001:00002b80       _ylight_search             00402e40 f   yeelight.obj
+ 0001:00002f10       $$000000                   004031d0     MSVCRT:_ftol2_.obj
+ 0002:00000000       _atanhi                    004032c0     atan.obj
+ 0002:00000020       _atanlo                    004032e0     atan.obj
+ 0002:00000040       _firstByteMark             00403300     cjson.obj
+ 0002:00000048       _halF                      00403308     exp.obj
+ 0002:00000058       _ln2HI                     00403318     exp.obj
+ 0002:00000068       _ln2LO                     00403328     exp.obj
+ 0002:00000080       _Zero                      00403340     math.obj
+ 0002:00000090       _bp                        00403350     pow.obj
+ 0002:000000a0       _dp_h                      00403360     pow.obj
+ 0002:000000b0       _dp_l                      00403370     pow.obj
+ 0002:00000100       _init_jk                   004033c0     trig.obj
+ 0002:00000110       _PIo2                      004033d0     trig.obj
+ 0002:00000150       _ipio2                     00403410     trig.obj
+ 0002:00000258       _npio2_hw                  00403518     trig.obj
+ 0003:00000000       _cJSON_malloc              00403700     cjson.obj
+ 0003:00000004       _cJSON_free                00403704     cjson.obj
+ 0003:00000008       $SG5072                    00403708     cjson.obj
+ 0003:0000000c       $SG5076                    0040370c     cjson.obj
+ 0003:00000014       $SG5080                    00403714     cjson.obj
+ 0003:00000018       $SG5081                    00403718     cjson.obj
+ 0003:0000001c       $SG5184                    0040371c     cjson.obj
+ 0003:00000024       $SG5197                    00403724     cjson.obj
+ 0003:0000002c       $SG5275                    0040372c     cjson.obj
+ 0003:00000034       $SG5277                    00403734     cjson.obj
+ 0003:0000003c       $SG5279                    0040373c     cjson.obj
+ 0003:00000044       $SG5297                    00403744     cjson.obj
+ 0003:0000004c       $SG5299                    0040374c     cjson.obj
+ 0003:00000054       $SG5301                    00403754     cjson.obj
+ 0003:0000005c       $SG5355                    0040375c     cjson.obj
+ 0003:00000060       __ctype                    00403760     ctype.obj
+ 0003:00000068       $SG4722                    00403768     cli.obj
+ 0003:00000070       $SG4816                    00403770     cli.obj
+ 0003:00000098       $SG4818                    00403798     cli.obj
+ 0003:000000b8       $SG4820                    004037b8     cli.obj
+ 0003:000000d8       $SG4822                    004037d8     cli.obj
+ 0003:00000100       $SG4843                    00403800     hellox.obj
+ 0003:00000134       $SG4848                    00403834     hellox.obj
+ 0003:00000148       _next                      00403848     rand.obj
+ 0003:0000014c       _digits                    0040384c     stdio.obj
+ 0003:00000150       $SG4685                    00403850     stdio.obj
+ 0003:00000178       _upper_digits              00403878     stdio.obj
+ 0003:0000017c       $SG4687                    0040387c     stdio.obj
+ 0003:000001a4       $SG4987                    004038a4     stdio.obj
+ 0003:000001ac       $SG4769                    004038ac     sysmem.obj
+ 0003:000001e8       $SG4831                    004038e8     sysmem.obj
+ 0003:00000224       $SG4833                    00403924     sysmem.obj
+ 0003:000002dc       $SG4993                    004039dc     yeelight.obj
+ 0003:000002ec       $SG5070                    004039ec     yeelight.obj
+ 0003:00000328       $SG5072                    00403a28     yeelight.obj
+ 0003:00000364       $SG5073                    00403a64     yeelight.obj
+ 0003:00000370       $SG5087                    00403a70     yeelight.obj
+ 0003:00000388       $SG5088                    00403a88     yeelight.obj
+ 0003:00000394       $SG5089                    00403a94     yeelight.obj
+ 0003:000003a0       $SG5090                    00403aa0     yeelight.obj
+ 0003:000003ac       $SG5109                    00403aac     yeelight.obj
+ 0003:000003e8       $SG5111                    00403ae8     yeelight.obj
+ 0003:00000424       $SG5113                    00403b24     yeelight.obj
+ 0003:00000460       $SG5114                    00403b60     yeelight.obj
+ 0003:0000048c       $SG5116                    00403b8c     yeelight.obj
+ 0003:000004b8       $SG5135                    00403bb8     yeelight.obj
+ 0003:000004f4       $SG5138                    00403bf4     yeelight.obj
+ 0003:00000520       $SG5140                    00403c20     yeelight.obj
+ 0003:00000550       $SG5141                    00403c50     yeelight.obj
+ 0003:00000570       $SG5145                    00403c70     yeelight.obj
+ 0003:00000594       $SG5147                    00403c94     yeelight.obj
+ 0003:000005b8       $SG5150                    00403cb8     yeelight.obj
+ 0003:000005e8       $SG5151                    00403ce8     yeelight.obj
+ 0003:000005fc       $SG5183                    00403cfc     yeelight.obj
+ 0003:00000600       $SG5186                    00403d00     yeelight.obj
+ 0003:0000060c       $SG5188                    00403d0c     yeelight.obj
+ 0003:00000610       $SG5191                    00403d10     yeelight.obj
+ 0003:00000618       $SG5193                    00403d18     yeelight.obj
+ 0003:0000061c       $SG5197                    00403d1c     yeelight.obj
+ 0003:0000063c       $SG5232                    00403d3c     yeelight.obj
+ 0003:00000664       $SG5234                    00403d64     yeelight.obj
+ 0003:00000674       $SG5235                    00403d74     yeelight.obj
+ 0003:00000694       $SG5237                    00403d94     yeelight.obj
+ 0003:000006a4       $SG5238                    00403da4     yeelight.obj
+ 0003:000006c8       $SG5239                    00403dc8     yeelight.obj
+ 0003:000006d8       $SG5241                    00403dd8     yeelight.obj
+ 0003:000006e8       $SG5242                    00403de8     yeelight.obj
+ 0003:00000710       $SG5243                    00403e10     yeelight.obj
+ 0003:00000720       $SG5245                    00403e20     yeelight.obj
+ 0003:00000730       $SG5246                    00403e30     yeelight.obj
+ 0003:00000760       $SG5248                    00403e60     yeelight.obj
+ 0003:00000770       $SG5249                    00403e70     yeelight.obj
+ 0003:00000798       $SG5253                    00403e98     yeelight.obj
+ 0003:000007a8       $SG5254                    00403ea8     yeelight.obj
+ 0003:00000800       $SG5257                    00403f00     yeelight.obj
+ 0003:00000810       $SG5258                    00403f10     yeelight.obj
+ 0003:00000830       $SG5288                    00403f30     yeelight.obj
+ 0003:0000085c       $SG5289                    00403f5c     yeelight.obj
+ 0003:00000868       $SG5291                    00403f68     yeelight.obj
+ 0003:00000890       $SG5295                    00403f90     yeelight.obj
+ 0003:00000898       $SG5298                    00403f98     yeelight.obj
+ 0003:000008a0       $SG5301                    00403fa0     yeelight.obj
+ 0003:000008a8       $SG5305                    00403fa8     yeelight.obj
+ 0003:000008b0       $SG5309                    00403fb0     yeelight.obj
+ 0003:000008b8       $SG5310                    00403fb8     yeelight.obj
+ 0003:000008e4       $SG5311                    00403fe4     yeelight.obj
+ 0003:0000090c       $SG5312                    0040400c     yeelight.obj
+ 0003:00000938       $SG5313                    00404038     yeelight.obj
+ 0003:0000095c       $SG5314                    0040405c     yeelight.obj
+ 0003:00000988       $SG5181                    00404088     cjson.obj
+ 0003:0000098c       _ep                        0040408c     cjson.obj
+ 0003:00000998       _cmd_buffer                00404098     cli.obj
+ 0003:000009a0       _prompt_string             004040a0     cli.obj
+ 0003:000009e4       ?str@?1??ipaddr_ntoa@@9@9  004040e4     ip_addr.obj
+ 0003:000009f4       ?last@?1??strtok@@9@9      004040f4     string.obj
+ 0003:000009f8       _tb                        004040f8     time.obj
+ 0003:00000a1c       _pLightObject              0040411c     yeelight.obj
+ 0004:00000060       $R000000                   004041a0     * linker generated manifest res *

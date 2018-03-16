@@ -245,12 +245,25 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	IMAGE_OPTIONAL_HEADER*  ImageOptionalHeader = NULL;
 	IMAGE_SECTION_HEADER*   pSectionHdr = NULL;
 	IMAGE_SECTION_HEADER*   pSectionHdrPos = NULL;
-
-	// app jmp command and new app addres 
+	/*
+	 * The first several bytes of executable image will
+	 * be replaced by the following header,which composed
+	 * by three nop instructions and a jump instruct,the
+	 * target of the jumping is the entry point of the
+	 * image,wich is obtained from file header and is used
+	 * to replace the all zero in the following structure.
+	 */
 	__FILL_HEADER           szFillHeader = { 0x90, 0x90, 0x90, 0xe9, 0x00000000 };
 	__FILL_HEADER           szFillHeader2 = { 0x90, 0x90, 0x90, 0xe9, 0x00000000 };
-	LPBYTE                  pRunBuffer = NULL;//(LPBYTE)dwStartAddress;
-	LPBYTE                  pJmpBuffer = NULL;//(LPBYTE)dwStartAddress;
+	/* 
+	 * The buffer that contains the processed image,will be 
+	 * returned to the caller,if the loading and pre-processing
+	 * are success.
+	 * The caller just jump to the first byte of this buffer to
+	 * launch the application.
+	 */
+	LPBYTE                  pRunBuffer = NULL;
+	LPBYTE                  pJmpBuffer = NULL;
 	BOOL                    bResult = FALSE;
 	DWORD                   dwHxHeadSize = sizeof(__FILL_HEADER);
 	DWORD                   dwSecTableSize = 0;
@@ -258,23 +271,56 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	DWORD                   dwOffset = 0;
 	DWORD                   dwSectNum = 0;
 	DWORD                   dwIndex = 0;
+	/* 
+	 * A temporary buffer to hold the whole image file,to avoid 
+	 * batch reading,since the SetFilePointer routine has some
+	 * issues to be solve.
+	 */
+	char* pTmpBuff = NULL;
+	DWORD dwImageSz = 0;
 
-	//reset file start pos
+	/* Allocate a big buffer to hold the whole file. */
+	dwImageSz = GetFileSize(hFileObj, NULL);
+	if (0 == dwImageSz)
+	{
+		_hx_printf("Can not get image file's size.\r\n");
+		goto __TERMINAL;
+	}
+	pTmpBuff = (LPBYTE)_hx_aligned_malloc(dwImageSz + 8, 64);
+	if (NULL == pTmpBuff)
+	{
+		_hx_printf("Failed to allocate temp buffer.\r\n");
+		goto __TERMINAL;
+	}
+	/* Load the whole file,to simplify the following process. */
+	dwOffset = 0;
 	SetFilePointer(hFileObj, &dwOffset, 0, FILE_FROM_BEGIN);
+	if (!ReadFile(hFileObj, dwImageSz, pTmpBuff, &dwReadSize))
+	{
+		goto __TERMINAL;
+	}
 
-	//read Pe Dos head info 
+	 /* Read DOS header from PE file. */
+	dwOffset = 0;
+	SetFilePointer(hFileObj, &dwOffset, 0, FILE_FROM_BEGIN);
 	if (!ReadFile(hFileObj, sizeof(ImageDosHeader), &ImageDosHeader, &dwReadSize))
 	{
 		goto __TERMINAL;
 	}
 	dwOffset = ImageDosHeader.e_lfanew;
 
-	//read Pe nt head info 
+	/* Load NT header. */
 	SetFilePointer(hFileObj, &dwOffset, 0, FILE_FROM_BEGIN);
 	ReadFile(hFileObj, sizeof(ImageNtHeader), &ImageNtHeader, &dwReadSize);
 	ImageOptionalHeader = &(ImageNtHeader.OptionalHeader);
 
-	//Calculate the target address will
+	/* Image size must be equal or less than file size. */
+	if (ImageOptionalHeader->SizeOfImage > dwImageSz)
+	{
+		_hx_printf("Image size in header is larger than file size.\r\n");
+		goto __TERMINAL;
+	}
+
 	//szFillHeader.dwJmpAddr    = ImageOptionalHeader->BaseOfCode;
 	szFillHeader.dwJmpAddr = ImageOptionalHeader->AddressOfEntryPoint;
 	szFillHeader.dwJmpAddr -= dwHxHeadSize;
@@ -293,7 +339,7 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	}
 	memset(pRunBuffer, 0, ImageOptionalHeader->SizeOfImage + 8);
 
-	//copy jmp command and address to app buf      
+	/* Copy the jump instruction into header. */
 	memcpy(pRunBuffer, &szFillHeader, dwHxHeadSize);
 
 #if 0
@@ -338,13 +384,17 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 		DWORD   dwSecSize = pSectionHdrPos->SizeOfRawData;
 		LPBYTE  pMemAddr = pRunBuffer + dwMemOffset;
 
+#if 0
+		/* Avoid using SetFilePointer since it has issue. */
 		SetFilePointer(hFileObj, &dwFileOffset, 0, FILE_FROM_BEGIN);
 		if (!ReadFile(hFileObj, dwSecSize, pMemAddr, &dwReadSize))
 		{
 			goto __TERMINAL;
 		}
+#endif
+		memcpy(pMemAddr, (pTmpBuff + dwFileOffset), dwSecSize);
 #if 0
-		_hx_printf("Section name=%s,FO=0x%X,MO=0x%X,Size=%d\r\n",
+		_hx_printf("Section name=%s,FO=0x%X,MO=0x%X,Size=%d.\r\n",
 			pSectionHdr->Name,
 			dwFileOffset,
 			dwMemOffset,
@@ -383,6 +433,10 @@ __TERMINAL:
 	if (pSectionHdr)
 	{
 		_hx_free(pSectionHdr);
+	}
+	if (pTmpBuff)
+	{
+		_hx_free(pTmpBuff);
 	}
 
 	return pRunBuffer;

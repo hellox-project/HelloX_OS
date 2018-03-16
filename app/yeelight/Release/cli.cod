@@ -13,13 +13,17 @@ _BSS	SEGMENT
 _cmd_buffer DD	01H DUP (?)
 _prompt_string DB 041H DUP (?)
 _BSS	ENDS
+_DATA	SEGMENT
+$SG4722	DB	'[%s]', 00H
+	ORG $+3
+$SG4816	DB	'Too many or too few arguments[%d].', 0dH, 0aH, 00H
+	ORG $+3
+$SG4818	DB	'Argument should not be empty.', 0dH, 0aH, 00H
+$SG4820	DB	'Can not obtain name from[%s].', 0dH, 0aH, 00H
+$SG4822	DB	'Application file name too short[%s].', 0dH, 0aH, 00H
+_DATA	ENDS
 PUBLIC	_getcmd
 PUBLIC	__hx_entry
-PUBLIC	??_C@_04LIFAFMCE@?$FL?$CFs?$FN?$AA@		; `string'
-PUBLIC	??_C@_0CF@IJPEGGNK@Too?5many?5or?5too?5few?5arguments?$FL?$CFd@ ; `string'
-PUBLIC	??_C@_0CA@HLNEMOAC@Argument?5should?5not?5be?5empty?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CA@CNNKFALJ@Can?5not?5obtain?5name?5from?$FL?$CFs?$FN?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CH@ONAAHOCI@Application?5file?5name?5too?5short?$FL@ ; `string'
 EXTRN	_GetMessage:PROC
 EXTRN	_PrintChar:PROC
 EXTRN	_GotoHome:PROC
@@ -31,30 +35,6 @@ EXTRN	__hx_free:PROC
 EXTRN	_strrchr:PROC
 EXTRN	_strlen:PROC
 EXTRN	__hx_main:PROC
-;	COMDAT ??_C@_0CH@ONAAHOCI@Application?5file?5name?5too?5short?$FL@
-CONST	SEGMENT
-??_C@_0CH@ONAAHOCI@Application?5file?5name?5too?5short?$FL@ DB 'Applicati'
-	DB	'on file name too short[%s].', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CA@CNNKFALJ@Can?5not?5obtain?5name?5from?$FL?$CFs?$FN?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0CA@CNNKFALJ@Can?5not?5obtain?5name?5from?$FL?$CFs?$FN?4?$AN?6?$AA@ DB 'C'
-	DB	'an not obtain name from[%s].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CA@HLNEMOAC@Argument?5should?5not?5be?5empty?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0CA@HLNEMOAC@Argument?5should?5not?5be?5empty?4?$AN?6?$AA@ DB 'Argu'
-	DB	'ment should not be empty.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CF@IJPEGGNK@Too?5many?5or?5too?5few?5arguments?$FL?$CFd@
-CONST	SEGMENT
-??_C@_0CF@IJPEGGNK@Too?5many?5or?5too?5few?5arguments?$FL?$CFd@ DB 'Too m'
-	DB	'any or too few arguments[%d].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_04LIFAFMCE@?$FL?$CFs?$FN?$AA@
-CONST	SEGMENT
-??_C@_04LIFAFMCE@?$FL?$CFs?$FN?$AA@ DB '[%s]', 00H	; `string'
-CONST	ENDS
 ; Function compile flags: /Odtp
 ; File c:\hellox\personal\hellox_os\app\yeelight\hxlib\hellox\cli.c
 ;	COMDAT __hx_entry
@@ -99,7 +79,7 @@ $LN5@hx_entry:
 
   00027	8b 45 08	 mov	 eax, DWORD PTR _argc$[ebp]
   0002a	50		 push	 eax
-  0002b	68 00 00 00 00	 push	 OFFSET ??_C@_0CF@IJPEGGNK@Too?5many?5or?5too?5few?5arguments?$FL?$CFd@
+  0002b	68 00 00 00 00	 push	 OFFSET $SG4816
   00030	e8 00 00 00 00	 call	 __hx_printf
   00035	83 c4 08	 add	 esp, 8
 
@@ -117,7 +97,7 @@ $LN4@hx_entry:
 ; 228  : 	{
 ; 229  : 		_hx_printf("Argument should not be empty.\r\n");
 
-  00043	68 00 00 00 00	 push	 OFFSET ??_C@_0CA@HLNEMOAC@Argument?5should?5not?5be?5empty?4?$AN?6?$AA@
+  00043	68 00 00 00 00	 push	 OFFSET $SG4818
   00048	e8 00 00 00 00	 call	 __hx_printf
   0004d	83 c4 04	 add	 esp, 4
 
@@ -154,7 +134,7 @@ $LN6@hx_entry:
   0007f	8b 4d 0c	 mov	 ecx, DWORD PTR _argv$[ebp]
   00082	8b 14 01	 mov	 edx, DWORD PTR [ecx+eax]
   00085	52		 push	 edx
-  00086	68 00 00 00 00	 push	 OFFSET ??_C@_0CA@CNNKFALJ@Can?5not?5obtain?5name?5from?$FL?$CFs?$FN?4?$AN?6?$AA@
+  00086	68 00 00 00 00	 push	 OFFSET $SG4820
   0008b	e8 00 00 00 00	 call	 __hx_printf
   00090	83 c4 08	 add	 esp, 8
 
@@ -179,7 +159,7 @@ $LN7@hx_entry:
 
   000a9	8b 4d fc	 mov	 ecx, DWORD PTR _app_name$[ebp]
   000ac	51		 push	 ecx
-  000ad	68 00 00 00 00	 push	 OFFSET ??_C@_0CH@ONAAHOCI@Application?5file?5name?5too?5short?$FL@
+  000ad	68 00 00 00 00	 push	 OFFSET $SG4822
   000b2	e8 00 00 00 00	 call	 __hx_printf
   000b7	83 c4 08	 add	 esp, 8
 
@@ -340,7 +320,7 @@ _get_user_stroke PROC					; COMDAT
 
 ; 46   : 
 ; 47   : 	//Parameter checking.
-; 48   : 	if ((NULL == buffer) || (NULL == len))
+; 48   : 	if ((NULL == buffer) || (0 == len))
 
   00030	83 7d 08 00	 cmp	 DWORD PTR _buffer$[ebp], 0
   00034	74 06		 je	 SHORT $LN7@get_user_s
@@ -627,7 +607,7 @@ _ShowPrompt PROC					; COMDAT
 ; 32   : 	_hx_printf("[%s]", prompt_string);
 
   00003	68 00 00 00 00	 push	 OFFSET _prompt_string
-  00008	68 00 00 00 00	 push	 OFFSET ??_C@_04LIFAFMCE@?$FL?$CFs?$FN?$AA@
+  00008	68 00 00 00 00	 push	 OFFSET $SG4722
   0000d	e8 00 00 00 00	 call	 __hx_printf
   00012	83 c4 08	 add	 esp, 8
 

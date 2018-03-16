@@ -6,6 +6,7 @@ c:\hellox\personal\hellox_os\app\yeelight\hxlib\atan2.c(78): warning C4146: unar
   atox.c
   ceil.c
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\ceil.c(117): warning C4018: '<': signed/unsigned mismatch
+  cjson.c
   copysign.c
   ctype.c
   errno.c
@@ -14,7 +15,6 @@ c:\hellox\personal\hellox_os\app\yeelight\hxlib\ceil.c(117): warning C4018: '<':
   finite.c
   getenv.c
   cli.c
-c:\hellox\personal\hellox_os\app\yeelight\hxlib\hellox\cli.c(48): warning C4047: '==': 'void *' differs in levels of indirection from '::size_t'
   hellox.c
   inet.c
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(63): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
@@ -28,11 +28,11 @@ c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(71): warning C4103: al
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(84): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(92): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
   log.c
+  Generating Code...
+  Compiling...
   math.c
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\math.c(31): warning C4146: unary minus operator applied to unsigned type, result still unsigned
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\math.c(296): warning C4018: '<': signed/unsigned mismatch
-  Generating Code...
-  Compiling...
   memory.c
   nextafter.c
   pow.c
@@ -58,6 +58,8 @@ c:\hellox\personal\hellox_os\app\yeelight\hxlib\string.c(267): warning C4146: un
   sysmem.c
   time.c
   trig.c
+  Generating Code...
+  Compiling...
   yeelight.c
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(63): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
 c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(71): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)

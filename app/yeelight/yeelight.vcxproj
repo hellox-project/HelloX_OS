@@ -77,7 +77,7 @@
       <AdditionalIncludeDirectories>hxlib</AdditionalIncludeDirectories>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AssemblerOutput>All</AssemblerOutput>
-      <StringPooling>true</StringPooling>
+      <StringPooling>false</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,6 +134,7 @@
     <ClCompile Include="hxlib\atan2.c" />
     <ClCompile Include="hxlib\atox.c" />
     <ClCompile Include="hxlib\ceil.c" />
+    <ClCompile Include="hxlib\cjson\cjson.c" />
     <ClCompile Include="hxlib\copysign.c" />
     <ClCompile Include="hxlib\ctype.c" />
     <ClCompile Include="hxlib\errno.c" />

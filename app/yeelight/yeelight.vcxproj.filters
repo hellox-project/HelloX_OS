@@ -236,5 +236,8 @@
     <ClCompile Include="hxlib\hellox\cli.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="hxlib\cjson\cjson.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

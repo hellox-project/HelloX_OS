@@ -45,7 +45,7 @@ static int get_user_stroke(char* buffer, size_t len)
 	int                         ret = -1;
 
 	//Parameter checking.
-	if ((NULL == buffer) || (NULL == len))
+	if ((NULL == buffer) || (0 == len))
 	{
 		goto __TERMINAL;
 	}

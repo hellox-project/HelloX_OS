@@ -144,7 +144,7 @@ char* strncpy(char *dest,char *src,unsigned int n)
 } 
 
 //String comparation,array bound is guaranteed.
-int strncmp ( char * s1, char * s2, size_t n)
+int strncmp (const char * s1, const char * s2, size_t n)
 {
   if ( !n )
    return(0);

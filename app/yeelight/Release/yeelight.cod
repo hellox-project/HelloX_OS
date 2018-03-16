@@ -10,61 +10,123 @@ INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
 PUBLIC	_okmsg
-PUBLIC	??_C@_0BA@DNNGICBF@HTTP?11?41?5200?5OK?$AA@	; `string'
 _BSS	SEGMENT
 _pLightObject DD 01H DUP (?)
 _BSS	ENDS
-;	COMDAT ??_C@_0BA@DNNGICBF@HTTP?11?41?5200?5OK?$AA@
-CONST	SEGMENT
-??_C@_0BA@DNNGICBF@HTTP?11?41?5200?5OK?$AA@ DB 'HTTP/1.1 200 OK', 00H ; `string'
-CONST	ENDS
 _DATA	SEGMENT
-_okmsg	DD	FLAT:??_C@_0BA@DNNGICBF@HTTP?11?41?5200?5OK?$AA@
+_okmsg	DD	FLAT:$SG4993
+$SG4993	DB	'HTTP/1.1 200 OK', 00H
+$SG5070	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c'
+	DB	00H
+	ORG $+3
+$SG5072	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c'
+	DB	00H
+	ORG $+3
+$SG5073	DB	'yeelight', 00H
+	ORG $+3
+$SG5087	DB	'--------------------', 0dH, 0aH, 00H
+	ORG $+1
+$SG5088	DB	'id: %s', 0dH, 0aH, 00H
+	ORG $+3
+$SG5089	DB	'ip: %s', 0dH, 0aH, 00H
+	ORG $+3
+$SG5090	DB	'port: %d', 0dH, 0aH, 00H
+	ORG $+1
+$SG5109	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c'
+	DB	00H
+	ORG $+3
+$SG5111	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c'
+	DB	00H
+	ORG $+3
+$SG5113	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c'
+	DB	00H
+	ORG $+3
+$SG5114	DB	'{"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H
+$SG5116	DB	'{"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H
+$SG5135	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c'
+	DB	00H
+	ORG $+3
+$SG5138	DB	'Can not create socket object[sock = %d].', 0dH, 0aH, 00H
+	ORG $+1
+$SG5140	DB	'Can not connect to light object[ret = %d].', 0dH, 0aH, 00H
+	ORG $+3
+$SG5141	DB	'Connect to light object OK.', 0dH, 0aH, 00H
+	ORG $+2
+$SG5145	DB	'Failed to send toggle command.', 0dH, 0aH, 00H
+	ORG $+3
+$SG5147	DB	'Failed to recv resp[ret = %d].', 0dH, 0aH, 00H
+	ORG $+3
+$SG5150	DB	'Received status update message[size = %d].', 0dH, 0aH, 00H
+	ORG $+3
+$SG5151	DB	'Status update:%s', 0dH, 0aH, 00H
+	ORG $+1
+$SG5183	DB	0dH, 0aH, 00H
+	ORG $+1
+$SG5186	DB	'Location', 00H
+	ORG $+3
+$SG5188	DB	'id', 00H
+	ORG $+1
+$SG5191	DB	'name', 00H
+	ORG $+3
+$SG5193	DB	0dH, 0aH, 00H
+	ORG $+1
+$SG5197	DB	0dH, 0aH, 'A new light found[id = %s].', 0dH, 0aH, 00H
+$SG5232	DB	'Failed to set periodic timer object.', 0dH, 0aH, 00H
+	ORG $+1
+$SG5234	DB	'ylight_search', 00H
+	ORG $+2
+$SG5235	DB	'%s:failed to create socket.', 0dH, 0aH, 00H
+	ORG $+2
+$SG5237	DB	'ylight_search', 00H
+	ORG $+2
+$SG5238	DB	'%s:failed to set sock''s timeout.', 0dH, 0aH, 00H
+	ORG $+1
+$SG5239	DB	'192.168.169.1', 00H
+	ORG $+2
+$SG5241	DB	'ylight_search', 00H
+	ORG $+2
+$SG5242	DB	'%s:failed to set out going interface.', 0dH, 0aH, 00H
+$SG5243	DB	'239.255.255.250', 00H
+$SG5245	DB	'ylight_search', 00H
+	ORG $+2
+$SG5246	DB	'%s:failed to join multicast group,err = %d.', 0dH, 0aH, 00H
+	ORG $+2
+$SG5248	DB	'ylight_search', 00H
+	ORG $+2
+$SG5249	DB	'%s:failed to bind to local interface.', 0dH, 0aH, 00H
+$SG5253	DB	'239.255.255.250', 00H
+$SG5254	DB	'M-SEARCH * HTTP/1.1', 0dH, 0aH, 'HOST: 239.255.255.250:1'
+	DB	'982', 0dH, 0aH, 'MAN: "ssdp:discover"', 0dH, 0aH, 'ST: wifi_b'
+	DB	'ulb', 00H
+	ORG $+3
+$SG5257	DB	'ylight_search', 00H
+	ORG $+2
+$SG5258	DB	'%s:failed to send request.', 0dH, 0aH, 00H
+	ORG $+3
+$SG5288	DB	'Yeelight controller for HelloX[v%d.%d].', 0dH, 0aH, 00H
+	ORG $+2
+$SG5289	DB	'YEELIGHT', 00H
+	ORG $+3
+$SG5291	DB	'Failed to create searching thread.', 0dH, 0aH, 00H
+	ORG $+3
+$SG5295	DB	'list', 00H
+	ORG $+3
+$SG5298	DB	'exit', 00H
+	ORG $+3
+$SG5301	DB	'turnon', 00H
+	ORG $+1
+$SG5305	DB	'turnoff', 00H
+$SG5309	DB	'help', 00H
+	ORG $+3
+$SG5310	DB	'  list    : Show out all found bulb(s).', 0dH, 0aH, 00H
+	ORG $+2
+$SG5311	DB	'  turnon  : Turn on a specified bulb.', 0dH, 0aH, 00H
+$SG5312	DB	'  turnoff : Turn off a specified bulb.', 0dH, 0aH, 00H
+	ORG $+3
+$SG5313	DB	'  exit    : Exit the application.', 0dH, 0aH, 00H
+$SG5314	DB	'  Unknown command.', 0dH, 0aH, 00H
 _DATA	ENDS
 PUBLIC	__hx_main
-PUBLIC	??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@ ; `string'
-PUBLIC	??_C@_08EEABGAIP@yeelight?$AA@			; `string'
-PUBLIC	??_C@_0BH@HGHOBMCE@?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_08DELEFJBK@id?3?5?$CFs?$AN?6?$AA@		; `string'
-PUBLIC	??_C@_08MMEFGGML@ip?3?5?$CFs?$AN?6?$AA@		; `string'
-PUBLIC	??_C@_0L@PIBEHDPH@port?3?5?$CFd?$AN?6?$AA@	; `string'
-PUBLIC	??_C@_0CM@NIFJBDJE@?$HL?$CCid?$CC?3?$CC?$CFs?$CC?0?$CCmethod?$CC?3?$CCtoggle?$CC?0?$CCpa@ ; `string'
-PUBLIC	??_C@_0CA@KLBIHOJL@Can?5not?5create?5socket?5object?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CN@OAKNKFDD@Can?5not?5connect?5to?5light?5object?$FL@ ; `string'
-PUBLIC	??_C@_0BO@NPJCALFH@Connect?5to?5light?5object?5OK?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CB@DDIPKHPP@Failed?5to?5send?5toggle?5command?4?$AN?6@ ; `string'
-PUBLIC	??_C@_0CB@MBPHKCID@Failed?5to?5recv?5resp?$FLret?5?$DN?5?$CFd?$FN?4?$AN?6@ ; `string'
-PUBLIC	??_C@_0CN@PHCHOKIN@Received?5status?5update?5message?$FLs@ ; `string'
-PUBLIC	??_C@_0BD@PCKCGHAM@Status?5update?3?$CFs?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_02PCIJFNDE@?$AN?6?$AA@			; `string'
-PUBLIC	??_C@_08KDOEBHGA@Location?$AA@			; `string'
-PUBLIC	??_C@_02EGCJHIOB@id?$AA@			; `string'
-PUBLIC	??_C@_04MEMAJGDJ@name?$AA@			; `string'
-PUBLIC	??_C@_0CA@JMCBIEPM@?$AN?6A?5new?5light?5found?$FLid?5?$DN?5?$CFs?$FN?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CH@CPEAOEE@Failed?5to?5set?5periodic?5timer?5obj@ ; `string'
-PUBLIC	??_C@_0O@NGDBLNOO@ylight_search?$AA@		; `string'
-PUBLIC	??_C@_0BO@IGAGLHOP@?$CFs?3failed?5to?5create?5socket?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CD@GKFDFANO@?$CFs?3failed?5to?5set?5sock?8s?5timeout?4@ ; `string'
-PUBLIC	??_C@_0O@DPNDNAHN@192?4168?4169?41?$AA@		; `string'
-PUBLIC	??_C@_0CI@KJBPHAMN@?$CFs?3failed?5to?5set?5out?5going?5inter@ ; `string'
-PUBLIC	??_C@_0BA@CBMJEEJH@239?4255?4255?4250?$AA@	; `string'
-PUBLIC	??_C@_0CO@KGNPGLJH@?$CFs?3failed?5to?5join?5multicast?5grou@ ; `string'
-PUBLIC	??_C@_0CI@PENFDHGF@?$CFs?3failed?5to?5bind?5to?5local?5inter@ ; `string'
-PUBLIC	??_C@_0FF@FBGGPKPL@M?9SEARCH?5?$CK?5HTTP?11?41?$AN?6HOST?3?5239?42@ ; `string'
-PUBLIC	??_C@_0BN@FNGCAHAH@?$CFs?3failed?5to?5send?5request?4?$AN?6?$AA@ ; `string'
-PUBLIC	??_C@_0CK@PBKIGACE@Yeelight?5controller?5for?5HelloX?$FLv@ ; `string'
-PUBLIC	??_C@_08DLKNFOKI@YEELIGHT?$AA@			; `string'
-PUBLIC	??_C@_0CF@HBGJCFMO@Failed?5to?5create?5searching?5threa@ ; `string'
-PUBLIC	??_C@_04DONFEANM@list?$AA@			; `string'
-PUBLIC	??_C@_04MKNBDEPB@exit?$AA@			; `string'
-PUBLIC	??_C@_06MBEFLBGA@turnon?$AA@			; `string'
-PUBLIC	??_C@_07HAMHLJHA@turnoff?$AA@			; `string'
-PUBLIC	??_C@_04PCJFHION@help?$AA@			; `string'
-PUBLIC	??_C@_0CK@NGFOKCMD@?5?5list?5?5?5?5?3?5Show?5out?5all?5found?5b@ ; `string'
-PUBLIC	??_C@_0CI@BDNJHNCO@?5?5turnon?5?5?3?5Turn?5on?5a?5specified?5@ ; `string'
-PUBLIC	??_C@_0CJ@LLFNANIG@?5?5turnoff?5?3?5Turn?5off?5a?5specified@ ; `string'
-PUBLIC	??_C@_0CE@OOIGHMBB@?5?5exit?5?5?5?5?3?5Exit?5the?5application@ ; `string'
-PUBLIC	??_C@_0BF@MJDKECEM@?5?5Unknown?5command?4?$AN?6?$AA@ ; `string'
 EXTRN	_CreateKernelThread:PROC
 EXTRN	_DestroyKernelThread:PROC
 EXTRN	_GetMessage:PROC
@@ -100,205 +162,6 @@ EXTRN	_recvfrom:PROC
 EXTRN	_send:PROC
 EXTRN	_sendto:PROC
 EXTRN	_socket:PROC
-;	COMDAT ??_C@_0BF@MJDKECEM@?5?5Unknown?5command?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0BF@MJDKECEM@?5?5Unknown?5command?4?$AN?6?$AA@ DB '  Unknown comman'
-	DB	'd.', 0dH, 0aH, 00H				; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CE@OOIGHMBB@?5?5exit?5?5?5?5?3?5Exit?5the?5application@
-CONST	SEGMENT
-??_C@_0CE@OOIGHMBB@?5?5exit?5?5?5?5?3?5Exit?5the?5application@ DB '  exit'
-	DB	'    : Exit the application.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CJ@LLFNANIG@?5?5turnoff?5?3?5Turn?5off?5a?5specified@
-CONST	SEGMENT
-??_C@_0CJ@LLFNANIG@?5?5turnoff?5?3?5Turn?5off?5a?5specified@ DB '  turnof'
-	DB	'f : Turn off a specified bulb.', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CI@BDNJHNCO@?5?5turnon?5?5?3?5Turn?5on?5a?5specified?5@
-CONST	SEGMENT
-??_C@_0CI@BDNJHNCO@?5?5turnon?5?5?3?5Turn?5on?5a?5specified?5@ DB '  turn'
-	DB	'on  : Turn on a specified bulb.', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CK@NGFOKCMD@?5?5list?5?5?5?5?3?5Show?5out?5all?5found?5b@
-CONST	SEGMENT
-??_C@_0CK@NGFOKCMD@?5?5list?5?5?5?5?3?5Show?5out?5all?5found?5b@ DB '  li'
-	DB	'st    : Show out all found bulb(s).', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_04PCJFHION@help?$AA@
-CONST	SEGMENT
-??_C@_04PCJFHION@help?$AA@ DB 'help', 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_07HAMHLJHA@turnoff?$AA@
-CONST	SEGMENT
-??_C@_07HAMHLJHA@turnoff?$AA@ DB 'turnoff', 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_06MBEFLBGA@turnon?$AA@
-CONST	SEGMENT
-??_C@_06MBEFLBGA@turnon?$AA@ DB 'turnon', 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_04MKNBDEPB@exit?$AA@
-CONST	SEGMENT
-??_C@_04MKNBDEPB@exit?$AA@ DB 'exit', 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_04DONFEANM@list?$AA@
-CONST	SEGMENT
-??_C@_04DONFEANM@list?$AA@ DB 'list', 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CF@HBGJCFMO@Failed?5to?5create?5searching?5threa@
-CONST	SEGMENT
-??_C@_0CF@HBGJCFMO@Failed?5to?5create?5searching?5threa@ DB 'Failed to cr'
-	DB	'eate searching thread.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_08DLKNFOKI@YEELIGHT?$AA@
-CONST	SEGMENT
-??_C@_08DLKNFOKI@YEELIGHT?$AA@ DB 'YEELIGHT', 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CK@PBKIGACE@Yeelight?5controller?5for?5HelloX?$FLv@
-CONST	SEGMENT
-??_C@_0CK@PBKIGACE@Yeelight?5controller?5for?5HelloX?$FLv@ DB 'Yeelight c'
-	DB	'ontroller for HelloX[v%d.%d].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0BN@FNGCAHAH@?$CFs?3failed?5to?5send?5request?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0BN@FNGCAHAH@?$CFs?3failed?5to?5send?5request?4?$AN?6?$AA@ DB '%s:f'
-	DB	'ailed to send request.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0FF@FBGGPKPL@M?9SEARCH?5?$CK?5HTTP?11?41?$AN?6HOST?3?5239?42@
-CONST	SEGMENT
-??_C@_0FF@FBGGPKPL@M?9SEARCH?5?$CK?5HTTP?11?41?$AN?6HOST?3?5239?42@ DB 'M'
-	DB	'-SEARCH * HTTP/1.1', 0dH, 0aH, 'HOST: 239.255.255.250:1982', 0dH
-	DB	0aH, 'MAN: "ssdp:discover"', 0dH, 0aH, 'ST: wifi_bulb', 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CI@PENFDHGF@?$CFs?3failed?5to?5bind?5to?5local?5inter@
-CONST	SEGMENT
-??_C@_0CI@PENFDHGF@?$CFs?3failed?5to?5bind?5to?5local?5inter@ DB '%s:fail'
-	DB	'ed to bind to local interface.', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CO@KGNPGLJH@?$CFs?3failed?5to?5join?5multicast?5grou@
-CONST	SEGMENT
-??_C@_0CO@KGNPGLJH@?$CFs?3failed?5to?5join?5multicast?5grou@ DB '%s:faile'
-	DB	'd to join multicast group,err = %d.', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0BA@CBMJEEJH@239?4255?4255?4250?$AA@
-CONST	SEGMENT
-??_C@_0BA@CBMJEEJH@239?4255?4255?4250?$AA@ DB '239.255.255.250', 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CI@KJBPHAMN@?$CFs?3failed?5to?5set?5out?5going?5inter@
-CONST	SEGMENT
-??_C@_0CI@KJBPHAMN@?$CFs?3failed?5to?5set?5out?5going?5inter@ DB '%s:fail'
-	DB	'ed to set out going interface.', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0O@DPNDNAHN@192?4168?4169?41?$AA@
-CONST	SEGMENT
-??_C@_0O@DPNDNAHN@192?4168?4169?41?$AA@ DB '192.168.169.1', 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CD@GKFDFANO@?$CFs?3failed?5to?5set?5sock?8s?5timeout?4@
-CONST	SEGMENT
-??_C@_0CD@GKFDFANO@?$CFs?3failed?5to?5set?5sock?8s?5timeout?4@ DB '%s:fai'
-	DB	'led to set sock''s timeout.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0BO@IGAGLHOP@?$CFs?3failed?5to?5create?5socket?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0BO@IGAGLHOP@?$CFs?3failed?5to?5create?5socket?4?$AN?6?$AA@ DB '%s:'
-	DB	'failed to create socket.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-CONST	SEGMENT
-??_C@_0O@NGDBLNOO@ylight_search?$AA@ DB 'ylight_search', 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CH@CPEAOEE@Failed?5to?5set?5periodic?5timer?5obj@
-CONST	SEGMENT
-??_C@_0CH@CPEAOEE@Failed?5to?5set?5periodic?5timer?5obj@ DB 'Failed to se'
-	DB	't periodic timer object.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CA@JMCBIEPM@?$AN?6A?5new?5light?5found?$FLid?5?$DN?5?$CFs?$FN?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0CA@JMCBIEPM@?$AN?6A?5new?5light?5found?$FLid?5?$DN?5?$CFs?$FN?4?$AN?6?$AA@ DB 0dH
-	DB	0aH, 'A new light found[id = %s].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_04MEMAJGDJ@name?$AA@
-CONST	SEGMENT
-??_C@_04MEMAJGDJ@name?$AA@ DB 'name', 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_02EGCJHIOB@id?$AA@
-CONST	SEGMENT
-??_C@_02EGCJHIOB@id?$AA@ DB 'id', 00H			; `string'
-CONST	ENDS
-;	COMDAT ??_C@_08KDOEBHGA@Location?$AA@
-CONST	SEGMENT
-??_C@_08KDOEBHGA@Location?$AA@ DB 'Location', 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_02PCIJFNDE@?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_02PCIJFNDE@?$AN?6?$AA@ DB 0dH, 0aH, 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0BD@PCKCGHAM@Status?5update?3?$CFs?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0BD@PCKCGHAM@Status?5update?3?$CFs?$AN?6?$AA@ DB 'Status update:%s', 0dH
-	DB	0aH, 00H					; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CN@PHCHOKIN@Received?5status?5update?5message?$FLs@
-CONST	SEGMENT
-??_C@_0CN@PHCHOKIN@Received?5status?5update?5message?$FLs@ DB 'Received s'
-	DB	'tatus update message[size = %d].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CB@MBPHKCID@Failed?5to?5recv?5resp?$FLret?5?$DN?5?$CFd?$FN?4?$AN?6@
-CONST	SEGMENT
-??_C@_0CB@MBPHKCID@Failed?5to?5recv?5resp?$FLret?5?$DN?5?$CFd?$FN?4?$AN?6@ DB 'F'
-	DB	'ailed to recv resp[ret = %d].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CB@DDIPKHPP@Failed?5to?5send?5toggle?5command?4?$AN?6@
-CONST	SEGMENT
-??_C@_0CB@DDIPKHPP@Failed?5to?5send?5toggle?5command?4?$AN?6@ DB 'Failed '
-	DB	'to send toggle command.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0BO@NPJCALFH@Connect?5to?5light?5object?5OK?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0BO@NPJCALFH@Connect?5to?5light?5object?5OK?4?$AN?6?$AA@ DB 'Connec'
-	DB	't to light object OK.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CN@OAKNKFDD@Can?5not?5connect?5to?5light?5object?$FL@
-CONST	SEGMENT
-??_C@_0CN@OAKNKFDD@Can?5not?5connect?5to?5light?5object?$FL@ DB 'Can not '
-	DB	'connect to light object[ret = %d].', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CA@KLBIHOJL@Can?5not?5create?5socket?5object?4?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0CA@KLBIHOJL@Can?5not?5create?5socket?5object?4?$AN?6?$AA@ DB 'Can '
-	DB	'not create socket object.', 0dH, 0aH, 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CM@NIFJBDJE@?$HL?$CCid?$CC?3?$CC?$CFs?$CC?0?$CCmethod?$CC?3?$CCtoggle?$CC?0?$CCpa@
-CONST	SEGMENT
-??_C@_0CM@NIFJBDJE@?$HL?$CCid?$CC?3?$CC?$CFs?$CC?0?$CCmethod?$CC?3?$CCtoggle?$CC?0?$CCpa@ DB '{'
-	DB	'"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0L@PIBEHDPH@port?3?5?$CFd?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0L@PIBEHDPH@port?3?5?$CFd?$AN?6?$AA@ DB 'port: %d', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_08MMEFGGML@ip?3?5?$CFs?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_08MMEFGGML@ip?3?5?$CFs?$AN?6?$AA@ DB 'ip: %s', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_08DELEFJBK@id?3?5?$CFs?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_08DELEFJBK@id?3?5?$CFs?$AN?6?$AA@ DB 'id: %s', 0dH, 0aH, 00H ; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0BH@HGHOBMCE@?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?$AN?6?$AA@
-CONST	SEGMENT
-??_C@_0BH@HGHOBMCE@?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?$AN?6?$AA@ DB '-'
-	DB	'-------------------', 0dH, 0aH, 00H		; `string'
-CONST	ENDS
-;	COMDAT ??_C@_08EEABGAIP@yeelight?$AA@
-CONST	SEGMENT
-??_C@_08EEABGAIP@yeelight?$AA@ DB 'yeelight', 00H	; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
-CONST	SEGMENT
-??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@ DB 'c:\hellox\p'
-	DB	'ersonal\hellox_os\app\yeelight\src\yeelight.c', 00H ; `string'
-CONST	ENDS
 ; Function compile flags: /Odtp
 ; File c:\hellox\personal\hellox_os\app\yeelight\src\yeelight.c
 ;	COMDAT __hx_main
@@ -313,50 +176,50 @@ _argc$ = 8						; size = 4
 _argv$ = 12						; size = 4
 __hx_main PROC						; COMDAT
 
-; 504  : {
+; 505  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	83 ec 28	 sub	 esp, 40			; 00000028H
 
-; 505  : 	char* cmd_array[4];
-; 506  : 	int cmd_num = 0, i = 0;
+; 506  : 	char* cmd_array[4];
+; 507  : 	int cmd_num = 0, i = 0;
 
   00006	c7 45 f4 00 00
 	00 00		 mov	 DWORD PTR _cmd_num$[ebp], 0
   0000d	c7 45 f0 00 00
 	00 00		 mov	 DWORD PTR _i$[ebp], 0
 
-; 507  : 	struct yeelight_object* pLight = NULL;
+; 508  : 	struct yeelight_object* pLight = NULL;
 
   00014	c7 45 f8 00 00
 	00 00		 mov	 DWORD PTR _pLight$[ebp], 0
 
-; 508  : 	HANDLE hSearchThread = NULL;
+; 509  : 	HANDLE hSearchThread = NULL;
 
   0001b	c7 45 fc 00 00
 	00 00		 mov	 DWORD PTR _hSearchThread$[ebp], 0
 
-; 509  : 	MSG msg;
-; 510  : 
-; 511  : 	/* Show version info. */
-; 512  : 	_hx_printf("Yeelight controller for HelloX[v%d.%d].\r\n", __MAJOR_VER, __MINNOR_VER);
+; 510  : 	MSG msg;
+; 511  : 
+; 512  : 	/* Show version info. */
+; 513  : 	_hx_printf("Yeelight controller for HelloX[v%d.%d].\r\n", __MAJOR_VER, __MINNOR_VER);
 
   00022	6a 00		 push	 0
   00024	6a 01		 push	 1
-  00026	68 00 00 00 00	 push	 OFFSET ??_C@_0CK@PBKIGACE@Yeelight?5controller?5for?5HelloX?$FLv@
+  00026	68 00 00 00 00	 push	 OFFSET $SG5288
   0002b	e8 00 00 00 00	 call	 __hx_printf
   00030	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 513  : 
-; 514  : 	/* 
-; 515  : 	 * A dedicated kernel thread is running in background, to search and 
-; 516  : 	 * manages all bulb(s) in LAN.
-; 517  : 	 * Bring up this kernel thread first.
-; 518  : 	 */
-; 519  : 	hSearchThread = CreateKernelThread(
+; 514  : 
+; 515  : 	/* 
+; 516  : 	 * A dedicated kernel thread is running in background, to search and 
+; 517  : 	 * manages all bulb(s) in LAN.
+; 518  : 	 * Bring up this kernel thread first.
+; 519  : 	 */
+; 520  : 	hSearchThread = CreateKernelThread(
 
-  00033	68 00 00 00 00	 push	 OFFSET ??_C@_08DLKNFOKI@YEELIGHT?$AA@
+  00033	68 00 00 00 00	 push	 OFFSET $SG5289
   00038	6a 00		 push	 0
   0003a	6a 00		 push	 0
   0003c	68 00 00 00 00	 push	 OFFSET _ylight_search
@@ -367,44 +230,44 @@ __hx_main PROC						; COMDAT
   0004c	83 c4 1c	 add	 esp, 28			; 0000001cH
   0004f	89 45 fc	 mov	 DWORD PTR _hSearchThread$[ebp], eax
 
-; 520  : 		0,
-; 521  : 		KERNEL_THREAD_STATUS_READY,
-; 522  : 		PRIORITY_LEVEL_NORMAL,
-; 523  : 		ylight_search,
-; 524  : 		NULL,
+; 521  : 		0,
+; 522  : 		KERNEL_THREAD_STATUS_READY,
+; 523  : 		PRIORITY_LEVEL_NORMAL,
+; 524  : 		ylight_search,
 ; 525  : 		NULL,
-; 526  : 		"YEELIGHT");
-; 527  : 	if (NULL == hSearchThread)
+; 526  : 		NULL,
+; 527  : 		"YEELIGHT");
+; 528  : 	if (NULL == hSearchThread)
 
   00052	83 7d fc 00	 cmp	 DWORD PTR _hSearchThread$[ebp], 0
   00056	75 1c		 jne	 SHORT $LN2@hx_main
 
-; 528  : 	{
-; 529  : 		__LOG("Failed to create searching thread.\r\n");
+; 529  : 	{
+; 530  : 		__LOG("Failed to create searching thread.\r\n");
 
   00058	6a 00		 push	 0
   0005a	e8 00 00 00 00	 call	 _LogHeader
   0005f	83 c4 04	 add	 esp, 4
-  00062	68 00 00 00 00	 push	 OFFSET ??_C@_0CF@HBGJCFMO@Failed?5to?5create?5searching?5threa@
+  00062	68 00 00 00 00	 push	 OFFSET $SG5291
   00067	e8 00 00 00 00	 call	 __hx_printf
   0006c	83 c4 04	 add	 esp, 4
 
-; 530  : 		goto __TERMINAL;
+; 531  : 		goto __TERMINAL;
 
   0006f	e9 56 01 00 00	 jmp	 $__TERMINAL$23
 $LN2@hx_main:
 
-; 531  : 	}
-; 532  : 
-; 533  : 	/* Interactive with user. */
-; 534  : 	while (TRUE)
+; 532  : 	}
+; 533  : 
+; 534  : 	/* Interactive with user. */
+; 535  : 	while (TRUE)
 
   00074	83 c8 ff	 or	 eax, -1
   00077	0f 84 4d 01 00
 	00		 je	 $__TERMINAL$23
 
-; 535  : 	{
-; 536  : 		cmd_num = getcmd(cmd_array, 4);
+; 536  : 	{
+; 537  : 		cmd_num = getcmd(cmd_array, 4);
 
   0007d	6a 04		 push	 4
   0007f	8d 4d d8	 lea	 ecx, DWORD PTR _cmd_array$[ebp]
@@ -413,16 +276,16 @@ $LN2@hx_main:
   00088	83 c4 08	 add	 esp, 8
   0008b	89 45 f4	 mov	 DWORD PTR _cmd_num$[ebp], eax
 
-; 537  : 		if (cmd_num > 0)
+; 538  : 		if (cmd_num > 0)
 
   0008e	83 7d f4 00	 cmp	 DWORD PTR _cmd_num$[ebp], 0
   00092	0f 8e 2d 01 00
 	00		 jle	 $LN7@hx_main
 
-; 538  : 		{
-; 539  : 			if (strcmp(cmd_array[0], "list") == 0)
+; 539  : 		{
+; 540  : 			if (strcmp(cmd_array[0], "list") == 0)
 
-  00098	68 00 00 00 00	 push	 OFFSET ??_C@_04DONFEANM@list?$AA@
+  00098	68 00 00 00 00	 push	 OFFSET $SG5295
   0009d	ba 04 00 00 00	 mov	 edx, 4
   000a2	6b c2 00	 imul	 eax, edx, 0
   000a5	8b 4c 05 d8	 mov	 ecx, DWORD PTR _cmd_array$[ebp+eax]
@@ -432,9 +295,9 @@ $LN2@hx_main:
   000b2	85 c0		 test	 eax, eax
   000b4	75 14		 jne	 SHORT $LN8@hx_main
 
-; 540  : 			{
-; 541  : 				/* Show all found bulb(s). */
-; 542  : 				ShowLight(pLightObject);
+; 541  : 			{
+; 542  : 				/* Show all found bulb(s). */
+; 543  : 				ShowLight(pLightObject);
 
   000b6	8b 15 00 00 00
 	00		 mov	 edx, DWORD PTR _pLightObject
@@ -442,14 +305,14 @@ $LN2@hx_main:
   000bd	e8 00 00 00 00	 call	 _ShowLight
   000c2	83 c4 04	 add	 esp, 4
 
-; 543  : 			}
+; 544  : 			}
 
   000c5	e9 fb 00 00 00	 jmp	 $LN7@hx_main
 $LN8@hx_main:
 
-; 544  : 			else if (strcmp(cmd_array[0], "exit") == 0)
+; 545  : 			else if (strcmp(cmd_array[0], "exit") == 0)
 
-  000ca	68 00 00 00 00	 push	 OFFSET ??_C@_04MKNBDEPB@exit?$AA@
+  000ca	68 00 00 00 00	 push	 OFFSET $SG5298
   000cf	b8 04 00 00 00	 mov	 eax, 4
   000d4	6b c8 00	 imul	 ecx, eax, 0
   000d7	8b 54 0d d8	 mov	 edx, DWORD PTR _cmd_array$[ebp+ecx]
@@ -459,20 +322,20 @@ $LN8@hx_main:
   000e4	85 c0		 test	 eax, eax
   000e6	75 0a		 jne	 SHORT $LN10@hx_main
 
-; 545  : 			{
-; 546  : 				/* Exit the application. */
-; 547  : 				goto __TERMINAL;
+; 546  : 			{
+; 547  : 				/* Exit the application. */
+; 548  : 				goto __TERMINAL;
 
   000e8	e9 dd 00 00 00	 jmp	 $__TERMINAL$23
 
-; 548  : 			}
+; 549  : 			}
 
   000ed	e9 d3 00 00 00	 jmp	 $LN7@hx_main
 $LN10@hx_main:
 
-; 549  : 			else if (strcmp(cmd_array[0], "turnon") == 0)
+; 550  : 			else if (strcmp(cmd_array[0], "turnon") == 0)
 
-  000f2	68 00 00 00 00	 push	 OFFSET ??_C@_06MBEFLBGA@turnon?$AA@
+  000f2	68 00 00 00 00	 push	 OFFSET $SG5301
   000f7	b8 04 00 00 00	 mov	 eax, 4
   000fc	6b c8 00	 imul	 ecx, eax, 0
   000ff	8b 54 0d d8	 mov	 edx, DWORD PTR _cmd_array$[ebp+ecx]
@@ -482,19 +345,19 @@ $LN10@hx_main:
   0010c	85 c0		 test	 eax, eax
   0010e	75 1c		 jne	 SHORT $LN12@hx_main
 
-; 550  : 			{
-; 551  : 				/* 
-; 552  : 				 * Turn on the specified light,but we just turn on 
-; 553  : 				 * the first light in list,for simplicity.
-; 554  : 				 */
-; 555  : 				if (pLightObject)
+; 551  : 			{
+; 552  : 				/* 
+; 553  : 				 * Turn on the specified light,but we just turn on 
+; 554  : 				 * the first light in list,for simplicity.
+; 555  : 				 */
+; 556  : 				if (pLightObject)
 
   00110	83 3d 00 00 00
 	00 00		 cmp	 DWORD PTR _pLightObject, 0
   00117	74 0e		 je	 SHORT $LN14@hx_main
 
-; 556  : 				{
-; 557  : 					ToggleYlight(pLightObject);
+; 557  : 				{
+; 558  : 					ToggleYlight(pLightObject);
 
   00119	a1 00 00 00 00	 mov	 eax, DWORD PTR _pLightObject
   0011e	50		 push	 eax
@@ -502,15 +365,15 @@ $LN10@hx_main:
   00124	83 c4 04	 add	 esp, 4
 $LN14@hx_main:
 
-; 558  : 				}
-; 559  : 			}
+; 559  : 				}
+; 560  : 			}
 
   00127	e9 99 00 00 00	 jmp	 $LN7@hx_main
 $LN12@hx_main:
 
-; 560  : 			else if (strcmp(cmd_array[0], "turnoff") == 0)
+; 561  : 			else if (strcmp(cmd_array[0], "turnoff") == 0)
 
-  0012c	68 00 00 00 00	 push	 OFFSET ??_C@_07HAMHLJHA@turnoff?$AA@
+  0012c	68 00 00 00 00	 push	 OFFSET $SG5305
   00131	b9 04 00 00 00	 mov	 ecx, 4
   00136	6b d1 00	 imul	 edx, ecx, 0
   00139	8b 44 15 d8	 mov	 eax, DWORD PTR _cmd_array$[ebp+edx]
@@ -520,16 +383,16 @@ $LN12@hx_main:
   00146	85 c0		 test	 eax, eax
   00148	75 1a		 jne	 SHORT $LN15@hx_main
 
-; 561  : 			{
-; 562  : 				/* Turn off the first light. */
-; 563  : 				if (pLightObject)
+; 562  : 			{
+; 563  : 				/* Turn off the first light. */
+; 564  : 				if (pLightObject)
 
   0014a	83 3d 00 00 00
 	00 00		 cmp	 DWORD PTR _pLightObject, 0
   00151	74 0f		 je	 SHORT $LN17@hx_main
 
-; 564  : 				{
-; 565  : 					ToggleYlight(pLightObject);
+; 565  : 				{
+; 566  : 					ToggleYlight(pLightObject);
 
   00153	8b 0d 00 00 00
 	00		 mov	 ecx, DWORD PTR _pLightObject
@@ -538,15 +401,15 @@ $LN12@hx_main:
   0015f	83 c4 04	 add	 esp, 4
 $LN17@hx_main:
 
-; 566  : 				}
-; 567  : 			}
+; 567  : 				}
+; 568  : 			}
 
   00162	eb 61		 jmp	 SHORT $LN7@hx_main
 $LN15@hx_main:
 
-; 568  : 			else if (strcmp(cmd_array[0], "help") == 0)
+; 569  : 			else if (strcmp(cmd_array[0], "help") == 0)
 
-  00164	68 00 00 00 00	 push	 OFFSET ??_C@_04PCJFHION@help?$AA@
+  00164	68 00 00 00 00	 push	 OFFSET $SG5309
   00169	ba 04 00 00 00	 mov	 edx, 4
   0016e	6b c2 00	 imul	 eax, edx, 0
   00171	8b 4c 05 d8	 mov	 ecx, DWORD PTR _cmd_array$[ebp+eax]
@@ -556,68 +419,68 @@ $LN15@hx_main:
   0017e	85 c0		 test	 eax, eax
   00180	75 36		 jne	 SHORT $LN18@hx_main
 
-; 569  : 			{
-; 570  : 				/* Show help information. */
-; 571  : 				_hx_printf("  list    : Show out all found bulb(s).\r\n");
+; 570  : 			{
+; 571  : 				/* Show help information. */
+; 572  : 				_hx_printf("  list    : Show out all found bulb(s).\r\n");
 
-  00182	68 00 00 00 00	 push	 OFFSET ??_C@_0CK@NGFOKCMD@?5?5list?5?5?5?5?3?5Show?5out?5all?5found?5b@
+  00182	68 00 00 00 00	 push	 OFFSET $SG5310
   00187	e8 00 00 00 00	 call	 __hx_printf
   0018c	83 c4 04	 add	 esp, 4
 
-; 572  : 				_hx_printf("  turnon  : Turn on a specified bulb.\r\n");
+; 573  : 				_hx_printf("  turnon  : Turn on a specified bulb.\r\n");
 
-  0018f	68 00 00 00 00	 push	 OFFSET ??_C@_0CI@BDNJHNCO@?5?5turnon?5?5?3?5Turn?5on?5a?5specified?5@
+  0018f	68 00 00 00 00	 push	 OFFSET $SG5311
   00194	e8 00 00 00 00	 call	 __hx_printf
   00199	83 c4 04	 add	 esp, 4
 
-; 573  : 				_hx_printf("  turnoff : Turn off a specified bulb.\r\n");
+; 574  : 				_hx_printf("  turnoff : Turn off a specified bulb.\r\n");
 
-  0019c	68 00 00 00 00	 push	 OFFSET ??_C@_0CJ@LLFNANIG@?5?5turnoff?5?3?5Turn?5off?5a?5specified@
+  0019c	68 00 00 00 00	 push	 OFFSET $SG5312
   001a1	e8 00 00 00 00	 call	 __hx_printf
   001a6	83 c4 04	 add	 esp, 4
 
-; 574  : 				_hx_printf("  exit    : Exit the application.\r\n");
+; 575  : 				_hx_printf("  exit    : Exit the application.\r\n");
 
-  001a9	68 00 00 00 00	 push	 OFFSET ??_C@_0CE@OOIGHMBB@?5?5exit?5?5?5?5?3?5Exit?5the?5application@
+  001a9	68 00 00 00 00	 push	 OFFSET $SG5313
   001ae	e8 00 00 00 00	 call	 __hx_printf
   001b3	83 c4 04	 add	 esp, 4
 
-; 575  : 			}
+; 576  : 			}
 
   001b6	eb 0d		 jmp	 SHORT $LN7@hx_main
 $LN18@hx_main:
 
-; 576  : 			else
-; 577  : 			{
-; 578  : 				/* Unknown command. */
-; 579  : 				_hx_printf("  Unknown command.\r\n");
+; 577  : 			else
+; 578  : 			{
+; 579  : 				/* Unknown command. */
+; 580  : 				_hx_printf("  Unknown command.\r\n");
 
-  001b8	68 00 00 00 00	 push	 OFFSET ??_C@_0BF@MJDKECEM@?5?5Unknown?5command?4?$AN?6?$AA@
+  001b8	68 00 00 00 00	 push	 OFFSET $SG5314
   001bd	e8 00 00 00 00	 call	 __hx_printf
   001c2	83 c4 04	 add	 esp, 4
 $LN7@hx_main:
 
-; 580  : 			}
-; 581  : 		}
-; 582  : 	}
+; 581  : 			}
+; 582  : 		}
+; 583  : 	}
 
   001c5	e9 aa fe ff ff	 jmp	 $LN2@hx_main
 $__TERMINAL$23:
 
-; 583  : __TERMINAL:
-; 584  : 	if (hSearchThread)
+; 584  : __TERMINAL:
+; 585  : 	if (hSearchThread)
 
   001ca	83 7d fc 00	 cmp	 DWORD PTR _hSearchThread$[ebp], 0
   001ce	74 31		 je	 SHORT $LN4@hx_main
 
-; 585  : 	{
-; 586  : 		/* Notify the searching thread to exit. */
-; 587  : 		msg.wCommand = KERNEL_MESSAGE_TERMINAL;
+; 586  : 	{
+; 587  : 		/* Notify the searching thread to exit. */
+; 588  : 		msg.wCommand = KERNEL_MESSAGE_TERMINAL;
 
   001d0	ba 05 00 00 00	 mov	 edx, 5
   001d5	66 89 55 e8	 mov	 WORD PTR _msg$[ebp], dx
 
-; 588  : 		SendMessage(hSearchThread, &msg);
+; 589  : 		SendMessage(hSearchThread, &msg);
 
   001d9	8d 45 e8	 lea	 eax, DWORD PTR _msg$[ebp]
   001dc	50		 push	 eax
@@ -626,16 +489,16 @@ $__TERMINAL$23:
   001e1	e8 00 00 00 00	 call	 _SendMessage
   001e6	83 c4 08	 add	 esp, 8
 
-; 589  : 		/* Wait for the searching thread run over. */
-; 590  : 		WaitForThisObject(hSearchThread);
+; 590  : 		/* Wait for the searching thread run over. */
+; 591  : 		WaitForThisObject(hSearchThread);
 
   001e9	8b 55 fc	 mov	 edx, DWORD PTR _hSearchThread$[ebp]
   001ec	52		 push	 edx
   001ed	e8 00 00 00 00	 call	 _WaitForThisObject
   001f2	83 c4 04	 add	 esp, 4
 
-; 591  : 		/* Destroy it. */
-; 592  : 		DestroyKernelThread(hSearchThread);
+; 592  : 		/* Destroy it. */
+; 593  : 		DestroyKernelThread(hSearchThread);
 
   001f5	8b 45 fc	 mov	 eax, DWORD PTR _hSearchThread$[ebp]
   001f8	50		 push	 eax
@@ -643,38 +506,38 @@ $__TERMINAL$23:
   001fe	83 c4 04	 add	 esp, 4
 $LN4@hx_main:
 
-; 593  : 	}
-; 594  : 
-; 595  : 	/* Destroy all light object(s). */
-; 596  : 	while (pLightObject)
+; 594  : 	}
+; 595  : 
+; 596  : 	/* Destroy all light object(s). */
+; 597  : 	while (pLightObject)
 
   00201	83 3d 00 00 00
 	00 00		 cmp	 DWORD PTR _pLightObject, 0
   00208	74 3d		 je	 SHORT $LN5@hx_main
 
-; 597  : 	{
-; 598  : 		pLight = pLightObject;
+; 598  : 	{
+; 599  : 		pLight = pLightObject;
 
   0020a	8b 0d 00 00 00
 	00		 mov	 ecx, DWORD PTR _pLightObject
   00210	89 4d f8	 mov	 DWORD PTR _pLight$[ebp], ecx
 
-; 599  : 		pLightObject = pLightObject->pNext;
+; 600  : 		pLightObject = pLightObject->pNext;
 
   00213	8b 15 00 00 00
 	00		 mov	 edx, DWORD PTR _pLightObject
   00219	8b 42 30	 mov	 eax, DWORD PTR [edx+48]
   0021c	a3 00 00 00 00	 mov	 DWORD PTR _pLightObject, eax
 
-; 600  : 		/* Close socket if open. */
-; 601  : 		if (pLight->sock >= 0)
+; 601  : 		/* Close socket if open. */
+; 602  : 		if (pLight->sock >= 0)
 
   00221	8b 4d f8	 mov	 ecx, DWORD PTR _pLight$[ebp]
   00224	83 79 2c 00	 cmp	 DWORD PTR [ecx+44], 0
   00228	7c 0f		 jl	 SHORT $LN21@hx_main
 
-; 602  : 		{
-; 603  : 			close(pLight->sock);
+; 603  : 		{
+; 604  : 			close(pLight->sock);
 
   0022a	8b 55 f8	 mov	 edx, DWORD PTR _pLight$[ebp]
   0022d	8b 42 2c	 mov	 eax, DWORD PTR [edx+44]
@@ -683,25 +546,25 @@ $LN4@hx_main:
   00236	83 c4 04	 add	 esp, 4
 $LN21@hx_main:
 
-; 604  : 		}
-; 605  : 		_hx_free(pLight);
+; 605  : 		}
+; 606  : 		_hx_free(pLight);
 
   00239	8b 4d f8	 mov	 ecx, DWORD PTR _pLight$[ebp]
   0023c	51		 push	 ecx
   0023d	e8 00 00 00 00	 call	 __hx_free
   00242	83 c4 04	 add	 esp, 4
 
-; 606  : 	}
+; 607  : 	}
 
   00245	eb ba		 jmp	 SHORT $LN4@hx_main
 $LN5@hx_main:
 
-; 607  : 	
-; 608  : 	return 0;
+; 608  : 	
+; 609  : 	return 0;
 
   00247	33 c0		 xor	 eax, eax
 
-; 609  : }
+; 610  : }
 
   00249	8b e5		 mov	 esp, ebp
   0024b	5d		 pop	 ebp
@@ -726,13 +589,13 @@ _ret$ = -4						; size = 4
 _pData$ = 8						; size = 4
 _ylight_search PROC					; COMDAT
 
-; 362  : {
+; 363  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	83 ec 40	 sub	 esp, 64			; 00000040H
 
-; 363  : 	int s = -1, ret = -1, len = 0;
+; 364  : 	int s = -1, ret = -1, len = 0;
 
   00006	c7 45 f8 ff ff
 	ff ff		 mov	 DWORD PTR _s$[ebp], -1
@@ -741,27 +604,27 @@ _ylight_search PROC					; COMDAT
   00014	c7 45 ec 00 00
 	00 00		 mov	 DWORD PTR _len$[ebp], 0
 
-; 364  : 	int timeout = SSDP_WAIT_TIMEOUT;
+; 365  : 	int timeout = SSDP_WAIT_TIMEOUT;
 
   0001b	c7 45 e4 d0 07
 	00 00		 mov	 DWORD PTR _timeout$[ebp], 2000 ; 000007d0H
 
-; 365  : 	char* buf = NULL;
+; 366  : 	char* buf = NULL;
 
   00022	c7 45 f4 00 00
 	00 00		 mov	 DWORD PTR _buf$[ebp], 0
 
-; 366  : 	struct sockaddr_in gaddr;
-; 367  : 	struct in_addr ifaddr;
-; 368  : 	HANDLE hTimer = NULL;
+; 367  : 	struct sockaddr_in gaddr;
+; 368  : 	struct in_addr ifaddr;
+; 369  : 	HANDLE hTimer = NULL;
 
   00029	c7 45 f0 00 00
 	00 00		 mov	 DWORD PTR _hTimer$[ebp], 0
 
-; 369  : 	MSG msg;
-; 370  : 
-; 371  : 	/* Create the periodic timer that trigger light searching. */
-; 372  : 	hTimer = SetTimer(YLIGHT_PERIODIC_ID, SSDP_PERIODIC_TIME, NULL, NULL, TIMER_FLAGS_ALWAYS);
+; 370  : 	MSG msg;
+; 371  : 
+; 372  : 	/* Create the periodic timer that trigger light searching. */
+; 373  : 	hTimer = SetTimer(YLIGHT_PERIODIC_ID, SSDP_PERIODIC_TIME, NULL, NULL, TIMER_FLAGS_ALWAYS);
 
   00030	6a 02		 push	 2
   00032	6a 00		 push	 0
@@ -772,30 +635,30 @@ _ylight_search PROC					; COMDAT
   00045	83 c4 14	 add	 esp, 20			; 00000014H
   00048	89 45 f0	 mov	 DWORD PTR _hTimer$[ebp], eax
 
-; 373  : 	if (NULL == hTimer)
+; 374  : 	if (NULL == hTimer)
 
   0004b	83 7d f0 00	 cmp	 DWORD PTR _hTimer$[ebp], 0
   0004f	75 1c		 jne	 SHORT $LN6@ylight_sea
 
-; 374  : 	{
-; 375  : 		__LOG("Failed to set periodic timer object.\r\n");
+; 375  : 	{
+; 376  : 		__LOG("Failed to set periodic timer object.\r\n");
 
   00051	6a 00		 push	 0
   00053	e8 00 00 00 00	 call	 _LogHeader
   00058	83 c4 04	 add	 esp, 4
-  0005b	68 00 00 00 00	 push	 OFFSET ??_C@_0CH@CPEAOEE@Failed?5to?5set?5periodic?5timer?5obj@
+  0005b	68 00 00 00 00	 push	 OFFSET $SG5232
   00060	e8 00 00 00 00	 call	 __hx_printf
   00065	83 c4 04	 add	 esp, 4
 
-; 376  : 		goto __TERMINAL;
+; 377  : 		goto __TERMINAL;
 
   00068	e9 d8 02 00 00	 jmp	 $__TERMINAL$25
 $LN6@ylight_sea:
 
-; 377  : 	}
-; 378  : 
-; 379  : 	/* Create socket to receive multicast data. */
-; 380  : 	s = socket(AF_INET, SOCK_DGRAM, 0);
+; 378  : 	}
+; 379  : 
+; 380  : 	/* Create socket to receive multicast data. */
+; 381  : 	s = socket(AF_INET, SOCK_DGRAM, 0);
 
   0006d	6a 00		 push	 0
   0006f	6a 02		 push	 2
@@ -804,31 +667,31 @@ $LN6@ylight_sea:
   00078	83 c4 0c	 add	 esp, 12			; 0000000cH
   0007b	89 45 f8	 mov	 DWORD PTR _s$[ebp], eax
 
-; 381  : 	if (s < 0)
+; 382  : 	if (s < 0)
 
   0007e	83 7d f8 00	 cmp	 DWORD PTR _s$[ebp], 0
   00082	7d 21		 jge	 SHORT $LN7@ylight_sea
 
-; 382  : 	{
-; 383  : 		__LOG("%s:failed to create socket.\r\n", __FUNCTION__);
+; 383  : 	{
+; 384  : 		__LOG("%s:failed to create socket.\r\n", __FUNCTION__);
 
   00084	6a 00		 push	 0
   00086	e8 00 00 00 00	 call	 _LogHeader
   0008b	83 c4 04	 add	 esp, 4
-  0008e	68 00 00 00 00	 push	 OFFSET ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-  00093	68 00 00 00 00	 push	 OFFSET ??_C@_0BO@IGAGLHOP@?$CFs?3failed?5to?5create?5socket?4?$AN?6?$AA@
+  0008e	68 00 00 00 00	 push	 OFFSET $SG5234
+  00093	68 00 00 00 00	 push	 OFFSET $SG5235
   00098	e8 00 00 00 00	 call	 __hx_printf
   0009d	83 c4 08	 add	 esp, 8
 
-; 384  : 		goto __TERMINAL;
+; 385  : 		goto __TERMINAL;
 
   000a0	e9 a0 02 00 00	 jmp	 $__TERMINAL$25
 $LN7@ylight_sea:
 
-; 385  : 	}
-; 386  : 
-; 387  : 	/* Set timeout value for this socket. */
-; 388  : 	ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+; 386  : 	}
+; 387  : 
+; 388  : 	/* Set timeout value for this socket. */
+; 389  : 	ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
   000a5	6a 04		 push	 4
   000a7	8d 45 e4	 lea	 eax, DWORD PTR _timeout$[ebp]
@@ -841,38 +704,38 @@ $LN7@ylight_sea:
   000be	83 c4 14	 add	 esp, 20			; 00000014H
   000c1	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 389  : 	if (ret < 0)
+; 390  : 	if (ret < 0)
 
   000c4	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
   000c8	7d 21		 jge	 SHORT $LN8@ylight_sea
 
-; 390  : 	{
-; 391  : 		__LOG("%s:failed to set sock's timeout.\r\n", __FUNCTION__);
+; 391  : 	{
+; 392  : 		__LOG("%s:failed to set sock's timeout.\r\n", __FUNCTION__);
 
   000ca	6a 00		 push	 0
   000cc	e8 00 00 00 00	 call	 _LogHeader
   000d1	83 c4 04	 add	 esp, 4
-  000d4	68 00 00 00 00	 push	 OFFSET ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-  000d9	68 00 00 00 00	 push	 OFFSET ??_C@_0CD@GKFDFANO@?$CFs?3failed?5to?5set?5sock?8s?5timeout?4@
+  000d4	68 00 00 00 00	 push	 OFFSET $SG5237
+  000d9	68 00 00 00 00	 push	 OFFSET $SG5238
   000de	e8 00 00 00 00	 call	 __hx_printf
   000e3	83 c4 08	 add	 esp, 8
 
-; 392  : 		goto __TERMINAL;
+; 393  : 		goto __TERMINAL;
 
   000e6	e9 5a 02 00 00	 jmp	 $__TERMINAL$25
 $LN8@ylight_sea:
 
-; 393  : 	}
-; 394  : 
-; 395  : 	/* Set out going interface of this multicast socket. */
-; 396  : 	ifaddr.s_addr = inet_addr(SSDP_LAN_ADDR);
+; 394  : 	}
+; 395  : 
+; 396  : 	/* Set out going interface of this multicast socket. */
+; 397  : 	ifaddr.s_addr = inet_addr(SSDP_LAN_ADDR);
 
-  000eb	68 00 00 00 00	 push	 OFFSET ??_C@_0O@DPNDNAHN@192?4168?4169?41?$AA@
+  000eb	68 00 00 00 00	 push	 OFFSET $SG5239
   000f0	e8 00 00 00 00	 call	 _ipaddr_addr
   000f5	83 c4 04	 add	 esp, 4
   000f8	89 45 e0	 mov	 DWORD PTR _ifaddr$[ebp], eax
 
-; 397  : 	ret = setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr));
+; 398  : 	ret = setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr));
 
   000fb	6a 04		 push	 4
   000fd	8d 55 e0	 lea	 edx, DWORD PTR _ifaddr$[ebp]
@@ -885,46 +748,46 @@ $LN8@ylight_sea:
   0010e	83 c4 14	 add	 esp, 20			; 00000014H
   00111	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 398  : 	if (ret < 0)
+; 399  : 	if (ret < 0)
 
   00114	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
   00118	7d 21		 jge	 SHORT $LN9@ylight_sea
 
-; 399  : 	{
-; 400  : 		__LOG("%s:failed to set out going interface.\r\n", __FUNCTION__);
+; 400  : 	{
+; 401  : 		__LOG("%s:failed to set out going interface.\r\n", __FUNCTION__);
 
   0011a	6a 00		 push	 0
   0011c	e8 00 00 00 00	 call	 _LogHeader
   00121	83 c4 04	 add	 esp, 4
-  00124	68 00 00 00 00	 push	 OFFSET ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-  00129	68 00 00 00 00	 push	 OFFSET ??_C@_0CI@KJBPHAMN@?$CFs?3failed?5to?5set?5out?5going?5inter@
+  00124	68 00 00 00 00	 push	 OFFSET $SG5241
+  00129	68 00 00 00 00	 push	 OFFSET $SG5242
   0012e	e8 00 00 00 00	 call	 __hx_printf
   00133	83 c4 08	 add	 esp, 8
 
-; 401  : 		goto __TERMINAL;
+; 402  : 		goto __TERMINAL;
 
   00136	e9 0a 02 00 00	 jmp	 $__TERMINAL$25
 $LN9@ylight_sea:
 
-; 402  : 	}
-; 403  : 
-; 404  : 	/* Join the multicase group. */
-; 405  : 	struct ip_mreq mreq;
-; 406  : 	mreq.imr_interface.s_addr = _hx_htonl(INADDR_ANY);
+; 403  : 	}
+; 404  : 
+; 405  : 	/* Join the multicase group. */
+; 406  : 	struct ip_mreq mreq;
+; 407  : 	mreq.imr_interface.s_addr = _hx_htonl(INADDR_ANY);
 
   0013b	6a 00		 push	 0
   0013d	e8 00 00 00 00	 call	 __hx_htonl
   00142	83 c4 04	 add	 esp, 4
   00145	89 45 dc	 mov	 DWORD PTR _mreq$[ebp+4], eax
 
-; 407  : 	mreq.imr_multiaddr.s_addr = inet_addr(SSDP_DEST_ADDR);
+; 408  : 	mreq.imr_multiaddr.s_addr = inet_addr(SSDP_DEST_ADDR);
 
-  00148	68 00 00 00 00	 push	 OFFSET ??_C@_0BA@CBMJEEJH@239?4255?4255?4250?$AA@
+  00148	68 00 00 00 00	 push	 OFFSET $SG5243
   0014d	e8 00 00 00 00	 call	 _ipaddr_addr
   00152	83 c4 04	 add	 esp, 4
   00155	89 45 d8	 mov	 DWORD PTR _mreq$[ebp], eax
 
-; 408  : 	ret = setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
+; 409  : 	ret = setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
 
   00158	6a 08		 push	 8
   0015a	8d 4d d8	 lea	 ecx, DWORD PTR _mreq$[ebp]
@@ -937,51 +800,51 @@ $LN9@ylight_sea:
   0016b	83 c4 14	 add	 esp, 20			; 00000014H
   0016e	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 409  : 	if (ret < 0)
+; 410  : 	if (ret < 0)
 
   00171	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
   00175	7d 25		 jge	 SHORT $LN10@ylight_sea
 
-; 410  : 	{
-; 411  : 		__LOG("%s:failed to join multicast group,err = %d.\r\n", __FUNCTION__, ret);
+; 411  : 	{
+; 412  : 		__LOG("%s:failed to join multicast group,err = %d.\r\n", __FUNCTION__, ret);
 
   00177	6a 00		 push	 0
   00179	e8 00 00 00 00	 call	 _LogHeader
   0017e	83 c4 04	 add	 esp, 4
   00181	8b 45 fc	 mov	 eax, DWORD PTR _ret$[ebp]
   00184	50		 push	 eax
-  00185	68 00 00 00 00	 push	 OFFSET ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-  0018a	68 00 00 00 00	 push	 OFFSET ??_C@_0CO@KGNPGLJH@?$CFs?3failed?5to?5join?5multicast?5grou@
+  00185	68 00 00 00 00	 push	 OFFSET $SG5245
+  0018a	68 00 00 00 00	 push	 OFFSET $SG5246
   0018f	e8 00 00 00 00	 call	 __hx_printf
   00194	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 412  : 		goto __TERMINAL;
+; 413  : 		goto __TERMINAL;
 
   00197	e9 a9 01 00 00	 jmp	 $__TERMINAL$25
 $LN10@ylight_sea:
 
-; 413  : 	}
-; 414  : 
-; 415  : 	/* Bind to multicast group address. */
-; 416  : 	gaddr.sin_family = AF_INET;
+; 414  : 	}
+; 415  : 
+; 416  : 	/* Bind to multicast group address. */
+; 417  : 	gaddr.sin_family = AF_INET;
 
   0019c	c6 45 c1 02	 mov	 BYTE PTR _gaddr$[ebp+1], 2
 
-; 417  : 	gaddr.sin_port = _hx_htons(SSDP_DEST_PORT);
+; 418  : 	gaddr.sin_port = _hx_htons(SSDP_DEST_PORT);
 
   001a0	68 be 07 00 00	 push	 1982			; 000007beH
   001a5	e8 00 00 00 00	 call	 __hx_htons
   001aa	83 c4 04	 add	 esp, 4
   001ad	66 89 45 c2	 mov	 WORD PTR _gaddr$[ebp+2], ax
 
-; 418  : 	gaddr.sin_addr.s_addr = _hx_htonl(INADDR_ANY);
+; 419  : 	gaddr.sin_addr.s_addr = _hx_htonl(INADDR_ANY);
 
   001b1	6a 00		 push	 0
   001b3	e8 00 00 00 00	 call	 __hx_htonl
   001b8	83 c4 04	 add	 esp, 4
   001bb	89 45 c4	 mov	 DWORD PTR _gaddr$[ebp+4], eax
 
-; 419  : 	memset(gaddr.sin_zero, 0, sizeof(gaddr.sin_zero));
+; 420  : 	memset(gaddr.sin_zero, 0, sizeof(gaddr.sin_zero));
 
   001be	6a 08		 push	 8
   001c0	6a 00		 push	 0
@@ -990,7 +853,7 @@ $LN10@ylight_sea:
   001c6	e8 00 00 00 00	 call	 _memset
   001cb	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 420  : 	ret = bind(s, (struct sockaddr*)&gaddr, sizeof(gaddr));
+; 421  : 	ret = bind(s, (struct sockaddr*)&gaddr, sizeof(gaddr));
 
   001ce	6a 10		 push	 16			; 00000010H
   001d0	8d 55 c0	 lea	 edx, DWORD PTR _gaddr$[ebp]
@@ -1001,58 +864,58 @@ $LN10@ylight_sea:
   001dd	83 c4 0c	 add	 esp, 12			; 0000000cH
   001e0	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 421  : 	if (ret < 0)
+; 422  : 	if (ret < 0)
 
   001e3	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
   001e7	7d 21		 jge	 SHORT $LN11@ylight_sea
 
-; 422  : 	{
-; 423  : 		__LOG("%s:failed to bind to local interface.\r\n", __FUNCTION__);
+; 423  : 	{
+; 424  : 		__LOG("%s:failed to bind to local interface.\r\n", __FUNCTION__);
 
   001e9	6a 00		 push	 0
   001eb	e8 00 00 00 00	 call	 _LogHeader
   001f0	83 c4 04	 add	 esp, 4
-  001f3	68 00 00 00 00	 push	 OFFSET ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-  001f8	68 00 00 00 00	 push	 OFFSET ??_C@_0CI@PENFDHGF@?$CFs?3failed?5to?5bind?5to?5local?5inter@
+  001f3	68 00 00 00 00	 push	 OFFSET $SG5248
+  001f8	68 00 00 00 00	 push	 OFFSET $SG5249
   001fd	e8 00 00 00 00	 call	 __hx_printf
   00202	83 c4 08	 add	 esp, 8
 
-; 424  : 		goto __TERMINAL;
+; 425  : 		goto __TERMINAL;
 
   00205	e9 3b 01 00 00	 jmp	 $__TERMINAL$25
 $LN11@ylight_sea:
 
-; 425  : 	}
-; 426  : 
-; 427  : 	/* Allocate data buffer for this socket. */
-; 428  : 	buf = _hx_malloc(1500);
+; 426  : 	}
+; 427  : 
+; 428  : 	/* Allocate data buffer for this socket. */
+; 429  : 	buf = _hx_malloc(1500);
 
   0020a	68 dc 05 00 00	 push	 1500			; 000005dcH
   0020f	e8 00 00 00 00	 call	 __hx_malloc
   00214	83 c4 04	 add	 esp, 4
   00217	89 45 f4	 mov	 DWORD PTR _buf$[ebp], eax
 
-; 429  : 	if (NULL == buf)
+; 430  : 	if (NULL == buf)
 
   0021a	83 7d f4 00	 cmp	 DWORD PTR _buf$[ebp], 0
   0021e	75 05		 jne	 SHORT $LN2@ylight_sea
 
-; 430  : 	{
-; 431  : 		goto __TERMINAL;
+; 431  : 	{
+; 432  : 		goto __TERMINAL;
 
   00220	e9 20 01 00 00	 jmp	 $__TERMINAL$25
 $LN2@ylight_sea:
 
-; 432  : 	}
-; 433  : 	/* Main message loop. */
-; 434  : 	while (TRUE)
+; 433  : 	}
+; 434  : 	/* Main message loop. */
+; 435  : 	while (TRUE)
 
   00225	83 c9 ff	 or	 ecx, -1
   00228	0f 84 17 01 00
 	00		 je	 $__TERMINAL$25
 
-; 435  : 	{
-; 436  : 		if (GetMessage(&msg))
+; 436  : 	{
+; 437  : 		if (GetMessage(&msg))
 
   0022e	8d 55 d0	 lea	 edx, DWORD PTR _msg$[ebp]
   00231	52		 push	 edx
@@ -1062,8 +925,8 @@ $LN2@ylight_sea:
   0023c	0f 84 fe 00 00
 	00		 je	 $LN13@ylight_sea
 
-; 437  : 		{
-; 438  : 			switch (msg.wCommand)
+; 438  : 		{
+; 439  : 			switch (msg.wCommand)
 
   00242	0f b7 45 d0	 movzx	 eax, WORD PTR _msg$[ebp]
   00246	89 45 e8	 mov	 DWORD PTR tv173[ebp], eax
@@ -1075,36 +938,36 @@ $LN2@ylight_sea:
   00259	e9 e2 00 00 00	 jmp	 $LN13@ylight_sea
 $LN14@ylight_sea:
 
-; 439  : 			{
-; 440  : 			case KERNEL_MESSAGE_TIMER:
-; 441  : 				/*
-; 442  : 				* Search all WiFi bulbs in local network,send out a request to
-; 443  : 				* multicast address to trigger the bulbs to response our request.
-; 444  : 				*/
-; 445  : 				len = sizeof(gaddr);
+; 440  : 			{
+; 441  : 			case KERNEL_MESSAGE_TIMER:
+; 442  : 				/*
+; 443  : 				* Search all WiFi bulbs in local network,send out a request to
+; 444  : 				* multicast address to trigger the bulbs to response our request.
+; 445  : 				*/
+; 446  : 				len = sizeof(gaddr);
 
   0025e	c7 45 ec 10 00
 	00 00		 mov	 DWORD PTR _len$[ebp], 16 ; 00000010H
 
-; 446  : 				gaddr.sin_family = AF_INET;
+; 447  : 				gaddr.sin_family = AF_INET;
 
   00265	c6 45 c1 02	 mov	 BYTE PTR _gaddr$[ebp+1], 2
 
-; 447  : 				gaddr.sin_port = _hx_htons(SSDP_DEST_PORT);
+; 448  : 				gaddr.sin_port = _hx_htons(SSDP_DEST_PORT);
 
   00269	68 be 07 00 00	 push	 1982			; 000007beH
   0026e	e8 00 00 00 00	 call	 __hx_htons
   00273	83 c4 04	 add	 esp, 4
   00276	66 89 45 c2	 mov	 WORD PTR _gaddr$[ebp+2], ax
 
-; 448  : 				gaddr.sin_addr.s_addr = inet_addr(SSDP_DEST_ADDR);
+; 449  : 				gaddr.sin_addr.s_addr = inet_addr(SSDP_DEST_ADDR);
 
-  0027a	68 00 00 00 00	 push	 OFFSET ??_C@_0BA@CBMJEEJH@239?4255?4255?4250?$AA@
+  0027a	68 00 00 00 00	 push	 OFFSET $SG5253
   0027f	e8 00 00 00 00	 call	 _ipaddr_addr
   00284	83 c4 04	 add	 esp, 4
   00287	89 45 c4	 mov	 DWORD PTR _gaddr$[ebp+4], eax
 
-; 449  : 				memset(gaddr.sin_zero, 0, sizeof(gaddr.sin_zero));
+; 450  : 				memset(gaddr.sin_zero, 0, sizeof(gaddr.sin_zero));
 
   0028a	6a 08		 push	 8
   0028c	6a 00		 push	 0
@@ -1113,15 +976,15 @@ $LN14@ylight_sea:
   00292	e8 00 00 00 00	 call	 _memset
   00297	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 450  : 				strcpy(buf, SSDP_REQ_CMD);
+; 451  : 				strcpy(buf, SSDP_REQ_CMD);
 
-  0029a	68 00 00 00 00	 push	 OFFSET ??_C@_0FF@FBGGPKPL@M?9SEARCH?5?$CK?5HTTP?11?41?$AN?6HOST?3?5239?42@
+  0029a	68 00 00 00 00	 push	 OFFSET $SG5254
   0029f	8b 55 f4	 mov	 edx, DWORD PTR _buf$[ebp]
   002a2	52		 push	 edx
   002a3	e8 00 00 00 00	 call	 _strcpy
   002a8	83 c4 08	 add	 esp, 8
 
-; 451  : 				ret = sendto(s, buf, strlen(buf), 0, (struct sockaddr*)&gaddr, len);
+; 452  : 				ret = sendto(s, buf, strlen(buf), 0, (struct sockaddr*)&gaddr, len);
 
   002ab	8b 45 ec	 mov	 eax, DWORD PTR _len$[ebp]
   002ae	50		 push	 eax
@@ -1141,33 +1004,33 @@ $LN14@ylight_sea:
   002cf	83 c4 18	 add	 esp, 24			; 00000018H
   002d2	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 452  : 				if (ret < 0)
+; 453  : 				if (ret < 0)
 
   002d5	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
   002d9	7d 1e		 jge	 SHORT $LN16@ylight_sea
 
-; 453  : 				{
-; 454  : 					__LOG("%s:failed to send request.\r\n", __FUNCTION__);
+; 454  : 				{
+; 455  : 					__LOG("%s:failed to send request.\r\n", __FUNCTION__);
 
   002db	6a 00		 push	 0
   002dd	e8 00 00 00 00	 call	 _LogHeader
   002e2	83 c4 04	 add	 esp, 4
-  002e5	68 00 00 00 00	 push	 OFFSET ??_C@_0O@NGDBLNOO@ylight_search?$AA@
-  002ea	68 00 00 00 00	 push	 OFFSET ??_C@_0BN@FNGCAHAH@?$CFs?3failed?5to?5send?5request?4?$AN?6?$AA@
+  002e5	68 00 00 00 00	 push	 OFFSET $SG5257
+  002ea	68 00 00 00 00	 push	 OFFSET $SG5258
   002ef	e8 00 00 00 00	 call	 __hx_printf
   002f4	83 c4 08	 add	 esp, 8
 
-; 455  : 					goto __TERMINAL;
+; 456  : 					goto __TERMINAL;
 
   002f7	eb 4c		 jmp	 SHORT $__TERMINAL$25
 $LN16@ylight_sea:
 
-; 456  : 				}
-; 457  : 				else
-; 458  : 				{
-; 459  : 					//_hx_printf("%s:send %d bytes out with multicast.\r\n", __FUNCTION__, ret);
-; 460  : 				}
-; 461  : 				ret = recvfrom(s, buf, 1500, 0, (struct sockaddr*)&gaddr, &len);
+; 457  : 				}
+; 458  : 				else
+; 459  : 				{
+; 460  : 					//_hx_printf("%s:send %d bytes out with multicast.\r\n", __FUNCTION__, ret);
+; 461  : 				}
+; 462  : 				ret = recvfrom(s, buf, 1500, 0, (struct sockaddr*)&gaddr, &len);
 
   002f9	8d 55 ec	 lea	 edx, DWORD PTR _len$[ebp]
   002fc	52		 push	 edx
@@ -1183,31 +1046,31 @@ $LN16@ylight_sea:
   00315	83 c4 18	 add	 esp, 24			; 00000018H
   00318	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 462  : 				if (ret < 0)
+; 463  : 				if (ret < 0)
 
   0031b	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
   0031f	7d 02		 jge	 SHORT $LN17@ylight_sea
 
-; 463  : 				{
-; 464  : 					//_hx_printf("%s:failed to receive data from socket[ret=%d].\r\n", __FUNCTION__,
-; 465  : 					//	ret);
-; 466  : 				}
+; 464  : 				{
+; 465  : 					//_hx_printf("%s:failed to receive data from socket[ret=%d].\r\n", __FUNCTION__,
+; 466  : 					//	ret);
+; 467  : 				}
 
   00321	eb 19		 jmp	 SHORT $LN18@ylight_sea
 $LN17@ylight_sea:
 
-; 467  : 				else
-; 468  : 				{
-; 469  : 					//_hx_printf("Recived [%d] byte(s) data from[%s:%d].\r\n", ret,
-; 470  : 					//	inet_ntoa(gaddr.sin_addr.s_addr),
-; 471  : 					//	_hx_htons(gaddr.sin_port));
-; 472  : 					buf[ret] = 0; /* Set terminator of the string. */
+; 468  : 				else
+; 469  : 				{
+; 470  : 					//_hx_printf("Recived [%d] byte(s) data from[%s:%d].\r\n", ret,
+; 471  : 					//	inet_ntoa(gaddr.sin_addr.s_addr),
+; 472  : 					//	_hx_htons(gaddr.sin_port));
+; 473  : 					buf[ret] = 0; /* Set terminator of the string. */
 
   00323	8b 45 f4	 mov	 eax, DWORD PTR _buf$[ebp]
   00326	03 45 fc	 add	 eax, DWORD PTR _ret$[ebp]
   00329	c6 00 00	 mov	 BYTE PTR [eax], 0
 
-; 473  : 					ParseResponse(buf, ret);
+; 474  : 					ParseResponse(buf, ret);
 
   0032c	8b 4d fc	 mov	 ecx, DWORD PTR _ret$[ebp]
   0032f	51		 push	 ecx
@@ -1217,37 +1080,37 @@ $LN17@ylight_sea:
   00339	83 c4 08	 add	 esp, 8
 $LN18@ylight_sea:
 
-; 474  : 				}
-; 475  : 				break;
+; 475  : 				}
+; 476  : 				break;
 
   0033c	eb 02		 jmp	 SHORT $LN13@ylight_sea
 $LN19@ylight_sea:
 
-; 476  : 			case KERNEL_MESSAGE_TERMINAL:
-; 477  : 				goto __TERMINAL;
+; 477  : 			case KERNEL_MESSAGE_TERMINAL:
+; 478  : 				goto __TERMINAL;
 
   0033e	eb 05		 jmp	 SHORT $__TERMINAL$25
 $LN13@ylight_sea:
 
-; 478  : 			default:
-; 479  : 				break;
-; 480  : 			}
-; 481  : 		}
-; 482  : 	}
+; 479  : 			default:
+; 480  : 				break;
+; 481  : 			}
+; 482  : 		}
+; 483  : 	}
 
   00340	e9 e0 fe ff ff	 jmp	 $LN2@ylight_sea
 $__TERMINAL$25:
 
-; 483  : 
-; 484  : __TERMINAL:
-; 485  : 	{
-; 486  : 		if (hTimer)
+; 484  : 
+; 485  : __TERMINAL:
+; 486  : 	{
+; 487  : 		if (hTimer)
 
   00345	83 7d f0 00	 cmp	 DWORD PTR _hTimer$[ebp], 0
   00349	74 0c		 je	 SHORT $LN21@ylight_sea
 
-; 487  : 		{
-; 488  : 			CancelTimer(hTimer);
+; 488  : 		{
+; 489  : 			CancelTimer(hTimer);
 
   0034b	8b 45 f0	 mov	 eax, DWORD PTR _hTimer$[ebp]
   0034e	50		 push	 eax
@@ -1255,14 +1118,14 @@ $__TERMINAL$25:
   00354	83 c4 04	 add	 esp, 4
 $LN21@ylight_sea:
 
-; 489  : 		}
-; 490  : 		if (s > 0)
+; 490  : 		}
+; 491  : 		if (s > 0)
 
   00357	83 7d f8 00	 cmp	 DWORD PTR _s$[ebp], 0
   0035b	7e 0c		 jle	 SHORT $LN22@ylight_sea
 
-; 491  : 		{
-; 492  : 			close(s);
+; 492  : 		{
+; 493  : 			close(s);
 
   0035d	8b 4d f8	 mov	 ecx, DWORD PTR _s$[ebp]
   00360	51		 push	 ecx
@@ -1270,14 +1133,14 @@ $LN21@ylight_sea:
   00366	83 c4 04	 add	 esp, 4
 $LN22@ylight_sea:
 
-; 493  : 		}
-; 494  : 		if (buf)
+; 494  : 		}
+; 495  : 		if (buf)
 
   00369	83 7d f4 00	 cmp	 DWORD PTR _buf$[ebp], 0
   0036d	74 0c		 je	 SHORT $LN23@ylight_sea
 
-; 495  : 		{
-; 496  : 			_hx_free(buf);
+; 496  : 		{
+; 497  : 			_hx_free(buf);
 
   0036f	8b 55 f4	 mov	 edx, DWORD PTR _buf$[ebp]
   00372	52		 push	 edx
@@ -1285,13 +1148,13 @@ $LN22@ylight_sea:
   00378	83 c4 04	 add	 esp, 4
 $LN23@ylight_sea:
 
-; 497  : 		}
-; 498  : 	}
-; 499  : 	return 0;
+; 498  : 		}
+; 499  : 	}
+; 500  : 	return 0;
 
   0037b	33 c0		 xor	 eax, eax
 
-; 500  : }
+; 501  : }
 
   0037d	8b e5		 mov	 esp, ebp
   0037f	5d		 pop	 ebp
@@ -1312,29 +1175,29 @@ _pRespMsg$ = 8						; size = 4
 _msglen$ = 12						; size = 4
 _ParseResponse PROC					; COMDAT
 
-; 261  : {
+; 262  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	83 ec 18	 sub	 esp, 24			; 00000018H
 
-; 262  : 	char* charbuff = NULL;
+; 263  : 	char* charbuff = NULL;
 
   00006	c7 45 ec 00 00
 	00 00		 mov	 DWORD PTR _charbuff$[ebp], 0
 
-; 263  : 	struct yeelight_object* pLight = NULL;
+; 264  : 	struct yeelight_object* pLight = NULL;
 
   0000d	c7 45 fc 00 00
 	00 00		 mov	 DWORD PTR _pLight$[ebp], 0
 
-; 264  : 	BOOL bResult = FALSE;
+; 265  : 	BOOL bResult = FALSE;
 
   00014	c7 45 e8 00 00
 	00 00		 mov	 DWORD PTR _bResult$[ebp], 0
 
-; 265  : 
-; 266  : 	charbuff = _hx_malloc(msglen + 1);
+; 266  : 
+; 267  : 	charbuff = _hx_malloc(msglen + 1);
 
   0001b	8b 45 0c	 mov	 eax, DWORD PTR _msglen$[ebp]
   0001e	83 c0 01	 add	 eax, 1
@@ -1343,19 +1206,19 @@ _ParseResponse PROC					; COMDAT
   00027	83 c4 04	 add	 esp, 4
   0002a	89 45 ec	 mov	 DWORD PTR _charbuff$[ebp], eax
 
-; 267  : 	if (NULL == charbuff)
+; 268  : 	if (NULL == charbuff)
 
   0002d	83 7d ec 00	 cmp	 DWORD PTR _charbuff$[ebp], 0
   00031	75 05		 jne	 SHORT $LN6@ParseRespo
 
-; 268  : 	{
-; 269  : 		goto __TERMINAL;
+; 269  : 	{
+; 270  : 		goto __TERMINAL;
 
   00033	e9 ae 01 00 00	 jmp	 $__TERMINAL$19
 $LN6@ParseRespo:
 
-; 270  : 	}
-; 271  : 	strcpy(charbuff, pRespMsg);
+; 271  : 	}
+; 272  : 	strcpy(charbuff, pRespMsg);
 
   00038	8b 4d 08	 mov	 ecx, DWORD PTR _pRespMsg$[ebp]
   0003b	51		 push	 ecx
@@ -1364,21 +1227,21 @@ $LN6@ParseRespo:
   00040	e8 00 00 00 00	 call	 _strcpy
   00045	83 c4 08	 add	 esp, 8
 
-; 272  : 	char* line = strtok(charbuff, "\r\n");
+; 273  : 	char* line = strtok(charbuff, "\r\n");
 
-  00048	68 00 00 00 00	 push	 OFFSET ??_C@_02PCIJFNDE@?$AN?6?$AA@
+  00048	68 00 00 00 00	 push	 OFFSET $SG5183
   0004d	8b 45 ec	 mov	 eax, DWORD PTR _charbuff$[ebp]
   00050	50		 push	 eax
   00051	e8 00 00 00 00	 call	 _strtok
   00056	83 c4 08	 add	 esp, 8
   00059	89 45 f4	 mov	 DWORD PTR _line$[ebp], eax
 
-; 273  : 	char* value = NULL;
+; 274  : 	char* value = NULL;
 
   0005c	c7 45 f8 00 00
 	00 00		 mov	 DWORD PTR _value$[ebp], 0
 
-; 274  : 	if (line && (0 == strcmp(line, okmsg)))
+; 275  : 	if (line && (0 == strcmp(line, okmsg)))
 
   00063	83 7d f4 00	 cmp	 DWORD PTR _line$[ebp], 0
   00067	0f 84 ef 00 00
@@ -1394,19 +1257,19 @@ $LN6@ParseRespo:
   00082	0f 85 d4 00 00
 	00		 jne	 $LN7@ParseRespo
 
-; 275  : 	{
-; 276  : 		/*
-; 277  : 		* Got a valid response,create a new light object
-; 278  : 		* to hold values derived from this response.
-; 279  : 		*/
-; 280  : 		pLight = (struct yeelight_object*)_hx_malloc(sizeof(struct yeelight_object));
+; 276  : 	{
+; 277  : 		/*
+; 278  : 		* Got a valid response,create a new light object
+; 279  : 		* to hold values derived from this response.
+; 280  : 		*/
+; 281  : 		pLight = (struct yeelight_object*)_hx_malloc(sizeof(struct yeelight_object));
 
   00088	6a 34		 push	 52			; 00000034H
   0008a	e8 00 00 00 00	 call	 __hx_malloc
   0008f	83 c4 04	 add	 esp, 4
   00092	89 45 fc	 mov	 DWORD PTR _pLight$[ebp], eax
 
-; 281  : 		memset(pLight, 0, sizeof(struct yeelight_object));
+; 282  : 		memset(pLight, 0, sizeof(struct yeelight_object));
 
   00095	6a 34		 push	 52			; 00000034H
   00097	6a 00		 push	 0
@@ -1415,48 +1278,48 @@ $LN6@ParseRespo:
   0009d	e8 00 00 00 00	 call	 _memset
   000a2	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 282  : 		pLight->sock = -1; /* No socket opened yet. */
+; 283  : 		pLight->sock = -1; /* No socket opened yet. */
 
   000a5	8b 4d fc	 mov	 ecx, DWORD PTR _pLight$[ebp]
   000a8	c7 41 2c ff ff
 	ff ff		 mov	 DWORD PTR [ecx+44], -1
 
-; 283  : 		if (NULL == pLight)
+; 284  : 		if (NULL == pLight)
 
   000af	83 7d fc 00	 cmp	 DWORD PTR _pLight$[ebp], 0
   000b3	75 05		 jne	 SHORT $LN2@ParseRespo
 
-; 284  : 		{
-; 285  : 			goto __TERMINAL;
+; 285  : 		{
+; 286  : 			goto __TERMINAL;
 
   000b5	e9 2c 01 00 00	 jmp	 $__TERMINAL$19
 $LN2@ParseRespo:
 
-; 286  : 		}
-; 287  : 		while (line)
+; 287  : 		}
+; 288  : 		while (line)
 
   000ba	83 7d f4 00	 cmp	 DWORD PTR _line$[ebp], 0
   000be	0f 84 98 00 00
 	00		 je	 $LN7@ParseRespo
 
-; 288  : 		{
-; 289  : 			value = getvalue(line, "Location");
+; 289  : 		{
+; 290  : 			value = getvalue(line, "Location");
 
-  000c4	68 00 00 00 00	 push	 OFFSET ??_C@_08KDOEBHGA@Location?$AA@
+  000c4	68 00 00 00 00	 push	 OFFSET $SG5186
   000c9	8b 55 f4	 mov	 edx, DWORD PTR _line$[ebp]
   000cc	52		 push	 edx
   000cd	e8 00 00 00 00	 call	 _getvalue
   000d2	83 c4 08	 add	 esp, 8
   000d5	89 45 f8	 mov	 DWORD PTR _value$[ebp], eax
 
-; 290  : 			if (value)
+; 291  : 			if (value)
 
   000d8	83 7d f8 00	 cmp	 DWORD PTR _value$[ebp], 0
   000dc	74 13		 je	 SHORT $LN9@ParseRespo
 
-; 291  : 			{
-; 292  : 				/* Obtain the light's IP address and port,fill into light object. */
-; 293  : 				GetSocketFromLocation(value, &pLight->socket);
+; 292  : 			{
+; 293  : 				/* Obtain the light's IP address and port,fill into light object. */
+; 294  : 				GetSocketFromLocation(value, &pLight->socket);
 
   000de	8b 45 fc	 mov	 eax, DWORD PTR _pLight$[ebp]
   000e1	83 c0 18	 add	 eax, 24			; 00000018H
@@ -1467,23 +1330,23 @@ $LN2@ParseRespo:
   000ee	83 c4 08	 add	 esp, 8
 $LN9@ParseRespo:
 
-; 294  : 			}
-; 295  : 			value = getvalue(line, "id");
+; 295  : 			}
+; 296  : 			value = getvalue(line, "id");
 
-  000f1	68 00 00 00 00	 push	 OFFSET ??_C@_02EGCJHIOB@id?$AA@
+  000f1	68 00 00 00 00	 push	 OFFSET $SG5188
   000f6	8b 55 f4	 mov	 edx, DWORD PTR _line$[ebp]
   000f9	52		 push	 edx
   000fa	e8 00 00 00 00	 call	 _getvalue
   000ff	83 c4 08	 add	 esp, 8
   00102	89 45 f8	 mov	 DWORD PTR _value$[ebp], eax
 
-; 296  : 			if (value)
+; 297  : 			if (value)
 
   00105	83 7d f8 00	 cmp	 DWORD PTR _value$[ebp], 0
   00109	74 26		 je	 SHORT $LN10@ParseRespo
 
-; 297  : 			{
-; 298  : 				if (strlen(value) > LIGHT_ID_LENGTH) /* Invalid ID value. */
+; 298  : 			{
+; 299  : 				if (strlen(value) > LIGHT_ID_LENGTH) /* Invalid ID value. */
 
   0010b	8b 45 f8	 mov	 eax, DWORD PTR _value$[ebp]
   0010e	50		 push	 eax
@@ -1492,15 +1355,15 @@ $LN9@ParseRespo:
   00117	83 f8 14	 cmp	 eax, 20			; 00000014H
   0011a	7e 05		 jle	 SHORT $LN11@ParseRespo
 
-; 299  : 				{
-; 300  : 					goto __TERMINAL;
+; 300  : 				{
+; 301  : 					goto __TERMINAL;
 
   0011c	e9 c5 00 00 00	 jmp	 $__TERMINAL$19
 $LN11@ParseRespo:
 
-; 301  : 				}
-; 302  : 				/* Save ID to light object. */
-; 303  : 				strcpy(pLight->id, value);
+; 302  : 				}
+; 303  : 				/* Save ID to light object. */
+; 304  : 				strcpy(pLight->id, value);
 
   00121	8b 4d f8	 mov	 ecx, DWORD PTR _value$[ebp]
   00124	51		 push	 ecx
@@ -1510,60 +1373,60 @@ $LN11@ParseRespo:
   0012e	83 c4 08	 add	 esp, 8
 $LN10@ParseRespo:
 
-; 304  : 			}
-; 305  : 			value = getvalue(line, "name");
+; 305  : 			}
+; 306  : 			value = getvalue(line, "name");
 
-  00131	68 00 00 00 00	 push	 OFFSET ??_C@_04MEMAJGDJ@name?$AA@
+  00131	68 00 00 00 00	 push	 OFFSET $SG5191
   00136	8b 45 f4	 mov	 eax, DWORD PTR _line$[ebp]
   00139	50		 push	 eax
   0013a	e8 00 00 00 00	 call	 _getvalue
   0013f	83 c4 08	 add	 esp, 8
   00142	89 45 f8	 mov	 DWORD PTR _value$[ebp], eax
 
-; 306  : 			if (value)
-; 307  : 			{
-; 308  : 				/* Save bulb name. */
-; 309  : 			}
-; 310  : 			line = strtok(NULL, "\r\n");
+; 307  : 			if (value)
+; 308  : 			{
+; 309  : 				/* Save bulb name. */
+; 310  : 			}
+; 311  : 			line = strtok(NULL, "\r\n");
 
-  00145	68 00 00 00 00	 push	 OFFSET ??_C@_02PCIJFNDE@?$AN?6?$AA@
+  00145	68 00 00 00 00	 push	 OFFSET $SG5193
   0014a	6a 00		 push	 0
   0014c	e8 00 00 00 00	 call	 _strtok
   00151	83 c4 08	 add	 esp, 8
   00154	89 45 f4	 mov	 DWORD PTR _line$[ebp], eax
 
-; 311  : 		}
+; 312  : 		}
 
   00157	e9 5e ff ff ff	 jmp	 $LN2@ParseRespo
 $LN7@ParseRespo:
 
-; 312  : 	}
-; 313  : 	/* Check if the response is from a known light. */
-; 314  : 	if (pLight)
+; 313  : 	}
+; 314  : 	/* Check if the response is from a known light. */
+; 315  : 	if (pLight)
 
   0015c	83 7d fc 00	 cmp	 DWORD PTR _pLight$[ebp], 0
   00160	0f 84 80 00 00
 	00		 je	 $__TERMINAL$19
 
-; 315  : 	{
-; 316  : 		struct yeelight_object* pTmpLight = pLightObject;
+; 316  : 	{
+; 317  : 		struct yeelight_object* pTmpLight = pLightObject;
 
   00166	8b 0d 00 00 00
 	00		 mov	 ecx, DWORD PTR _pLightObject
   0016c	89 4d f0	 mov	 DWORD PTR _pTmpLight$1[ebp], ecx
 $LN4@ParseRespo:
 
-; 317  : 		while (pTmpLight)
+; 318  : 		while (pTmpLight)
 
   0016f	83 7d f0 00	 cmp	 DWORD PTR _pTmpLight$1[ebp], 0
   00173	74 3f		 je	 SHORT $LN5@ParseRespo
 
-; 318  : 		{
-; 319  : 			/*
-; 320  : 			* The light object is already in list of their
-; 321  : 			* IDs are same.
-; 322  : 			*/
-; 323  : 			if (0 == strcmp(pLight->id, pTmpLight->id))
+; 319  : 		{
+; 320  : 			/*
+; 321  : 			* The light object is already in list of their
+; 322  : 			* IDs are same.
+; 323  : 			*/
+; 324  : 			if (0 == strcmp(pLight->id, pTmpLight->id))
 
   00175	8b 55 f0	 mov	 edx, DWORD PTR _pTmpLight$1[ebp]
   00178	52		 push	 edx
@@ -1574,22 +1437,22 @@ $LN4@ParseRespo:
   00185	85 c0		 test	 eax, eax
   00187	75 20		 jne	 SHORT $LN14@ParseRespo
 
-; 324  : 			{
-; 325  : 				/*
-; 326  : 				* Replace old light object's attributes by the
-; 327  : 				* newly one.
-; 328  : 				* May lead issue in multi-thread environment here,
-; 329  : 				* since the global light list is reachable from
-; 330  : 				* all threads,and no mutex is applied here for easy.
-; 331  : 				*/
-; 332  : 				pLight->pNext = pTmpLight->pNext;
+; 325  : 			{
+; 326  : 				/*
+; 327  : 				* Replace old light object's attributes by the
+; 328  : 				* newly one.
+; 329  : 				* May lead issue in multi-thread environment here,
+; 330  : 				* since the global light list is reachable from
+; 331  : 				* all threads,and no mutex is applied here for easy.
+; 332  : 				*/
+; 333  : 				pLight->pNext = pTmpLight->pNext;
 
   00189	8b 4d fc	 mov	 ecx, DWORD PTR _pLight$[ebp]
   0018c	8b 55 f0	 mov	 edx, DWORD PTR _pTmpLight$1[ebp]
   0018f	8b 42 30	 mov	 eax, DWORD PTR [edx+48]
   00192	89 41 30	 mov	 DWORD PTR [ecx+48], eax
 
-; 333  : 				memcpy(pTmpLight, pLight, sizeof(*pLight));
+; 334  : 				memcpy(pTmpLight, pLight, sizeof(*pLight));
 
   00195	6a 34		 push	 52			; 00000034H
   00197	8b 4d fc	 mov	 ecx, DWORD PTR _pLight$[ebp]
@@ -1599,73 +1462,73 @@ $LN4@ParseRespo:
   0019f	e8 00 00 00 00	 call	 _memcpy
   001a4	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 334  : 				break;
+; 335  : 				break;
 
   001a7	eb 0b		 jmp	 SHORT $LN5@ParseRespo
 $LN14@ParseRespo:
 
-; 335  : 			}
-; 336  : 			pTmpLight = pTmpLight->pNext;
+; 336  : 			}
+; 337  : 			pTmpLight = pTmpLight->pNext;
 
   001a9	8b 45 f0	 mov	 eax, DWORD PTR _pTmpLight$1[ebp]
   001ac	8b 48 30	 mov	 ecx, DWORD PTR [eax+48]
   001af	89 4d f0	 mov	 DWORD PTR _pTmpLight$1[ebp], ecx
 
-; 337  : 		}
+; 338  : 		}
 
   001b2	eb bb		 jmp	 SHORT $LN4@ParseRespo
 $LN5@ParseRespo:
 
-; 338  : 		if (NULL == pTmpLight) /* A new light. */
+; 339  : 		if (NULL == pTmpLight) /* A new light. */
 
   001b4	83 7d f0 00	 cmp	 DWORD PTR _pTmpLight$1[ebp], 0
   001b8	75 2c		 jne	 SHORT $__TERMINAL$19
 
-; 339  : 		{
-; 340  : 			/* Just link the new found light into global list. */
-; 341  : 			pLight->pNext = pLightObject;
+; 340  : 		{
+; 341  : 			/* Just link the new found light into global list. */
+; 342  : 			pLight->pNext = pLightObject;
 
   001ba	8b 55 fc	 mov	 edx, DWORD PTR _pLight$[ebp]
   001bd	a1 00 00 00 00	 mov	 eax, DWORD PTR _pLightObject
   001c2	89 42 30	 mov	 DWORD PTR [edx+48], eax
 
-; 342  : 			pLightObject = pLight;
+; 343  : 			pLightObject = pLight;
 
   001c5	8b 4d fc	 mov	 ecx, DWORD PTR _pLight$[ebp]
   001c8	89 0d 00 00 00
 	00		 mov	 DWORD PTR _pLightObject, ecx
 
-; 343  : 			_hx_printf("\r\nA new light found[id = %s].\r\n",
+; 344  : 			_hx_printf("\r\nA new light found[id = %s].\r\n",
 
   001ce	8b 55 fc	 mov	 edx, DWORD PTR _pLight$[ebp]
   001d1	52		 push	 edx
-  001d2	68 00 00 00 00	 push	 OFFSET ??_C@_0CA@JMCBIEPM@?$AN?6A?5new?5light?5found?$FLid?5?$DN?5?$CFs?$FN?4?$AN?6?$AA@
+  001d2	68 00 00 00 00	 push	 OFFSET $SG5197
   001d7	e8 00 00 00 00	 call	 __hx_printf
   001dc	83 c4 08	 add	 esp, 8
 
-; 344  : 				pLight->id);
-; 345  : 			bResult = TRUE;
+; 345  : 				pLight->id);
+; 346  : 			bResult = TRUE;
 
   001df	c7 45 e8 ff ff
 	ff ff		 mov	 DWORD PTR _bResult$[ebp], -1
 $__TERMINAL$19:
 
-; 346  : 		}
-; 347  : 	}
-; 348  : __TERMINAL:
-; 349  : 	if (!bResult)
+; 347  : 		}
+; 348  : 	}
+; 349  : __TERMINAL:
+; 350  : 	if (!bResult)
 
   001e6	83 7d e8 00	 cmp	 DWORD PTR _bResult$[ebp], 0
   001ea	75 12		 jne	 SHORT $LN16@ParseRespo
 
-; 350  : 	{
-; 351  : 		if (pLight)
+; 351  : 	{
+; 352  : 		if (pLight)
 
   001ec	83 7d fc 00	 cmp	 DWORD PTR _pLight$[ebp], 0
   001f0	74 0c		 je	 SHORT $LN16@ParseRespo
 
-; 352  : 		{
-; 353  : 			_hx_free(pLight);
+; 353  : 		{
+; 354  : 			_hx_free(pLight);
 
   001f2	8b 45 fc	 mov	 eax, DWORD PTR _pLight$[ebp]
   001f5	50		 push	 eax
@@ -1673,20 +1536,20 @@ $__TERMINAL$19:
   001fb	83 c4 04	 add	 esp, 4
 $LN16@ParseRespo:
 
-; 354  : 		}
-; 355  : 	}
-; 356  : 	_hx_free(charbuff);
+; 355  : 		}
+; 356  : 	}
+; 357  : 	_hx_free(charbuff);
 
   001fe	8b 4d ec	 mov	 ecx, DWORD PTR _charbuff$[ebp]
   00201	51		 push	 ecx
   00202	e8 00 00 00 00	 call	 __hx_free
   00207	83 c4 04	 add	 esp, 4
 
-; 357  : 	return bResult;
+; 358  : 	return bResult;
 
   0020a	8b 45 e8	 mov	 eax, DWORD PTR _bResult$[ebp]
 
-; 358  : }
+; 359  : }
 
   0020d	8b e5		 mov	 esp, ebp
   0020f	5d		 pop	 ebp
@@ -1738,7 +1601,7 @@ _ToggleYlight PROC					; COMDAT
   00022	83 7d 08 00	 cmp	 DWORD PTR _light$[ebp], 0
   00026	75 12		 jne	 SHORT $LN2@ToggleYlig
   00028	68 b8 00 00 00	 push	 184			; 000000b8H
-  0002d	68 00 00 00 00	 push	 OFFSET ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
+  0002d	68 00 00 00 00	 push	 OFFSET $SG5135
   00032	e8 00 00 00 00	 call	 ___BUG
   00037	83 c4 08	 add	 esp, 8
 $LN2@ToggleYlig:
@@ -1751,7 +1614,7 @@ $LN3@ToggleYlig:
 
   00040	8b 4d 08	 mov	 ecx, DWORD PTR _light$[ebp]
   00043	83 79 2c 00	 cmp	 DWORD PTR [ecx+44], 0
-  00047	0f 8d b6 00 00
+  00047	0f 8d ba 00 00
 	00		 jge	 $LN5@ToggleYlig
 
 ; 186  : 	{
@@ -1768,312 +1631,315 @@ $LN3@ToggleYlig:
 ; 189  : 		if (sock < 0)
 
   0005e	83 7d f4 00	 cmp	 DWORD PTR _sock$[ebp], 0
-  00062	7d 1c		 jge	 SHORT $LN6@ToggleYlig
+  00062	7d 20		 jge	 SHORT $LN6@ToggleYlig
 
 ; 190  : 		{
-; 191  : 			__LOG("Can not create socket object.\r\n");
+; 191  : 			__LOG("Can not create socket object[sock = %d].\r\n",
 
   00064	6a 00		 push	 0
   00066	e8 00 00 00 00	 call	 _LogHeader
   0006b	83 c4 04	 add	 esp, 4
-  0006e	68 00 00 00 00	 push	 OFFSET ??_C@_0CA@KLBIHOJL@Can?5not?5create?5socket?5object?4?$AN?6?$AA@
-  00073	e8 00 00 00 00	 call	 __hx_printf
-  00078	83 c4 04	 add	 esp, 4
+  0006e	8b 55 f4	 mov	 edx, DWORD PTR _sock$[ebp]
+  00071	52		 push	 edx
+  00072	68 00 00 00 00	 push	 OFFSET $SG5138
+  00077	e8 00 00 00 00	 call	 __hx_printf
+  0007c	83 c4 08	 add	 esp, 8
 
-; 192  : 			goto __TERMINAL;
+; 192  : 				sock);
+; 193  : 			goto __TERMINAL;
 
-  0007b	e9 6d 01 00 00	 jmp	 $__TERMINAL$18
+  0007f	e9 6d 01 00 00	 jmp	 $__TERMINAL$18
 $LN6@ToggleYlig:
 
-; 193  : 		}
-; 194  : 		/* Save to use next time,the connection is keeping open. */
-; 195  : 		light->sock = sock;
+; 194  : 		}
+; 195  : 		/* Save to use next time,the connection is keeping open. */
+; 196  : 		light->sock = sock;
 
-  00080	8b 55 08	 mov	 edx, DWORD PTR _light$[ebp]
-  00083	8b 45 f4	 mov	 eax, DWORD PTR _sock$[ebp]
-  00086	89 42 2c	 mov	 DWORD PTR [edx+44], eax
+  00084	8b 45 08	 mov	 eax, DWORD PTR _light$[ebp]
+  00087	8b 4d f4	 mov	 ecx, DWORD PTR _sock$[ebp]
+  0008a	89 48 2c	 mov	 DWORD PTR [eax+44], ecx
 
-; 196  : 
-; 197  : 		/* Connect to yeelight object. */
-; 198  : 		sa.sin_family = AF_INET;
+; 197  : 
+; 198  : 		/* Connect to yeelight object. */
+; 199  : 		sa.sin_family = AF_INET;
 
-  00089	c6 45 e1 02	 mov	 BYTE PTR _sa$[ebp+1], 2
+  0008d	c6 45 e1 02	 mov	 BYTE PTR _sa$[ebp+1], 2
 
-; 199  : 		sa.sin_addr = light->socket.sin_addr;
+; 200  : 		sa.sin_addr = light->socket.sin_addr;
 
-  0008d	8b 4d 08	 mov	 ecx, DWORD PTR _light$[ebp]
-  00090	8b 51 1c	 mov	 edx, DWORD PTR [ecx+28]
-  00093	89 55 e4	 mov	 DWORD PTR _sa$[ebp+4], edx
+  00091	8b 55 08	 mov	 edx, DWORD PTR _light$[ebp]
+  00094	8b 42 1c	 mov	 eax, DWORD PTR [edx+28]
+  00097	89 45 e4	 mov	 DWORD PTR _sa$[ebp+4], eax
 
-; 200  : 		sa.sin_port = light->socket.sin_port;
+; 201  : 		sa.sin_port = light->socket.sin_port;
 
-  00096	8b 45 08	 mov	 eax, DWORD PTR _light$[ebp]
-  00099	66 8b 48 1a	 mov	 cx, WORD PTR [eax+26]
-  0009d	66 89 4d e2	 mov	 WORD PTR _sa$[ebp+2], cx
+  0009a	8b 4d 08	 mov	 ecx, DWORD PTR _light$[ebp]
+  0009d	66 8b 51 1a	 mov	 dx, WORD PTR [ecx+26]
+  000a1	66 89 55 e2	 mov	 WORD PTR _sa$[ebp+2], dx
 
-; 201  : 		memset(sa.sin_zero, 0, sizeof(sa.sin_zero));
+; 202  : 		memset(sa.sin_zero, 0, sizeof(sa.sin_zero));
 
-  000a1	6a 08		 push	 8
-  000a3	6a 00		 push	 0
-  000a5	8d 55 e8	 lea	 edx, DWORD PTR _sa$[ebp+8]
-  000a8	52		 push	 edx
-  000a9	e8 00 00 00 00	 call	 _memset
-  000ae	83 c4 0c	 add	 esp, 12			; 0000000cH
+  000a5	6a 08		 push	 8
+  000a7	6a 00		 push	 0
+  000a9	8d 45 e8	 lea	 eax, DWORD PTR _sa$[ebp+8]
+  000ac	50		 push	 eax
+  000ad	e8 00 00 00 00	 call	 _memset
+  000b2	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 202  : 		ret = connect(sock, (struct sockaddr*)&sa, sizeof(sa));
+; 203  : 		ret = connect(sock, (struct sockaddr*)&sa, sizeof(sa));
 
-  000b1	6a 10		 push	 16			; 00000010H
-  000b3	8d 45 e0	 lea	 eax, DWORD PTR _sa$[ebp]
-  000b6	50		 push	 eax
-  000b7	8b 4d f4	 mov	 ecx, DWORD PTR _sock$[ebp]
+  000b5	6a 10		 push	 16			; 00000010H
+  000b7	8d 4d e0	 lea	 ecx, DWORD PTR _sa$[ebp]
   000ba	51		 push	 ecx
-  000bb	e8 00 00 00 00	 call	 _connect
-  000c0	83 c4 0c	 add	 esp, 12			; 0000000cH
-  000c3	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
+  000bb	8b 55 f4	 mov	 edx, DWORD PTR _sock$[ebp]
+  000be	52		 push	 edx
+  000bf	e8 00 00 00 00	 call	 _connect
+  000c4	83 c4 0c	 add	 esp, 12			; 0000000cH
+  000c7	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 203  : 		if (ret < 0)
+; 204  : 		if (ret < 0)
 
-  000c6	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
-  000ca	7d 20		 jge	 SHORT $LN7@ToggleYlig
+  000ca	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
+  000ce	7d 20		 jge	 SHORT $LN7@ToggleYlig
 
-; 204  : 		{
-; 205  : 			__LOG("Can not connect to light object[ret = %d].\r\n", ret);
+; 205  : 		{
+; 206  : 			__LOG("Can not connect to light object[ret = %d].\r\n", ret);
 
-  000cc	6a 00		 push	 0
-  000ce	e8 00 00 00 00	 call	 _LogHeader
-  000d3	83 c4 04	 add	 esp, 4
-  000d6	8b 55 fc	 mov	 edx, DWORD PTR _ret$[ebp]
-  000d9	52		 push	 edx
-  000da	68 00 00 00 00	 push	 OFFSET ??_C@_0CN@OAKNKFDD@Can?5not?5connect?5to?5light?5object?$FL@
-  000df	e8 00 00 00 00	 call	 __hx_printf
-  000e4	83 c4 08	 add	 esp, 8
+  000d0	6a 00		 push	 0
+  000d2	e8 00 00 00 00	 call	 _LogHeader
+  000d7	83 c4 04	 add	 esp, 4
+  000da	8b 45 fc	 mov	 eax, DWORD PTR _ret$[ebp]
+  000dd	50		 push	 eax
+  000de	68 00 00 00 00	 push	 OFFSET $SG5140
+  000e3	e8 00 00 00 00	 call	 __hx_printf
+  000e8	83 c4 08	 add	 esp, 8
 
-; 206  : 			goto __TERMINAL;
+; 207  : 			goto __TERMINAL;
 
-  000e7	e9 01 01 00 00	 jmp	 $__TERMINAL$18
+  000eb	e9 01 01 00 00	 jmp	 $__TERMINAL$18
 $LN7@ToggleYlig:
 
-; 207  : 		}
-; 208  : 		__LOG("Connect to light object OK.\r\n");
+; 208  : 		}
+; 209  : 		__LOG("Connect to light object OK.\r\n");
 
-  000ec	6a 00		 push	 0
-  000ee	e8 00 00 00 00	 call	 _LogHeader
-  000f3	83 c4 04	 add	 esp, 4
-  000f6	68 00 00 00 00	 push	 OFFSET ??_C@_0BO@NPJCALFH@Connect?5to?5light?5object?5OK?4?$AN?6?$AA@
-  000fb	e8 00 00 00 00	 call	 __hx_printf
-  00100	83 c4 04	 add	 esp, 4
+  000f0	6a 00		 push	 0
+  000f2	e8 00 00 00 00	 call	 _LogHeader
+  000f7	83 c4 04	 add	 esp, 4
+  000fa	68 00 00 00 00	 push	 OFFSET $SG5141
+  000ff	e8 00 00 00 00	 call	 __hx_printf
+  00104	83 c4 04	 add	 esp, 4
 $LN5@ToggleYlig:
 
-; 209  : 	}
-; 210  : 	cmd = (char*)_hx_malloc(1500);
+; 210  : 	}
+; 211  : 	cmd = (char*)_hx_malloc(1500);
 
-  00103	68 dc 05 00 00	 push	 1500			; 000005dcH
-  00108	e8 00 00 00 00	 call	 __hx_malloc
-  0010d	83 c4 04	 add	 esp, 4
-  00110	89 45 f8	 mov	 DWORD PTR _cmd$[ebp], eax
+  00107	68 dc 05 00 00	 push	 1500			; 000005dcH
+  0010c	e8 00 00 00 00	 call	 __hx_malloc
+  00111	83 c4 04	 add	 esp, 4
+  00114	89 45 f8	 mov	 DWORD PTR _cmd$[ebp], eax
 
-; 211  : 	if (NULL == cmd)
+; 212  : 	if (NULL == cmd)
 
-  00113	83 7d f8 00	 cmp	 DWORD PTR _cmd$[ebp], 0
-  00117	75 05		 jne	 SHORT $LN8@ToggleYlig
+  00117	83 7d f8 00	 cmp	 DWORD PTR _cmd$[ebp], 0
+  0011b	75 05		 jne	 SHORT $LN8@ToggleYlig
 
-; 212  : 	{
-; 213  : 		goto __TERMINAL;
+; 213  : 	{
+; 214  : 		goto __TERMINAL;
 
-  00119	e9 cf 00 00 00	 jmp	 $__TERMINAL$18
+  0011d	e9 cf 00 00 00	 jmp	 $__TERMINAL$18
 $LN8@ToggleYlig:
 
-; 214  : 	}
-; 215  : 	/* Construct toggle command. */
-; 216  : 	if (!ConstructToggleCmd(light, cmd, 1500))
+; 215  : 	}
+; 216  : 	/* Construct toggle command. */
+; 217  : 	if (!ConstructToggleCmd(light, cmd, 1500))
 
-  0011e	68 dc 05 00 00	 push	 1500			; 000005dcH
-  00123	8b 45 f8	 mov	 eax, DWORD PTR _cmd$[ebp]
-  00126	50		 push	 eax
-  00127	8b 4d 08	 mov	 ecx, DWORD PTR _light$[ebp]
+  00122	68 dc 05 00 00	 push	 1500			; 000005dcH
+  00127	8b 4d f8	 mov	 ecx, DWORD PTR _cmd$[ebp]
   0012a	51		 push	 ecx
-  0012b	e8 00 00 00 00	 call	 _ConstructToggleCmd
-  00130	83 c4 0c	 add	 esp, 12			; 0000000cH
-  00133	85 c0		 test	 eax, eax
-  00135	75 05		 jne	 SHORT $LN9@ToggleYlig
+  0012b	8b 55 08	 mov	 edx, DWORD PTR _light$[ebp]
+  0012e	52		 push	 edx
+  0012f	e8 00 00 00 00	 call	 _ConstructToggleCmd
+  00134	83 c4 0c	 add	 esp, 12			; 0000000cH
+  00137	85 c0		 test	 eax, eax
+  00139	75 05		 jne	 SHORT $LN9@ToggleYlig
 
-; 217  : 	{
-; 218  : 		goto __TERMINAL;
+; 218  : 	{
+; 219  : 		goto __TERMINAL;
 
-  00137	e9 b1 00 00 00	 jmp	 $__TERMINAL$18
+  0013b	e9 b1 00 00 00	 jmp	 $__TERMINAL$18
 $LN9@ToggleYlig:
 
-; 219  : 	}
-; 220  : 	ret = send(sock,cmd,strlen(cmd),0);
+; 220  : 	}
+; 221  : 	ret = send(sock,cmd,strlen(cmd),0);
 
-  0013c	6a 00		 push	 0
-  0013e	8b 55 f8	 mov	 edx, DWORD PTR _cmd$[ebp]
-  00141	52		 push	 edx
-  00142	e8 00 00 00 00	 call	 _strlen
-  00147	83 c4 04	 add	 esp, 4
-  0014a	50		 push	 eax
-  0014b	8b 45 f8	 mov	 eax, DWORD PTR _cmd$[ebp]
+  00140	6a 00		 push	 0
+  00142	8b 45 f8	 mov	 eax, DWORD PTR _cmd$[ebp]
+  00145	50		 push	 eax
+  00146	e8 00 00 00 00	 call	 _strlen
+  0014b	83 c4 04	 add	 esp, 4
   0014e	50		 push	 eax
-  0014f	8b 4d f4	 mov	 ecx, DWORD PTR _sock$[ebp]
+  0014f	8b 4d f8	 mov	 ecx, DWORD PTR _cmd$[ebp]
   00152	51		 push	 ecx
-  00153	e8 00 00 00 00	 call	 _send
-  00158	83 c4 10	 add	 esp, 16			; 00000010H
-  0015b	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
+  00153	8b 55 f4	 mov	 edx, DWORD PTR _sock$[ebp]
+  00156	52		 push	 edx
+  00157	e8 00 00 00 00	 call	 _send
+  0015c	83 c4 10	 add	 esp, 16			; 00000010H
+  0015f	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 221  : 	if(ret < 0)
+; 222  : 	if(ret < 0)
 
-  0015e	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
-  00162	7d 0f		 jge	 SHORT $LN10@ToggleYlig
+  00162	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
+  00166	7d 0f		 jge	 SHORT $LN10@ToggleYlig
 
-; 222  : 	{
-; 223  : 		_hx_printf("Failed to send toggle command.\r\n");
+; 223  : 	{
+; 224  : 		_hx_printf("Failed to send toggle command.\r\n");
 
-  00164	68 00 00 00 00	 push	 OFFSET ??_C@_0CB@DDIPKHPP@Failed?5to?5send?5toggle?5command?4?$AN?6@
-  00169	e8 00 00 00 00	 call	 __hx_printf
-  0016e	83 c4 04	 add	 esp, 4
+  00168	68 00 00 00 00	 push	 OFFSET $SG5145
+  0016d	e8 00 00 00 00	 call	 __hx_printf
+  00172	83 c4 04	 add	 esp, 4
 
-; 224  : 		goto __TERMINAL;
+; 225  : 		goto __TERMINAL;
 
-  00171	eb 7a		 jmp	 SHORT $__TERMINAL$18
+  00175	eb 7a		 jmp	 SHORT $__TERMINAL$18
 $LN10@ToggleYlig:
 
-; 225  : 	}
-; 226  : 	ret = recv(sock, cmd, 1500, 0);
+; 226  : 	}
+; 227  : 	ret = recv(sock, cmd, 1500, 0);
 
-  00173	6a 00		 push	 0
-  00175	68 dc 05 00 00	 push	 1500			; 000005dcH
-  0017a	8b 55 f8	 mov	 edx, DWORD PTR _cmd$[ebp]
-  0017d	52		 push	 edx
-  0017e	8b 45 f4	 mov	 eax, DWORD PTR _sock$[ebp]
+  00177	6a 00		 push	 0
+  00179	68 dc 05 00 00	 push	 1500			; 000005dcH
+  0017e	8b 45 f8	 mov	 eax, DWORD PTR _cmd$[ebp]
   00181	50		 push	 eax
-  00182	e8 00 00 00 00	 call	 _recv
-  00187	83 c4 10	 add	 esp, 16			; 00000010H
-  0018a	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
+  00182	8b 4d f4	 mov	 ecx, DWORD PTR _sock$[ebp]
+  00185	51		 push	 ecx
+  00186	e8 00 00 00 00	 call	 _recv
+  0018b	83 c4 10	 add	 esp, 16			; 00000010H
+  0018e	89 45 fc	 mov	 DWORD PTR _ret$[ebp], eax
 
-; 227  : 	if (ret < 0)
+; 228  : 	if (ret < 0)
 
-  0018d	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
-  00191	7d 1d		 jge	 SHORT $LN11@ToggleYlig
+  00191	83 7d fc 00	 cmp	 DWORD PTR _ret$[ebp], 0
+  00195	7d 1d		 jge	 SHORT $LN11@ToggleYlig
 
-; 228  : 	{
-; 229  : 		__LOG("Failed to recv resp[ret = %d].\r\n", ret);
+; 229  : 	{
+; 230  : 		__LOG("Failed to recv resp[ret = %d].\r\n", ret);
 
-  00193	6a 00		 push	 0
-  00195	e8 00 00 00 00	 call	 _LogHeader
-  0019a	83 c4 04	 add	 esp, 4
-  0019d	8b 4d fc	 mov	 ecx, DWORD PTR _ret$[ebp]
-  001a0	51		 push	 ecx
-  001a1	68 00 00 00 00	 push	 OFFSET ??_C@_0CB@MBPHKCID@Failed?5to?5recv?5resp?$FLret?5?$DN?5?$CFd?$FN?4?$AN?6@
-  001a6	e8 00 00 00 00	 call	 __hx_printf
-  001ab	83 c4 08	 add	 esp, 8
+  00197	6a 00		 push	 0
+  00199	e8 00 00 00 00	 call	 _LogHeader
+  0019e	83 c4 04	 add	 esp, 4
+  001a1	8b 55 fc	 mov	 edx, DWORD PTR _ret$[ebp]
+  001a4	52		 push	 edx
+  001a5	68 00 00 00 00	 push	 OFFSET $SG5147
+  001aa	e8 00 00 00 00	 call	 __hx_printf
+  001af	83 c4 08	 add	 esp, 8
 
-; 230  : 		goto __TERMINAL;
+; 231  : 		goto __TERMINAL;
 
-  001ae	eb 3d		 jmp	 SHORT $__TERMINAL$18
+  001b2	eb 3d		 jmp	 SHORT $__TERMINAL$18
 $LN11@ToggleYlig:
 
-; 231  : 	}
-; 232  : 	/* Show out the status info received. */
-; 233  : 	if (ret > 128)
+; 232  : 	}
+; 233  : 	/* Show out the status info received. */
+; 234  : 	if (ret > 128)
 
-  001b0	81 7d fc 80 00
+  001b4	81 7d fc 80 00
 	00 00		 cmp	 DWORD PTR _ret$[ebp], 128 ; 00000080H
-  001b7	7e 13		 jle	 SHORT $LN12@ToggleYlig
+  001bb	7e 13		 jle	 SHORT $LN12@ToggleYlig
 
-; 234  : 	{
-; 235  : 		_hx_printf("Received status update message[size = %d].\r\n", ret);
+; 235  : 	{
+; 236  : 		_hx_printf("Received status update message[size = %d].\r\n", ret);
 
-  001b9	8b 55 fc	 mov	 edx, DWORD PTR _ret$[ebp]
-  001bc	52		 push	 edx
-  001bd	68 00 00 00 00	 push	 OFFSET ??_C@_0CN@PHCHOKIN@Received?5status?5update?5message?$FLs@
-  001c2	e8 00 00 00 00	 call	 __hx_printf
-  001c7	83 c4 08	 add	 esp, 8
+  001bd	8b 45 fc	 mov	 eax, DWORD PTR _ret$[ebp]
+  001c0	50		 push	 eax
+  001c1	68 00 00 00 00	 push	 OFFSET $SG5150
+  001c6	e8 00 00 00 00	 call	 __hx_printf
+  001cb	83 c4 08	 add	 esp, 8
 
-; 236  : 	}
+; 237  : 	}
 
-  001ca	eb 1a		 jmp	 SHORT $LN13@ToggleYlig
+  001ce	eb 1a		 jmp	 SHORT $LN13@ToggleYlig
 $LN12@ToggleYlig:
 
-; 237  : 	else
-; 238  : 	{
-; 239  : 		cmd[ret] = 0;
+; 238  : 	else
+; 239  : 	{
+; 240  : 		cmd[ret] = 0;
 
-  001cc	8b 45 f8	 mov	 eax, DWORD PTR _cmd$[ebp]
-  001cf	03 45 fc	 add	 eax, DWORD PTR _ret$[ebp]
-  001d2	c6 00 00	 mov	 BYTE PTR [eax], 0
+  001d0	8b 4d f8	 mov	 ecx, DWORD PTR _cmd$[ebp]
+  001d3	03 4d fc	 add	 ecx, DWORD PTR _ret$[ebp]
+  001d6	c6 01 00	 mov	 BYTE PTR [ecx], 0
 
-; 240  : 		_hx_printf("Status update:%s\r\n", cmd);
+; 241  : 		_hx_printf("Status update:%s\r\n", cmd);
 
-  001d5	8b 4d f8	 mov	 ecx, DWORD PTR _cmd$[ebp]
-  001d8	51		 push	 ecx
-  001d9	68 00 00 00 00	 push	 OFFSET ??_C@_0BD@PCKCGHAM@Status?5update?3?$CFs?$AN?6?$AA@
-  001de	e8 00 00 00 00	 call	 __hx_printf
-  001e3	83 c4 08	 add	 esp, 8
+  001d9	8b 55 f8	 mov	 edx, DWORD PTR _cmd$[ebp]
+  001dc	52		 push	 edx
+  001dd	68 00 00 00 00	 push	 OFFSET $SG5151
+  001e2	e8 00 00 00 00	 call	 __hx_printf
+  001e7	83 c4 08	 add	 esp, 8
 $LN13@ToggleYlig:
 
-; 241  : 	}
-; 242  : 
-; 243  : 	bResult = TRUE;
+; 242  : 	}
+; 243  : 
+; 244  : 	bResult = TRUE;
 
-  001e6	c7 45 f0 ff ff
+  001ea	c7 45 f0 ff ff
 	ff ff		 mov	 DWORD PTR _bResult$[ebp], -1
 $__TERMINAL$18:
 
-; 244  : __TERMINAL:
-; 245  : 	if (!bResult)
+; 245  : __TERMINAL:
+; 246  : 	if (!bResult)
 
-  001ed	83 7d f0 00	 cmp	 DWORD PTR _bResult$[ebp], 0
-  001f1	75 22		 jne	 SHORT $LN14@ToggleYlig
+  001f1	83 7d f0 00	 cmp	 DWORD PTR _bResult$[ebp], 0
+  001f5	75 22		 jne	 SHORT $LN14@ToggleYlig
 
-; 246  : 	{
-; 247  : 		if (light->sock >= 0)
+; 247  : 	{
+; 248  : 		if (light->sock >= 0)
 
-  001f3	8b 55 08	 mov	 edx, DWORD PTR _light$[ebp]
-  001f6	83 7a 2c 00	 cmp	 DWORD PTR [edx+44], 0
-  001fa	7c 19		 jl	 SHORT $LN14@ToggleYlig
+  001f7	8b 45 08	 mov	 eax, DWORD PTR _light$[ebp]
+  001fa	83 78 2c 00	 cmp	 DWORD PTR [eax+44], 0
+  001fe	7c 19		 jl	 SHORT $LN14@ToggleYlig
 
-; 248  : 		{
-; 249  : 			close(light->sock);
+; 249  : 		{
+; 250  : 			close(light->sock);
 
-  001fc	8b 45 08	 mov	 eax, DWORD PTR _light$[ebp]
-  001ff	8b 48 2c	 mov	 ecx, DWORD PTR [eax+44]
-  00202	51		 push	 ecx
-  00203	e8 00 00 00 00	 call	 _close
-  00208	83 c4 04	 add	 esp, 4
+  00200	8b 4d 08	 mov	 ecx, DWORD PTR _light$[ebp]
+  00203	8b 51 2c	 mov	 edx, DWORD PTR [ecx+44]
+  00206	52		 push	 edx
+  00207	e8 00 00 00 00	 call	 _close
+  0020c	83 c4 04	 add	 esp, 4
 
-; 250  : 			light->sock = -1;
+; 251  : 			light->sock = -1;
 
-  0020b	8b 55 08	 mov	 edx, DWORD PTR _light$[ebp]
-  0020e	c7 42 2c ff ff
-	ff ff		 mov	 DWORD PTR [edx+44], -1
+  0020f	8b 45 08	 mov	 eax, DWORD PTR _light$[ebp]
+  00212	c7 40 2c ff ff
+	ff ff		 mov	 DWORD PTR [eax+44], -1
 $LN14@ToggleYlig:
 
-; 251  : 		}
-; 252  : 	}
-; 253  : 	if (cmd)
+; 252  : 		}
+; 253  : 	}
+; 254  : 	if (cmd)
 
-  00215	83 7d f8 00	 cmp	 DWORD PTR _cmd$[ebp], 0
-  00219	74 0c		 je	 SHORT $LN16@ToggleYlig
+  00219	83 7d f8 00	 cmp	 DWORD PTR _cmd$[ebp], 0
+  0021d	74 0c		 je	 SHORT $LN16@ToggleYlig
 
-; 254  : 	{
-; 255  : 		_hx_free(cmd);
+; 255  : 	{
+; 256  : 		_hx_free(cmd);
 
-  0021b	8b 45 f8	 mov	 eax, DWORD PTR _cmd$[ebp]
-  0021e	50		 push	 eax
-  0021f	e8 00 00 00 00	 call	 __hx_free
-  00224	83 c4 04	 add	 esp, 4
+  0021f	8b 4d f8	 mov	 ecx, DWORD PTR _cmd$[ebp]
+  00222	51		 push	 ecx
+  00223	e8 00 00 00 00	 call	 __hx_free
+  00228	83 c4 04	 add	 esp, 4
 $LN16@ToggleYlig:
 
-; 256  : 	}
-; 257  : 	return bResult;
+; 257  : 	}
+; 258  : 	return bResult;
 
-  00227	8b 45 f0	 mov	 eax, DWORD PTR _bResult$[ebp]
+  0022b	8b 45 f0	 mov	 eax, DWORD PTR _bResult$[ebp]
 
-; 258  : }
+; 259  : }
 
-  0022a	8b e5		 mov	 esp, ebp
-  0022c	5d		 pop	 ebp
-  0022d	c3		 ret	 0
+  0022e	8b e5		 mov	 esp, ebp
+  00230	5d		 pop	 ebp
+  00231	c3		 ret	 0
 _ToggleYlight ENDP
 _TEXT	ENDS
 ; Function compile flags: /Odtp
@@ -2102,7 +1968,7 @@ _ConstructToggleCmd PROC				; COMDAT
   0000b	83 7d 0c 00	 cmp	 DWORD PTR _pCmdBuff$[ebp], 0
   0000f	75 12		 jne	 SHORT $LN2@ConstructT
   00011	68 a2 00 00 00	 push	 162			; 000000a2H
-  00016	68 00 00 00 00	 push	 OFFSET ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
+  00016	68 00 00 00 00	 push	 OFFSET $SG5109
   0001b	e8 00 00 00 00	 call	 ___BUG
   00020	83 c4 08	 add	 esp, 8
 $LN2@ConstructT:
@@ -2116,7 +1982,7 @@ $LN3@ConstructT:
   00029	83 7d 10 00	 cmp	 DWORD PTR _length$[ebp], 0
   0002d	75 12		 jne	 SHORT $LN4@ConstructT
   0002f	68 a3 00 00 00	 push	 163			; 000000a3H
-  00034	68 00 00 00 00	 push	 OFFSET ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
+  00034	68 00 00 00 00	 push	 OFFSET $SG5111
   00039	e8 00 00 00 00	 call	 ___BUG
   0003e	83 c4 08	 add	 esp, 8
 $LN4@ConstructT:
@@ -2130,7 +1996,7 @@ $LN5@ConstructT:
   00047	83 7d 08 00	 cmp	 DWORD PTR _pLight$[ebp], 0
   0004b	75 12		 jne	 SHORT $LN6@ConstructT
   0004d	68 a4 00 00 00	 push	 164			; 000000a4H
-  00052	68 00 00 00 00	 push	 OFFSET ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
+  00052	68 00 00 00 00	 push	 OFFSET $SG5113
   00057	e8 00 00 00 00	 call	 ___BUG
   0005c	83 c4 08	 add	 esp, 8
 $LN6@ConstructT:
@@ -2145,7 +2011,7 @@ $LN7@ConstructT:
   00068	50		 push	 eax
   00069	e8 00 00 00 00	 call	 _strlen
   0006e	83 c4 04	 add	 esp, 4
-  00071	05 00 00 00 00	 add	 eax, OFFSET ??_C@_0CM@NIFJBDJE@?$HL?$CCid?$CC?3?$CC?$CFs?$CC?0?$CCmethod?$CC?3?$CCtoggle?$CC?0?$CCpa@
+  00071	05 00 00 00 00	 add	 eax, OFFSET $SG5114
   00076	50		 push	 eax
   00077	e8 00 00 00 00	 call	 _strlen
   0007c	83 c4 04	 add	 esp, 4
@@ -2169,7 +2035,7 @@ $LN11@ConstructT:
 
   0008e	8b 55 08	 mov	 edx, DWORD PTR _pLight$[ebp]
   00091	52		 push	 edx
-  00092	68 00 00 00 00	 push	 OFFSET ??_C@_0CM@NIFJBDJE@?$HL?$CCid?$CC?3?$CC?$CFs?$CC?0?$CCmethod?$CC?3?$CCtoggle?$CC?0?$CCpa@
+  00092	68 00 00 00 00	 push	 OFFSET $SG5116
   00097	8b 45 0c	 mov	 eax, DWORD PTR _pCmdBuff$[ebp]
   0009a	50		 push	 eax
   0009b	e8 00 00 00 00	 call	 __hx_sprintf
@@ -2215,7 +2081,7 @@ $LN2@ShowLight:
 ; 149  : 	{
 ; 150  : 		_hx_printf("--------------------\r\n");
 
-  00009	68 00 00 00 00	 push	 OFFSET ??_C@_0BH@HGHOBMCE@?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?$AN?6?$AA@
+  00009	68 00 00 00 00	 push	 OFFSET $SG5087
   0000e	e8 00 00 00 00	 call	 __hx_printf
   00013	83 c4 04	 add	 esp, 4
 
@@ -2223,7 +2089,7 @@ $LN2@ShowLight:
 
   00016	8b 45 08	 mov	 eax, DWORD PTR _pLight$[ebp]
   00019	50		 push	 eax
-  0001a	68 00 00 00 00	 push	 OFFSET ??_C@_08DELEFJBK@id?3?5?$CFs?$AN?6?$AA@
+  0001a	68 00 00 00 00	 push	 OFFSET $SG5088
   0001f	e8 00 00 00 00	 call	 __hx_printf
   00024	83 c4 08	 add	 esp, 8
 
@@ -2235,7 +2101,7 @@ $LN2@ShowLight:
   0002e	e8 00 00 00 00	 call	 _ipaddr_ntoa
   00033	83 c4 04	 add	 esp, 4
   00036	50		 push	 eax
-  00037	68 00 00 00 00	 push	 OFFSET ??_C@_08MMEFGGML@ip?3?5?$CFs?$AN?6?$AA@
+  00037	68 00 00 00 00	 push	 OFFSET $SG5089
   0003c	e8 00 00 00 00	 call	 __hx_printf
   00041	83 c4 08	 add	 esp, 8
 
@@ -2248,7 +2114,7 @@ $LN2@ShowLight:
   00051	83 c4 04	 add	 esp, 4
   00054	0f b7 c8	 movzx	 ecx, ax
   00057	51		 push	 ecx
-  00058	68 00 00 00 00	 push	 OFFSET ??_C@_0L@PIBEHDPH@port?3?5?$CFd?$AN?6?$AA@
+  00058	68 00 00 00 00	 push	 OFFSET $SG5090
   0005d	e8 00 00 00 00	 call	 __hx_printf
   00062	83 c4 08	 add	 esp, 8
 
@@ -2315,7 +2181,7 @@ _GetSocketFromLocation PROC				; COMDAT
   00021	83 7d 08 00	 cmp	 DWORD PTR _location$[ebp], 0
   00025	75 0f		 jne	 SHORT $LN2@GetSocketF
   00027	6a 55		 push	 85			; 00000055H
-  00029	68 00 00 00 00	 push	 OFFSET ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
+  00029	68 00 00 00 00	 push	 OFFSET $SG5070
   0002e	e8 00 00 00 00	 call	 ___BUG
   00033	83 c4 08	 add	 esp, 8
 $LN2@GetSocketF:
@@ -2329,7 +2195,7 @@ $LN3@GetSocketF:
   0003c	83 7d 0c 00	 cmp	 DWORD PTR _pSock$[ebp], 0
   00040	75 0f		 jne	 SHORT $LN4@GetSocketF
   00042	6a 56		 push	 86			; 00000056H
-  00044	68 00 00 00 00	 push	 OFFSET ??_C@_0DJ@DLILGIOL@c?3?2hellox?2personal?2hellox_os?2app@
+  00044	68 00 00 00 00	 push	 OFFSET $SG5072
   00049	e8 00 00 00 00	 call	 ___BUG
   0004e	83 c4 08	 add	 esp, 8
 $LN4@GetSocketF:
@@ -2342,7 +2208,7 @@ $LN5@GetSocketF:
 ; 88   : 	/* Get socket string(IP and port) from string. */
 ; 89   : 	sock_str = getvalue(location, "yeelight");
 
-  00057	68 00 00 00 00	 push	 OFFSET ??_C@_08EEABGAIP@yeelight?$AA@
+  00057	68 00 00 00 00	 push	 OFFSET $SG5073
   0005c	8b 45 08	 mov	 eax, DWORD PTR _location$[ebp]
   0005f	50		 push	 eax
   00060	e8 00 00 00 00	 call	 _getvalue

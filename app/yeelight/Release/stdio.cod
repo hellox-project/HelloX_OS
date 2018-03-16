@@ -9,38 +9,26 @@
 INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
-PUBLIC	??_C@_0CF@DLEKIKA@0123456789abcdefghijklmnopqrstuv@ ; `string'
-PUBLIC	??_C@_0CF@GDODPGFN@0123456789ABCDEFGHIJKLMNOPQRSTUV@ ; `string'
-;	COMDAT ??_C@_0CF@GDODPGFN@0123456789ABCDEFGHIJKLMNOPQRSTUV@
-CONST	SEGMENT
-??_C@_0CF@GDODPGFN@0123456789ABCDEFGHIJKLMNOPQRSTUV@ DB '0123456789ABCDEF'
-	DB	'GHIJKLMNOPQRSTUVWXYZ', 00H			; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0CF@DLEKIKA@0123456789abcdefghijklmnopqrstuv@
-CONST	SEGMENT
-??_C@_0CF@DLEKIKA@0123456789abcdefghijklmnopqrstuv@ DB '0123456789abcdefg'
-	DB	'hijklmnopqrstuvwxyz', 00H			; `string'
-CONST	ENDS
 _DATA	SEGMENT
-_digits	DD	FLAT:??_C@_0CF@DLEKIKA@0123456789abcdefghijklmnopqrstuv@
-_upper_digits DD FLAT:??_C@_0CF@GDODPGFN@0123456789ABCDEFGHIJKLMNOPQRSTUV@
+_digits	DD	FLAT:$SG4685
+$SG4685	DB	'0123456789abcdefghijklmnopqrstuvwxyz', 00H
+	ORG $+3
+_upper_digits DD FLAT:$SG4687
+$SG4687	DB	'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 00H
+	ORG $+3
+$SG4987	DB	'<NULL>', 00H
 _DATA	ENDS
 PUBLIC	__hx_printf
 PUBLIC	__hx_sprintf
 PUBLIC	__hx_vfprintf
 PUBLIC	__hx_snprintf
 PUBLIC	_hx_vsprintf
-PUBLIC	??_C@_06CBHGEMFM@?$DMNULL?$DO?$AA@		; `string'
 EXTRN	_PrintChar:PROC
 EXTRN	_GotoHome:PROC
 EXTRN	_ChangeLine:PROC
 EXTRN	_GetCursorPos:PROC
 EXTRN	_SetCursorPos:PROC
 EXTRN	_strncpy:PROC
-;	COMDAT ??_C@_06CBHGEMFM@?$DMNULL?$DO?$AA@
-CONST	SEGMENT
-??_C@_06CBHGEMFM@?$DMNULL?$DO?$AA@ DB '<NULL>', 00H	; `string'
-CONST	ENDS
 ; Function compile flags: /Odtp
 ; File c:\hellox\personal\hellox_os\app\yeelight\hxlib\stdio.c
 ;	COMDAT _hx_vsprintf
@@ -484,7 +472,7 @@ $LN39@hx_vsprint:
   0027f	83 7d ec 00	 cmp	 DWORD PTR _s$[ebp], 0
   00283	75 07		 jne	 SHORT $LN40@hx_vsprint
   00285	c7 45 ec 00 00
-	00 00		 mov	 DWORD PTR _s$[ebp], OFFSET ??_C@_06CBHGEMFM@?$DMNULL?$DO?$AA@
+	00 00		 mov	 DWORD PTR _s$[ebp], OFFSET $SG4987
 $LN40@hx_vsprint:
 
 ; 530  : 			len = strnlen(s, precision);

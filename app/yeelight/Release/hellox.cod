@@ -9,6 +9,12 @@
 INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
+_DATA	SEGMENT
+$SG4843	DB	0dH, 0aH, 'BUG oencountered.', 0dH, 0aH, 'File name: %s', 0dH
+	DB	0aH, 'Code Lines:%d', 00H
+	ORG $+2
+$SG4848	DB	'[%d-%d-%d %d:%d:%d]', 00H
+_DATA	ENDS
 PUBLIC	_CreateKernelThread
 PUBLIC	_DestroyKernelThread
 PUBLIC	_SetLastError
@@ -71,20 +77,7 @@ PUBLIC	_LoadDriver
 PUBLIC	_GetSystemTime
 PUBLIC	___BUG
 PUBLIC	_LogHeader
-PUBLIC	??_C@_0DC@FADMLJML@?$AN?6BUG?5oencountered?4?$AN?6File?5name?3?5@ ; `string'
-PUBLIC	??_C@_0BE@INJFJMDH@?$FL?$CFd?9?$CFd?9?$CFd?5?$CFd?3?$CFd?3?$CFd?$FN?$AA@ ; `string'
 EXTRN	__hx_printf:PROC
-;	COMDAT ??_C@_0BE@INJFJMDH@?$FL?$CFd?9?$CFd?9?$CFd?5?$CFd?3?$CFd?3?$CFd?$FN?$AA@
-CONST	SEGMENT
-??_C@_0BE@INJFJMDH@?$FL?$CFd?9?$CFd?9?$CFd?5?$CFd?3?$CFd?3?$CFd?$FN?$AA@ DB '['
-	DB	'%d-%d-%d %d:%d:%d]', 00H			; `string'
-CONST	ENDS
-;	COMDAT ??_C@_0DC@FADMLJML@?$AN?6BUG?5oencountered?4?$AN?6File?5name?3?5@
-CONST	SEGMENT
-??_C@_0DC@FADMLJML@?$AN?6BUG?5oencountered?4?$AN?6File?5name?3?5@ DB 0dH, 0aH
-	DB	'BUG oencountered.', 0dH, 0aH, 'File name: %s', 0dH, 0aH, 'Cod'
-	DB	'e Lines:%d', 00H				; `string'
-CONST	ENDS
 ; Function compile flags: /Odtp
 ; File c:\hellox\personal\hellox_os\app\yeelight\hxlib\hellox\hellox.c
 ;	COMDAT _LogHeader
@@ -139,7 +132,7 @@ _LogHeader PROC						; COMDAT
   0006d	81 c2 d0 07 00
 	00		 add	 edx, 2000		; 000007d0H
   00073	52		 push	 edx
-  00074	68 00 00 00 00	 push	 OFFSET ??_C@_0BE@INJFJMDH@?$FL?$CFd?9?$CFd?9?$CFd?5?$CFd?3?$CFd?3?$CFd?$FN?$AA@
+  00074	68 00 00 00 00	 push	 OFFSET $SG4848
   00079	e8 00 00 00 00	 call	 __hx_printf
   0007e	83 c4 1c	 add	 esp, 28			; 0000001cH
 
@@ -180,7 +173,7 @@ ___BUG	PROC						; COMDAT
   00007	50		 push	 eax
   00008	8b 4d 08	 mov	 ecx, DWORD PTR _lpszFileName$[ebp]
   0000b	51		 push	 ecx
-  0000c	68 00 00 00 00	 push	 OFFSET ??_C@_0DC@FADMLJML@?$AN?6BUG?5oencountered?4?$AN?6File?5name?3?5@
+  0000c	68 00 00 00 00	 push	 OFFSET $SG4843
   00011	e8 00 00 00 00	 call	 __hx_printf
   00016	83 c4 0c	 add	 esp, 12			; 0000000cH
 

@@ -188,7 +188,8 @@ static BOOL ToggleYlight(struct yeelight_object* light)
 		sock = socket(AF_INET, SOCK_STREAM, 0);
 		if (sock < 0)
 		{
-			__LOG("Can not create socket object.\r\n");
+			__LOG("Can not create socket object[sock = %d].\r\n",
+				sock);
 			goto __TERMINAL;
 		}
 		/* Save to use next time,the connection is keeping open. */
