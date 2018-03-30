@@ -14,13 +14,13 @@ _cmd_buffer DD	01H DUP (?)
 _prompt_string DB 041H DUP (?)
 _BSS	ENDS
 _DATA	SEGMENT
-$SG4722	DB	'[%s]', 00H
+$SG4725	DB	'[%s]', 00H
 	ORG $+3
-$SG4816	DB	'Too many or too few arguments[%d].', 0dH, 0aH, 00H
+$SG4819	DB	'Too many or too few arguments[%d].', 0dH, 0aH, 00H
 	ORG $+3
-$SG4818	DB	'Argument should not be empty.', 0dH, 0aH, 00H
-$SG4820	DB	'Can not obtain name from[%s].', 0dH, 0aH, 00H
-$SG4822	DB	'Application file name too short[%s].', 0dH, 0aH, 00H
+$SG4821	DB	'Argument should not be empty.', 0dH, 0aH, 00H
+$SG4823	DB	'Can not obtain name from[%s].', 0dH, 0aH, 00H
+$SG4825	DB	'Application file name too short[%s].', 0dH, 0aH, 00H
 _DATA	ENDS
 PUBLIC	_getcmd
 PUBLIC	__hx_entry
@@ -79,7 +79,7 @@ $LN5@hx_entry:
 
   00027	8b 45 08	 mov	 eax, DWORD PTR _argc$[ebp]
   0002a	50		 push	 eax
-  0002b	68 00 00 00 00	 push	 OFFSET $SG4816
+  0002b	68 00 00 00 00	 push	 OFFSET $SG4819
   00030	e8 00 00 00 00	 call	 __hx_printf
   00035	83 c4 08	 add	 esp, 8
 
@@ -97,7 +97,7 @@ $LN4@hx_entry:
 ; 228  : 	{
 ; 229  : 		_hx_printf("Argument should not be empty.\r\n");
 
-  00043	68 00 00 00 00	 push	 OFFSET $SG4818
+  00043	68 00 00 00 00	 push	 OFFSET $SG4821
   00048	e8 00 00 00 00	 call	 __hx_printf
   0004d	83 c4 04	 add	 esp, 4
 
@@ -134,7 +134,7 @@ $LN6@hx_entry:
   0007f	8b 4d 0c	 mov	 ecx, DWORD PTR _argv$[ebp]
   00082	8b 14 01	 mov	 edx, DWORD PTR [ecx+eax]
   00085	52		 push	 edx
-  00086	68 00 00 00 00	 push	 OFFSET $SG4820
+  00086	68 00 00 00 00	 push	 OFFSET $SG4823
   0008b	e8 00 00 00 00	 call	 __hx_printf
   00090	83 c4 08	 add	 esp, 8
 
@@ -159,7 +159,7 @@ $LN7@hx_entry:
 
   000a9	8b 4d fc	 mov	 ecx, DWORD PTR _app_name$[ebp]
   000ac	51		 push	 ecx
-  000ad	68 00 00 00 00	 push	 OFFSET $SG4822
+  000ad	68 00 00 00 00	 push	 OFFSET $SG4825
   000b2	e8 00 00 00 00	 call	 __hx_printf
   000b7	83 c4 08	 add	 esp, 8
 
@@ -607,7 +607,7 @@ _ShowPrompt PROC					; COMDAT
 ; 32   : 	_hx_printf("[%s]", prompt_string);
 
   00003	68 00 00 00 00	 push	 OFFSET _prompt_string
-  00008	68 00 00 00 00	 push	 OFFSET $SG4722
+  00008	68 00 00 00 00	 push	 OFFSET $SG4725
   0000d	e8 00 00 00 00	 call	 __hx_printf
   00012	83 c4 08	 add	 esp, 8
 

@@ -63,6 +63,11 @@ BOOL GetMessage(MSG* lpMsg)
 	SYSCALL_PARAM_1(SYSCALL_GETMESSAGE, lpMsg);
 }
 
+BOOL PeekMessage(MSG* lpMsg)
+{
+	SYSCALL_PARAM_1(SYSCALL_PEEKMESSAGE, lpMsg);
+}
+
 BOOL SendMessage(HANDLE hThread, MSG* lpMsg)
 {
 	SYSCALL_PARAM_2(SYSCALL_SENDMESSAGE, hThread, lpMsg);

@@ -10,10 +10,10 @@ INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
 _DATA	SEGMENT
-$SG4843	DB	0dH, 0aH, 'BUG oencountered.', 0dH, 0aH, 'File name: %s', 0dH
+$SG4849	DB	0dH, 0aH, 'BUG oencountered.', 0dH, 0aH, 'File name: %s', 0dH
 	DB	0aH, 'Code Lines:%d', 00H
 	ORG $+2
-$SG4848	DB	'[%d-%d-%d %d:%d:%d]', 00H
+$SG4854	DB	'[%d-%d-%d %d:%d:%d]', 00H
 _DATA	ENDS
 PUBLIC	_CreateKernelThread
 PUBLIC	_DestroyKernelThread
@@ -25,6 +25,7 @@ PUBLIC	_TerminateKernelThread
 PUBLIC	_GetCurrentThread
 PUBLIC	_GetMessage
 PUBLIC	_SendMessage
+PUBLIC	_PeekMessage
 PUBLIC	_Sleep
 PUBLIC	_SetTimer
 PUBLIC	_CancelTimer
@@ -86,16 +87,16 @@ _time$ = -8						; size = 6
 _level$ = 8						; size = 4
 _LogHeader PROC						; COMDAT
 
-; 492  : {
+; 497  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	83 ec 08	 sub	 esp, 8
 
-; 493  : 	BYTE   time[6];
-; 494  : 
-; 495  : 	/* Get time and date from arch spec API. */
-; 496  : 	GetSystemTime(&time[0]);
+; 498  : 	BYTE   time[6];
+; 499  : 
+; 500  : 	/* Get time and date from arch spec API. */
+; 501  : 	GetSystemTime(&time[0]);
 
   00006	b8 01 00 00 00	 mov	 eax, 1
   0000b	6b c8 00	 imul	 ecx, eax, 0
@@ -104,7 +105,7 @@ _LogHeader PROC						; COMDAT
   00013	e8 00 00 00 00	 call	 _GetSystemTime
   00018	83 c4 04	 add	 esp, 4
 
-; 497  : 	_hx_printf("[%d-%d-%d %d:%d:%d]",
+; 502  : 	_hx_printf("[%d-%d-%d %d:%d:%d]",
 
   0001b	b8 01 00 00 00	 mov	 eax, 1
   00020	6b c8 05	 imul	 ecx, eax, 5
@@ -132,17 +133,17 @@ _LogHeader PROC						; COMDAT
   0006d	81 c2 d0 07 00
 	00		 add	 edx, 2000		; 000007d0H
   00073	52		 push	 edx
-  00074	68 00 00 00 00	 push	 OFFSET $SG4848
+  00074	68 00 00 00 00	 push	 OFFSET $SG4854
   00079	e8 00 00 00 00	 call	 __hx_printf
   0007e	83 c4 1c	 add	 esp, 28			; 0000001cH
 
-; 498  : 		time[0] + 2000,
-; 499  : 		time[1],
-; 500  : 		time[2],
-; 501  : 		time[3],
-; 502  : 		time[4],
-; 503  : 		time[5]);
-; 504  : }
+; 503  : 		time[0] + 2000,
+; 504  : 		time[1],
+; 505  : 		time[2],
+; 506  : 		time[3],
+; 507  : 		time[4],
+; 508  : 		time[5]);
+; 509  : }
 
   00081	8b e5		 mov	 esp, ebp
   00083	5d		 pop	 ebp
@@ -158,42 +159,42 @@ _lpszFileName$ = 8					; size = 4
 _dwLineNum$ = 12					; size = 4
 ___BUG	PROC						; COMDAT
 
-; 478  : {
+; 483  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	51		 push	 ecx
 
-; 479  : 	DWORD   dwFlags;
-; 480  : 
-; 481  : 	//Print out fatal error information.
-; 482  : 	_hx_printf("\r\nBUG oencountered.\r\nFile name: %s\r\nCode Lines:%d", lpszFileName, dwLineNum);
+; 484  : 	DWORD   dwFlags;
+; 485  : 
+; 486  : 	//Print out fatal error information.
+; 487  : 	_hx_printf("\r\nBUG oencountered.\r\nFile name: %s\r\nCode Lines:%d", lpszFileName, dwLineNum);
 
   00004	8b 45 0c	 mov	 eax, DWORD PTR _dwLineNum$[ebp]
   00007	50		 push	 eax
   00008	8b 4d 08	 mov	 ecx, DWORD PTR _lpszFileName$[ebp]
   0000b	51		 push	 ecx
-  0000c	68 00 00 00 00	 push	 OFFSET $SG4843
+  0000c	68 00 00 00 00	 push	 OFFSET $SG4849
   00011	e8 00 00 00 00	 call	 __hx_printf
   00016	83 c4 0c	 add	 esp, 12			; 0000000cH
 
-; 483  : 
-; 484  : 	//Enter infinite loop.
-; 485  : 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+; 488  : 
+; 489  : 	//Enter infinite loop.
+; 490  : 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 
   00019	c7 45 fc 00 00
 	00 00		 mov	 DWORD PTR _dwFlags$[ebp], 0
 $LN2@BUG:
 
-; 486  : 	while (TRUE);
+; 491  : 	while (TRUE);
 
   00020	83 ca ff	 or	 edx, -1
   00023	74 02		 je	 SHORT $LN1@BUG
   00025	eb f9		 jmp	 SHORT $LN2@BUG
 $LN1@BUG:
 
-; 487  : 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
-; 488  : }
+; 492  : 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+; 493  : }
 
   00027	8b e5		 mov	 esp, ebp
   00029	5d		 pop	 ebp
@@ -207,12 +208,12 @@ _TEXT	SEGMENT
 _time$ = 8						; size = 4
 _GetSystemTime PROC					; COMDAT
 
-; 435  : {
+; 440  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 436  : 	SYSCALL_PARAM_1(SYSCALL_GETSYSTEMTIME,
+; 441  : 	SYSCALL_PARAM_1(SYSCALL_GETSYSTEMTIME,
 
   00003	ff 75 08	 push	 DWORD PTR _time$[ebp]
   00006	6a 00		 push	 0
@@ -222,8 +223,8 @@ _GetSystemTime PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _time$[ebp]
 
-; 437  : 		time);
-; 438  : }
+; 442  : 		time);
+; 443  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -236,12 +237,12 @@ _TEXT	SEGMENT
 _de$ = 8						; size = 4
 _LoadDriver PROC					; COMDAT
 
-; 408  : {
+; 413  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 409  : 	SYSCALL_PARAM_1(SYSCALL_LOADDRIVER,
+; 414  : 	SYSCALL_PARAM_1(SYSCALL_LOADDRIVER,
 
   00003	ff 75 08	 push	 DWORD PTR _de$[ebp]
   00006	6a 00		 push	 0
@@ -251,8 +252,8 @@ _LoadDriver PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _de$[ebp]
 
-; 410  : 		de);
-; 411  : }
+; 415  : 		de);
+; 416  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -265,12 +266,12 @@ _TEXT	SEGMENT
 _shell$ = 8						; size = 4
 _ReplaceShell PROC					; COMDAT
 
-; 402  : {
+; 407  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 403  : 	SYSCALL_PARAM_1(SYSCALL_REPLACESHELL,
+; 408  : 	SYSCALL_PARAM_1(SYSCALL_REPLACESHELL,
 
   00003	ff 75 08	 push	 DWORD PTR _shell$[ebp]
   00006	6a 00		 push	 0
@@ -280,8 +281,8 @@ _ReplaceShell PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _shell$[ebp]
 
-; 404  : 		shell);
-; 405  : }
+; 409  : 		shell);
+; 410  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -296,12 +297,12 @@ _dwEndSyscallNum$ = 12					; size = 4
 _sde$ = 16						; size = 4
 _RegisterSystemCall PROC				; COMDAT
 
-; 394  : {
+; 399  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 395  : 	SYSCALL_PARAM_3(SYSCALL_REGISTERSYSTEMCALL,
+; 400  : 	SYSCALL_PARAM_3(SYSCALL_REGISTERSYSTEMCALL,
 
   00003	ff 75 10	 push	 DWORD PTR _sde$[ebp]
   00006	ff 75 0c	 push	 DWORD PTR _dwEndSyscallNum$[ebp]
@@ -315,10 +316,10 @@ _RegisterSystemCall PROC				; COMDAT
   00017	8f 45 0c	 pop	 DWORD PTR _dwEndSyscallNum$[ebp]
   0001a	8f 45 10	 pop	 DWORD PTR _sde$[ebp]
 
-; 396  : 		dwStartSyscallNum,
-; 397  : 		dwEndSyscallNum,
-; 398  : 		sde);
-; 399  : }
+; 401  : 		dwStartSyscallNum,
+; 402  : 		dwEndSyscallNum,
+; 403  : 		sde);
+; 404  : }
 
   0001d	5d		 pop	 ebp
   0001e	c3		 ret	 0
@@ -331,12 +332,12 @@ _TEXT	SEGMENT
 _hNewThread$ = 8					; size = 4
 _SetFocusThread PROC					; COMDAT
 
-; 429  : {
+; 434  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 430  : 	SYSCALL_PARAM_1(SYSCALL_SETFOCUSTHREAD,
+; 435  : 	SYSCALL_PARAM_1(SYSCALL_SETFOCUSTHREAD,
 
   00003	ff 75 08	 push	 DWORD PTR _hNewThread$[ebp]
   00006	6a 00		 push	 0
@@ -346,8 +347,8 @@ _SetFocusThread PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hNewThread$[ebp]
 
-; 431  : 		hNewThread);
-; 432  : }
+; 436  : 		hNewThread);
+; 437  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -359,12 +360,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _SwitchToText PROC					; COMDAT
 
-; 424  : {
+; 429  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 425  : 	SYSCALL_PARAM_0(SYSCALL_SWITCHTOTEXT);
+; 430  : 	SYSCALL_PARAM_0(SYSCALL_SWITCHTOTEXT);
 
   00003	6a 00		 push	 0
   00005	6a 35		 push	 53			; 00000035H
@@ -372,7 +373,7 @@ _SwitchToText PROC					; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 426  : }
+; 431  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -384,12 +385,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _SwitchToGraphic PROC					; COMDAT
 
-; 419  : {
+; 424  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 420  : 	SYSCALL_PARAM_0(SYSCALL_SWITCHTOGRAPHIC);
+; 425  : 	SYSCALL_PARAM_0(SYSCALL_SWITCHTOGRAPHIC);
 
   00003	6a 00		 push	 0
   00005	6a 34		 push	 52			; 00000034H
@@ -397,7 +398,7 @@ _SwitchToGraphic PROC					; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 421  : }
+; 426  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -411,12 +412,12 @@ _x$ = 8							; size = 2
 _y$ = 12						; size = 2
 _SetCursorPos PROC					; COMDAT
 
-; 462  : {
+; 467  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 463  : 	SYSCALL_PARAM_2(SYSCALL_SETCURSORPOS,
+; 468  : 	SYSCALL_PARAM_2(SYSCALL_SETCURSORPOS,
 
   00003	66 ff 75 0c	 push	 WORD PTR _y$[ebp]
   00007	66 ff 75 08	 push	 WORD PTR _x$[ebp]
@@ -428,8 +429,8 @@ _SetCursorPos PROC					; COMDAT
   00013	66 8f 45 08	 pop	 WORD PTR _x$[ebp]
   00017	66 8f 45 0c	 pop	 WORD PTR _y$[ebp]
 
-; 464  : 		x, y);
-; 465  : }
+; 469  : 		x, y);
+; 470  : }
 
   0001b	5d		 pop	 ebp
   0001c	c3		 ret	 0
@@ -443,12 +444,12 @@ _x$ = 8							; size = 4
 _y$ = 12						; size = 4
 _GetCursorPos PROC					; COMDAT
 
-; 456  : {
+; 461  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 457  : 	SYSCALL_PARAM_2(SYSCALL_GETCURSORPOS,
+; 462  : 	SYSCALL_PARAM_2(SYSCALL_GETCURSORPOS,
 
   00003	ff 75 0c	 push	 DWORD PTR _y$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _x$[ebp]
@@ -460,8 +461,8 @@ _GetCursorPos PROC					; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _x$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _y$[ebp]
 
-; 458  : 		x, y);
-; 459  : }
+; 463  : 		x, y);
+; 464  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -473,12 +474,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _GotoPrev PROC						; COMDAT
 
-; 451  : {
+; 456  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 452  : 	SYSCALL_PARAM_0(SYSCALL_GOTOPREV);
+; 457  : 	SYSCALL_PARAM_0(SYSCALL_GOTOPREV);
 
   00003	6a 00		 push	 0
   00005	6a 3e		 push	 62			; 0000003eH
@@ -486,7 +487,7 @@ _GotoPrev PROC						; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 453  : }
+; 458  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -498,12 +499,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _ChangeLine PROC					; COMDAT
 
-; 446  : {
+; 451  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 447  : 	SYSCALL_PARAM_0(SYSCALL_CHANGELINE);
+; 452  : 	SYSCALL_PARAM_0(SYSCALL_CHANGELINE);
 
   00003	6a 00		 push	 0
   00005	6a 3a		 push	 58			; 0000003aH
@@ -511,7 +512,7 @@ _ChangeLine PROC					; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 448  : }
+; 453  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -523,12 +524,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _GotoHome PROC						; COMDAT
 
-; 441  : {
+; 446  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 442  : 	SYSCALL_PARAM_0(SYSCALL_GOTOHOME);
+; 447  : 	SYSCALL_PARAM_0(SYSCALL_GOTOHOME);
 
   00003	6a 00		 push	 0
   00005	6a 39		 push	 57			; 00000039H
@@ -536,7 +537,7 @@ _GotoHome PROC						; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 443  : }
+; 448  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -550,18 +551,18 @@ _dwCh$ = -4						; size = 4
 _ch$ = 8						; size = 2
 _PrintChar PROC						; COMDAT
 
-; 386  : {
+; 391  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	51		 push	 ecx
 
-; 387  : 	DWORD dwCh = (DWORD)ch;
+; 392  : 	DWORD dwCh = (DWORD)ch;
 
   00004	0f b7 45 08	 movzx	 eax, WORD PTR _ch$[ebp]
   00008	89 45 fc	 mov	 DWORD PTR _dwCh$[ebp], eax
 
-; 388  : 	SYSCALL_PARAM_1(SYSCALL_PRINTCHAR,
+; 393  : 	SYSCALL_PARAM_1(SYSCALL_PRINTCHAR,
 
   0000b	ff 75 fc	 push	 DWORD PTR _dwCh$[ebp]
   0000e	6a 00		 push	 0
@@ -571,8 +572,8 @@ _PrintChar PROC						; COMDAT
   00015	58		 pop	 eax
   00016	8f 45 fc	 pop	 DWORD PTR _dwCh$[ebp]
 
-; 389  : 		dwCh);
-; 390  : }
+; 394  : 		dwCh);
+; 395  : }
 
   00019	8b e5		 mov	 esp, ebp
   0001b	5d		 pop	 ebp
@@ -586,12 +587,12 @@ _TEXT	SEGMENT
 _lpszInfo$ = 8						; size = 4
 _PrintLine PROC						; COMDAT
 
-; 380  : {
+; 385  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 381  : 	SYSCALL_PARAM_1(SYSCALL_PRINTLINE,
+; 386  : 	SYSCALL_PARAM_1(SYSCALL_PRINTLINE,
 
   00003	ff 75 08	 push	 DWORD PTR _lpszInfo$[ebp]
   00006	6a 00		 push	 0
@@ -601,8 +602,8 @@ _PrintLine PROC						; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _lpszInfo$[ebp]
 
-; 382  : 		lpszInfo);
-; 383  : }
+; 387  : 		lpszInfo);
+; 388  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -617,12 +618,12 @@ _dwSizeType$ = 12					; size = 4
 _dwMemLength$ = 16					; size = 4
 _KMemFree PROC						; COMDAT
 
-; 373  : {
+; 378  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 374  : 	SYSCALL_PARAM_3(SYSCALL_KMEMFREE, lpMemAddr,
+; 379  : 	SYSCALL_PARAM_3(SYSCALL_KMEMFREE, lpMemAddr,
 
   00003	ff 75 10	 push	 DWORD PTR _dwMemLength$[ebp]
   00006	ff 75 0c	 push	 DWORD PTR _dwSizeType$[ebp]
@@ -636,9 +637,9 @@ _KMemFree PROC						; COMDAT
   00017	8f 45 0c	 pop	 DWORD PTR _dwSizeType$[ebp]
   0001a	8f 45 10	 pop	 DWORD PTR _dwMemLength$[ebp]
 
-; 375  : 		dwSizeType,
-; 376  : 		dwMemLength);
-; 377  : }
+; 380  : 		dwSizeType,
+; 381  : 		dwMemLength);
+; 382  : }
 
   0001d	5d		 pop	 ebp
   0001e	c3		 ret	 0
@@ -652,12 +653,12 @@ _dwSize$ = 8						; size = 4
 _dwSizeType$ = 12					; size = 4
 _KMemAlloc PROC						; COMDAT
 
-; 367  : {
+; 372  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 368  : 	SYSCALL_PARAM_2(SYSCALL_KMEMALLOC,
+; 373  : 	SYSCALL_PARAM_2(SYSCALL_KMEMALLOC,
 
   00003	ff 75 0c	 push	 DWORD PTR _dwSizeType$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _dwSize$[ebp]
@@ -669,8 +670,8 @@ _KMemAlloc PROC						; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _dwSize$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _dwSizeType$[ebp]
 
-; 369  : 		dwSize, dwSizeType);
-; 370  : }
+; 374  : 		dwSize, dwSizeType);
+; 375  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -683,12 +684,12 @@ _TEXT	SEGMENT
 _hDevice$ = 8						; size = 4
 _DestroyDevice PROC					; COMDAT
 
-; 362  : {
+; 367  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 363  : 	SYSCALL_PARAM_1(SYSCALL_DESTROYDEVICE, hDevice);
+; 368  : 	SYSCALL_PARAM_1(SYSCALL_DESTROYDEVICE, hDevice);
 
   00003	ff 75 08	 push	 DWORD PTR _hDevice$[ebp]
   00006	6a 00		 push	 0
@@ -698,7 +699,7 @@ _DestroyDevice PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hDevice$[ebp]
 
-; 364  : }
+; 369  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -717,12 +718,12 @@ _lpDevExtension$ = 28					; size = 4
 _hDrvObject$ = 32					; size = 4
 _CreateDevice PROC					; COMDAT
 
-; 350  : {
+; 355  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 351  : 	SYSCALL_PARAM_7(SYSCALL_CREATEDEVICE,
+; 356  : 	SYSCALL_PARAM_7(SYSCALL_CREATEDEVICE,
 
   00003	ff 75 20	 push	 DWORD PTR _hDrvObject$[ebp]
   00006	ff 75 1c	 push	 DWORD PTR _lpDevExtension$[ebp]
@@ -744,14 +745,14 @@ _CreateDevice PROC					; COMDAT
   0002f	8f 45 1c	 pop	 DWORD PTR _lpDevExtension$[ebp]
   00032	8f 45 20	 pop	 DWORD PTR _hDrvObject$[ebp]
 
-; 352  : 		lpszDevName,
-; 353  : 		dwAttributes,
-; 354  : 		dwBlockSize,
-; 355  : 		dwMaxReadSize,
-; 356  : 		dwMaxWriteSize,
-; 357  : 		lpDevExtension,
-; 358  : 		hDrvObject);
-; 359  : }
+; 357  : 		lpszDevName,
+; 358  : 		dwAttributes,
+; 359  : 		dwBlockSize,
+; 360  : 		dwMaxReadSize,
+; 361  : 		dwMaxWriteSize,
+; 362  : 		lpDevExtension,
+; 363  : 		hDrvObject);
+; 364  : }
 
   00035	5d		 pop	 ebp
   00036	c3		 ret	 0
@@ -764,12 +765,12 @@ _TEXT	SEGMENT
 _hFile$ = 8						; size = 4
 _FlushFileBuffers PROC					; COMDAT
 
-; 338  : {
+; 343  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 339  : 	SYSCALL_PARAM_1(SYSCALL_FLUSHFILEBUFFERS,
+; 344  : 	SYSCALL_PARAM_1(SYSCALL_FLUSHFILEBUFFERS,
 
   00003	ff 75 08	 push	 DWORD PTR _hFile$[ebp]
   00006	6a 00		 push	 0
@@ -779,8 +780,8 @@ _FlushFileBuffers PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hFile$[ebp]
 
-; 340  : 		hFile);
-; 341  : }
+; 345  : 		hFile);
+; 346  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -796,12 +797,12 @@ _lpdwDistHigh$ = 16					; size = 4
 _dwMoveFlags$ = 20					; size = 4
 _SetFilePointer PROC					; COMDAT
 
-; 330  : {
+; 335  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 331  : 	SYSCALL_PARAM_4(SYSCALL_SETFILEPOINTER, hFile,
+; 336  : 	SYSCALL_PARAM_4(SYSCALL_SETFILEPOINTER, hFile,
 
   00003	ff 75 14	 push	 DWORD PTR _dwMoveFlags$[ebp]
   00006	ff 75 10	 push	 DWORD PTR _lpdwDistHigh$[ebp]
@@ -817,10 +818,10 @@ _SetFilePointer PROC					; COMDAT
   0001d	8f 45 10	 pop	 DWORD PTR _lpdwDistHigh$[ebp]
   00020	8f 45 14	 pop	 DWORD PTR _dwMoveFlags$[ebp]
 
-; 332  : 		lpdwDistLow,
-; 333  : 		lpdwDistHigh,
-; 334  : 		dwMoveFlags);
-; 335  : }
+; 337  : 		lpdwDistLow,
+; 338  : 		lpdwDistHigh,
+; 339  : 		dwMoveFlags);
+; 340  : }
 
   00023	5d		 pop	 ebp
   00024	c3		 ret	 0
@@ -839,12 +840,12 @@ _lpOutputBuffer$ = 28					; size = 4
 _lpdwFilled$ = 32					; size = 4
 _IOControl PROC						; COMDAT
 
-; 318  : {
+; 323  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 319  : 	SYSCALL_PARAM_7(SYSCALL_IOCONTROL, hFile,
+; 324  : 	SYSCALL_PARAM_7(SYSCALL_IOCONTROL, hFile,
 
   00003	ff 75 20	 push	 DWORD PTR _lpdwFilled$[ebp]
   00006	ff 75 1c	 push	 DWORD PTR _lpOutputBuffer$[ebp]
@@ -866,11 +867,11 @@ _IOControl PROC						; COMDAT
   0002f	8f 45 1c	 pop	 DWORD PTR _lpOutputBuffer$[ebp]
   00032	8f 45 20	 pop	 DWORD PTR _lpdwFilled$[ebp]
 
-; 320  : 		dwCommand, dwInputLen,
-; 321  : 		lpInputBuffer,
-; 322  : 		dwOutputLen, lpOutputBuffer,
-; 323  : 		lpdwFilled);
-; 324  : }
+; 325  : 		dwCommand, dwInputLen,
+; 326  : 		lpInputBuffer,
+; 327  : 		dwOutputLen, lpOutputBuffer,
+; 328  : 		lpdwFilled);
+; 329  : }
 
   00035	5d		 pop	 ebp
   00036	c3		 ret	 0
@@ -883,12 +884,12 @@ _TEXT	SEGMENT
 _hFile$ = 8						; size = 4
 _SetEndOfFile PROC					; COMDAT
 
-; 307  : {
+; 312  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 308  : 	SYSCALL_PARAM_1(SYSCALL_SETENDOFFILE, hFile);
+; 313  : 	SYSCALL_PARAM_1(SYSCALL_SETENDOFFILE, hFile);
 
   00003	ff 75 08	 push	 DWORD PTR _hFile$[ebp]
   00006	6a 00		 push	 0
@@ -898,7 +899,7 @@ _SetEndOfFile PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hFile$[ebp]
 
-; 309  : }
+; 314  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -911,12 +912,12 @@ _TEXT	SEGMENT
 _lpszDirName$ = 8					; size = 4
 _RemoveDirectory PROC					; COMDAT
 
-; 301  : {
+; 306  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 302  : 	SYSCALL_PARAM_1(SYSCALL_REMOVEDIRECTORY,
+; 307  : 	SYSCALL_PARAM_1(SYSCALL_REMOVEDIRECTORY,
 
   00003	ff 75 08	 push	 DWORD PTR _lpszDirName$[ebp]
   00006	6a 00		 push	 0
@@ -926,8 +927,8 @@ _RemoveDirectory PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _lpszDirName$[ebp]
 
-; 303  : 		lpszDirName);
-; 304  : }
+; 308  : 		lpszDirName);
+; 309  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -941,12 +942,12 @@ _hFile$ = 8						; size = 4
 _lpdwSizeHigh$ = 12					; size = 4
 _GetFileSize PROC					; COMDAT
 
-; 295  : {
+; 300  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 296  : 	SYSCALL_PARAM_2(SYSCALL_GETFILESIZE, hFile,
+; 301  : 	SYSCALL_PARAM_2(SYSCALL_GETFILESIZE, hFile,
 
   00003	ff 75 0c	 push	 DWORD PTR _lpdwSizeHigh$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _hFile$[ebp]
@@ -958,8 +959,8 @@ _GetFileSize PROC					; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _hFile$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _lpdwSizeHigh$[ebp]
 
-; 297  : 		lpdwSizeHigh);
-; 298  : }
+; 302  : 		lpdwSizeHigh);
+; 303  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -972,12 +973,12 @@ _TEXT	SEGMENT
 _lpszFileName$ = 8					; size = 4
 _GetFileAttributes PROC					; COMDAT
 
-; 290  : {
+; 295  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 291  : 	SYSCALL_PARAM_1(SYSCALL_GETFILEATTRIBUTES, lpszFileName);
+; 296  : 	SYSCALL_PARAM_1(SYSCALL_GETFILEATTRIBUTES, lpszFileName);
 
   00003	ff 75 08	 push	 DWORD PTR _lpszFileName$[ebp]
   00006	6a 00		 push	 0
@@ -987,7 +988,7 @@ _GetFileAttributes PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _lpszFileName$[ebp]
 
-; 292  : }
+; 297  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1001,12 +1002,12 @@ _lpszDirName$ = 8					; size = 4
 _hFindHandle$ = 12					; size = 4
 _FindClose PROC						; COMDAT
 
-; 283  : {
+; 288  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 284  : 	SYSCALL_PARAM_2(SYSCALL_FINDCLOSE,
+; 289  : 	SYSCALL_PARAM_2(SYSCALL_FINDCLOSE,
 
   00003	ff 75 0c	 push	 DWORD PTR _hFindHandle$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _lpszDirName$[ebp]
@@ -1018,9 +1019,9 @@ _FindClose PROC						; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _lpszDirName$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _hFindHandle$[ebp]
 
-; 285  : 		lpszDirName,
-; 286  : 		hFindHandle);
-; 287  : }
+; 290  : 		lpszDirName,
+; 291  : 		hFindHandle);
+; 292  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -1035,12 +1036,12 @@ _hFindHandle$ = 12					; size = 4
 _pFindData$ = 16					; size = 4
 _FindNextFile PROC					; COMDAT
 
-; 275  : {
+; 280  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 276  : 	SYSCALL_PARAM_3(SYSCALL_FINDNEXTFILE, lpszDirName,
+; 281  : 	SYSCALL_PARAM_3(SYSCALL_FINDNEXTFILE, lpszDirName,
 
   00003	ff 75 10	 push	 DWORD PTR _pFindData$[ebp]
   00006	ff 75 0c	 push	 DWORD PTR _hFindHandle$[ebp]
@@ -1054,9 +1055,9 @@ _FindNextFile PROC					; COMDAT
   00017	8f 45 0c	 pop	 DWORD PTR _hFindHandle$[ebp]
   0001a	8f 45 10	 pop	 DWORD PTR _pFindData$[ebp]
 
-; 277  : 		hFindHandle,
-; 278  : 		pFindData);
-; 279  : }
+; 282  : 		hFindHandle,
+; 283  : 		pFindData);
+; 284  : }
 
   0001d	5d		 pop	 ebp
   0001e	c3		 ret	 0
@@ -1070,12 +1071,12 @@ _lpszDirName$ = 8					; size = 4
 _pFindData$ = 12					; size = 4
 _FindFirstFile PROC					; COMDAT
 
-; 266  : {
+; 271  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 267  : 	SYSCALL_PARAM_2(SYSCALL_FINDFIRSTFILE,
+; 272  : 	SYSCALL_PARAM_2(SYSCALL_FINDFIRSTFILE,
 
   00003	ff 75 0c	 push	 DWORD PTR _pFindData$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _lpszDirName$[ebp]
@@ -1087,9 +1088,9 @@ _FindFirstFile PROC					; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _lpszDirName$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _pFindData$[ebp]
 
-; 268  : 		lpszDirName,
-; 269  : 		pFindData);
-; 270  : }
+; 273  : 		lpszDirName,
+; 274  : 		pFindData);
+; 275  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -1102,12 +1103,12 @@ _TEXT	SEGMENT
 _lpszFileName$ = 8					; size = 4
 _DeleteFile PROC					; COMDAT
 
-; 260  : {
+; 265  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 261  : 	SYSCALL_PARAM_1(SYSCALL_DELETEFILE, lpszFileName);
+; 266  : 	SYSCALL_PARAM_1(SYSCALL_DELETEFILE, lpszFileName);
 
   00003	ff 75 08	 push	 DWORD PTR _lpszFileName$[ebp]
   00006	6a 00		 push	 0
@@ -1117,7 +1118,7 @@ _DeleteFile PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _lpszFileName$[ebp]
 
-; 262  : }
+; 267  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1130,12 +1131,12 @@ _TEXT	SEGMENT
 _lpszDirName$ = 8					; size = 4
 _CreateDirectory PROC					; COMDAT
 
-; 255  : {
+; 260  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 256  : 	SYSCALL_PARAM_1(SYSCALL_CREATEDIRECTORY, lpszDirName);
+; 261  : 	SYSCALL_PARAM_1(SYSCALL_CREATEDIRECTORY, lpszDirName);
 
   00003	ff 75 08	 push	 DWORD PTR _lpszDirName$[ebp]
   00006	6a 00		 push	 0
@@ -1145,7 +1146,7 @@ _CreateDirectory PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _lpszDirName$[ebp]
 
-; 257  : }
+; 262  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1158,12 +1159,12 @@ _TEXT	SEGMENT
 _hFile$ = 8						; size = 4
 _CloseFile PROC						; COMDAT
 
-; 249  : {
+; 254  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 250  : 	SYSCALL_PARAM_1(SYSCALL_CLOSEFILE,
+; 255  : 	SYSCALL_PARAM_1(SYSCALL_CLOSEFILE,
 
   00003	ff 75 08	 push	 DWORD PTR _hFile$[ebp]
   00006	6a 00		 push	 0
@@ -1173,8 +1174,8 @@ _CloseFile PROC						; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hFile$[ebp]
 
-; 251  : 		hFile);
-; 252  : }
+; 256  : 		hFile);
+; 257  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1190,12 +1191,12 @@ _lpBuffer$ = 16						; size = 4
 _lpdwWrittenSize$ = 20					; size = 4
 _WriteFile PROC						; COMDAT
 
-; 240  : {
+; 245  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 241  : 	SYSCALL_PARAM_4(SYSCALL_WRITEFILE,
+; 246  : 	SYSCALL_PARAM_4(SYSCALL_WRITEFILE,
 
   00003	ff 75 14	 push	 DWORD PTR _lpdwWrittenSize$[ebp]
   00006	ff 75 10	 push	 DWORD PTR _lpBuffer$[ebp]
@@ -1211,11 +1212,11 @@ _WriteFile PROC						; COMDAT
   0001d	8f 45 10	 pop	 DWORD PTR _lpBuffer$[ebp]
   00020	8f 45 14	 pop	 DWORD PTR _lpdwWrittenSize$[ebp]
 
-; 242  : 		hFile,
-; 243  : 		dwWriteSize,
-; 244  : 		lpBuffer,
-; 245  : 		lpdwWrittenSize);
-; 246  : }
+; 247  : 		hFile,
+; 248  : 		dwWriteSize,
+; 249  : 		lpBuffer,
+; 250  : 		lpdwWrittenSize);
+; 251  : }
 
   00023	5d		 pop	 ebp
   00024	c3		 ret	 0
@@ -1231,12 +1232,12 @@ _lpBuffer$ = 16						; size = 4
 _lpdwReadSize$ = 20					; size = 4
 _ReadFile PROC						; COMDAT
 
-; 228  : {
+; 233  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 229  : 	SYSCALL_PARAM_4(SYSCALL_READFILE,
+; 234  : 	SYSCALL_PARAM_4(SYSCALL_READFILE,
 
   00003	ff 75 14	 push	 DWORD PTR _lpdwReadSize$[ebp]
   00006	ff 75 10	 push	 DWORD PTR _lpBuffer$[ebp]
@@ -1252,11 +1253,11 @@ _ReadFile PROC						; COMDAT
   0001d	8f 45 10	 pop	 DWORD PTR _lpBuffer$[ebp]
   00020	8f 45 14	 pop	 DWORD PTR _lpdwReadSize$[ebp]
 
-; 230  : 		hFile,
-; 231  : 		dwReadSize,
-; 232  : 		lpBuffer,
-; 233  : 		lpdwReadSize);
-; 234  : }
+; 235  : 		hFile,
+; 236  : 		dwReadSize,
+; 237  : 		lpBuffer,
+; 238  : 		lpdwReadSize);
+; 239  : }
 
   00023	5d		 pop	 ebp
   00024	c3		 ret	 0
@@ -1272,12 +1273,12 @@ _dwShareMode$ = 16					; size = 4
 _lpReserved$ = 20					; size = 4
 _CreateFile PROC					; COMDAT
 
-; 216  : {
+; 221  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 217  : 	SYSCALL_PARAM_4(SYSCALL_CREATEFILE,
+; 222  : 	SYSCALL_PARAM_4(SYSCALL_CREATEFILE,
 
   00003	ff 75 14	 push	 DWORD PTR _lpReserved$[ebp]
   00006	ff 75 10	 push	 DWORD PTR _dwShareMode$[ebp]
@@ -1293,11 +1294,11 @@ _CreateFile PROC					; COMDAT
   0001d	8f 45 10	 pop	 DWORD PTR _dwShareMode$[ebp]
   00020	8f 45 14	 pop	 DWORD PTR _lpReserved$[ebp]
 
-; 218  : 		lpszFileName,
-; 219  : 		dwAccessMode,
-; 220  : 		dwShareMode,
-; 221  : 		lpReserved);
-; 222  : }
+; 223  : 		lpszFileName,
+; 224  : 		dwAccessMode,
+; 225  : 		dwShareMode,
+; 226  : 		lpReserved);
+; 227  : }
 
   00023	5d		 pop	 ebp
   00024	c3		 ret	 0
@@ -1310,12 +1311,12 @@ _TEXT	SEGMENT
 _lpVirtualAddr$ = 8					; size = 4
 _VirtualFree PROC					; COMDAT
 
-; 208  : {
+; 213  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 209  : 	SYSCALL_PARAM_1(SYSCALL_VIRTUALFREE, lpVirtualAddr);
+; 214  : 	SYSCALL_PARAM_1(SYSCALL_VIRTUALFREE, lpVirtualAddr);
 
   00003	ff 75 08	 push	 DWORD PTR _lpVirtualAddr$[ebp]
   00006	6a 00		 push	 0
@@ -1325,7 +1326,7 @@ _VirtualFree PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _lpVirtualAddr$[ebp]
 
-; 210  : }
+; 215  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1342,12 +1343,12 @@ _dwAccessFlags$ = 20					; size = 4
 _lpszRegName$ = 24					; size = 4
 _VirtualAlloc PROC					; COMDAT
 
-; 198  : {
+; 203  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 199  : 	SYSCALL_PARAM_5(SYSCALL_VIRTUALALLOC,
+; 204  : 	SYSCALL_PARAM_5(SYSCALL_VIRTUALALLOC,
 
   00003	ff 75 18	 push	 DWORD PTR _lpszRegName$[ebp]
   00006	ff 75 14	 push	 DWORD PTR _dwAccessFlags$[ebp]
@@ -1365,12 +1366,12 @@ _VirtualAlloc PROC					; COMDAT
   00023	8f 45 14	 pop	 DWORD PTR _dwAccessFlags$[ebp]
   00026	8f 45 18	 pop	 DWORD PTR _lpszRegName$[ebp]
 
-; 200  : 		lpDesiredAddr,
-; 201  : 		dwSize,
-; 202  : 		dwAllocateFlags,
-; 203  : 		dwAccessFlags,
-; 204  : 		lpszRegName);
-; 205  : }
+; 205  : 		lpDesiredAddr,
+; 206  : 		dwSize,
+; 207  : 		dwAllocateFlags,
+; 208  : 		dwAccessFlags,
+; 209  : 		lpszRegName);
+; 210  : }
 
   00029	5d		 pop	 ebp
   0002a	c3		 ret	 0
@@ -1383,12 +1384,12 @@ _TEXT	SEGMENT
 _hInterrupt$ = 8					; size = 4
 _DisconnectInterrupt PROC				; COMDAT
 
-; 189  : {
+; 194  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 190  : 	SYSCALL_PARAM_1(SYSCALL_DISCONNECTINTERRUPT, hInterrupt);
+; 195  : 	SYSCALL_PARAM_1(SYSCALL_DISCONNECTINTERRUPT, hInterrupt);
 
   00003	ff 75 08	 push	 DWORD PTR _hInterrupt$[ebp]
   00006	6a 00		 push	 0
@@ -1398,7 +1399,7 @@ _DisconnectInterrupt PROC				; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hInterrupt$[ebp]
 
-; 191  : }
+; 196  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1413,99 +1414,99 @@ _lpHandlerParam$ = 12					; size = 4
 _ucVector$ = 16						; size = 1
 _ConnectInterrupt PROC					; COMDAT
 
-; 144  : {
+; 149  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
   00003	53		 push	 ebx
 
-; 145  : #ifdef __GCC__
-; 146  : 	__asm__ __volatile__(
-; 147  : 		".code32			;"
-; 148  : 		"pushl 	%%ebx		;"
-; 149  : 		"movb	%3,	%%bl	;"
-; 150  : 		"pushl	%%ebx				;"
-; 151  : 		"pushl	%4					;"
-; 152  : 		"pushl	%5					;"
-; 153  : 		"pushl	$0					;"
-; 154  : 		"pushl	SYSCALL_CONNECTINTERRUPT;"
-; 155  : 		"int	$0x7F					;"
-; 156  : 		"popl	%%eax					;"
-; 157  : 		"popl	%%eax					;"
-; 158  : 		"popl	%0						;"
-; 159  : 		"popl	%1						;"
-; 160  : 		"popl	%%ebx					;"
-; 161  : 		"movb	%%bl, %2				;"
-; 162  : 		"popl	%%ebx					;"
-; 163  : 		:"=r"(lpInterruptHandler), "=r"(lpHandlerParam), "=r"(ucVector)
-; 164  : 		: "r"(ucVector), "r"(lpHandlerParam), "r"(lpInterruptHandler)
-; 165  : 		:
-; 166  : 	);
-; 167  : #else
-; 168  : 	__asm {
-; 169  : 		push ebx
+; 150  : #ifdef __GCC__
+; 151  : 	__asm__ __volatile__(
+; 152  : 		".code32			;"
+; 153  : 		"pushl 	%%ebx		;"
+; 154  : 		"movb	%3,	%%bl	;"
+; 155  : 		"pushl	%%ebx				;"
+; 156  : 		"pushl	%4					;"
+; 157  : 		"pushl	%5					;"
+; 158  : 		"pushl	$0					;"
+; 159  : 		"pushl	SYSCALL_CONNECTINTERRUPT;"
+; 160  : 		"int	$0x7F					;"
+; 161  : 		"popl	%%eax					;"
+; 162  : 		"popl	%%eax					;"
+; 163  : 		"popl	%0						;"
+; 164  : 		"popl	%1						;"
+; 165  : 		"popl	%%ebx					;"
+; 166  : 		"movb	%%bl, %2				;"
+; 167  : 		"popl	%%ebx					;"
+; 168  : 		:"=r"(lpInterruptHandler), "=r"(lpHandlerParam), "=r"(ucVector)
+; 169  : 		: "r"(ucVector), "r"(lpHandlerParam), "r"(lpInterruptHandler)
+; 170  : 		:
+; 171  : 	);
+; 172  : #else
+; 173  : 	__asm {
+; 174  : 		push ebx
 
   00004	53		 push	 ebx
 
-; 170  : 		mov bl, ucVector
+; 175  : 		mov bl, ucVector
 
   00005	8a 5d 10	 mov	 bl, BYTE PTR _ucVector$[ebp]
 
-; 171  : 		push ebx
+; 176  : 		push ebx
 
   00008	53		 push	 ebx
 
-; 172  : 		push lpHandlerParam
+; 177  : 		push lpHandlerParam
 
   00009	ff 75 0c	 push	 DWORD PTR _lpHandlerParam$[ebp]
 
-; 173  : 		push lpInterruptHandler
+; 178  : 		push lpInterruptHandler
 
   0000c	ff 75 08	 push	 DWORD PTR _lpInterruptHandler$[ebp]
 
-; 174  : 		push 0
+; 179  : 		push 0
 
   0000f	6a 00		 push	 0
 
-; 175  : 		push SYSCALL_CONNECTINTERRUPT
+; 180  : 		push SYSCALL_CONNECTINTERRUPT
 
   00011	6a 15		 push	 21			; 00000015H
 
-; 176  : 		int 0x7F
+; 181  : 		int 0x7F
 
   00013	cd 7f		 int	 127			; 0000007fH
 
-; 177  : 		pop eax
+; 182  : 		pop eax
 
   00015	58		 pop	 eax
 
-; 178  : 		pop eax
+; 183  : 		pop eax
 
   00016	58		 pop	 eax
 
-; 179  : 		pop lpInterruptHandler
+; 184  : 		pop lpInterruptHandler
 
   00017	8f 45 08	 pop	 DWORD PTR _lpInterruptHandler$[ebp]
 
-; 180  : 		pop lpHandlerParam
+; 185  : 		pop lpHandlerParam
 
   0001a	8f 45 0c	 pop	 DWORD PTR _lpHandlerParam$[ebp]
 
-; 181  : 		pop ebx
+; 186  : 		pop ebx
 
   0001d	5b		 pop	 ebx
 
-; 182  : 		mov ucVector, bl
+; 187  : 		mov ucVector, bl
 
   0001e	88 5d 10	 mov	 BYTE PTR _ucVector$[ebp], bl
 
-; 183  : 		pop ebx
+; 188  : 		pop ebx
 
   00021	5b		 pop	 ebx
 
-; 184  : 	}
-; 185  : #endif
-; 186  : }
+; 189  : 	}
+; 190  : #endif
+; 191  : }
 
   00022	5b		 pop	 ebx
   00023	5d		 pop	 ebp
@@ -1520,12 +1521,12 @@ _hObject$ = 8						; size = 4
 _dwMillionSecond$ = 12					; size = 4
 _WaitForThisObjectEx PROC				; COMDAT
 
-; 136  : {
+; 141  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 137  : 	SYSCALL_PARAM_2(SYSCALL_WAITFORTHISOBJECTEX, hObject,
+; 142  : 	SYSCALL_PARAM_2(SYSCALL_WAITFORTHISOBJECTEX, hObject,
 
   00003	ff 75 0c	 push	 DWORD PTR _dwMillionSecond$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _hObject$[ebp]
@@ -1537,8 +1538,8 @@ _WaitForThisObjectEx PROC				; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _hObject$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _dwMillionSecond$[ebp]
 
-; 138  : 		dwMillionSecond);
-; 139  : }
+; 143  : 		dwMillionSecond);
+; 144  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -1551,12 +1552,12 @@ _TEXT	SEGMENT
 _hObject$ = 8						; size = 4
 _WaitForThisObject PROC					; COMDAT
 
-; 131  : {
+; 136  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 132  : 	SYSCALL_PARAM_1(SYSCALL_WAITFORTHISOBJECT, hObject);
+; 137  : 	SYSCALL_PARAM_1(SYSCALL_WAITFORTHISOBJECT, hObject);
 
   00003	ff 75 08	 push	 DWORD PTR _hObject$[ebp]
   00006	6a 00		 push	 0
@@ -1566,7 +1567,7 @@ _WaitForThisObject PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hObject$[ebp]
 
-; 133  : }
+; 138  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1579,12 +1580,12 @@ _TEXT	SEGMENT
 _hMutex$ = 8						; size = 4
 _ReleaseMutex PROC					; COMDAT
 
-; 126  : {
+; 131  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 127  : 	SYSCALL_PARAM_1(SYSCALL_RELEASEMUTEX, hMutex);
+; 132  : 	SYSCALL_PARAM_1(SYSCALL_RELEASEMUTEX, hMutex);
 
   00003	ff 75 08	 push	 DWORD PTR _hMutex$[ebp]
   00006	6a 00		 push	 0
@@ -1594,7 +1595,7 @@ _ReleaseMutex PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hMutex$[ebp]
 
-; 128  : }
+; 133  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1607,12 +1608,12 @@ _TEXT	SEGMENT
 _hMutex$ = 8						; size = 4
 _DestroyMutex PROC					; COMDAT
 
-; 121  : {
+; 126  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 122  : 	SYSCALL_PARAM_1(SYSCALL_DESTROYMUTEX, hMutex);
+; 127  : 	SYSCALL_PARAM_1(SYSCALL_DESTROYMUTEX, hMutex);
 
   00003	ff 75 08	 push	 DWORD PTR _hMutex$[ebp]
   00006	6a 00		 push	 0
@@ -1622,7 +1623,7 @@ _DestroyMutex PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hMutex$[ebp]
 
-; 123  : }
+; 128  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1634,12 +1635,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _CreateMutex PROC					; COMDAT
 
-; 116  : {
+; 121  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 117  : 	SYSCALL_PARAM_0(SYSCALL_CREATEMUTEX);
+; 122  : 	SYSCALL_PARAM_0(SYSCALL_CREATEMUTEX);
 
   00003	6a 00		 push	 0
   00005	6a 10		 push	 16			; 00000010H
@@ -1647,7 +1648,7 @@ _CreateMutex PROC					; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 118  : }
+; 123  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -1660,12 +1661,12 @@ _TEXT	SEGMENT
 _hEvent$ = 8						; size = 4
 _ResetEvent PROC					; COMDAT
 
-; 111  : {
+; 116  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 112  : 	SYSCALL_PARAM_1(SYSCALL_RESETEVENT, hEvent);
+; 117  : 	SYSCALL_PARAM_1(SYSCALL_RESETEVENT, hEvent);
 
   00003	ff 75 08	 push	 DWORD PTR _hEvent$[ebp]
   00006	6a 00		 push	 0
@@ -1675,7 +1676,7 @@ _ResetEvent PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hEvent$[ebp]
 
-; 113  : }
+; 118  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1688,12 +1689,12 @@ _TEXT	SEGMENT
 _hEvent$ = 8						; size = 4
 _SetEvent PROC						; COMDAT
 
-; 106  : {
+; 111  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 107  : 	SYSCALL_PARAM_1(SYSCALL_SETEVENT, hEvent);
+; 112  : 	SYSCALL_PARAM_1(SYSCALL_SETEVENT, hEvent);
 
   00003	ff 75 08	 push	 DWORD PTR _hEvent$[ebp]
   00006	6a 00		 push	 0
@@ -1703,7 +1704,7 @@ _SetEvent PROC						; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hEvent$[ebp]
 
-; 108  : }
+; 113  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1716,12 +1717,12 @@ _TEXT	SEGMENT
 _hEvent$ = 8						; size = 4
 _DestroyEvent PROC					; COMDAT
 
-; 101  : {
+; 106  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 102  : 	SYSCALL_PARAM_1(SYSCALL_DESTROYEVENT, hEvent);
+; 107  : 	SYSCALL_PARAM_1(SYSCALL_DESTROYEVENT, hEvent);
 
   00003	ff 75 08	 push	 DWORD PTR _hEvent$[ebp]
   00006	6a 00		 push	 0
@@ -1731,7 +1732,7 @@ _DestroyEvent PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hEvent$[ebp]
 
-; 103  : }
+; 108  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1744,12 +1745,12 @@ _TEXT	SEGMENT
 _bInitialStatus$ = 8					; size = 4
 _CreateEvent PROC					; COMDAT
 
-; 96   : {
+; 101  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 97   : 	SYSCALL_PARAM_1(SYSCALL_CREATEEVENT, bInitialStatus);
+; 102  : 	SYSCALL_PARAM_1(SYSCALL_CREATEEVENT, bInitialStatus);
 
   00003	ff 75 08	 push	 DWORD PTR _bInitialStatus$[ebp]
   00006	6a 00		 push	 0
@@ -1759,7 +1760,7 @@ _CreateEvent PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _bInitialStatus$[ebp]
 
-; 98   : }
+; 103  : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1772,12 +1773,12 @@ _TEXT	SEGMENT
 _hTimer$ = 8						; size = 4
 _CancelTimer PROC					; COMDAT
 
-; 91   : {
+; 96   : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 92   : 	SYSCALL_PARAM_1(SYSCALL_CANCELTIMER, hTimer);
+; 97   : 	SYSCALL_PARAM_1(SYSCALL_CANCELTIMER, hTimer);
 
   00003	ff 75 08	 push	 DWORD PTR _hTimer$[ebp]
   00006	6a 00		 push	 0
@@ -1787,7 +1788,7 @@ _CancelTimer PROC					; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _hTimer$[ebp]
 
-; 93   : }
+; 98   : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
@@ -1804,12 +1805,12 @@ _lpHandlerParam$ = 20					; size = 4
 _dwTimerFlags$ = 24					; size = 4
 _SetTimer PROC						; COMDAT
 
-; 81   : {
+; 86   : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 82   : 	SYSCALL_PARAM_5(SYSCALL_SETTIMER,
+; 87   : 	SYSCALL_PARAM_5(SYSCALL_SETTIMER,
 
   00003	ff 75 18	 push	 DWORD PTR _dwTimerFlags$[ebp]
   00006	ff 75 14	 push	 DWORD PTR _lpHandlerParam$[ebp]
@@ -1827,12 +1828,12 @@ _SetTimer PROC						; COMDAT
   00023	8f 45 14	 pop	 DWORD PTR _lpHandlerParam$[ebp]
   00026	8f 45 18	 pop	 DWORD PTR _dwTimerFlags$[ebp]
 
-; 83   : 		dwTimerID,
-; 84   : 		dwMillionSecond,
-; 85   : 		lpHandler,
-; 86   : 		lpHandlerParam,
-; 87   : 		dwTimerFlags);
-; 88   : }
+; 88   : 		dwTimerID,
+; 89   : 		dwMillionSecond,
+; 90   : 		lpHandler,
+; 91   : 		lpHandlerParam,
+; 92   : 		dwTimerFlags);
+; 93   : }
 
   00029	5d		 pop	 ebp
   0002a	c3		 ret	 0
@@ -1845,12 +1846,12 @@ _TEXT	SEGMENT
 _dwMillionSecond$ = 8					; size = 4
 _Sleep	PROC						; COMDAT
 
-; 72   : {
+; 77   : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 73   : 	SYSCALL_PARAM_1(SYSCALL_SLEEP, dwMillionSecond);
+; 78   : 	SYSCALL_PARAM_1(SYSCALL_SLEEP, dwMillionSecond);
 
   00003	ff 75 08	 push	 DWORD PTR _dwMillionSecond$[ebp]
   00006	6a 00		 push	 0
@@ -1860,11 +1861,39 @@ _Sleep	PROC						; COMDAT
   0000d	58		 pop	 eax
   0000e	8f 45 08	 pop	 DWORD PTR _dwMillionSecond$[ebp]
 
-; 74   : }
+; 79   : }
 
   00011	5d		 pop	 ebp
   00012	c3		 ret	 0
 _Sleep	ENDP
+_TEXT	ENDS
+; Function compile flags: /Odtp
+; File c:\hellox\personal\hellox_os\app\yeelight\hxlib\hellox\hellox.c
+;	COMDAT _PeekMessage
+_TEXT	SEGMENT
+_lpMsg$ = 8						; size = 4
+_PeekMessage PROC					; COMDAT
+
+; 67   : {
+
+  00000	55		 push	 ebp
+  00001	8b ec		 mov	 ebp, esp
+
+; 68   : 	SYSCALL_PARAM_1(SYSCALL_PEEKMESSAGE, lpMsg);
+
+  00003	ff 75 08	 push	 DWORD PTR _lpMsg$[ebp]
+  00006	6a 00		 push	 0
+  00008	6a 3f		 push	 63			; 0000003fH
+  0000a	cd 7f		 int	 127			; 0000007fH
+  0000c	58		 pop	 eax
+  0000d	58		 pop	 eax
+  0000e	8f 45 08	 pop	 DWORD PTR _lpMsg$[ebp]
+
+; 69   : }
+
+  00011	5d		 pop	 ebp
+  00012	c3		 ret	 0
+_PeekMessage ENDP
 _TEXT	ENDS
 ; Function compile flags: /Odtp
 ; File c:\hellox\personal\hellox_os\app\yeelight\hxlib\hellox\hellox.c
@@ -1874,12 +1903,12 @@ _hThread$ = 8						; size = 4
 _lpMsg$ = 12						; size = 4
 _SendMessage PROC					; COMDAT
 
-; 67   : {
+; 72   : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 68   : 	SYSCALL_PARAM_2(SYSCALL_SENDMESSAGE, hThread, lpMsg);
+; 73   : 	SYSCALL_PARAM_2(SYSCALL_SENDMESSAGE, hThread, lpMsg);
 
   00003	ff 75 0c	 push	 DWORD PTR _lpMsg$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _hThread$[ebp]
@@ -1891,7 +1920,7 @@ _SendMessage PROC					; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _hThread$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _lpMsg$[ebp]
 
-; 69   : }
+; 74   : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0
@@ -1931,12 +1960,12 @@ _TEXT	ENDS
 _TEXT	SEGMENT
 _GetCurrentThread PROC					; COMDAT
 
-; 414  : {
+; 419  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 415  : 	SYSCALL_PARAM_0(SYSCALL_GETCURRENTTHREAD);
+; 420  : 	SYSCALL_PARAM_0(SYSCALL_GETCURRENTTHREAD);
 
   00003	6a 00		 push	 0
   00005	6a 32		 push	 50			; 00000032H
@@ -1944,7 +1973,7 @@ _GetCurrentThread PROC					; COMDAT
   00009	58		 pop	 eax
   0000a	58		 pop	 eax
 
-; 416  : }
+; 421  : }
 
   0000b	5d		 pop	 ebp
   0000c	c3		 ret	 0
@@ -1958,12 +1987,12 @@ _hThread$ = 8						; size = 4
 _status$ = 12						; size = 4
 _TerminateKernelThread PROC				; COMDAT
 
-; 468  : {
+; 473  : {
 
   00000	55		 push	 ebp
   00001	8b ec		 mov	 ebp, esp
 
-; 469  : 	SYSCALL_PARAM_2(SYSCALL_TERMINATEKERNELTHREAD,
+; 474  : 	SYSCALL_PARAM_2(SYSCALL_TERMINATEKERNELTHREAD,
 
   00003	ff 75 0c	 push	 DWORD PTR _status$[ebp]
   00006	ff 75 08	 push	 DWORD PTR _hThread$[ebp]
@@ -1975,9 +2004,9 @@ _TerminateKernelThread PROC				; COMDAT
   00011	8f 45 08	 pop	 DWORD PTR _hThread$[ebp]
   00014	8f 45 0c	 pop	 DWORD PTR _status$[ebp]
 
-; 470  : 		hThread,
-; 471  : 		status);
-; 472  : }
+; 475  : 		hThread,
+; 476  : 		status);
+; 477  : }
 
   00017	5d		 pop	 ebp
   00018	c3		 ret	 0

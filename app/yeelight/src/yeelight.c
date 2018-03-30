@@ -15,6 +15,9 @@
 
 #include "yeelight.h"
 
+ /* First line of search request if OK(200 OK). */
+const char* okmsg = "HTTP/1.1 200 OK";
+
 /* Global list to save all discovered yeelight object in LAN. */
 static struct yeelight_object* pLightObject = NULL;
 
@@ -153,109 +156,6 @@ static void ShowLight(struct yeelight_object* pLight)
 		_hx_printf("port: %d\r\n", _hx_ntohs(pLight->socket.sin_port));
 		pLight = pLight->pNext;
 	}
-}
-
-/* Construct a valid toggle command message to send to the bulb. */
-static BOOL ConstructToggleCmd(struct yeelight_object* pLight, char* pCmdBuff, int length)
-{
-	int cmd_len = 0;
-	BUG_ON(NULL == pCmdBuff);
-	BUG_ON(0 == length);
-	BUG_ON(NULL == pLight);
-	cmd_len = strlen(YLIGHT_TOGGLE_CMD + strlen(pLight->id));
-	if (cmd_len > length) /* Command buffer too short. */
-	{
-		return FALSE;
-	}
-	_hx_sprintf(pCmdBuff, YLIGHT_TOGGLE_CMD, pLight->id);
-	_hx_printf(pCmdBuff); //Debugging.
-	return TRUE;
-}
-
-/* Toggle yeelight object. */
-static BOOL ToggleYlight(struct yeelight_object* light)
-{
-	int sock = -1;
-	BOOL bResult = FALSE;
-	char* cmd = NULL;
-	int ret = -1;
-	struct sockaddr_in sa;
-
-	BUG_ON(NULL == light);
-	if (light->sock < 0)
-	{
-		/* No socket created yet,create a new one. */
-		sock = socket(AF_INET, SOCK_STREAM, 0);
-		if (sock < 0)
-		{
-			__LOG("Can not create socket object[sock = %d].\r\n",
-				sock);
-			goto __TERMINAL;
-		}
-		/* Save to use next time,the connection is keeping open. */
-		light->sock = sock;
-
-		/* Connect to yeelight object. */
-		sa.sin_family = AF_INET;
-		sa.sin_addr = light->socket.sin_addr;
-		sa.sin_port = light->socket.sin_port;
-		memset(sa.sin_zero, 0, sizeof(sa.sin_zero));
-		ret = connect(sock, (struct sockaddr*)&sa, sizeof(sa));
-		if (ret < 0)
-		{
-			__LOG("Can not connect to light object[ret = %d].\r\n", ret);
-			goto __TERMINAL;
-		}
-		__LOG("Connect to light object OK.\r\n");
-	}
-	cmd = (char*)_hx_malloc(1500);
-	if (NULL == cmd)
-	{
-		goto __TERMINAL;
-	}
-	/* Construct toggle command. */
-	if (!ConstructToggleCmd(light, cmd, 1500))
-	{
-		goto __TERMINAL;
-	}
-	ret = send(sock,cmd,strlen(cmd),0);
-	if(ret < 0)
-	{
-		_hx_printf("Failed to send toggle command.\r\n");
-		goto __TERMINAL;
-	}
-	ret = recv(sock, cmd, 1500, 0);
-	if (ret < 0)
-	{
-		__LOG("Failed to recv resp[ret = %d].\r\n", ret);
-		goto __TERMINAL;
-	}
-	/* Show out the status info received. */
-	if (ret > 128)
-	{
-		_hx_printf("Received status update message[size = %d].\r\n", ret);
-	}
-	else
-	{
-		cmd[ret] = 0;
-		_hx_printf("Status update:%s\r\n", cmd);
-	}
-
-	bResult = TRUE;
-__TERMINAL:
-	if (!bResult)
-	{
-		if (light->sock >= 0)
-		{
-			close(light->sock);
-			light->sock = -1;
-		}
-	}
-	if (cmd)
-	{
-		_hx_free(cmd);
-	}
-	return bResult;
 }
 
 static BOOL ParseResponse(const char* pRespMsg,int msglen)
@@ -497,6 +397,8 @@ __TERMINAL:
 			_hx_free(buf);
 		}
 	}
+	/* Show exit message. */
+	__LOG("Bulb searcher exit.\r\n");
 	return 0;
 }
 
@@ -507,10 +409,27 @@ int _hx_main(int argc,char* argv[])
 	int cmd_num = 0, i = 0;
 	struct yeelight_object* pLight = NULL;
 	HANDLE hSearchThread = NULL;
+	HANDLE hServerThread = NULL;
+	HANDLE hCtrlThread = NULL;
 	MSG msg;
 
 	/* Show version info. */
 	_hx_printf("Yeelight controller for HelloX[v%d.%d].\r\n", __MAJOR_VER, __MINNOR_VER);
+
+	/* Create the controller kernel thread. */
+	hCtrlThread = CreateKernelThread(
+		0,
+		KERNEL_THREAD_STATUS_READY,
+		PRIORITY_LEVEL_NORMAL,
+		ylight_controller,
+		NULL,
+		NULL,
+		"YLIGHT_CTRL");
+	if (NULL == hCtrlThread)
+	{
+		__LOG("Failed to create controller thread.\r\n");
+		goto __TERMINAL;
+	}
 
 	/* 
 	 * A dedicated kernel thread is running in background, to search and 
@@ -528,6 +447,21 @@ int _hx_main(int argc,char* argv[])
 	if (NULL == hSearchThread)
 	{
 		__LOG("Failed to create searching thread.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* Create the server thread of controller. */
+	hServerThread = CreateKernelThread(
+		0,
+		KERNEL_THREAD_STATUS_READY,
+		PRIORITY_LEVEL_NORMAL,
+		ylight_server,
+		hCtrlThread, /* Send message to controller thread. */
+		NULL,
+		"YLIGHT_SRV");
+	if (NULL == hServerThread)
+	{
+		__LOG("Failed to create server thread.\r\n");
 		goto __TERMINAL;
 	}
 
@@ -555,7 +489,9 @@ int _hx_main(int argc,char* argv[])
 				 */
 				if (pLightObject)
 				{
-					ToggleYlight(pLightObject);
+					msg.wCommand = YLIGHT_MSG_TOGGLE;
+					msg.dwParam = (DWORD)pLightObject;
+					SendMessage(hCtrlThread, &msg);
 				}
 			}
 			else if (strcmp(cmd_array[0], "turnoff") == 0)
@@ -563,7 +499,9 @@ int _hx_main(int argc,char* argv[])
 				/* Turn off the first light. */
 				if (pLightObject)
 				{
-					ToggleYlight(pLightObject);
+					msg.wCommand = YLIGHT_MSG_TOGGLE;
+					msg.dwParam = (DWORD)pLightObject;
+					SendMessage(hCtrlThread, &msg);
 				}
 			}
 			else if (strcmp(cmd_array[0], "help") == 0)
@@ -591,6 +529,22 @@ __TERMINAL:
 		WaitForThisObject(hSearchThread);
 		/* Destroy it. */
 		DestroyKernelThread(hSearchThread);
+	}
+	if (hCtrlThread)
+	{
+		/* Trigger the controller thread to exit. */
+		msg.wCommand = KERNEL_MESSAGE_TERMINAL;
+		SendMessage(hCtrlThread, &msg);
+		/* Wait the controller to exit. */
+		WaitForThisObject(hCtrlThread);
+		DestroyKernelThread(hCtrlThread);
+	}
+	if (hServerThread)
+	{
+		msg.wCommand = KERNEL_MESSAGE_TERMINAL;
+		SendMessage(hServerThread, &msg);
+		WaitForThisObject(hServerThread);
+		DestroyKernelThread(hServerThread);
 	}
 
 	/* Destroy all light object(s). */

@@ -12,7 +12,7 @@ INCLUDELIB OLDNAMES
 EXTRN	__hx_malloc:PROC
 EXTRN	__hx_free:PROC
 _BSS	SEGMENT
-$SG5181	DB	01H DUP (?)
+$SG5185	DB	01H DUP (?)
 _BSS	ENDS
 CONST	SEGMENT
 _firstByteMark DB 00H
@@ -26,30 +26,30 @@ CONST	ENDS
 _DATA	SEGMENT
 _cJSON_malloc DD FLAT:__hx_malloc
 _cJSON_free DD	FLAT:__hx_free
-$SG5072	DB	'%d', 00H
+$SG5076	DB	'%d', 00H
 	ORG $+1
-$SG5076	DB	'%.0f', 00H
+$SG5080	DB	'%.0f', 00H
 	ORG $+3
-$SG5080	DB	'%e', 00H
+$SG5084	DB	'%e', 00H
 	ORG $+1
-$SG5081	DB	'%f', 00H
+$SG5085	DB	'%f', 00H
 	ORG $+1
-$SG5184	DB	'"\', 08H, 0cH, 0aH, 0dH, 09H, 00H
-$SG5197	DB	'u%04x', 00H
+$SG5188	DB	'"\', 08H, 0cH, 0aH, 0dH, 09H, 00H
+$SG5201	DB	'u%04x', 00H
 	ORG $+2
-$SG5275	DB	'null', 00H
+$SG5279	DB	'null', 00H
 	ORG $+3
-$SG5277	DB	'false', 00H
+$SG5281	DB	'false', 00H
 	ORG $+2
-$SG5279	DB	'true', 00H
+$SG5283	DB	'true', 00H
 	ORG $+3
-$SG5297	DB	'null', 00H
+$SG5301	DB	'null', 00H
 	ORG $+3
-$SG5299	DB	'false', 00H
+$SG5303	DB	'false', 00H
 	ORG $+2
-$SG5301	DB	'true', 00H
+$SG5305	DB	'true', 00H
 	ORG $+3
-$SG5355	DB	'[]', 00H
+$SG5359	DB	'[]', 00H
 _DATA	ENDS
 PUBLIC	_cJSON_InitHooks
 PUBLIC	_cJSON_Parse
@@ -86,7 +86,7 @@ PUBLIC	_cJSON_Duplicate
 PUBLIC	_cJSON_ParseWithOpts
 PUBLIC	_cJSON_Minify
 PUBLIC	__real@0000000000000000
-PUBLIC	__real@3e80000000000000
+PUBLIC	__real@3cb0000000000000
 PUBLIC	__real@3eb0c6f7a0b5ed8d
 PUBLIC	__real@3ff0000000000000
 PUBLIC	__real@4024000000000000
@@ -144,9 +144,9 @@ CONST	ENDS
 CONST	SEGMENT
 __real@3eb0c6f7a0b5ed8d DQ 03eb0c6f7a0b5ed8dr	; 1e-06
 CONST	ENDS
-;	COMDAT __real@3e80000000000000
+;	COMDAT __real@3cb0000000000000
 CONST	SEGMENT
-__real@3e80000000000000 DQ 03e80000000000000r	; 1.19209e-07
+__real@3cb0000000000000 DQ 03cb0000000000000r	; 2.22045e-16
 CONST	ENDS
 ;	COMDAT __real@0000000000000000
 CONST	SEGMENT
@@ -1269,7 +1269,7 @@ $LN3@print_arra:
 
   0005f	83 7d f0 00	 cmp	 DWORD PTR _out$[ebp], 0
   00063	74 11		 je	 SHORT $LN13@print_arra
-  00065	68 00 00 00 00	 push	 OFFSET $SG5355
+  00065	68 00 00 00 00	 push	 OFFSET $SG5359
   0006a	8b 55 f0	 mov	 edx, DWORD PTR _out$[ebp]
   0006d	52		 push	 edx
   0006e	e8 00 00 00 00	 call	 _strcpy
@@ -1820,7 +1820,7 @@ $LN5@print_valu:
 ; 305  : 	{
 ; 306  : 	case cJSON_NULL:	out = cJSON_strdup("null");	break;
 
-  0003d	68 00 00 00 00	 push	 OFFSET $SG5297
+  0003d	68 00 00 00 00	 push	 OFFSET $SG5301
   00042	e8 00 00 00 00	 call	 _cJSON_strdup
   00047	83 c4 04	 add	 esp, 4
   0004a	89 45 fc	 mov	 DWORD PTR _out$[ebp], eax
@@ -1829,7 +1829,7 @@ $LN6@print_valu:
 
 ; 307  : 	case cJSON_False:	out = cJSON_strdup("false"); break;
 
-  0004f	68 00 00 00 00	 push	 OFFSET $SG5299
+  0004f	68 00 00 00 00	 push	 OFFSET $SG5303
   00054	e8 00 00 00 00	 call	 _cJSON_strdup
   00059	83 c4 04	 add	 esp, 4
   0005c	89 45 fc	 mov	 DWORD PTR _out$[ebp], eax
@@ -1838,7 +1838,7 @@ $LN7@print_valu:
 
 ; 308  : 	case cJSON_True:	out = cJSON_strdup("true"); break;
 
-  00061	68 00 00 00 00	 push	 OFFSET $SG5301
+  00061	68 00 00 00 00	 push	 OFFSET $SG5305
   00066	e8 00 00 00 00	 call	 _cJSON_strdup
   0006b	83 c4 04	 add	 esp, 4
   0006e	89 45 fc	 mov	 DWORD PTR _out$[ebp], eax
@@ -1937,7 +1937,7 @@ $LN2@parse_valu:
 ; 288  : 	if (!strncmp(value, "null", 4)) { item->type = cJSON_NULL;  return value + 4; }
 
   00010	6a 04		 push	 4
-  00012	68 00 00 00 00	 push	 OFFSET $SG5275
+  00012	68 00 00 00 00	 push	 OFFSET $SG5279
   00017	8b 45 0c	 mov	 eax, DWORD PTR _value$[ebp]
   0001a	50		 push	 eax
   0001b	e8 00 00 00 00	 call	 _strncmp
@@ -1955,7 +1955,7 @@ $LN3@parse_valu:
 ; 289  : 	if (!strncmp(value, "false", 5)) { item->type = cJSON_False; return value + 5; }
 
   0003c	6a 05		 push	 5
-  0003e	68 00 00 00 00	 push	 OFFSET $SG5277
+  0003e	68 00 00 00 00	 push	 OFFSET $SG5281
   00043	8b 55 0c	 mov	 edx, DWORD PTR _value$[ebp]
   00046	52		 push	 edx
   00047	e8 00 00 00 00	 call	 _strncmp
@@ -1973,7 +1973,7 @@ $LN4@parse_valu:
 ; 290  : 	if (!strncmp(value, "true", 4)) { item->type = cJSON_True; item->valueint = 1;	return value + 4; }
 
   00068	6a 04		 push	 4
-  0006a	68 00 00 00 00	 push	 OFFSET $SG5279
+  0006a	68 00 00 00 00	 push	 OFFSET $SG5283
   0006f	8b 4d 0c	 mov	 ecx, DWORD PTR _value$[ebp]
   00072	51		 push	 ecx
   00073	e8 00 00 00 00	 call	 _strncmp
@@ -2124,7 +2124,7 @@ _print_string_ptr PROC					; COMDAT
 
   0000d	83 7d 08 00	 cmp	 DWORD PTR _str$[ebp], 0
   00011	75 12		 jne	 SHORT $LN8@print_stri
-  00013	68 00 00 00 00	 push	 OFFSET $SG5181
+  00013	68 00 00 00 00	 push	 OFFSET $SG5185
   00018	e8 00 00 00 00	 call	 _cJSON_strdup
   0001d	83 c4 04	 add	 esp, 4
   00020	e9 fa 01 00 00	 jmp	 $LN1@print_stri
@@ -2147,7 +2147,7 @@ $LN2@print_stri:
   00044	74 3e		 je	 SHORT $LN3@print_stri
   00046	0f b6 55 ff	 movzx	 edx, BYTE PTR _token$[ebp]
   0004a	52		 push	 edx
-  0004b	68 00 00 00 00	 push	 OFFSET $SG5184
+  0004b	68 00 00 00 00	 push	 OFFSET $SG5188
   00050	e8 00 00 00 00	 call	 _strchr
   00055	83 c4 08	 add	 esp, 8
   00058	85 c0		 test	 eax, eax
@@ -2352,7 +2352,7 @@ $LN22@print_stri:
 
   001da	0f b6 4d ff	 movzx	 ecx, BYTE PTR _token$[ebp]
   001de	51		 push	 ecx
-  001df	68 00 00 00 00	 push	 OFFSET $SG5197
+  001df	68 00 00 00 00	 push	 OFFSET $SG5201
   001e4	8b 55 f8	 mov	 edx, DWORD PTR _ptr2$[ebp]
   001e7	52		 push	 edx
   001e8	e8 00 00 00 00	 call	 __hx_sprintf
@@ -3316,7 +3316,7 @@ _print_number PROC					; COMDAT
   00024	e8 00 00 00 00	 call	 _fabs
   00029	83 c4 08	 add	 esp, 8
   0002c	dc 1d 00 00 00
-	00		 fcomp	 QWORD PTR __real@3e80000000000000
+	00		 fcomp	 QWORD PTR __real@3cb0000000000000
   00032	df e0		 fnstsw	 ax
   00034	f6 c4 41	 test	 ah, 65			; 00000041H
   00037	7a 51		 jp	 SHORT $LN2@print_numb
@@ -3349,7 +3349,7 @@ _print_number PROC					; COMDAT
   0006d	8b 55 08	 mov	 edx, DWORD PTR _item$[ebp]
   00070	8b 42 14	 mov	 eax, DWORD PTR [edx+20]
   00073	50		 push	 eax
-  00074	68 00 00 00 00	 push	 OFFSET $SG5072
+  00074	68 00 00 00 00	 push	 OFFSET $SG5076
   00079	8b 4d fc	 mov	 ecx, DWORD PTR _str$[ebp]
   0007c	51		 push	 ecx
   0007d	e8 00 00 00 00	 call	 __hx_sprintf
@@ -3391,7 +3391,7 @@ $LN2@print_numb:
   000bc	e8 00 00 00 00	 call	 _fabs
   000c1	83 c4 08	 add	 esp, 8
   000c4	dc 1d 00 00 00
-	00		 fcomp	 QWORD PTR __real@3e80000000000000
+	00		 fcomp	 QWORD PTR __real@3cb0000000000000
   000ca	df e0		 fnstsw	 ax
   000cc	f6 c4 41	 test	 ah, 65			; 00000041H
   000cf	7a 3a		 jp	 SHORT $LN6@print_numb
@@ -3408,7 +3408,7 @@ $LN2@print_numb:
   000ef	83 ec 08	 sub	 esp, 8
   000f2	dd 45 f4	 fld	 QWORD PTR _d$[ebp]
   000f5	dd 1c 24	 fstp	 QWORD PTR [esp]
-  000f8	68 00 00 00 00	 push	 OFFSET $SG5076
+  000f8	68 00 00 00 00	 push	 OFFSET $SG5080
   000fd	8b 55 fc	 mov	 edx, DWORD PTR _str$[ebp]
   00100	52		 push	 edx
   00101	e8 00 00 00 00	 call	 __hx_sprintf
@@ -3442,7 +3442,7 @@ $LN10@print_numb:
   00147	83 ec 08	 sub	 esp, 8
   0014a	dd 45 f4	 fld	 QWORD PTR _d$[ebp]
   0014d	dd 1c 24	 fstp	 QWORD PTR [esp]
-  00150	68 00 00 00 00	 push	 OFFSET $SG5080
+  00150	68 00 00 00 00	 push	 OFFSET $SG5084
   00155	8b 45 fc	 mov	 eax, DWORD PTR _str$[ebp]
   00158	50		 push	 eax
   00159	e8 00 00 00 00	 call	 __hx_sprintf
@@ -3455,7 +3455,7 @@ $LN8@print_numb:
   00163	83 ec 08	 sub	 esp, 8
   00166	dd 45 f4	 fld	 QWORD PTR _d$[ebp]
   00169	dd 1c 24	 fstp	 QWORD PTR [esp]
-  0016c	68 00 00 00 00	 push	 OFFSET $SG5081
+  0016c	68 00 00 00 00	 push	 OFFSET $SG5085
   00171	8b 4d fc	 mov	 ecx, DWORD PTR _str$[ebp]
   00174	51		 push	 ecx
   00175	e8 00 00 00 00	 call	 __hx_sprintf

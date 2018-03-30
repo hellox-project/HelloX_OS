@@ -7,7 +7,7 @@
 
 /* Version number. */
 #define __MAJOR_VER  1
-#define __MINNOR_VER 0
+#define __MINNOR_VER 2
 
 /* Constants. */
 #define SSDP_DEST_ADDR "239.255.255.250"
@@ -15,13 +15,16 @@
 #define SSDP_WAIT_TIMEOUT 2000 /* Wait at most for 2s for incoming data. */
 #define SSDP_LAN_ADDR "192.168.169.1"
 
+/* Controller server listening port. */
+#define YLIGHT_SERVER_PORT 2049
+
+/* Waiting timeout value between controller and bulb. */
+#define YLIGHT_WAIT_TIMEOUT 5000
+
 /* Timer ID of yeelight periodic searching. */
 #define YLIGHT_PERIODIC_ID 1000
 /* Periodic time of yeelight searching,in ms. */
 #define SSDP_PERIODIC_TIME 3000
-
-/* First line of search request if OK(200 OK). */
-const char* okmsg = "HTTP/1.1 200 OK";
 
 /* Search request message. */
 #define SSDP_REQ_CMD "M-SEARCH * HTTP/1.1\r\n\
@@ -43,5 +46,15 @@ struct yeelight_object{
 	int sock; /* Socket that opened to the light. */
 	struct yeelight_object* pNext; /* Pointer of link list. */
 };
+
+/* Entry point of yeelight server. */
+DWORD ylight_server(LPVOID);
+
+/* Entry point of yeelight controller. */
+DWORD ylight_controller(LPVOID);
+
+/* Messages that yeelight controller can handle. */
+#define YLIGHT_MSG_TOGGLE (KERNEL_MESSAGE_USER + 1)
+#define YLIGHT_MSG_SETRGB (KERNEL_MESSAGE_USER + 2)
 
 #endif //__YEELIGHT_H__

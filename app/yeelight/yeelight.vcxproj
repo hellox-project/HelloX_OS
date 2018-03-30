@@ -97,6 +97,7 @@
     <ClInclude Include="hxlib\arch\epstruct.h" />
     <ClInclude Include="hxlib\ctype.h" />
     <ClInclude Include="hxlib\errno.h" />
+    <ClInclude Include="hxlib\float.h" />
     <ClInclude Include="hxlib\hellox.h" />
     <ClInclude Include="hxlib\inet.h" />
     <ClInclude Include="hxlib\inttypes.h" />
@@ -168,6 +169,8 @@
     <ClCompile Include="hxlib\sysmem.c" />
     <ClCompile Include="hxlib\time.c" />
     <ClCompile Include="hxlib\trig.c" />
+    <ClCompile Include="src\ctroller.c" />
+    <ClCompile Include="src\server.c" />
     <ClCompile Include="src\yeelight.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

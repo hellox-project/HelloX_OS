@@ -10,13 +10,13 @@ INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
 _DATA	SEGMENT
-_digits	DD	FLAT:$SG4685
-$SG4685	DB	'0123456789abcdefghijklmnopqrstuvwxyz', 00H
+_digits	DD	FLAT:$SG4688
+$SG4688	DB	'0123456789abcdefghijklmnopqrstuvwxyz', 00H
 	ORG $+3
-_upper_digits DD FLAT:$SG4687
-$SG4687	DB	'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 00H
+_upper_digits DD FLAT:$SG4690
+$SG4690	DB	'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 00H
 	ORG $+3
-$SG4987	DB	'<NULL>', 00H
+$SG4990	DB	'<NULL>', 00H
 _DATA	ENDS
 PUBLIC	__hx_printf
 PUBLIC	__hx_sprintf
@@ -472,7 +472,7 @@ $LN39@hx_vsprint:
   0027f	83 7d ec 00	 cmp	 DWORD PTR _s$[ebp], 0
   00283	75 07		 jne	 SHORT $LN40@hx_vsprint
   00285	c7 45 ec 00 00
-	00 00		 mov	 DWORD PTR _s$[ebp], OFFSET $SG4987
+	00 00		 mov	 DWORD PTR _s$[ebp], OFFSET $SG4990
 $LN40@hx_vsprint:
 
 ; 530  : 			len = strnlen(s, precision);

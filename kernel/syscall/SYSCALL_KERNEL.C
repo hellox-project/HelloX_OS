@@ -84,6 +84,13 @@ static void   SC_SendMessage(__SYSCALL_PARAM_BLOCK*  pspb)
 	pspb->lpRetValue = (LPVOID)SendMessage((HANDLE)PARAM(0),	(MSG*)PARAM(1));
 }
 
+static void SC_PeekMessage(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	pspb->lpRetValue = (LPVOID)KernelThreadManager.PeekMessage(
+		NULL,
+		(__KERNEL_THREAD_MESSAGE*)PARAM(0));
+}
+
 static void   SC_Sleep(__SYSCALL_PARAM_BLOCK*  pspb)
 {
 	pspb->lpRetValue = (LPVOID)Sleep((DWORD)PARAM(0));
@@ -347,4 +354,6 @@ void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
 	pSysCallEntry[SYSCALL_SETCURSORPOS]              = SC_SetCursorPos;
 	pSysCallEntry[SYSCALL_TERMINATEKERNELTHREAD]     = SC_TerminateKernelThread;
 	pSysCallEntry[SYSCALL_GOTOPREV]                  = SC_GotoPrev;
+
+	pSysCallEntry[SYSCALL_PEEKMESSAGE]               = SC_PeekMessage;
 }

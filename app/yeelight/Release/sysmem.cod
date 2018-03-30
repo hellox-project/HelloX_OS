@@ -10,13 +10,13 @@ INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
 _DATA	SEGMENT
-$SG4769	DB	'c:\hellox\personal\hellox_os\app\yeelight\hxlib\sysmem.c'
+$SG4772	DB	'c:\hellox\personal\hellox_os\app\yeelight\hxlib\sysmem.c'
 	DB	00H
 	ORG $+3
-$SG4831	DB	'c:\hellox\personal\hellox_os\app\yeelight\hxlib\sysmem.c'
+$SG4834	DB	'c:\hellox\personal\hellox_os\app\yeelight\hxlib\sysmem.c'
 	DB	00H
 	ORG $+3
-$SG4833	DB	'c:\hellox\personal\hellox_os\app\yeelight\hxlib\sysmem.c'
+$SG4836	DB	'c:\hellox\personal\hellox_os\app\yeelight\hxlib\sysmem.c'
 	DB	00H
 _DATA	ENDS
 PUBLIC	__hx_malloc
@@ -74,7 +74,7 @@ $LN2@hx_aligned:
 ; 136  : 		BUG();
 
   00023	68 88 00 00 00	 push	 136			; 00000088H
-  00028	68 00 00 00 00	 push	 OFFSET $SG4831
+  00028	68 00 00 00 00	 push	 OFFSET $SG4834
   0002d	e8 00 00 00 00	 call	 ___BUG
   00032	83 c4 08	 add	 esp, 8
 $LN3@hx_aligned:
@@ -94,7 +94,7 @@ $LN3@hx_aligned:
 ; 141  : 		BUG();
 
   00049	68 8d 00 00 00	 push	 141			; 0000008dH
-  0004e	68 00 00 00 00	 push	 OFFSET $SG4833
+  0004e	68 00 00 00 00	 push	 OFFSET $SG4836
   00053	e8 00 00 00 00	 call	 ___BUG
   00058	83 c4 08	 add	 esp, 8
 $LN4@hx_aligned:
@@ -464,7 +464,7 @@ $LN4@hx_free:
 ; 70   : 	BUG();
 
   0005d	6a 46		 push	 70			; 00000046H
-  0005f	68 00 00 00 00	 push	 OFFSET $SG4769
+  0005f	68 00 00 00 00	 push	 OFFSET $SG4772
   00064	e8 00 00 00 00	 call	 ___BUG
   00069	83 c4 08	 add	 esp, 8
 $LN1@hx_free:

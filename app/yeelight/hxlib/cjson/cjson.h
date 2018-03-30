@@ -28,8 +28,6 @@ extern "C"
 {
 #endif
 
-#define DBL_EPSILON 1.192092896e-07F
-
 	/* cJSON Types: */
 #define cJSON_False 0
 #define cJSON_True 1

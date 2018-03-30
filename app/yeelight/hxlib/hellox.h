@@ -204,7 +204,7 @@ typedef LPVOID HANDLE;
 #define VK_SCROLL          145
 #define VK_PRINTSC         6    //This value is defined by Hello China.
 
-												   //System call numbers.
+//System call numbers.
 #define SYSCALL_CREATEKERNELTHREAD    0x01     //CreateKernelThread.
 #define SYSCALL_DESTROYKERNELTHREAD   0x02     //DestroyKernelThread.
 #define SYSCALL_SETLASTERROR          0x03     //SetLastError.
@@ -267,8 +267,9 @@ typedef LPVOID HANDLE;
 #define SYSCALL_SETCURSORPOS          0x3C
 #define SYSCALL_TERMINATEKERNELTHREAD 0x3D
 #define SYSCALL_GOTOPREV              0x3E
+#define SYSCALL_PEEKMESSAGE           0x3F
 
-												   /* System call IDs for socket API. */
+/* System call IDs for socket API. */
 #define SYSCALL_SOCKET                0x200     //Socket
 #define SYSCALL_BIND                  0x201     //bind
 #define SYSCALL_CONNECT               0x202     //connect
@@ -649,9 +650,13 @@ HANDLE GetCurrentThread(void);
 #define KERNEL_MESSAGE_WINDOW         308      //Window message,defined for GUI module.
 #define KERNEL_MESSAGE_DIALOG         309      //Kernel message for dialog processing.
 
+/* Start message ID of user defined message. */
+#define KERNEL_MESSAGE_USER           1024
+
 /* Kernel thread message operations. */
 BOOL GetMessage(MSG* lpMsg);
 BOOL SendMessage(HANDLE hThread, MSG* lpMsg);
+BOOL PeekMessage(MSG* lpMsg);
 
 /* Sleep a specified time. */
 BOOL Sleep(DWORD dwMillionSecond);

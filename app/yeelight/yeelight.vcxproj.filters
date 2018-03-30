@@ -114,6 +114,9 @@
     <ClInclude Include="hxlib\hellox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hxlib\float.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hxlib\acos.c">
@@ -237,6 +240,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="hxlib\cjson\cjson.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\server.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ctroller.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
