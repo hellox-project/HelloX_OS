@@ -151,6 +151,7 @@ DWORD ylight_controller(LPVOID pData)
 			switch (msg.wCommand)
 			{
 			case YLIGHT_MSG_TOGGLE:
+				__LOG("%s:toggle command received.\r\n", __func__);
 				pLight = (struct yeelight_object*)msg.dwParam;
 				if (pLight)
 				{

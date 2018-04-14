@@ -47,6 +47,9 @@ struct yeelight_object{
 	struct yeelight_object* pNext; /* Pointer of link list. */
 };
 
+/* Global bulb list contains all yeelight object(s) found. */
+extern struct yeelight_object* pLightObject;
+
 /* Entry point of yeelight server. */
 DWORD ylight_server(LPVOID);
 

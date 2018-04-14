@@ -45,6 +45,9 @@
 //Enable receive timeout mechanism.
 #define LWIP_SO_RCVTIMEO     1
 
+//Enable address reusable.
+#define SO_REUSE             1
+
 //Enable or disable TCP functions in lwIP.
 #define LWIP_TCP             1
 

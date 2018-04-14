@@ -16,6 +16,101 @@
 
 #include "yeelight.h"
 
+/* Return values of ProcessCommand routine. */
+#define PROCESS_CMD_EXIT     0 /* Exit the server thread. */
+#define PROCESS_CMD_CONTINUE 1 /* Command string is not complete. */
+#define PROCESS_CMD_SUCCESS  2 /* Process command success. */
+#define PROCESS_CMD_FAILED   3 /* Failed to process command. */
+
+/* Command that trigger the server thread to exit. */
+#define QUIT_COMMAND "quit"
+
+/* Process the incoming command from client. */
+static int ProcessCommand(char* cmd_string, int len, HANDLE hCtrlThread)
+{
+	MSG msg;
+	static char* cmd_buffer = NULL;
+	static int end_pos = 0;
+	int ret = PROCESS_CMD_CONTINUE;
+
+	BUG_ON(NULL == cmd_string);
+	BUG_ON(NULL == hCtrlThread);
+	BUG_ON(len < 0);
+
+	/* Allocate local command buffer. */
+	if (NULL == cmd_buffer)
+	{
+		cmd_buffer = (char*)_hx_malloc(1500);
+		if (NULL == cmd_buffer)
+		{
+			goto __TERMINAL;
+		}
+	}
+
+	/* Copy the incoming command string to local command buffer. */
+	if (end_pos + len >= 1500)
+	{
+		ret = PROCESS_CMD_FAILED;
+		goto __TERMINAL;
+	}
+	memcpy(cmd_buffer + end_pos, cmd_string, len);
+	end_pos += len;
+	cmd_buffer[end_pos] = 0;
+	if (0 == strcmp(cmd_buffer, QUIT_COMMAND))
+	{
+		ret = PROCESS_CMD_EXIT;
+		goto __TERMINAL;
+	}
+	if (end_pos < 2) /* Too few character,continue to get command. */
+	{
+		ret = PROCESS_CMD_CONTINUE;
+		goto __TERMINAL;
+	}
+	/* A complete command must be terminated by return key(\r\n). */
+	if ((cmd_buffer[end_pos - 1] == '\n') && (cmd_buffer[end_pos - 2] == '\r'))
+	{
+		/* 
+		 * Just parse the command string and send command 
+		 * to ylight controller thread,who will manipulate the bulb.
+		 */
+		cmd_buffer[end_pos - 2] = 0;
+		_hx_printf("Command[%s] is OK,parse it...\r\n", cmd_buffer);
+		if (0 == strcmp(cmd_buffer, "turnon"))
+		{
+			msg.wCommand = YLIGHT_MSG_TOGGLE;
+			msg.dwParam = (DWORD)pLightObject;
+			SendMessage(hCtrlThread, &msg);
+			ret = PROCESS_CMD_SUCCESS;
+		}
+		else if (0 == strcmp(cmd_buffer, "turnoff"))
+		{
+			msg.wCommand = YLIGHT_MSG_TOGGLE;
+			msg.dwParam = (DWORD)pLightObject;
+			SendMessage(hCtrlThread, &msg);
+			ret = PROCESS_CMD_SUCCESS;
+		}
+		else
+		{
+			ret = PROCESS_CMD_FAILED;
+		}
+	}
+	else /* More input is desired. */
+	{
+		ret = PROCESS_CMD_CONTINUE;
+	}
+
+__TERMINAL:
+	if (ret != PROCESS_CMD_CONTINUE)
+	{
+		/* Release the command buffer and reset it. */
+		BUG_ON(NULL == cmd_buffer);
+		_hx_free(cmd_buffer);
+		cmd_buffer = NULL;
+		end_pos = 0;
+	}
+	return ret;
+}
+
 /* 
  * Entry point of server side.
  * pData is the handle of main thread of yeelight controller,
@@ -32,8 +127,10 @@ DWORD ylight_server(LPVOID pData)
 	char* incoming_data = NULL;
 	int timeout = 0;
 	WORD wr = 0x0700;
-	int i = 0;
+	int i = 0, result = 0;
 	MSG msg;
+
+	BUG_ON(NULL == pData);
 
 	/* Create the server socket. */
 	srv_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -83,8 +180,8 @@ DWORD ylight_server(LPVOID pData)
 
 	while (TRUE)
 	{
-		/* Check if we should exit. */
-		if (PeekMessage(&msg))
+		/* Check if we should exit,bypass all message except the TERMINAL. */
+		while (PeekMessage(&msg))
 		{
 			if (KERNEL_MESSAGE_TERMINAL == msg.wCommand)
 			{
@@ -128,22 +225,24 @@ DWORD ylight_server(LPVOID pData)
 					PrintChar(wr);
 					wr -= incoming_data[i];
 				}
-				/* Send back the received data. */
-				strcpy((incoming_data), "_hellox");
-				ret = send(clt_sock, incoming_data, strlen(incoming_data), 0);
-				if (ret < 0)
+				result = ProcessCommand(incoming_data, ret, (HANDLE)pData);
+				if (PROCESS_CMD_SUCCESS == result)
 				{
-					goto __TERMINAL;
+					/* Send 'OK' to client. */
 				}
-				/* Quit the loop. */
-				incoming_data[ret] = 0;
-				if (0 == strcmp(incoming_data, "quit"))
+				else if (PROCESS_CMD_FAILED == result)
 				{
-					goto __TERMINAL;
+					/* Send 'FAIL' to client. */
+				}
+				else if (PROCESS_CMD_EXIT == result)
+				{
+					/* Send 'BYE' to client and quit. */
+					break;
 				}
 			}
 			else /* The connection may lost. */
 			{
+				__LOG("Connection from client lost.\r\n");
 				break;
 			}
 		}

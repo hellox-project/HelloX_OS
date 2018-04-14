@@ -19,7 +19,7 @@
 const char* okmsg = "HTTP/1.1 200 OK";
 
 /* Global list to save all discovered yeelight object in LAN. */
-static struct yeelight_object* pLightObject = NULL;
+struct yeelight_object* pLightObject = NULL;
 
 /* Delete the specified char from a given string. */
 static void strdc(char* src, char del)
@@ -231,6 +231,7 @@ static BOOL ParseResponse(const char* pRespMsg,int msglen)
 				* all threads,and no mutex is applied here for easy.
 				*/
 				pLight->pNext = pTmpLight->pNext;
+				pLight->sock = pTmpLight->sock; /* Preserve the socket object. */
 				memcpy(pTmpLight, pLight, sizeof(*pLight));
 				break;
 			}
@@ -262,7 +263,7 @@ __TERMINAL:
 static DWORD ylight_search(LPVOID pData)
 {
 	int s = -1, ret = -1, len = 0;
-	int timeout = SSDP_WAIT_TIMEOUT;
+	int timeout = 0;
 	char* buf = NULL;
 	struct sockaddr_in gaddr;
 	struct in_addr ifaddr;
@@ -286,10 +287,20 @@ static DWORD ylight_search(LPVOID pData)
 	}
 
 	/* Set timeout value for this socket. */
+	timeout = SSDP_WAIT_TIMEOUT;
 	ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 	if (ret < 0)
 	{
 		__LOG("%s:failed to set sock's timeout.\r\n", __FUNCTION__);
+		goto __TERMINAL;
+	}
+
+	/* Make the UDP port reusable,only available for multicast. */
+	timeout = 1;
+	ret = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &timeout, sizeof(timeout));
+	if (ret < 0)
+	{
+		__LOG("%s:failed to set socket reusable.\r\n", __FUNCTION__);
 		goto __TERMINAL;
 	}
 
@@ -302,7 +313,7 @@ static DWORD ylight_search(LPVOID pData)
 		goto __TERMINAL;
 	}
 
-	/* Join the multicase group. */
+	/* Join the multicast group. */
 	struct ip_mreq mreq;
 	mreq.imr_interface.s_addr = _hx_htonl(INADDR_ANY);
 	mreq.imr_multiaddr.s_addr = inet_addr(SSDP_DEST_ADDR);
@@ -313,7 +324,7 @@ static DWORD ylight_search(LPVOID pData)
 		goto __TERMINAL;
 	}
 
-	/* Bind to multicast group address. */
+	/* Bind to the SSDP port. */
 	gaddr.sin_family = AF_INET;
 	gaddr.sin_port = _hx_htons(SSDP_DEST_PORT);
 	gaddr.sin_addr.s_addr = _hx_htonl(INADDR_ANY);
@@ -321,7 +332,7 @@ static DWORD ylight_search(LPVOID pData)
 	ret = bind(s, (struct sockaddr*)&gaddr, sizeof(gaddr));
 	if (ret < 0)
 	{
-		__LOG("%s:failed to bind to local interface.\r\n", __FUNCTION__);
+		__LOG("%s:failed to bind to local interface[ret = %d].\r\n", __FUNCTION__, ret);
 		goto __TERMINAL;
 	}
 
@@ -362,8 +373,7 @@ static DWORD ylight_search(LPVOID pData)
 				ret = recvfrom(s, buf, 1500, 0, (struct sockaddr*)&gaddr, &len);
 				if (ret < 0)
 				{
-					//_hx_printf("%s:failed to receive data from socket[ret=%d].\r\n", __FUNCTION__,
-					//	ret);
+					/* May caused by timeout. */
 				}
 				else
 				{

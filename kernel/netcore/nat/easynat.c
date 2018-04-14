@@ -123,6 +123,7 @@ static void _tcp_check_sum(struct ip_hdr* p, struct pbuf* pb)
 {
 	struct tcp_hdr* pTcpHdr = NULL;
 	int iph_len = IPH_HL(p);
+	int ip_len = ntohs(IPH_LEN(p)); /* Total IP packet's length. */
 	int chksum = 0;
 	ip_addr_t src, dest;
 
@@ -132,6 +133,12 @@ static void _tcp_check_sum(struct ip_hdr* p, struct pbuf* pb)
 
 	/* Validate pbuf object. */
 	if (pb->tot_len < (iph_len + sizeof(struct tcp_hdr)))
+	{
+		return;
+	}
+
+	/* Validate IP packet's total length. */
+	if (ip_len < (iph_len + sizeof(struct tcp_hdr)))
 	{
 		return;
 	}
@@ -146,7 +153,7 @@ static void _tcp_check_sum(struct ip_hdr* p, struct pbuf* pb)
 	pbuf_header(pb, -iph_len); /* move to TCP header. */
 	pTcpHdr->chksum = 0; /* Reset the original check sum. */
 	pTcpHdr->chksum = inet_chksum_pseudo(pb, &src, &dest, IP_PROTO_TCP,
-		pb->tot_len);
+		ip_len - iph_len);
 	pbuf_header(pb, iph_len); /* move back. */
 	__NATDEBUG("%s: TCP check sum updated[%X] -> [%X]\r\n",
 		__func__,
@@ -553,6 +560,7 @@ static BOOL validateTCPChksum(struct ip_hdr* p, struct pbuf* pb)
 {
 	struct tcp_hdr* pTcpHdr = NULL;
 	int iph_len = IPH_HL(p);
+	int ip_len = ntohs(IPH_LEN(p)); /* Total IP packet length. */
 	int chksum_old = 0, chksum_new = 0;
 	ip_addr_t src, dest;
 
@@ -562,6 +570,12 @@ static BOOL validateTCPChksum(struct ip_hdr* p, struct pbuf* pb)
 
 	/* Validate pbuf object. */
 	if (pb->tot_len < (iph_len + sizeof(struct tcp_hdr)))
+	{
+		return FALSE;
+	}
+
+	/* Validate the length of this packet. */
+	if (ip_len < (iph_len + sizeof(struct tcp_hdr)))
 	{
 		return FALSE;
 	}
@@ -577,10 +591,16 @@ static BOOL validateTCPChksum(struct ip_hdr* p, struct pbuf* pb)
 	pTcpHdr->chksum = 0; /* Reset the original check sum. */
 	/* Recalculate the segment's checksum value. */
 	chksum_new = inet_chksum_pseudo(pb, &src, &dest, IP_PROTO_TCP,
-		pb->tot_len);
+		/* IP payload length,e.i,TCP header plus data. */
+		ip_len - iph_len);
+		//pb->tot_len);
 	pbuf_header(pb, iph_len); /* move back. */
 	if (chksum_new != chksum_old)
 	{
+		__LOG("TCP checksum fail:ip_len = %d,pbuf_tot_len = %d,src_addr:%s\r\n",
+			ip_len,
+			pb->tot_len,
+			inet_ntoa(p->src.addr));
 		IP_STATS_INC(tcp.chkerr);
 		IP_STATS_INC(tcp.drop);
 		return FALSE;

@@ -10,40 +10,44 @@ INCLUDELIB MSVCRT
 INCLUDELIB OLDNAMES
 
 _DATA	SEGMENT
-$SG5023	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
+$SG5024	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
 	DB	00H
 	ORG $+3
-$SG5025	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
+$SG5026	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
 	DB	00H
 	ORG $+3
-$SG5027	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
+$SG5028	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
 	DB	00H
 	ORG $+3
-$SG5028	DB	'{"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H
-$SG5030	DB	'{"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H
-$SG5050	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
+$SG5029	DB	'{"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H
+$SG5031	DB	'{"id":"%s","method":"toggle","params":[]}', 0dH, 0aH, 00H
+$SG5051	DB	'c:\hellox\personal\hellox_os\app\yeelight\src\ctroller.c'
 	DB	00H
 	ORG $+3
-$SG5053	DB	'Can not create socket object[sock = %d].', 0dH, 0aH, 00H
+$SG5054	DB	'Can not create socket object[sock = %d].', 0dH, 0aH, 00H
 	ORG $+1
-$SG5055	DB	'ToggleYlight', 00H
+$SG5056	DB	'ToggleYlight', 00H
 	ORG $+3
-$SG5056	DB	'%s:failed to set sock''s recv timeout[ret = %d].', 0dH, 0aH
+$SG5057	DB	'%s:failed to set sock''s recv timeout[ret = %d].', 0dH, 0aH
 	DB	00H
 	ORG $+2
-$SG5058	DB	'Can not connect to light object[ret = %d].', 0dH, 0aH, 00H
+$SG5059	DB	'Can not connect to light object[ret = %d].', 0dH, 0aH, 00H
 	ORG $+3
-$SG5059	DB	'Connect to light object OK.', 0dH, 0aH, 00H
+$SG5060	DB	'Connect to light object OK.', 0dH, 0aH, 00H
 	ORG $+2
-$SG5063	DB	'Failed to send toggle command.', 0dH, 0aH, 00H
+$SG5064	DB	'Failed to send toggle command.', 0dH, 0aH, 00H
 	ORG $+3
-$SG5065	DB	'Failed to recv resp[ret = %d].', 0dH, 0aH, 00H
+$SG5066	DB	'Failed to recv resp[ret = %d].', 0dH, 0aH, 00H
 	ORG $+3
-$SG5068	DB	'Received status update message[size = %d].', 0dH, 0aH, 00H
+$SG5069	DB	'Received status update message[size = %d].', 0dH, 0aH, 00H
 	ORG $+3
-$SG5069	DB	'Status update:%s', 0dH, 0aH, 00H
+$SG5070	DB	'Status update:%s', 0dH, 0aH, 00H
 	ORG $+1
-$SG5091	DB	'Bulb controller exit.', 0dH, 0aH, 00H
+$SG5088	DB	'ylight_controller', 00H
+	ORG $+2
+$SG5089	DB	'%s:toggle command received.', 0dH, 0aH, 00H
+	ORG $+2
+$SG5094	DB	'Bulb controller exit.', 0dH, 0aH, 00H
 _DATA	ENDS
 PUBLIC	_ylight_controller
 PUBLIC	_ToggleYlight
@@ -108,7 +112,7 @@ _ToggleYlight PROC					; COMDAT
   00022	83 7d 08 00	 cmp	 DWORD PTR _light$[ebp], 0
   00026	75 0f		 jne	 SHORT $LN2@ToggleYlig
   00028	6a 2a		 push	 42			; 0000002aH
-  0002a	68 00 00 00 00	 push	 OFFSET $SG5050
+  0002a	68 00 00 00 00	 push	 OFFSET $SG5051
   0002f	e8 00 00 00 00	 call	 ___BUG
   00034	83 c4 08	 add	 esp, 8
 $LN2@ToggleYlig:
@@ -148,7 +152,7 @@ $LN3@ToggleYlig:
   00068	83 c4 04	 add	 esp, 4
   0006b	8b 55 f4	 mov	 edx, DWORD PTR _sock$[ebp]
   0006e	52		 push	 edx
-  0006f	68 00 00 00 00	 push	 OFFSET $SG5053
+  0006f	68 00 00 00 00	 push	 OFFSET $SG5054
   00074	e8 00 00 00 00	 call	 __hx_printf
   00079	83 c4 08	 add	 esp, 8
 
@@ -192,8 +196,8 @@ $LN6@ToggleYlig:
   000b4	83 c4 04	 add	 esp, 4
   000b7	8b 55 fc	 mov	 edx, DWORD PTR _ret$[ebp]
   000ba	52		 push	 edx
-  000bb	68 00 00 00 00	 push	 OFFSET $SG5055
-  000c0	68 00 00 00 00	 push	 OFFSET $SG5056
+  000bb	68 00 00 00 00	 push	 OFFSET $SG5056
+  000c0	68 00 00 00 00	 push	 OFFSET $SG5057
   000c5	e8 00 00 00 00	 call	 __hx_printf
   000ca	83 c4 0c	 add	 esp, 12			; 0000000cH
 
@@ -265,7 +269,7 @@ $LN7@ToggleYlig:
   0011c	83 c4 04	 add	 esp, 4
   0011f	8b 4d fc	 mov	 ecx, DWORD PTR _ret$[ebp]
   00122	51		 push	 ecx
-  00123	68 00 00 00 00	 push	 OFFSET $SG5058
+  00123	68 00 00 00 00	 push	 OFFSET $SG5059
   00128	e8 00 00 00 00	 call	 __hx_printf
   0012d	83 c4 08	 add	 esp, 8
 
@@ -281,7 +285,7 @@ $LN8@ToggleYlig:
   00135	6a 00		 push	 0
   00137	e8 00 00 00 00	 call	 _LogHeader
   0013c	83 c4 04	 add	 esp, 4
-  0013f	68 00 00 00 00	 push	 OFFSET $SG5059
+  0013f	68 00 00 00 00	 push	 OFFSET $SG5060
   00144	e8 00 00 00 00	 call	 __hx_printf
   00149	83 c4 04	 add	 esp, 4
 
@@ -358,7 +362,7 @@ $LN10@ToggleYlig:
 ; 103  : 	{
 ; 104  : 		_hx_printf("Failed to send toggle command.\r\n");
 
-  001b6	68 00 00 00 00	 push	 OFFSET $SG5063
+  001b6	68 00 00 00 00	 push	 OFFSET $SG5064
   001bb	e8 00 00 00 00	 call	 __hx_printf
   001c0	83 c4 04	 add	 esp, 4
 
@@ -393,7 +397,7 @@ $LN11@ToggleYlig:
   001ec	83 c4 04	 add	 esp, 4
   001ef	8b 55 fc	 mov	 edx, DWORD PTR _ret$[ebp]
   001f2	52		 push	 edx
-  001f3	68 00 00 00 00	 push	 OFFSET $SG5065
+  001f3	68 00 00 00 00	 push	 OFFSET $SG5066
   001f8	e8 00 00 00 00	 call	 __hx_printf
   001fd	83 c4 08	 add	 esp, 8
 
@@ -415,7 +419,7 @@ $LN12@ToggleYlig:
 
   0020b	8b 45 fc	 mov	 eax, DWORD PTR _ret$[ebp]
   0020e	50		 push	 eax
-  0020f	68 00 00 00 00	 push	 OFFSET $SG5068
+  0020f	68 00 00 00 00	 push	 OFFSET $SG5069
   00214	e8 00 00 00 00	 call	 __hx_printf
   00219	83 c4 08	 add	 esp, 8
 
@@ -436,7 +440,7 @@ $LN13@ToggleYlig:
 
   00227	8b 55 f8	 mov	 edx, DWORD PTR _cmd$[ebp]
   0022a	52		 push	 edx
-  0022b	68 00 00 00 00	 push	 OFFSET $SG5069
+  0022b	68 00 00 00 00	 push	 OFFSET $SG5070
   00230	e8 00 00 00 00	 call	 __hx_printf
   00235	83 c4 08	 add	 esp, 8
 $LN14@ToggleYlig:
@@ -532,7 +536,7 @@ _ConstructToggleCmd PROC				; COMDAT
   0000b	83 7d 0c 00	 cmp	 DWORD PTR _pCmdBuff$[ebp], 0
   0000f	75 0f		 jne	 SHORT $LN2@ConstructT
   00011	6a 14		 push	 20			; 00000014H
-  00013	68 00 00 00 00	 push	 OFFSET $SG5023
+  00013	68 00 00 00 00	 push	 OFFSET $SG5024
   00018	e8 00 00 00 00	 call	 ___BUG
   0001d	83 c4 08	 add	 esp, 8
 $LN2@ConstructT:
@@ -546,7 +550,7 @@ $LN3@ConstructT:
   00026	83 7d 10 00	 cmp	 DWORD PTR _length$[ebp], 0
   0002a	75 0f		 jne	 SHORT $LN4@ConstructT
   0002c	6a 15		 push	 21			; 00000015H
-  0002e	68 00 00 00 00	 push	 OFFSET $SG5025
+  0002e	68 00 00 00 00	 push	 OFFSET $SG5026
   00033	e8 00 00 00 00	 call	 ___BUG
   00038	83 c4 08	 add	 esp, 8
 $LN4@ConstructT:
@@ -560,7 +564,7 @@ $LN5@ConstructT:
   00041	83 7d 08 00	 cmp	 DWORD PTR _pLight$[ebp], 0
   00045	75 0f		 jne	 SHORT $LN6@ConstructT
   00047	6a 16		 push	 22			; 00000016H
-  00049	68 00 00 00 00	 push	 OFFSET $SG5027
+  00049	68 00 00 00 00	 push	 OFFSET $SG5028
   0004e	e8 00 00 00 00	 call	 ___BUG
   00053	83 c4 08	 add	 esp, 8
 $LN6@ConstructT:
@@ -575,7 +579,7 @@ $LN7@ConstructT:
   0005f	50		 push	 eax
   00060	e8 00 00 00 00	 call	 _strlen
   00065	83 c4 04	 add	 esp, 4
-  00068	05 00 00 00 00	 add	 eax, OFFSET $SG5028
+  00068	05 00 00 00 00	 add	 eax, OFFSET $SG5029
   0006d	50		 push	 eax
   0006e	e8 00 00 00 00	 call	 _strlen
   00073	83 c4 04	 add	 esp, 4
@@ -599,7 +603,7 @@ $LN11@ConstructT:
 
   00085	8b 55 08	 mov	 edx, DWORD PTR _pLight$[ebp]
   00088	52		 push	 edx
-  00089	68 00 00 00 00	 push	 OFFSET $SG5030
+  00089	68 00 00 00 00	 push	 OFFSET $SG5031
   0008e	8b 45 0c	 mov	 eax, DWORD PTR _pCmdBuff$[ebp]
   00091	50		 push	 eax
   00092	e8 00 00 00 00	 call	 __hx_sprintf
@@ -651,7 +655,7 @@ $LN2@ylight_con:
 ; 147  : 	while (TRUE)
 
   0000d	83 c8 ff	 or	 eax, -1
-  00010	74 48		 je	 SHORT $__TERMINAL$13
+  00010	74 64		 je	 SHORT $__TERMINAL$13
 
 ; 148  : 	{
 ; 149  : 		if (GetMessage(&msg))
@@ -661,7 +665,7 @@ $LN2@ylight_con:
   00016	e8 00 00 00 00	 call	 _GetMessage
   0001b	83 c4 04	 add	 esp, 4
   0001e	85 c0		 test	 eax, eax
-  00020	74 36		 je	 SHORT $LN6@ylight_con
+  00020	74 52		 je	 SHORT $LN6@ylight_con
 
 ; 150  : 		{
 ; 151  : 			switch (msg.wCommand)
@@ -669,80 +673,90 @@ $LN2@ylight_con:
   00022	0f b7 55 f0	 movzx	 edx, WORD PTR _msg$[ebp]
   00026	89 55 f8	 mov	 DWORD PTR tv69[ebp], edx
   00029	83 7d f8 05	 cmp	 DWORD PTR tv69[ebp], 5
-  0002d	74 27		 je	 SHORT $LN10@ylight_con
+  0002d	74 43		 je	 SHORT $LN10@ylight_con
   0002f	81 7d f8 01 04
 	00 00		 cmp	 DWORD PTR tv69[ebp], 1025 ; 00000401H
   00036	74 02		 je	 SHORT $LN7@ylight_con
-  00038	eb 1e		 jmp	 SHORT $LN6@ylight_con
+  00038	eb 3a		 jmp	 SHORT $LN6@ylight_con
 $LN7@ylight_con:
 
 ; 152  : 			{
 ; 153  : 			case YLIGHT_MSG_TOGGLE:
-; 154  : 				pLight = (struct yeelight_object*)msg.dwParam;
+; 154  : 				__LOG("%s:toggle command received.\r\n", __func__);
 
-  0003a	8b 45 f4	 mov	 eax, DWORD PTR _msg$[ebp+4]
-  0003d	89 45 fc	 mov	 DWORD PTR _pLight$[ebp], eax
+  0003a	6a 00		 push	 0
+  0003c	e8 00 00 00 00	 call	 _LogHeader
+  00041	83 c4 04	 add	 esp, 4
+  00044	68 00 00 00 00	 push	 OFFSET $SG5088
+  00049	68 00 00 00 00	 push	 OFFSET $SG5089
+  0004e	e8 00 00 00 00	 call	 __hx_printf
+  00053	83 c4 08	 add	 esp, 8
 
-; 155  : 				if (pLight)
+; 155  : 				pLight = (struct yeelight_object*)msg.dwParam;
 
-  00040	83 7d fc 00	 cmp	 DWORD PTR _pLight$[ebp], 0
-  00044	74 0c		 je	 SHORT $LN8@ylight_con
+  00056	8b 45 f4	 mov	 eax, DWORD PTR _msg$[ebp+4]
+  00059	89 45 fc	 mov	 DWORD PTR _pLight$[ebp], eax
 
-; 156  : 				{
-; 157  : 					ToggleYlight(pLight); /* Toggle the light. */
+; 156  : 				if (pLight)
 
-  00046	8b 4d fc	 mov	 ecx, DWORD PTR _pLight$[ebp]
-  00049	51		 push	 ecx
-  0004a	e8 00 00 00 00	 call	 _ToggleYlight
-  0004f	83 c4 04	 add	 esp, 4
+  0005c	83 7d fc 00	 cmp	 DWORD PTR _pLight$[ebp], 0
+  00060	74 0c		 je	 SHORT $LN8@ylight_con
+
+; 157  : 				{
+; 158  : 					ToggleYlight(pLight); /* Toggle the light. */
+
+  00062	8b 4d fc	 mov	 ecx, DWORD PTR _pLight$[ebp]
+  00065	51		 push	 ecx
+  00066	e8 00 00 00 00	 call	 _ToggleYlight
+  0006b	83 c4 04	 add	 esp, 4
 $LN8@ylight_con:
 
-; 158  : 				}
-; 159  : 				break;
+; 159  : 				}
+; 160  : 				break;
 
-  00052	eb 04		 jmp	 SHORT $LN6@ylight_con
+  0006e	eb 04		 jmp	 SHORT $LN6@ylight_con
 
-; 160  : 			case YLIGHT_MSG_SETRGB:
-; 161  : 				break;
+; 161  : 			case YLIGHT_MSG_SETRGB:
+; 162  : 				break;
 
-  00054	eb 02		 jmp	 SHORT $LN6@ylight_con
+  00070	eb 02		 jmp	 SHORT $LN6@ylight_con
 $LN10@ylight_con:
 
-; 162  : 			case KERNEL_MESSAGE_TERMINAL:
-; 163  : 				goto __TERMINAL;
+; 163  : 			case KERNEL_MESSAGE_TERMINAL:
+; 164  : 				goto __TERMINAL;
 
-  00056	eb 02		 jmp	 SHORT $__TERMINAL$13
+  00072	eb 02		 jmp	 SHORT $__TERMINAL$13
 $LN6@ylight_con:
 
-; 164  : 			default:
-; 165  : 				break;
-; 166  : 			}
-; 167  : 		}
-; 168  : 	}
+; 165  : 			default:
+; 166  : 				break;
+; 167  : 			}
+; 168  : 		}
+; 169  : 	}
 
-  00058	eb b3		 jmp	 SHORT $LN2@ylight_con
+  00074	eb 97		 jmp	 SHORT $LN2@ylight_con
 $__TERMINAL$13:
 
-; 169  : 
-; 170  : __TERMINAL:
-; 171  : 	__LOG("Bulb controller exit.\r\n");
+; 170  : 
+; 171  : __TERMINAL:
+; 172  : 	__LOG("Bulb controller exit.\r\n");
 
-  0005a	6a 00		 push	 0
-  0005c	e8 00 00 00 00	 call	 _LogHeader
-  00061	83 c4 04	 add	 esp, 4
-  00064	68 00 00 00 00	 push	 OFFSET $SG5091
-  00069	e8 00 00 00 00	 call	 __hx_printf
-  0006e	83 c4 04	 add	 esp, 4
+  00076	6a 00		 push	 0
+  00078	e8 00 00 00 00	 call	 _LogHeader
+  0007d	83 c4 04	 add	 esp, 4
+  00080	68 00 00 00 00	 push	 OFFSET $SG5094
+  00085	e8 00 00 00 00	 call	 __hx_printf
+  0008a	83 c4 04	 add	 esp, 4
 
-; 172  : 	return 0;
+; 173  : 	return 0;
 
-  00071	33 c0		 xor	 eax, eax
+  0008d	33 c0		 xor	 eax, eax
 
-; 173  : }
+; 174  : }
 
-  00073	8b e5		 mov	 esp, ebp
-  00075	5d		 pop	 ebp
-  00076	c3		 ret	 0
+  0008f	8b e5		 mov	 esp, ebp
+  00091	5d		 pop	 ebp
+  00092	c3		 ret	 0
 _ylight_controller ENDP
 _TEXT	ENDS
 END
