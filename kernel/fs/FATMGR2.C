@@ -21,15 +21,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef __FSSTR_H__
 #include "fsstr.h"
-#endif
-
-#ifndef __FAT32_H__
 #include "fat32.h"
-#endif
 
-//This module will be available if and only if the DDF function is enabled.
+/* Available if and only if the DDF function is enabled. */
 #ifdef __CFG_SYS_DDF
 
 //Read one or several sector(s) from device object.
@@ -60,6 +55,7 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 		PrintLine("Invalid device object encountered.");
 		goto __TERMINAL;
 	}
+
 	//Initialize the DRCB object.
 	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
 	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;
@@ -68,14 +64,17 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	pDrcb->lpInputBuffer   = (LPVOID)&dwStartSector;    //Input buffer stores the start position pointer.
 	pDrcb->dwOutputLen     = dwSectorNum * (pDevObject->dwBlockSize);
 	pDrcb->lpOutputBuffer  = pBuffer;
+
 	//Issue the IO control command to read data.
 	if(0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
 		(__COMMON_OBJECT*)pDevObject,
-		pDrcb))  //Can not read.
+		pDrcb))
 	{
+		/* Failed to read data from physical device. */
 		goto __TERMINAL;
 	}
-	bResult = TRUE;  //Indicate read successfully.
+	/* Read OK. */
+	bResult = TRUE;
 
 __TERMINAL:
 	if(pDrcb)  //Should release it.
@@ -158,6 +157,7 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 	{
 		return FALSE;
 	}
+
 	//Initialize the FAT32 extension object,pFat32Fs.
 	pFat32Fs->dwAttribute         = FILE_SYSTEM_TYPE_FAT32;
 	pFat32Fs->SectorPerClus       = pStart[BPB_SecPerClus];
@@ -177,7 +177,7 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 		PrintLine("In Fat32Init: byte per sector is zero.");
 		goto __TERMINAL;
 	}
-	//goto __TERMINAL;
+
 	//Now check if this partition is ACTUALLY a FAT32 partition.
 	wRootEntryCnt = *(WORD*)(pStart + BPB_RootEntCnt);
 	wRootEntryCnt *= 32;
@@ -207,7 +207,6 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 	DataSec -= RootDirSector;  //We now have got the data sector number.
 	CountOfCluster = DataSec / pFat32Fs->SectorPerClus;  //Get the total cluster counter.
 
-	
 	if(CountOfCluster < 4085)
 	{
 		//This partition is FAT12,we can not handle it currently.
@@ -215,7 +214,6 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 	}
 	
 	//The FAT partition is FAT32.
-
 	bResult = TRUE;
 
 __TERMINAL:

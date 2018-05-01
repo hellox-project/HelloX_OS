@@ -805,21 +805,23 @@ static DWORD _SetFilePointer(__COMMON_OBJECT* lpThis,
 	__DRCB*                 pDrcb       = NULL;
 	DWORD                   dwResult    = 0;
 
-	if((NULL == pFileObject) || (NULL == pdwDistLow))  //Low part of offset must be not null.
+	/* Validate parameters,low part of offset must be specified. */
+	if((NULL == pFileObject) || (NULL == pdwDistLow))
 	{
 		return -1;
 	}
-		
+	/* Check the position flags where to begin. */
 	if((FILE_FROM_BEGIN != dwWhereBegin) && (FILE_FROM_CURRENT != dwWhereBegin) && (FILE_FROM_END != dwWhereBegin))
 	{
 		return -1;
 	}
-	//Check if file object's validity.
+	/* Validate the file object. */
 	if(DEVICE_OBJECT_SIGNATURE != pFileObject->dwSignature)
 	{
 		return -1;
 	}
 	pDrvObject = pFileObject->lpDriverObject;
+
 	//Create DRCB object and issue DeviceSeek command to file system driver.
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
@@ -853,7 +855,7 @@ static DWORD _SetFilePointer(__COMMON_OBJECT* lpThis,
 	return dwResult;
 }
 
-//Implementation of FlushFileBuffers.
+/* Write buffered file data into storage immediately. */
 static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
 							  __COMMON_OBJECT* lpFileObject)
 {
@@ -872,6 +874,7 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
 		return FALSE;
 	}
 	pFileDriver = pFileObject->lpDriverObject;
+
 	//Create DRCB object and issue device flush command.
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
@@ -893,6 +896,7 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
 	pDrcb->dwInputLen      = sizeof(__DEVICE_OBJECT*);
 	pDrcb->lpInputBuffer   = (LPVOID)pFileObject;
 
+	/* Just to call the driver's implementation of DeviceFlush routine. */
 	dwResult = pFileDriver->DeviceFlush((__COMMON_OBJECT*)pFileDriver,
 		(__COMMON_OBJECT*)pFileObject,
 		pDrcb);
@@ -902,17 +906,16 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
 	return dwResult ? TRUE : FALSE;
 }
 
-//The implementation of CreateDevice routine.
-//
-//The implementation of CreateDevice,this routine is called by device
-//driver(s) to create device object.Generally,this routine is called in
-//DriverEntry of device driver(s).
-//This routine does the following:
-// 1. Creates a device object by calling ObjectManager's interface;
-// 2. Initializes the device object;
-// 3. Allocates a block of memory as device object's extension;
-// 4. Inserts the device object into device object's list.
-//
+/* 
+ * The implementation of CreateDevice,this routine is called by device
+ * driver(s) to create device object.Generally,this routine is called in
+ * DriverEntry of device driver(s).
+ * This routine does the following:
+ *  1. Creates a device object by calling ObjectManager's interface;
+ *  2. Initializes the device object;
+ *  3. Allocates a block of memory as device object's extension;
+ *  4. Inserts the device object into device object's list.
+*/
 static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 									 LPSTR             lpszDevName,
 									 DWORD             dwAttribute,
@@ -930,13 +933,14 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 	DWORD                            dwCtrlRet         = 0;   //Return value of DeviceCtrl routine.
 	int                              i;
 
-	//Check the parameters.
+	/* Validate parameters. */
 	if((NULL == lpThis) || (NULL == lpszDevName) || (NULL == lpDrvObject))
 	{
 		return NULL;
 	}
 
-	if(StrLen(lpszDevName) > MAX_DEV_NAME_LEN)  //The device's name is too long.
+	/* Device's name must not exceed the MAX_DEV_NAME_LEN. */
+	if(StrLen(lpszDevName) > MAX_DEV_NAME_LEN)
 	{
 		return NULL;
 	}
@@ -945,12 +949,13 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 		&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DEVICE);
-	if(NULL == lpDevObject)      //Failed to create device object.
+	if(NULL == lpDevObject)
 	{
 		return NULL;
 	}
 
-	if(!lpDevObject->Initialize((__COMMON_OBJECT*)lpDevObject)) //Failed to initialize the object.
+	/* Initialize the DRCB object. */
+	if(!lpDevObject->Initialize((__COMMON_OBJECT*)lpDevObject))
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)lpDevObject);
@@ -1020,9 +1025,11 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 	}
 
 __CONTINUE:
-	//
-	//The following code add the device object into device object's list.
-	//
+
+	/* 
+	 * Add the device object into device object's global list,
+	 * can not be interrupted.
+	 */
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	if(NULL == lpIoManager->lpDeviceRoot)  //This is the first object.
 	{
@@ -1040,19 +1047,10 @@ __CONTINUE:
 	return lpDevObject;
 }
 
-//Implementation of DestroyDevice routine.
+/* Destroy a specified device object. */
 static VOID kDestroyDevice(__COMMON_OBJECT* lpThis,
 						  __DEVICE_OBJECT* lpDeviceObject)
 {
-	//When destroy a device,do not forget to clear the signature of device.For
-	//example,if pDeviceObject is to be released,then do the following code before
-	//release the memory:
-	//
-	// pDeviceObject->dwSignature  = 0;
-	//
-	//Then can release the memory occupied by pDeviceObject:
-	// KMemFree(pDeviceObject);
-	//
 	__IO_MANAGER*         lpIoManager    = (__IO_MANAGER*)lpThis;
 	DWORD                 dwFlags        = 0;
 
@@ -1094,6 +1092,7 @@ static VOID kDestroyDevice(__COMMON_OBJECT* lpThis,
 		}
 	}
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+
 	//Clear the signature of this device object.
 	lpDeviceObject->dwSignature = 0;
 	//Destroy the device object.
@@ -1232,15 +1231,9 @@ __TERMINAL:
 	return bResult;
 }
 
-//
-//The implementation of ReserveResource.
-//This routine does the following:
-// 1. 
-//
-
+/* Reserve system level resources,such as IO port,mapped device memory. */
 static BOOL ReserveResource(__COMMON_OBJECT*    lpThis,
-							__RESOURCE_DESCRIPTOR*
-							                    lpResDesc)
+							__RESOURCE_DESCRIPTOR* lpResDesc)
 {
 	BOOL                    bResult             = FALSE;
 
@@ -1263,11 +1256,11 @@ static BOOL ReserveResource(__COMMON_OBJECT*    lpThis,
 **************************************************************************
 *************************************************************************/
 
-//
-//The following code defines one of the global objects in Hello China - IOManager.
-//This object is a global object,and only one in the whole system life-cycle.
-//
-
+/*
+ * Defines one of the global objects in HelloX - IOManager.
+ * This object is a global object,and only one in the whole system life-cycle,
+ * any kernel level IO operations,are delegated by this object.
+ */
 __IO_MANAGER IOManager = {
 	NULL,                                   //lpDeviceRoot.
 	NULL,                                   //lpDriverRoot.

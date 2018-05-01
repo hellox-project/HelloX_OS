@@ -513,9 +513,11 @@ VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage)
 
 }
 
-//Implementation of GetNextCluster.
-//pdwCluster contains the current cluster,if next cluster can be fetched,TRUE will be
-//returned and pdwCluster contains the next one,or else FALSE will be returned.
+/*
+ * Get the next consecutive cluster number given the current one.
+ * pdwCluster contains the current cluster,if next cluster can be fetched,TRUE will be
+ * returned and pdwCluster contains the next one,or else FALSE will be returned.
+ */
 BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster)
 {
 	DWORD           dwNextCluster    = EOC;
@@ -524,7 +526,8 @@ BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster)
 	DWORD           dwClusOffset     = 0;
 	BYTE            buff[SECTOR_SIZE];
 
-	if((NULL == pFat32Fs) || (NULL == pdwCluster))  //Invalid parameter.
+	/* Check the parameters. */
+	if((NULL == pFat32Fs) || (NULL == pdwCluster))
 	{
 		return FALSE;
 	}
@@ -533,19 +536,22 @@ BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster)
 	{
 		dwCurrCluster = 2;
 	}
+
 	//Calculate the sector number of current cluster number.
 	dwClusSector = dwCurrCluster / 128;  //128 fat cluster entry per sector.
 	dwClusSector += pFat32Fs->dwFatBeginSector;
 	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
 		dwClusSector,
 		1,
-		buff))  //Can not read FAT sector.
+		buff))
 	{
+		/* Failed to read sector,may caused by hardware. */
 		return FALSE;
 	}
+
 	dwClusOffset  =   (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(DWORD);
 	dwNextCluster =   *(DWORD*)(&buff[0] + dwClusOffset);
-	dwNextCluster &=  0x0FFFFFFF;   //Mask the leading 4 bits.
+	dwNextCluster &=  0x0FFFFFFF;   //Mask the first leading 4 bits.
 	if(dwNextCluster == 0)  //Invalid cluster value.
 	{
 		return FALSE;
@@ -554,11 +560,13 @@ BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster)
 	return TRUE;
 }
 
-//GetClusterSector,returns the appropriate sector number of given cluster number,0 indicates
-//failed.
+/* 
+ * Returns the appropriate sector number of given cluster number.
+ * Return value of 0 indicates operation failed.
+ */
 DWORD GetClusterSector(__FAT32_FS* pFat32Fs,DWORD dwCluster)
 {
-	if((NULL == pFat32Fs) || (0 == dwCluster))  //Invalid parameters.
+	if((NULL == pFat32Fs) || (0 == dwCluster))
 	{
 		return 0;
 	}

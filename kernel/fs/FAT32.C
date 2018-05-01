@@ -880,12 +880,18 @@ __TERMINAL:
 	return bSetOk;
 }
 
-//Implementation of SetFilePointer.
+/* 
+ * Move file's current pointer to the user specified position.
+ * This routine is called by SetFilePointer in IOManager object,
+ * all parameters,such as the offset value to move,where to move
+ * are all specified in DRCB object.
+ */
 static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB* lpDrcb)
 {	
 	__FAT32_FILE*    pFatFile  = NULL;
 	DWORD	         dwSeekRet = -1;
 
+	/* Validate parameters. */
 	if((NULL == lpDrv) || (NULL == lpDev) || (NULL == lpDrcb))
 	{
 		return dwSeekRet;
@@ -895,13 +901,12 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 	if( NULL != pFatFile)
 	{
 		__FAT32_FS* pFatFs       = pFatFile->pFileSystem;		
-		DWORD       dwWhereBegin = (DWORD)lpDrcb->lpInputBuffer;//((DWORD*)lpDrcb->lpInputBuffer);
-		DWORD       dwOffsetPos  = *((INT*)lpDrcb->dwExtraParam1);		
-		DWORD       dwClusterNum = 0;		
+		DWORD       dwWhereBegin = (DWORD)lpDrcb->lpInputBuffer;
+		DWORD       dwOffsetPos  = *((DWORD*)lpDrcb->dwExtraParam1);		
+		DWORD       dwClusterNum = 0;
 		DWORD       i            = 0;
-				
-		//_hx_printf("FatDeviceSeek: where=%d,pos=%d\r\n",dwWhereBegin,dwOffsetPos);
 
+		/* Change current pointer's value according seek flags. */
 		switch(dwWhereBegin)
 		{
 			case FILE_FROM_BEGIN:
@@ -910,56 +915,68 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 			}
 			break;
 			case FILE_FROM_CURRENT:
-			{			
+			{
+				/* 
+				 * Current pointer may wrap back since the accumulated value 
+				 * of current pointer and seek offset.This may cause trouble 
+				 * when the file's size is too large or the offset value is too
+				 * large.
+				 */
 				pFatFile->dwCurrPos += dwOffsetPos;				
 			}
 			break;
+#if 0 /* Obsolete the from end flag. */
 			case FILE_FROM_END:
 			{
 				pFatFile->dwCurrPos = pFatFile->dwFileSize;	
 			}
 			break;
+#endif
 		default:
 			{
 			return dwSeekRet;
 			}
 		}
 		
+		/* Exceed the file size. */
 		if(pFatFile->dwCurrPos > pFatFile->dwFileSize)
 		{
 			pFatFile->dwCurrPos = pFatFile->dwFileSize;		
 		}
 
+		/* Get the cluster number that current pointer sits,in logical lineary view. */
 		if(pFatFile->dwCurrPos < pFatFs->dwClusterSize )
 		{
 			dwClusterNum = 1;
 		}
 		else
 		{
-			dwClusterNum = pFatFile->dwCurrPos/pFatFs->dwClusterSize;
-			if((pFatFile->dwCurrPos+1)%pFatFs->dwClusterSize)
+			dwClusterNum = pFatFile->dwCurrPos / pFatFs->dwClusterSize;
+			if((pFatFile->dwCurrPos+1) % pFatFs->dwClusterSize)
 			{
 				dwClusterNum ++;
 			}
 		}	
-								
+
+		/* 
+		 * Calculate the actual cluster number that current file pointer sitting.
+		 * The cluster number is obtained from FAT table in storage.
+		 */
 		pFatFile->dwCurrClusNum = pFatFile->dwStartClusNum;
-		for(i=0; i< (dwClusterNum-1); i++)
+		for(i = 0; i < (dwClusterNum-1); i++)
 		{
 			DWORD dwNextNum = pFatFile->dwCurrClusNum;
-
 			if(!GetNextCluster(pFatFs,&dwNextNum))
 			{
 				return dwSeekRet;
 			}
-
 			pFatFile->dwCurrClusNum = dwNextNum;
 		}
 
+		/* Update file's current offset in current cluster. */
 		pFatFile->dwClusOffset = pFatFile->dwCurrPos % pFatFs->dwClusterSize;
-		dwSeekRet              = pFatFile->dwCurrPos;
+		dwSeekRet = pFatFile->dwCurrPos;
 	}
-		
 	return dwSeekRet;	
 }
 
