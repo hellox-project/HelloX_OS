@@ -25,27 +25,32 @@
 //OS kernel.
 #ifdef __CFG_SYS_DDF
 
-//The following routines are implemented in IOMGR2.CPP.
-extern BOOL _SetEndOfFile(__COMMON_OBJECT* lpThis,
-						  __COMMON_OBJECT* lpFileObject);
-extern BOOL CreateNewFile(__COMMON_OBJECT* lpIOManager,
-				   LPSTR            lpszFileName);
+/* 
+ * External routines,mainly implemented in iomgr2.c file,or
+ * other extersion source file of IOManager object.
+ * Just for reducing the code line number of one src file.
+ */
+extern BOOL _SetEndOfFile(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpFileObject);
+extern BOOL CreateNewFile(__COMMON_OBJECT* lpIOManager, LPSTR lpszFileName);
 extern DWORD WaitForCompletion(__COMMON_OBJECT* lpThis);
 extern DWORD OnCompletion(__COMMON_OBJECT* lpThis);
 extern DWORD OnCancel(__COMMON_OBJECT* lpThis);
-extern BOOL _WriteFile(__COMMON_OBJECT* lpThis,
-			   __COMMON_OBJECT* lpFileObj,
-			   DWORD dwWriteSize,
-			   LPVOID lpBuffer,
-			   DWORD* lpdwWrittenSize);
+extern BOOL _WriteFile(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpFileObj,
+	DWORD dwWriteSize,
+	LPVOID lpBuffer,
+	DWORD* lpdwWrittenSize);
 extern BOOL _ReadFile(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpFileObject,
-					  DWORD dwByteSize,LPVOID lpBuffer,DWORD* lpReadSize);
+	DWORD dwByteSize,
+	LPVOID lpBuffer,
+	DWORD* lpReadSize);
 extern VOID _CloseFile(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpFileObj);
 extern BOOL _DeleteFile(__COMMON_OBJECT* lpThis,LPCTSTR lpszFileName);
 extern BOOL _RemoveDirectory(__COMMON_OBJECT* lpThis,LPCTSTR lpszFileName);
-//
-//The implementation of IOManager.
-//
+extern DWORD _SetFilePointer(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpFile,
+	DWORD* pdwDistLow, 
+	DWORD* pdwDistHigh, 
+	DWORD  dwWhereBegin);
+
 //A helper macro to check if the specified value is a letter.
 #define IS_LETTER(l) (((l) >= 'A') && ((l) <= 'Z'))
 //Convert the lowcase character into capital one if it is.
@@ -789,68 +794,6 @@ static DWORD _GetFileSize(__COMMON_OBJECT* lpThis,
 	
 	dwResult = pDrvObject->DeviceSize((__COMMON_OBJECT*)pDrvObject,(__COMMON_OBJECT*)pFileObject,pDrcb);
 	ObjectManager.DestroyObject(&ObjectManager,	(__COMMON_OBJECT*)pDrcb);
-
-	return dwResult;
-}
-
-//Implementation of SetFilePointer.
-static DWORD _SetFilePointer(__COMMON_OBJECT* lpThis,
-							__COMMON_OBJECT* lpFileObject,
-							DWORD* pdwDistLow,
-							DWORD* pdwDistHigh,
-							DWORD  dwWhereBegin)
-{
-	__DRIVER_OBJECT*        pDrvObject  = NULL;
-	__DEVICE_OBJECT*        pFileObject = (__DEVICE_OBJECT*)lpFileObject;
-	__DRCB*                 pDrcb       = NULL;
-	DWORD                   dwResult    = 0;
-
-	/* Validate parameters,low part of offset must be specified. */
-	if((NULL == pFileObject) || (NULL == pdwDistLow))
-	{
-		return -1;
-	}
-	/* Check the position flags where to begin. */
-	if((FILE_FROM_BEGIN != dwWhereBegin) && (FILE_FROM_CURRENT != dwWhereBegin) && (FILE_FROM_END != dwWhereBegin))
-	{
-		return -1;
-	}
-	/* Validate the file object. */
-	if(DEVICE_OBJECT_SIGNATURE != pFileObject->dwSignature)
-	{
-		return -1;
-	}
-	pDrvObject = pFileObject->lpDriverObject;
-
-	//Create DRCB object and issue DeviceSeek command to file system driver.
-	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
-		NULL,
-		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
-	{
-		return -1;
-	}
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
-	{
-		ObjectManager.DestroyObject(&ObjectManager,
-			(__COMMON_OBJECT*)pDrcb);
-
-		return -1;
-	}
-
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_SEEK;
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwInputLen      = sizeof(DWORD);
-	pDrcb->lpInputBuffer   = (LPVOID)dwWhereBegin;      //Use input buffer to contain move scheme,from begin or current.
-	pDrcb->dwExtraParam1   = (DWORD)pdwDistLow;
-	pDrcb->dwExtraParam2   = (DWORD)pdwDistHigh;
-
-	dwResult = pDrvObject->DeviceSeek((__COMMON_OBJECT*)pDrvObject,
-		(__COMMON_OBJECT*)pFileObject,
-		pDrcb);
-	ObjectManager.DestroyObject(&ObjectManager,
-		(__COMMON_OBJECT*)pDrcb);
 
 	return dwResult;
 }

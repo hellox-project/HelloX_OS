@@ -110,7 +110,7 @@ __TERMINAL:
 	return dwResult;
 }
 
-//Implementation of DeviceWrite routine.
+/* Write data into the specified file,from current location. */
 DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
 {
 	__FAT32_FS*             pFat32Fs       = NULL;
@@ -229,6 +229,7 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 			break;
 		}
 	}
+
 	//Now update the file's directory entry.
 	dwSector = GetClusterSector(pFat32Fs,pFat32File->dwParentClus);
 	if(0 == dwSector)
@@ -272,8 +273,7 @@ __TERMINAL:
 	return dwWritten;
 }
 
-
-//Implementation of DeviceRead routine.
+/* Return the specified file's size. */
 DWORD FatDeviceSize(__COMMON_OBJECT* lpDrv,	__COMMON_OBJECT* lpDev,	__DRCB* lpDrcb)
 {
 	__FAT32_FILE*          pFatFile     = NULL;
@@ -292,10 +292,13 @@ DWORD FatDeviceSize(__COMMON_OBJECT* lpDrv,	__COMMON_OBJECT* lpDev,	__DRCB* lpDr
 
 	return dwFileSize;	
 }
-//Implementation of DeviceRead routine.
-DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
-		                   __COMMON_OBJECT* lpDev,
-				           __DRCB* lpDrcb)
+
+/* 
+ * Read file from a specified file object.
+ * The object already opened,maybe by CreateFile routine,it's
+ * handle is specified by lpDev.
+ */
+DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
 {
 	__FAT32_FS*            pFatFs           = NULL;
 	__FAT32_FILE*          pFatFile         = NULL;
@@ -309,33 +312,37 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 	BYTE*                  pDestination     = NULL;
 	BOOL                   bHasRead         = FALSE;
 
-	//PrintLine("FatDeviceRead Call");
+	/* Parameters checking. */
 	if((NULL == lpDrv) || (NULL == lpDev))
 	{
-		PrintLine("FatDeviceRead error 1");
 		goto __TERMINAL;
 	}
+
 	pFatFile = (__FAT32_FILE*)(((__DEVICE_OBJECT*)lpDev)->lpDevExtension);
 	pFatFs   = pFatFile->pFileSystem;
 	dwToRead = lpDrcb->dwOutputLen;  //dwOutputLen contains the desired read size.
 	pDestination = (BYTE*)lpDrcb->lpOutputBuffer;
-	//Check if request too much.
-	if(dwToRead > pFatFile->dwFileSize - pFatFile->dwCurrPos)  //Exceed the file size.
+	
+	/* 
+	 * If the requested data size exceeds the file size minus current pointer,
+	 * then just feed back the reseting data(file size - current pointer).
+	 */
+	if(dwToRead > pFatFile->dwFileSize - pFatFile->dwCurrPos)
 	{
 		dwToRead = (pFatFile->dwFileSize - pFatFile->dwCurrPos);
 	}
+
 	pBuffer = (BYTE*)FatMem_Alloc(pFatFs->dwClusterSize);
 	if(NULL == pBuffer)  //Can not allocate memory.
 	{
-		_hx_printf("FatDeviceRead times:ClusterSize=%d",(INT)pFatFs->dwClusterSize);		
 		goto __TERMINAL;
 	}
 	dwHasRead   = pFatFs->dwClusterSize;
 	dwNextClus  = pFatFile->dwCurrClusNum;  //From current position.
-	dwSector    = GetClusterSector(pFatFs,dwNextClus);  //Get the sector specific to dwNextClus.
+	dwSector    = GetClusterSector(pFatFs,dwNextClus);  //Get the sector number of dwNextClus.
 	if(0 == dwSector)  //Can not get sector.
 	{
-		PrintLine("FatDeviceRead error 3");
+		//PrintLine("FatDeviceRead error 3");
 		goto __TERMINAL;
 	}
 	while(dwToRead > dwHasRead)
@@ -370,6 +377,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 			goto __TERMINAL;
 		}
 	}
+
 	//Handle the resting data.
 	if(!ReadDeviceSector((__COMMON_OBJECT*)pFatFile->pPartition,
 		dwSector,
@@ -387,19 +395,23 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 		pDestination += dwToRead;
 		dwTotalRead  += dwToRead;
 		pFatFile->dwClusOffset += dwToRead;
-		pFatFile->dwClusOffset  = pFatFile->dwClusOffset % dwHasRead;  //Round to cluster size.
-		//pFatFile->dwCurrClusNum += 0;  //No need to update current cluster number.
+		pFatFile->dwClusOffset %= dwHasRead;  //Round to cluster size.
 		pFatFile->dwCurrPos += dwToRead;
 	}
-	else  //Consider the desired reading size less than one cluster,but spans on 2 clusters.
+	/*
+	 * Consider the requested reading size less than one cluster,
+	 * but spans on 2 clusters,since the current cluster offset value
+	 * is near the value of one cluster size.
+	 */
+	else
 	{
-		memcpy(lpDrcb->lpOutputBuffer,pStartCopy,dwHasRead - pFatFile->dwClusOffset);
+		memcpy(pDestination, pStartCopy, dwHasRead - pFatFile->dwClusOffset);
 		pDestination += (dwHasRead - pFatFile->dwClusOffset);
 		dwTotalRead  += (dwHasRead - pFatFile->dwClusOffset);
 		dwToRead -= (dwHasRead - pFatFile->dwClusOffset);
 		pFatFile->dwCurrPos += (dwHasRead - pFatFile->dwClusOffset);  //Should be updated here.
 		pFatFile->dwClusOffset += (dwHasRead - pFatFile->dwClusOffset);
-		pFatFile->dwClusOffset =  pFatFile->dwClusOffset % dwHasRead; //Round to cluster size.
+		pFatFile->dwClusOffset %= dwHasRead; //Round to cluster size.
 		//Read the remainding section in next cluster.
 		if(!GetNextCluster(pFatFs,&dwNextClus))
 		{
@@ -423,7 +435,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 				PrintLine("FatDeviceRead error 10");
 				goto __TERMINAL;
 			}
-			memcpy(lpDrcb->lpOutputBuffer,pBuffer,dwToRead);
+			memcpy(pDestination, pBuffer, dwToRead);
 			dwTotalRead += dwToRead;  //No need to update pDestination since no use further.
 			//Update the file object's statistics variables.
 			pFatFile->dwClusOffset  += dwToRead;
@@ -431,6 +443,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
 			pFatFile->dwCurrPos     += dwToRead;
 		}
 	}
+
 __TERMINAL:
 	FatMem_Free(pBuffer);
 	return dwTotalRead;

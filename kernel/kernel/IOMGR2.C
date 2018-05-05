@@ -210,10 +210,7 @@ VOID DrvObjUninitialize(__COMMON_OBJECT* lpThis)
 	return;
 }
 
-//
-//The implementation of device object's initialize routine.
-//
-
+/* Initialize a device object. */
 BOOL DevObjInitialize(__COMMON_OBJECT* lpThis)
 {
 	__DEVICE_OBJECT*          lpDevObject = NULL;
@@ -231,6 +228,9 @@ BOOL DevObjInitialize(__COMMON_OBJECT* lpThis)
 	//lpDevObject->dwDevType        = DEVICE_TYPE_NORMAL;
 	lpDevObject->lpDriverObject   = NULL;
 	lpDevObject->lpDevExtension    = NULL;
+
+	/* Set current position pointer as 0. */
+	lpDevObject->dwCurrentPos = 0;
 
 	return TRUE;
 }
@@ -341,6 +341,78 @@ __TERMINAL:
 	return dwResult ? TRUE : FALSE;
 }
 
+/*
+* Local helper of SetFilePointer routine,it invokes the device
+* level of this routine(DeviceSeek).
+* Just put in front of this file since it is refered by several
+* routine,such as SetFilePointer,ReadFile,WriteFile.
+*/
+static DWORD __SetFilePointer_Local(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpFile,
+	DWORD* pdwDistLow,
+	DWORD* pdwDistHigh,
+	DWORD  dwWhereBegin)
+{
+	__DRIVER_OBJECT*        pDrvObject = NULL;
+	__DEVICE_OBJECT*        pFileObject = (__DEVICE_OBJECT*)lpFile;
+	__DRCB*                 pDrcb = NULL;
+	DWORD                   dwResult = 0;
+
+	/* Validate parameters,low part of offset must be specified. */
+	if ((NULL == pFileObject) || (NULL == pdwDistLow))
+	{
+		return -1;
+	}
+	/* Check the position flags where to begin. */
+	if ((FILE_FROM_BEGIN != dwWhereBegin) && (FILE_FROM_CURRENT != dwWhereBegin) && (FILE_FROM_END != dwWhereBegin))
+	{
+		return -1;
+	}
+	/* Validate the file object. */
+	if (DEVICE_OBJECT_SIGNATURE != pFileObject->dwSignature)
+	{
+		return -1;
+	}
+	pDrvObject = pFileObject->lpDriverObject;
+
+	/*
+	* Create a DRCB object and initialize it.
+	* All device seek command related parameters,are contained in
+	* this object and transfered to device driver.
+	*/
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+		NULL,
+		OBJECT_TYPE_DRCB);
+	if (NULL == pDrcb)        //Failed to create DRCB object.
+	{
+		return -1;
+	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	{
+		ObjectManager.DestroyObject(&ObjectManager,
+			(__COMMON_OBJECT*)pDrcb);
+		return -1;
+	}
+
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_SEEK;
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwInputLen = sizeof(DWORD);
+	/* Use input buffer to contain move scheme,from begin or current. */
+	pDrcb->lpInputBuffer = (LPVOID)dwWhereBegin;
+	pDrcb->dwExtraParam1 = (DWORD)pdwDistLow;
+	/* Not supported of high part of distance now. */
+	pDrcb->dwExtraParam2 = (DWORD)pdwDistHigh;
+
+	/* Issue device seek command to the driver object. */
+	dwResult = pDrvObject->DeviceSeek((__COMMON_OBJECT*)pDrvObject,
+		(__COMMON_OBJECT*)pFileObject,
+		pDrcb);
+	ObjectManager.DestroyObject(&ObjectManager,
+		(__COMMON_OBJECT*)pDrcb);
+
+	return dwResult;
+}
+
 //
 //The WriteFile's implementation.
 //The routine does the following:
@@ -422,12 +494,16 @@ __TERMINAL:
 	return bResult;
 }
 
-//The implementation of ReadFile routine.
+/* 
+ * Read data from device object. 
+ * All device objects are treated as files,so this routine's name
+ * is read FILE.
+ */
 BOOL _ReadFile(__COMMON_OBJECT* lpThis,
-					  __COMMON_OBJECT* lpFileObject,
-					  DWORD            dwByteSize,
-					  LPVOID           lpBuffer,
-					  DWORD*           lpReadSize)
+	__COMMON_OBJECT* lpFileObject,
+	DWORD            dwByteSize,
+	LPVOID           lpBuffer,
+	DWORD*           lpReadSize)
 {
 	BOOL              bResult          = FALSE;
 	__DEVICE_OBJECT*  lpFile           = (__DEVICE_OBJECT*)lpFileObject;
@@ -456,19 +532,23 @@ BOOL _ReadFile(__COMMON_OBJECT* lpThis,
 	{
 		goto __TERMINAL;
 	}
-	//Create DRCB object.
+
+	/* Move the file's current pointer to current value. */
+	__SetFilePointer_Local(lpThis, lpFileObject, &lpFile->dwCurrentPos, NULL, FILE_FROM_BEGIN);
+
+	/* Create DRCB object and initialize it. */
 	lpDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == lpDrcb)        //Failed to create DRCB object.
+	if(NULL == lpDrcb)
 	{
 		goto __TERMINAL;
 	}
-
 	if(!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))  //Failed to initialize.
 	{
 		goto __TERMINAL;
 	}
+
 	//Now read data from device by calling the DeviceRead routine.
 	lpDriver  = lpFile->lpDriverObject;
 	lpTmpBuff = lpBuffer;
@@ -492,30 +572,47 @@ BOOL _ReadFile(__COMMON_OBJECT* lpThis,
 			}
 			dwToRead   = dwByteSize;
 			dwPartRead = dwToRead;    //It indicates the actual read size.
-			if(dwToRead % lpFile->dwBlockSize)  //Should round to block size.
+			/* 
+			 * Round the to read size to the device's block,if them are not equal.
+			 * Only device block size or multiple times of block size is requested
+			 * for reading in IO Manager's level.
+			 */
+			if(dwToRead % lpFile->dwBlockSize)
 			{
 				dwToRead += (lpFile->dwBlockSize - (dwToRead % lpFile->dwBlockSize));
 			}
-			pPartBuff = (BYTE*)KMemAlloc(dwToRead,KMEM_SIZE_TYPE_ANY);  //---- CAUTION!!! ----
+
+			/* 
+			 * Allocation partition reading buffer. 
+			 * Use partition reading buffer to hold the data,to avoid
+			 * overflow of original buffer(lpBuffer).
+			 * At least one block of data is obtained in this level.
+			 */
+			pPartBuff = (BYTE*)KMemAlloc(dwToRead,KMEM_SIZE_TYPE_ANY);
 			if(NULL == pPartBuff)  //Can not allocate buffer,giveup.
 			{
 				break;
 			}
-			//Use pPartBuff to read the remainder data.
 			lpDrcb->lpOutputBuffer = pPartBuff;
 			lpDrcb->dwOutputLen = dwToRead;  //Set the request data size.
-			dwByteSize = 0;         //Read over.
+			dwByteSize = 0; //Read over.
 			//dwToRead = dwByteSize;  //Set to initial value so as to jump out the loop.
 		}
+
 		//Issue read command to device.
 		dwRead = lpDriver->DeviceRead(
 			(__COMMON_OBJECT*)lpDriver,
 			(__COMMON_OBJECT*)lpFile,
 			lpDrcb);
 		dwTotalRead += dwRead;
-		if(dwRead < dwToRead)  //Only partition of the request has been read,this may caused by the end of file.
+		if(dwRead < dwToRead)
 		{
-			dwPartRead = dwRead; //dwPartRead indicates the actual read size.
+			/* 
+			 * Only partition of the request has been read,this may caused by 
+			 * the end of file.
+			 * dwPartRead indicates the actual read size.
+			 */
+			dwPartRead = dwRead;
 			break;
 		}
 		if(0 == dwByteSize)    //Read over.
@@ -523,25 +620,37 @@ BOOL _ReadFile(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}while(dwToRead >= lpFile->dwMaxReadSize);
-	if(pPartBuff)  //It means partition(relate to dwMaxReadSize) data has been read.
+
+	/* 
+	 * Copy the partition reading data into original buffer,and
+	 * updates the total read size counter.
+	 */
+	if(pPartBuff)
 	{
-		memcpy(lpTmpBuff,pPartBuff,dwPartRead); //Append the partition data to buffer.
+		memcpy(lpTmpBuff,pPartBuff,dwPartRead);
 		dwTotalRead -= dwRead;
 		dwTotalRead += dwPartRead;
 	}
-	//Set the total read size if necessary.
-	if(NULL != lpReadSize)
-	{
-		*lpReadSize = dwTotalRead;
-	}
+
 	if(DRCB_STATUS_FAIL == lpDrcb->dwStatus)
 	{
 		bResult = FALSE;
 	}
 	else
 	{
+		/* 
+		 * Return back the total read size.
+		 */
+		if (NULL != lpReadSize)
+		{
+			*lpReadSize = dwTotalRead;
+		}
+		/* Update file's current position pointer. */
+		lpFile->dwCurrentPos += dwTotalRead;
+
 		bResult = TRUE;
 	}
+
 __TERMINAL:
 	if(lpDrcb)
 	{
@@ -564,8 +673,6 @@ __TERMINAL:
 // 4. If the target deivce is not a normal file,then reduce the
 //    reference counter,and return.
 //
-
-//Implementation of close file.
 VOID _CloseFile(__COMMON_OBJECT* lpThis,
 			   __COMMON_OBJECT* lpFileObject)
 {
@@ -807,6 +914,60 @@ __TERMINAL:
 			(__COMMON_OBJECT*)pDrcb);
 	}
 	return dwResult ? TRUE : FALSE;
+}
+
+/*
+* Change file object's current position pointer.
+* Any read or write operations on a file,are begin from
+* the current pointer's position.
+* It first calls the device level's implementation(DeviceSeek),
+* and update the device object's current position pointer
+* value if DeviceSeek success.
+*/
+DWORD _SetFilePointer(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpFile,
+	DWORD* pdwDistLow,
+	DWORD* pdwDistHigh,
+	DWORD  dwWhereBegin)
+{
+	__DEVICE_OBJECT*        pFileObject = (__DEVICE_OBJECT*)lpFile;
+	DWORD                   dwResult = 0;
+
+	/* Validate parameters,low part of offset must be specified. */
+	if ((NULL == pFileObject) || (NULL == pdwDistLow))
+	{
+		return -1;
+	}
+	/* Check the position flags where to begin. */
+	if ((FILE_FROM_BEGIN != dwWhereBegin) && (FILE_FROM_CURRENT != dwWhereBegin) && (FILE_FROM_END != dwWhereBegin))
+	{
+		return -1;
+	}
+	/* Validate the file object. */
+	if (DEVICE_OBJECT_SIGNATURE != pFileObject->dwSignature)
+	{
+		return -1;
+	}
+
+	/* Call device level's corresponding routine(DeviceSeek) first. */
+	dwResult = __SetFilePointer_Local(lpThis, lpFile, pdwDistLow, pdwDistHigh,
+		dwWhereBegin);
+
+	/* Update the device object's current pointer correspondingly. */
+	switch (dwWhereBegin)
+	{
+	case FILE_FROM_BEGIN:
+		pFileObject->dwCurrentPos = *pdwDistLow;
+		break;
+	case FILE_FROM_CURRENT:
+		pFileObject->dwCurrentPos += *pdwDistLow;
+		break;
+	default:
+		dwResult = 0;
+		break;
+	}
+
+	return dwResult;
 }
 
 #endif

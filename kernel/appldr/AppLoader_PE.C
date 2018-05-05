@@ -262,8 +262,8 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	 * The caller just jump to the first byte of this buffer to
 	 * launch the application.
 	 */
-	LPBYTE                  pRunBuffer = NULL;
-	LPBYTE                  pJmpBuffer = NULL;
+	char*                   pRunBuffer = NULL;
+	char*                   pJmpBuffer = NULL;
 	BOOL                    bResult = FALSE;
 	DWORD                   dwHxHeadSize = sizeof(__FILL_HEADER);
 	DWORD                   dwSecTableSize = 0;
@@ -273,10 +273,16 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	DWORD                   dwIndex = 0;
 	/* 
 	 * A temporary buffer to hold the whole image file,to avoid 
-	 * batch reading,since the SetFilePointer routine has some
+	 * multiple reading operations,since the SetFilePointer routine may has some
 	 * issues to be solve.
+	 * *********************************************************
+	 * The issue is solved and the whole reading obsoleted.
+	 * The issue is caused by FAT32 code,which leads a buffer overlapping
+	 * by code mistake.
+	 *
+	 * char* pTmpBuff = NULL;
 	 */
-	char* pTmpBuff = NULL;
+	 
 	DWORD dwImageSz = 0;
 
 	/* Allocate a big buffer to hold the whole file. */
@@ -284,19 +290,6 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 	if (0 == dwImageSz)
 	{
 		_hx_printf("Can not get image file's size.\r\n");
-		goto __TERMINAL;
-	}
-	pTmpBuff = (LPBYTE)_hx_aligned_malloc(dwImageSz + 8, 64);
-	if (NULL == pTmpBuff)
-	{
-		_hx_printf("Failed to allocate temp buffer.\r\n");
-		goto __TERMINAL;
-	}
-	/* Load the whole file,to simplify the following process. */
-	dwOffset = 0;
-	SetFilePointer(hFileObj, &dwOffset, 0, FILE_FROM_BEGIN);
-	if (!ReadFile(hFileObj, dwImageSz, pTmpBuff, &dwReadSize))
-	{
 		goto __TERMINAL;
 	}
 
@@ -376,23 +369,20 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 		dwSectNum,
 		dwSecTableSize);
 #endif
-
 	for (dwIndex = 0; dwIndex < dwSectNum; dwIndex++)
 	{
 		DWORD   dwFileOffset = pSectionHdrPos->PointerToRawData;
 		DWORD   dwMemOffset = pSectionHdrPos->VirtualAddress;
 		DWORD   dwSecSize = pSectionHdrPos->SizeOfRawData;
-		LPBYTE  pMemAddr = pRunBuffer + dwMemOffset;
+		char*   pMemAddr = pRunBuffer + dwMemOffset;
 
-#if 0
-		/* Avoid using SetFilePointer since it has issue. */
+		/* Load all sections into memory one by one. */
 		SetFilePointer(hFileObj, &dwFileOffset, 0, FILE_FROM_BEGIN);
 		if (!ReadFile(hFileObj, dwSecSize, pMemAddr, &dwReadSize))
 		{
 			goto __TERMINAL;
 		}
-#endif
-		memcpy(pMemAddr, (pTmpBuff + dwFileOffset), dwSecSize);
+
 #if 0
 		_hx_printf("Section name=%s,FO=0x%X,MO=0x%X,Size=%d.\r\n",
 			pSectionHdr->Name,
@@ -433,10 +423,6 @@ __TERMINAL:
 	if (pSectionHdr)
 	{
 		_hx_free(pSectionHdr);
-	}
-	if (pTmpBuff)
-	{
-		_hx_free(pTmpBuff);
 	}
 
 	return pRunBuffer;

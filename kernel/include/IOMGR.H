@@ -297,6 +297,14 @@ typedef struct tag__DEVICE_OBJECT{
 	DWORD                       dwMaxReadSize;
 	DWORD                       dwMaxWriteSize;
 
+	/* 
+	 * Current position pointer of the device.
+	 * It will be moved forward when reading operation performed,
+	 * and can be changed by calling SetFilePointer routine
+	 * of IOManager.
+	 */
+	DWORD                       dwCurrentPos;
+
 	__DRIVER_OBJECT*            lpDriverObject;    //Point back to this device's driver.
 	DWORD                       dwTotalReadSector; //How many sectors has been read.
 	DWORD                       dwTotalWrittenSector; //How many sectors has been written.
@@ -304,7 +312,6 @@ typedef struct tag__DEVICE_OBJECT{
 	                                               //device.
 	LPVOID                      lpDevExtension;
 }__DEVICE_OBJECT;
-//END_DEFINE_OBJECT(__DEVICE_OBJECT)     //__DEVICE_OBJECT.
 
 //
 //Initialize routine and Uninitialize routine's definition.

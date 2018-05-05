@@ -67,6 +67,7 @@ INT  GetFileExtLen(CHAR* pFileName)
 
 	return nExtLen;
 }
+
 //Convert file name to  fat32 format
 BOOL ConvertFatName(CHAR* pSrc,CHAR* pShortName)
 {
@@ -509,8 +510,6 @@ VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage)
 	{
 		pDirEntry->LastAccessDate   = wdate;		
 	}
-	
-
 }
 
 /*

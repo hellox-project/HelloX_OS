@@ -889,7 +889,7 @@ __TERMINAL:
 static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB* lpDrcb)
 {	
 	__FAT32_FILE*    pFatFile  = NULL;
-	DWORD	         dwSeekRet = -1;
+	DWORD	         dwSeekRet = 0;
 
 	/* Validate parameters. */
 	if((NULL == lpDrv) || (NULL == lpDev) || (NULL == lpDrcb))
@@ -977,6 +977,7 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 		pFatFile->dwClusOffset = pFatFile->dwCurrPos % pFatFs->dwClusterSize;
 		dwSeekRet = pFatFile->dwCurrPos;
 	}
+
 	return dwSeekRet;	
 }
 
