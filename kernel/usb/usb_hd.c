@@ -76,6 +76,7 @@ static unsigned long __usbReadSector(int dev, DWORD dwStartSect, DWORD dwSectNum
 		}
 		return ret;
 	}
+	
 	//pBuffer is cache line aligned,just use it.
 	ret = usb_stor_read(dev, dwStartSect, dwSectNum, pBuffer);
 	if (!ret)
@@ -110,6 +111,7 @@ static unsigned long __usbWriteSector(int dev, DWORD dwStartSect, DWORD dwSectNu
 		}
 		return ret;
 	}
+	
 	//pBuffer is aligned,just use it.
 	ret = usb_stor_write(dev, dwStartSect, dwSectNum, pBuffer);
 	if (!ret)

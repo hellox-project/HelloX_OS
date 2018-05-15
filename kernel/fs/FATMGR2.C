@@ -27,12 +27,14 @@
 /* Available if and only if the DDF function is enabled. */
 #ifdef __CFG_SYS_DDF
 
-//Read one or several sector(s) from device object.
-//This is the lowest level routine used by all FAT32 driver code.
+/* 
+ * Read one or several sector(s) from device object.
+ * This is the lowest level routine used by all FAT32 driver code.
+ */
 BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
-					  DWORD            dwStartSector,
-					  DWORD            dwSectorNum,   //How many sector to read.
-					  BYTE*            pBuffer)       //Must equal or larger than request.
+	DWORD            dwStartSector,
+	DWORD            dwSectorNum,   //How many sector to read.
+	BYTE*            pBuffer)       //Must equal or larger than request.
 {
 	BOOL              bResult        = FALSE;
 	__DRIVER_OBJECT*  pDrvObject     = NULL;
@@ -84,24 +86,26 @@ __TERMINAL:
 	return bResult;
 }
 
-//Write one or several sector(s) to device.
+/* Write one or several sector(s) to device. */
 BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
-					  DWORD            dwStartSector,
-					  DWORD            dwSectorNum,   //How many sector to write.
-					  BYTE*            pBuffer)       //Must equal or larger than request.
+	DWORD dwStartSector,
+	DWORD dwSectorNum,   //How many sector to write.
+	BYTE* pBuffer)       //Must equal or larger than request.
 {
-	BOOL              bResult        = FALSE;
-	__DRIVER_OBJECT*  pDrvObject     = NULL;
-	__DEVICE_OBJECT*  pDevObject     = (__DEVICE_OBJECT*)pPartition;
-	__DRCB*           pDrcb          = NULL;
+	BOOL bResult = FALSE;
+	__DRIVER_OBJECT* pDrvObject = NULL;
+	__DEVICE_OBJECT* pDevObject = (__DEVICE_OBJECT*)pPartition;
+	__DRCB* pDrcb = NULL;
 	__SECTOR_INPUT_INFO ssi;
 
-	if((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))  //Invalid parameters.
+	/* Validate all parameters first. */
+	if((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))
 	{
 		goto __TERMINAL;
 	}
 	pDrvObject = pDevObject->lpDriverObject;
 
+	/* Create a DRCB object and initialize it. */
 	pDrcb = (__DRCB*)CREATE_OBJECT(__DRCB);
 	if(NULL == pDrcb)
 	{
@@ -110,7 +114,6 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	ssi.dwBufferLen   = dwSectorNum * pDevObject->dwBlockSize;
 	ssi.lpBuffer      = pBuffer;
 	ssi.dwStartSector = dwStartSector;
-	//Initialize the DRCB object.
 	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
 	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;
 	pDrcb->dwCtrlCommand   = IOCONTROL_WRITE_SECTOR;
@@ -118,25 +121,28 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	pDrcb->lpInputBuffer   = (LPVOID)&ssi;
 	pDrcb->dwOutputLen     = 0;
 	pDrcb->lpOutputBuffer  = NULL;
-	//Issue the IO control command to read data.
+
+	/* Issue the IO control command to device to read data. */
 	if(0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
 		(__COMMON_OBJECT*)pDevObject,
-		pDrcb))  //Can not read.
+		pDrcb))
 	{
 		goto __TERMINAL;
 	}
-	bResult = TRUE;  //Indicate read successfully.
+	bResult = TRUE;
 
 __TERMINAL:
-	if(pDrcb)  //Should release it.
+	if(pDrcb)
 	{
 		RELEASE_OBJECT(pDrcb);
 	}
 	return bResult;
 }
 
-//Initialize one FAT32 file system given the first sector data.
-//Return TRUE if sucessfully.
+/* 
+ * Initialize one FAT32 file system given the first sector data.
+ * Return TRUE if sucessfully.
+ */
 BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 {
 	UCHAR*    pStart         = (UCHAR*)pSector0;
@@ -207,9 +213,9 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 	DataSec -= RootDirSector;  //We now have got the data sector number.
 	CountOfCluster = DataSec / pFat32Fs->SectorPerClus;  //Get the total cluster counter.
 
+	/* Can not support FAT12 yet,just return fail. */
 	if(CountOfCluster < 4085)
 	{
-		//This partition is FAT12,we can not handle it currently.
 		goto __TERMINAL;
 	}
 	

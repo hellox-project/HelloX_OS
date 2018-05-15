@@ -47,17 +47,18 @@ VOID ToCapital(LPSTR lpszString)
 	}
 }
 
-//Create a new file in the specified directory.
-//Input of lpDrcb:
-//  lpInputBuffer  :     Pointing to new file's name and path.
-//  dwInputLen     :     Target file name's length.
-//  dwExtraParam1  :     Target file's attributes.
-//Output if successful:
-//  lpOutputBuffer :     Pointing to the new file's handle(opened).
-//  dwStatus       :     DRCB_STATUS_SUCCESS.
-//Output if failed:
-//  dwStatus       :     DRCB_STATUS_FAIL.
-//
+/* 
+ * Create a new file in the specified directory.
+ * Input of lpDrcb:
+ *   lpInputBuffer  :     Pointing to new file's name and path.
+ *   dwInputLen     :     Target file name's length.
+ *   dwExtraParam1  :     Target file's attributes.
+ * Output if successful:
+ *   lpOutputBuffer :     Pointing to the new file's handle(opened).
+ *   dwStatus       :     DRCB_STATUS_SUCCESS.
+ * Output if failed:
+ *   dwStatus       :     DRCB_STATUS_FAIL.
+ */
 DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB*          lpDrcb)
 {
 	CHAR                DirName[MAX_FILE_NAME_LEN]  = {0};
@@ -100,8 +101,9 @@ DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB*   
 	dwDirCluster <<= 16;
 	dwDirCluster +=  DirShortEntry.wFirstClusLow;
 
-	if(!CreateFatFile((__FAT32_FS*)pFatDevice->lpDevExtension,dwDirCluster,FileName,	0))
-	{		
+	if(!CreateFatFile((__FAT32_FS*)pFatDevice->lpDevExtension,dwDirCluster,FileName,0))
+	{
+		_hx_printf("%s:failed to create file.\r\n", __func__);
 		goto __TERMINAL;
 	}
 		
@@ -246,17 +248,17 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 
 	pFat32Entry = (__FAT32_SHORTENTRY*)(pClusBuffer + pFat32File->dwParentOffset);
 	
-	//modify  file start Cluster index 
+	//Modify file start cluster value.
 	if(dwFirstCluster > 0 )
 	{
 		pFat32Entry->wFirstClusHi   = (WORD)(dwFirstCluster >> 16);
 		pFat32Entry->wFirstClusLow  = (WORD)(dwFirstCluster&0x0000FFFF);
 	}
 	
-	//update write date and time 
+	//Update the last writting date time of the file.
 	SetFatFileDateTime(pFat32Entry,FAT32_DATETIME_WRITE);
 
-	//pfse->
+	//Update file's size attribute.
 	pFat32Entry->dwFileSize = pFat32File->dwFileSize;
 	WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
 		dwSector,

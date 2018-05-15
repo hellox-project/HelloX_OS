@@ -538,13 +538,16 @@ __BIOS_BEGIN:
  
     ;The following is a jumping table used to locate proper BIOS service
     ;routine.
+	;EAX contains the BIOS service number,which is the index value of
+	;the requested service in this table,just multiply AX with 2 and add the
+	;base address of this table,is the entry address of target routine.
     align 4
     bits 16
 __BIOS_JMP_TABLE:
     dw __REBOOT           ;Entry point for reboot.
     dw __POWEROFF         ;Entry point for poweroff.
     dw __READSECT         ;Entry point for read sector.
-    dw __WRITESECT        ;Entry point for Write sector // old Entry point for delay test.
+    dw __WRITESECT        ;Entry point for Write sector.
     dw __TO_GRAPHIC       ;Entry point for switching to graphic mode.
     dw __TO_TEXT          ;Entry point for switching to text mode.
     dw 0x00
@@ -632,7 +635,8 @@ __REBOOT:
     mov eax,0x01   ;Indicate the service is success,though this instruction
                    ;will never execute.
     ret
- 
+
+	;Power off the machine.
 __POWEROFF:
     mov ax,0x5301
     xor bx,bx
@@ -659,51 +663,41 @@ __DAP_BEGIN:
     dapBuffSeg      dw 0xf00  ;The buffer of int 13h is start from F000h.
     dapSectorLow    dd 0x00
     dapSectorHigh   dd 0x00
- 
+
+	;Read one or several sector(s) from disk.
 __READSECT:
- 
-    ;pusha           ;Save all registers.
     ;Initialize the DAP
     mov dword [dapSectorLow],edx  ;EDX contains the start sector number.
     mov eax,esi   ;ESI contains the sector number to read.
     mov byte [dapSectorsNum],al
     mov ah,0x42
     lea si,[__DAP_BEGIN] ;Load DAP's address.
- 
     ;Only read the first harddisk now.
     mov  dl ,0x80 ;Only handle the first HD.
     int  0x13
     jc   .__ERROR        ;Read failed.
-    ;popa
-    mov eax,0x01          ;Indicate the successful of this operation.
+    mov eax,0x01         ;Indicate the successful of this operation.
     ret
 .__ERROR:
-    ;popa
     mov eax,0x00
     ret
  
 __WRITESECT:
-     ;pusha           ;Save all registers.
     ;Initialize the DAP
     mov dword [dapSectorLow],edx  ;EDX contains the start sector number.
     mov eax,esi   ;ESI contains the sector number to read.
     mov byte [dapSectorsNum],al
     mov ah,0x43
     lea si,[__DAP_BEGIN] ;Load DAP's address.
-	 
-    ;Only read the first harddisk now.
-    mov  dl ,0x80 ;Only handle the first HD.
+    ;Only write the first harddisk now.
+    mov  dl ,0x80
     int  0x13
-    jc   .__ERROR        ;Read failed.
-    ;popa
-		
-    mov eax,0x01          ;Indicate the successful of this operation.
+    jc   .__ERROR        ;Write failed.		
+    mov eax,0x01         ;Indicate the successful of this operation.
     ret
 .__ERROR:
-    ;popa
     mov eax,0x00
     ret
- 
  
     ;After BIOS process,should switch back to protect mode.
     align 4

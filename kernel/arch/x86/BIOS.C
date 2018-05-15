@@ -166,7 +166,6 @@ BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffe
 			pop edx
 			pop ecx
 	}
-
 	__asm{
 			cmp eax,0x00
 			jz __BIOS_FAILED
@@ -175,10 +174,10 @@ BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffe
 #endif
 
 __BIOS_FAILED:    //BIOS call failed.
+	_hx_printf("%s:failed to write sector.\r\n", __func__);
 	return FALSE;
 
 __BIOS_SUCCESS:   //BIOS call successed.
-
 	return TRUE;
 }
 

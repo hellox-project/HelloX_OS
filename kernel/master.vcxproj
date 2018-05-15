@@ -166,8 +166,6 @@
     <ClCompile Include="appldr\AppLoader_STM32.C" />
     <ClCompile Include="arch\x86\BIOSVGA.C" />
     <ClCompile Include="drivers\x86\com.c" />
-    <ClCompile Include="drivers\x86\e1000.c" />
-    <ClCompile Include="drivers\x86\e1000_d.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
     <ClCompile Include="drivers\x86\IDEHD.C" />
     <ClCompile Include="drivers\x86\KEYBRD.C" />
@@ -369,13 +367,10 @@
     <ClCompile Include="usb\xhci_pci.c" />
     <ClCompile Include="usb\xhci_ring.c" />
     <ClCompile Include="user\dpi.c" />
-    <ClCompile Include="user\ylight.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\BIOSVGA.H" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
-    <ClInclude Include="drivers\x86\e1000.h" />
-    <ClInclude Include="drivers\x86\e1000_d.h" />
     <ClInclude Include="drivers\x86\pcnet.h" />
     <ClInclude Include="drivers\x86\rtl8111.h" />
     <ClInclude Include="include\align.h" />

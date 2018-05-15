@@ -19,18 +19,13 @@
 //                                festival,today can lead me recalling the time I was a child.
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
+#include <stdio.h>
 
-#ifndef __IDEBASE_H__
 #include "idebase.h"
-#endif
+#include "bios.h"
 
-#include "../arch/x86/bios.h"
-#include "../lib/stdio.h"
-
-/*
+#if 0
 BOOL ReadHDSector(LPVOID lpBuffer,
 				  UCHAR byStartSector,
 				  UCHAR byCylinderLo,
@@ -102,7 +97,7 @@ BOOL ReadHDSector(LPVOID lpBuffer,
 	bResult = TRUE;
 	return bResult;
 }
-*/
+#endif
 
 //Several low level routines to test specified flags in hard disk driver registers.
 static BOOL WaitForRdy(WORD wPort,DWORD dwMillionSecond)
@@ -184,40 +179,30 @@ static BOOL CmdSucc(WORD wPort)
 	return FALSE;
 }
 
-//Read one or several sector(s) from a specified hard disk.
-//Please make sure the pBuffer is long enough to contain the sectors read.
+/* 
+ * Read one or several sector(s) from a specified hard disk.
+ * Please make sure the pBuffer is long enough to contain the 
+ * sectors to read.
+ */
 BOOL ReadSector(int nHdNum,DWORD dwStartSector,DWORD dwSectorNum,BYTE* pBuffer)
 {
-	BYTE        DrvHdr  = (BYTE)IDE_DRV0_LBA;
+	//BYTE        DrvHdr  = (BYTE)IDE_DRV0_LBA;
 	//BYTE        LbaLow;
 	//BYTE        LbaMid;
 	//BYTE        LbaHigh;
 	//UCHAR       tmp;
 	//CHAR        Buffer[64];  //For debug.
-	BOOL        bResult = FALSE;
+	//BOOL        bResult = FALSE;
 
-	//----------------------------------------------------------------------
-	// Use BIOS service to query hard disk sector since we can not read HD
-	// directly sometimes.
-	//----------------------------------------------------------------------
-	/*while(dwSectorNum > 4)
-	{
-		bResult = BIOSReadSector(nHdNum,dwStartSector,4,pBuffer);  //Read 4 sectors because of the BIOS buffer's limitation.
-		if(!bResult)
-		{
-			return FALSE;
-		}
-		dwStartSector += 4;
-		dwSectorNum -= 4;
-		pBuffer += 512 * 4;
-	}*/
 #ifdef __I386__
+	/* Just use BIOS service to complete the sector reading. */
 	return BIOSReadSector(nHdNum,dwStartSector,dwSectorNum,pBuffer);
 #else
 	return FALSE;
 #endif
 
-	/*if((nHdNum > 1) || (NULL == pBuffer) || (0 == dwSectorNum))
+#if 0
+	if((nHdNum > 1) || (NULL == pBuffer) || (0 == dwSectorNum))
 	{
 		return FALSE;
 	}
@@ -271,21 +256,26 @@ BOOL ReadSector(int nHdNum,DWORD dwStartSector,DWORD dwSectorNum,BYTE* pBuffer)
 	tmp = __inb(0x1f2);
 	sprintf(Buffer,"The error number is : %d",tmp);
 	PrintLine(Buffer);
-	return FALSE;*/
+	return FALSE;
+#endif
 }
 
-//Write one or several sector(s) from a specified hard disk.
-//Please make sure the pBuffer is long enough to contain the sectors write.
+/* 
+ * Write one or several sector(s) to a specified hard disk.
+ * Please make sure the pBuffer is long enough to contain the 
+ * sectors to write.
+ */
 BOOL WriteSector(int nHdNum,DWORD dwStartSector,DWORD dwSectorNum,BYTE* pBuffer)
 {
 #ifdef __I386__
-	//CD_PrintString("BIOSWriteSector called",TRUE);
+	/* Just to call BIOS service to write. */
 	return BIOSWriteSector(nHdNum,dwStartSector,dwSectorNum,pBuffer);
 #else
 	return FALSE;
 #endif
 
-	/*BYTE        DrvHdr  = (BYTE)IDE_DRV0_LBA;
+#if 0
+	BYTE        DrvHdr  = (BYTE)IDE_DRV0_LBA;
 	BYTE        LbaLow;
 	BYTE        LbaMid;
 	BYTE        LbaHigh;
@@ -335,11 +325,14 @@ BOOL WriteSector(int nHdNum,DWORD dwStartSector,DWORD dwSectorNum,BYTE* pBuffer)
 	//Wait for completion.
 	WaitForBsy(IDE_CTRL0_PORT_STATUS,0);
 	WaitForRdy(IDE_CTRL0_PORT_STATUS,0);
-	return TRUE;*/
+	return TRUE;
+#endif
 }
 
-//Issue the IDENTIFY command and return the result.
-//pBuffer will contain the content returned by IDENTIFY command.
+/* 
+ * Issue the IDENTIFY command and return the result.
+ * pBuffer will contain the content returned by IDENTIFY command.
+ */
 BOOL Identify(int nHdNum,BYTE* pBuffer)
 {
 	BYTE DeviceReg = 0x0;  //Device select register.
@@ -371,9 +364,11 @@ BOOL Identify(int nHdNum,BYTE* pBuffer)
 	return FALSE;
 }
 
-//Initialization routine for IDE controller 0.
-//In current implementation,this routine only disabled the interrupt of 
-//IDE controller,so only polling scheme is used now.
+/* 
+ * Initialization routine for IDE controller 0.
+ * In current implementation,this routine only disabled the interrupt of 
+ * IDE controller,so only polling scheme is used now.
+ */
 BOOL IdeInitialize()
 {
 	WaitForBsy(IDE_CTRL0_PORT_STATUS,0);

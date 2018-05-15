@@ -13,13 +13,12 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
+#include <StdAfx.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "iomgr.h"
 #include "commobj.h"
-#include "string.h"
 
 //Only Device Driver Framework is enabled the following code is included in the
 //OS kernel.
@@ -221,31 +220,29 @@ static __COMMON_OBJECT* __OpenDevice(__COMMON_OBJECT* lpThis,
 	return (__COMMON_OBJECT*)pDevice;
 }
 
-//
-//The CreateFile routine's implementation of IOManager.
-//Several tips about this routine:
-// 1. In current version implementation of Hello China,all devices are treated as files,
-//    so,if users want to access device,he or she can open the target device by calling
-//    this routine;
-// 2. One file or device can be opend as READ ONLY,WRITE ONLY,or READ WRITE,the dwAccessMode
-//    parameter of this routine indicates the opening mode;
-// 3. In current version,one file or device can be opend more than one time,so,the
-//    dwShareMode indicates the re-open mode of the currently opend file,for example,if one
-//    kernel thread opens a file as READ WRITE mode,and also indicates the OS that this
-//    file can only be re-opend as READ mode(by seting the appropriate value of the
-//    dwShareMode parameter),so,if there is another kernel thread want to open the file
-//    as READ WRITE mode or WRITE mode,it will fail,by contraries,if the second kernel
-//    thread want to open the file only in READ ONLY mode,it will success.
-// 4. The last parameter,lpReserved,is a reserved parameter that may be used in the future.
-//Once success,this routine returns the base address of the device object that opend,
-//otherwise,it will return a NULL value to indicate the failure,user can determine the
-//failing reason by calling GetLastError routine.
-//
-//The routine does the following:
-// 1. 
-//
-
-//CreateFile,open a device or file given it's name.
+/*
+ * Open a device or file given it's name,create a new one if
+ * the file is not existed and dwAccessMode specifies create a new
+ * one or open always.
+ * 
+ * Several tips about this routine:
+ *  1. In current version implementation of Hello China,all devices are treated as files,
+ *     so,if users want to access device,he or she can open the target device by calling
+ *     this routine;
+ *  2. One file or device can be opend as READ ONLY,WRITE ONLY,or READ WRITE,the dwAccessMode
+ *     parameter of this routine indicates the opening mode;
+ *  3. In current version,one file or device can be opend more than one time,so,the
+ *     dwShareMode indicates the re-open mode of the currently opend file,for example,if one
+ *     kernel thread opens a file as READ WRITE mode,and also indicates the OS that this
+ *     file can only be re-opend as READ mode(by seting the appropriate value of the
+ *     dwShareMode parameter),so,if there is another kernel thread want to open the file
+ *     as READ WRITE mode or WRITE mode,it will fail,by contraries,if the second kernel
+ *     thread want to open the file only in READ ONLY mode,it will success.
+ *  4. The last parameter,lpReserved,is a reserved parameter that may be used in the future.
+ * Once success,this routine returns the base address of the device object that opend,
+ * otherwise,it will return a NULL value to indicate the failure,user can determine the
+ * failing reason by calling GetLastError routine.
+ */
 static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object.
 									LPSTR            lpszFileName,
 									DWORD            dwAccessMode,
@@ -259,22 +256,27 @@ static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object
 	{
 		return NULL;
 	}
-	if(StrLen(lpszFileName) > 511)  //File name too long.
-	{
-		return NULL;
-	}
-	if((lpszFileName[0] == 0) || 
-	   (lpszFileName[1] == 0) ||
-	   (lpszFileName[2] == 0)) //Target file name should has
-		                       //at lease 3 characters.
+	/* Path and name too long. */
+	if(StrLen(lpszFileName) > 511)
 	{
 		return NULL;
 	}
 
-	//strcpy(FileName,lpszFileName);
+	/* Target file's name must have at least 3 characters. */
+	if((lpszFileName[0] == 0) || (lpszFileName[1] == 0) || (lpszFileName[2] == 0)) 
+	{
+		return NULL;
+	}
+
 	StrCpy(lpszFileName,FileName);
-	ToCapital(FileName);  //Convert to capital.
-	if(IS_LETTER(FileName[0]))  //Maybe a file object.
+	ToCapital(FileName);
+	/*
+	 * The first letter must be characters if the target is a file.
+	 * The valid format of a file name as X:\xxxx, where 'X' is the
+	 * identifier of file system(file partition),and 'xxxx' is the
+	 * target file's path and name,include file name's extension.
+	 */
+	if(IS_LETTER(FileName[0]))
 	{
 		if(FileName[1] != ':')  //Invalid file system name.
 		{
@@ -284,30 +286,46 @@ static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object
 		{
 			return NULL;
 		}
-		//A valid file name specified,so try to open it.
+		/* A valid file name,try to open it. */
 		pFileHandle = __OpenFile(lpThis,FileName,dwAccessMode,dwShareMode);
+		/* 
+		 * Create a new one if not exist and user requested by specifying
+		 * FILE_OPEN_ALWAYS flag.
+		 */
 		if(NULL == pFileHandle)
 		{
-			if(FILE_OPEN_ALWAYS & dwAccessMode)  //Try to create one.
+			if(FILE_OPEN_ALWAYS & dwAccessMode)
 			{
-				if(CreateNewFile(lpThis,FileName))  //Can create it.
+				if(CreateNewFile(lpThis,FileName))
 				{
 					pFileHandle = __OpenFile(lpThis,FileName,dwAccessMode,dwShareMode); //Try to open again.
+				}
+				else
+				{
+					_hx_printf("%s: failed to create new file[%s].\r\n", __func__,
+						FileName);
 				}
 			}
 		}
 		return pFileHandle;
 	}
-	//The target name is not a file name,check if a device name.
-	if((FileName[0] == '\\') && //For device name,the first 2 character should be '\'.
-	   (FileName[1] == '\\') &&
-	   (FileName[2] == '.' ))   //The third character should be a dot.
+
+	/* 
+	 * The target name is not a file name,check if it's a device name.
+	 * The device name's format must be as \\.\xxxx, where 'xxxx' is 
+	 * a meaningful(or no meaningful,no matter) string indicates the function
+	 * or attributes of the device.
+	 * Just very the name before open it.
+	 * Please be noted that the device can not be newly created,just return
+	 * NULL if it isn't exist.
+	 */
+	if((FileName[0] == '\\') && (FileName[1] == '\\') && (FileName[2] == '.' ))
 	{
-		if(FileName[3] != '\\') //The 4th character also must be '\'.
+		if(FileName[3] != '\\')
 		{
 			return NULL;
 		}
-		//The name is a device name,try to open ti.
+		/* Validate device name,try to open it. */
 		return __OpenDevice(lpThis,FileName,dwAccessMode,dwShareMode);
 	}
 	return NULL;

@@ -13,17 +13,13 @@
 //    Extra comment             : 
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
+#include <kapi.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "shell.h"
 #include "fs.h"
-
-#include "kapi.h"
-#include "string.h"
-#include "stdio.h"
-
 
 #define  FS_PROMPT_STR   "[fs_view]"
 
@@ -589,60 +585,83 @@ __TERMINAL:
 #endif
 }
 
-static DWORD copy(__CMD_PARA_OBJ* pcpo)
+static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 {
-	LPSTR    lpInfo1 = "  First parameter is Hello.";
-	LPSTR    lpInfo2 = "  Second parameter is China.";
-	LPSTR    lpInfo3 = "  Third parameter is Hello China 1.";
-	LPSTR    lpInfo4 = "  Third parameter is Hello China 2.";
-	LPSTR    lpInfo5 = "  Third parameter is Hello China 3.";
-#ifdef __I386__
-#ifdef __GCC__
+#ifdef __CFG_SYS_DDF
+	HANDLE   hFile = NULL;
+	CHAR     Buffer[128];
+	DWORD    dwReadSize = 0;
+	DWORD    dwTotalRead = 0;
+	DWORD    i;
+	CHAR     FullName[MAX_FILE_NAME_LEN];
+	WORD     ch = 0x0700;
 
-	asm(
-		".code32			;"
-		"pushl	%9			;"
-		"pushl	%8			;"
-		"pushl	%7			;"
-		"pushl	%6			;"
-		"pushl	%5			;"
-		"pushl	$0			;"
-		"pushl	$0x2D		;"
-		"int	$0x7F		;"
-		"popl	%%eax		;"
-		"popl	%%eax		;"
-		"popl	%0			;"
-		"popl	%1			;"
-		"popl	%2			;"
-		"popl	%3			;"
-		"popl	%4			;"
-		:"=r"(lpInfo1), "=r"(lpInfo2), "=r"(lpInfo3), "=r"(lpInfo4), "=r"(lpInfo5)
-		:"r"(lpInfo1), "r"(lpInfo2), "r"(lpInfo3), "r"(lpInfo4), "r"(lpInfo5)
-		 );
-#else
-	__asm{
-		push lpInfo5
-		push lpInfo4
-		push lpInfo3
-		push lpInfo2
-		push lpInfo1
-		push 0
-		push 0x2D
-		int 0x7f
-		pop eax
-		pop eax
-		pop lpInfo1
-		pop lpInfo2
-		pop lpInfo3
-		pop lpInfo4
-		pop lpInfo5
+	if (pCmdObj->byParameterNum < 3)
+	{
+		_hx_printf("  Please specify the source and destination file name.\r\n");
+		goto __TERMINAL;
 	}
-#endif
-#endif
-	PrintLine("  In copy of fs application.");
-	PrintLine(lpInfo1);
-	PrintLine(lpInfo2);
+	strcpy(FullName, FsGlobalData.CurrentDir);
+	strcat(FullName, pCmdObj->Parameter[1]);
+	ToCapital(FullName);
+
+	//Try to open the target file.
+	hFile = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
+		FullName,
+		FILE_ACCESS_READ,
+		0,
+		NULL);
+	if (NULL == hFile)
+	{
+		PrintLine("  Please specify a valid and present file name.");
+		goto __TERMINAL;
+	}
+	//Try to read the target file and display it.
+	GotoHome();
+	ChangeLine();
+	do {
+		if (!IOManager.ReadFile((__COMMON_OBJECT*)&IOManager,
+			hFile,
+			128,
+			Buffer,
+			&dwReadSize))
+		{
+			PrintLine("  Can not read the target file.");
+			goto __TERMINAL;
+		}
+		for (i = 0; i < dwReadSize; i++)
+		{
+			if ('\r' == Buffer[i])
+			{
+				GotoHome();
+				continue;
+			}
+			if ('\n' == Buffer[i])
+			{
+				ChangeLine();
+				continue;
+			}
+			ch += Buffer[i];
+			PrintCh(ch);
+			ch = 0x0700;
+		}
+		dwTotalRead += dwReadSize;
+	} while (dwReadSize == 128);
+
+	GotoHome();
+	ChangeLine();
+	_hx_printf("[type]: %d byte(s) read.\r\n", dwTotalRead);
+
+__TERMINAL:
+	if (NULL != hFile)
+	{
+		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
+			hFile);
+	}
 	return SHELL_CMD_PARSER_SUCCESS;;
+#else
+	return FS_CMD_FAILED;
+#endif
 }
 
 static DWORD use(__CMD_PARA_OBJ* pCmdObj)

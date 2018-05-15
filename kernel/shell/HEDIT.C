@@ -12,19 +12,13 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "../include/StdAfx.h"
-#endif
-
-#ifndef __KAPI_H__
-#include "../include/kapi.h"
-#endif
+#include <StdAfx.h>
+#include <kapi.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "shell.h"
 #include "hedit.h"
-
-#include "../lib/string.h"
-#include "../lib/stdio.h"
 
 //Create user specified file to write.
 static HANDLE CreateEditFile(LPSTR lpszCmdLine)

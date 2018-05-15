@@ -981,7 +981,14 @@ static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,__DRCB
 	return dwSeekRet;	
 }
 
-//Implementation of DeviceCtrl routine.
+/*
+ * FAT device specific operations,all the operations that can not be modeled
+ * into Read/Write/Seek and other standard methods,are implemented in this
+ * routine.
+ * For FAT,all directories related operations,such as create directory,remove
+ * directory,are implemented in this routine.File searching operations are
+ * also implemented in this routine.
+ */
 static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
 {
 	__COMMON_OBJECT*       pFindHandle = NULL;
@@ -990,7 +997,11 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 	{
 		goto __TERMINAL;
 	}
-	//Dispatch the request to appropriate routines according to control command.
+	/*
+	 * Dispatch the request to appropriate routines according
+	 * to control command, or just handle the command if it's
+	 * simple.
+	 */
 	switch(lpDrcb->dwCtrlCommand)
 	{
 	case IOCONTROL_FS_CHECKPARTITION:

@@ -324,20 +324,19 @@ static DWORD DeviceWrite(__COMMON_OBJECT* lpDrv,
 	return 0;
 }
 
-//Several helper routines used by DeviceCtrl.
+/* Read sector(s) from a specified partition. */
 static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 							  __COMMON_OBJECT* lpDev,
 							  __DRCB* lpDrcb)
 {
-	__PARTITION_EXTENSION* pPe     = NULL;
-	__DEVICE_OBJECT*       pDevice = (__DEVICE_OBJECT*)lpDev;
-	DWORD dwStartSector        = 0;
-	DWORD dwSectorNum          = 0;
-	int   nDiskNum             = 0;
-	DWORD i;
+	__PARTITION_EXTENSION* pPe = NULL;
+	__DEVICE_OBJECT* pDevice = (__DEVICE_OBJECT*)lpDev;
+	DWORD dwStartSector = 0;
+	DWORD dwSectorNum = 0;
+	int   nDiskNum = 0;
 	DWORD dwFlags;
 
-	//Parameter validity checking.
+	/* Parameter validation. */
 	if((NULL == lpDrcb->lpOutputBuffer) || (0 == lpDrcb->dwOutputLen))
 	{
 		return 0;
@@ -346,7 +345,11 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 	{
 		return 0;
 	}
-	//Get start sector and sector number to read.
+
+	/* 
+	 * Get the start sector number of the HD,and how many 
+	 * sector(s) is(are) requested.
+	 */
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	pPe = (__PARTITION_EXTENSION*)pDevice->lpDevExtension;
 	dwStartSector = *(DWORD*)(lpDrcb->lpInputBuffer);  //Input buffer stores the start pos.
@@ -356,8 +359,7 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 		return 0;
 	}
 	dwSectorNum = lpDrcb->dwOutputLen / pDevice->dwBlockSize;
-	//Check if the reading data exceed the device boundry.
-	//if((dwStartSector + dwSectorNum) > (pPe->dwStartSector + pPe->dwSectorNum))
+	/* Check if the requested data exceed the device boundry. */
 	if((dwStartSector + dwSectorNum) > pPe->dwSectorNum)
 	{
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
@@ -366,7 +368,8 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 	dwStartSector += pPe->dwStartSector;
 	nDiskNum       = pPe->nDiskNum;
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-	//Now issue the reading command.
+	/* Issue reading command in batch. */
+#if 0
 	for(i = 0;i < dwSectorNum;i ++)
 	{
 		if(!ReadSector(nDiskNum,dwStartSector + i,1,((BYTE*)lpDrcb->lpOutputBuffer) + 512*i))
@@ -374,40 +377,42 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 			return FALSE;
 		}
 	}
-	//return ReadSector(nDiskNum,dwStartSector,dwSectorNum,(BYTE*)lpDrcb->lpOutputBuffer);
-	return TRUE;
+#endif
+	return ReadSector(nDiskNum,dwStartSector,dwSectorNum,(BYTE*)lpDrcb->lpOutputBuffer);
 }
 
+/* Write one or several sectors data into a specified partition. */
 static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,
-							   __COMMON_OBJECT* lpDev,
-							   __DRCB* lpDrcb)
+	__COMMON_OBJECT* lpDev,
+	__DRCB* lpDrcb)
 {	
-	__PARTITION_EXTENSION* pPe     = NULL;
-	__DEVICE_OBJECT*       pDevice = (__DEVICE_OBJECT*)lpDev;
-	__SECTOR_INPUT_INFO*   psii    = NULL;
-	DWORD dwStartSector        = 0;
-	DWORD dwSectorNum          = 0;
-	int   nDiskNum             = 0;
-	DWORD i;
+	__PARTITION_EXTENSION* pPe = NULL;
+	__DEVICE_OBJECT* pDevice = (__DEVICE_OBJECT*)lpDev;
+	__SECTOR_INPUT_INFO* psii = NULL;
+	DWORD dwStartSector = 0;
+	DWORD dwSectorNum = 0;
+	int   nDiskNum = 0;
 	DWORD dwFlags;
+	BOOL bResult = FALSE;
 
-	//Parameter validity checking.
+	/* Validate parameters. */
 	if((NULL == lpDrcb->lpInputBuffer) || (0 == lpDrcb->dwInputLen))
 	{
 		return 0;
 	}
 	psii = (__SECTOR_INPUT_INFO*)lpDrcb->lpInputBuffer;
 
-	//Get start sector and sector number to read.
+	//Get start sector and sector number to write.
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	pPe = (__PARTITION_EXTENSION*)pDevice->lpDevExtension;
-	if(psii->dwBufferLen % pDevice->dwBlockSize)   //Always integral block size times is valid.
+	/* Required data size must be aligned with block size. */
+	if(psii->dwBufferLen % pDevice->dwBlockSize)
 	{
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		return 0;
 	}
 	dwSectorNum = psii->dwBufferLen / pDevice->dwBlockSize;
-	//Check if the reading data exceed the device boundry.
+	/* Check if the writing data exceed the device boundry. */
 	if((psii->dwStartSector + dwSectorNum) > (pPe->dwStartSector + pPe->dwSectorNum))
 	{
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
@@ -416,7 +421,14 @@ static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,
 	dwStartSector = psii->dwStartSector + pPe->dwStartSector;
 	nDiskNum = pPe->nDiskNum;
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-	//Now issue the reading command.
+
+	/* 
+	 * Issue the writting command to device. The WriteSector is 
+	 * low level operation implemented by HD driver. 
+	 */
+	//_hx_printf("%s:start_s = %d, sec_num = %d.\r\n", __func__, dwStartSector, dwSectorNum);
+	bResult = WriteSector(nDiskNum, dwStartSector, dwSectorNum, psii->lpBuffer);
+#if 0
 	for(i = 0;i < dwSectorNum;i ++)
 	{
 		if(!WriteSector(nDiskNum,dwStartSector + i,1,((BYTE*)psii->lpBuffer) + 512*i))
@@ -424,37 +436,43 @@ static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,
 			return FALSE;
 		}
 	}
-	return TRUE;
+#endif
+	return bResult;
 }
 
-//DeviceCtrl for WINHD driver.
-//File systems based on this kind of device will use this routine to obtain one or
-//several sectors,or write one or several sectors into device.
-//For sector read,the dwOutputLen and lpOutputBuffer of DRCB object gives the output
-//buffer,moreover,the dwInputLen and lpInputBuffer associated together gives the
-//input parameter,which is the start position.The sector number can be rationed from
-//dwOutputLen,which must be integral times of block size.
-//For sector write,the lpInputBuffer gives the start sector number and the actual content
-//to write.The lpInputBuffer is a pointer of __SECTOR_INPUT_INFO structure.
+/* 
+ * DeviceCtrl for WINHD driver.
+ * File systems based on this kind of device will use this routine to obtain one or
+ * several sectors,or write one or several sectors into device.
+ * For sector read,the dwOutputLen and lpOutputBuffer of DRCB object gives the output
+ * buffer,moreover,the dwInputLen and lpInputBuffer associated together gives the
+ * input parameter,which is the start position.The sector number can be rationed from
+ * dwOutputLen,which must be integral times of block size.
+ * For sector write,the lpInputBuffer gives the start sector number and the actual content
+ * to write.The lpInputBuffer is a pointer of __SECTOR_INPUT_INFO structure.
+ */
 static DWORD DeviceCtrl(__COMMON_OBJECT* lpDrv,
-						__COMMON_OBJECT* lpDev,
-						__DRCB* lpDrcb)
+	__COMMON_OBJECT* lpDev,
+	__DRCB* lpDrcb)
 {
+	/* Parameters checking. */
+	if((NULL == lpDev) || (NULL == lpDrcb))
+	{
+		goto __TERMINAL;
+	}
+	if(DRCB_REQUEST_MODE_IOCTRL != lpDrcb->dwRequestMode)
+	{
+		goto __TERMINAL;
+	}
 
-	if((NULL == lpDev) || (NULL == lpDrcb))  //Invalid parameters.
-	{
-		goto __TERMINAL;
-	}
-	if(DRCB_REQUEST_MODE_IOCTRL != lpDrcb->dwRequestMode)  //Invalid request mode.
-	{
-		goto __TERMINAL;
-	}
 	switch(lpDrcb->dwCtrlCommand)
 	{
-	case IOCONTROL_READ_SECTOR:   //Read sector(s) from device.
+		/* Read sector(s) from device. */
+	case IOCONTROL_READ_SECTOR:
 		return __CtrlSectorRead(lpDrv,lpDev,lpDrcb);
 		break;
-	case IOCONTROL_WRITE_SECTOR:  //Write sector(s) into device.
+		/* Write sector(s) to device. */
+	case IOCONTROL_WRITE_SECTOR:
 		return __CtrlSectorWrite(lpDrv,lpDev,lpDrcb);
 		break;
 	default:

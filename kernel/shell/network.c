@@ -62,7 +62,6 @@ static DWORD setif(__CMD_PARA_OBJ*);      //Set a given interface's configuratio
 #ifdef __CFG_NET_DHCP_SERVER
 static DWORD dhcpd(__CMD_PARA_OBJ*);      //DHCP Server control command.
 #endif
-static DWORD ylight(__CMD_PARA_OBJ*);     //Entry routine of yeelight controlling.
 
 #ifdef __CFG_NET_PPPOE                    //PPPoE control command.
 static DWORD pppoe(__CMD_PARA_OBJ*);
@@ -98,7 +97,6 @@ static struct __FDISK_CMD_MAP{
 #ifdef __CFG_NET_NAT
 	{ "nat",        nat,       "  nat      : NAT control commands." },
 #endif
-	{ "light",      ylight,    "  light    : Control command of yeelight." },
 	{ "help",       help,      "  help     : Print out this screen." },
 	{ "exit",       _exit,     "  exit     : Exit the application." },
 	{ NULL,		   NULL,      NULL}
@@ -1249,15 +1247,6 @@ static DWORD nat(__CMD_PARA_OBJ* lpCmdObj)
 	}
 
 __TERMINAL:
-	return NET_CMD_SUCCESS;
-}
-
-/* yeelight control command. */
-extern BOOL ylight_entry();
-static DWORD ylight(__CMD_PARA_OBJ* lpCmdObj)
-{
-	__LOG("Enter yeelight program...\r\n");
-	ylight_entry();
 	return NET_CMD_SUCCESS;
 }
 

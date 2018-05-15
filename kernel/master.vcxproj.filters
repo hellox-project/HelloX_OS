@@ -641,12 +641,6 @@
     <ClCompile Include="usb\usbasync.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="drivers\x86\e1000.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="drivers\x86\e1000_d.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="netcore\netentry.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -726,9 +720,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="netcore\nat\naticmp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="user\ylight.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1117,13 +1108,7 @@
     <ClInclude Include="usb\usbasync.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="drivers\x86\e1000.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lib\stdbool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="drivers\x86\e1000_d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\pci_ids.h">

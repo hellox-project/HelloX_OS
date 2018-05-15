@@ -175,7 +175,7 @@
 #define __CFG_DRV_USBNETWORK
 
 //Include USB mouse driver in OS kernel.
-#define __CFG_DRV_USBMOUSE
+//#define __CFG_DRV_USBMOUSE
 
 //Include USB keyboard driver in OS kernel.
 #define __CFG_DRV_USBKBD

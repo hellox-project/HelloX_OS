@@ -232,7 +232,6 @@ BOOL ReleaseClusterChain(__FAT32_FS* pFat32Fs,DWORD dwStartCluster);
 
 VOID     SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage);
 
-
 VOID* FatMem_Alloc(INT nSize);
 VOID  FatMem_Free(VOID* p);
 

@@ -101,12 +101,15 @@ BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse,CHAR* pszName,DWORD dwFirstClus,DWO
 		goto __INITOTHER;
 	}
 
+#if 0
 	//long file name. don't change 
 	if(strstr(pszName,"~"))
 	{
 		memcpy(pfse->FileName,pszName,FAT32_SHORTDIR_FILENAME_LEN);
 		goto __INITOTHER;
 	}
+#endif
+
 	//Now convert the name to directory format.
 	nNameLen = StrLen(pszName);
 	pDotPos  = pszName + (nNameLen - 1);

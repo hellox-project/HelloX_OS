@@ -250,10 +250,9 @@ VOID DevObjUninitialize(__COMMON_OBJECT* lpThis)
 #define TO_CAPITAL(l) \
     (((l) >= 'a') && ((l) <= 'z')) ? ((l) - 'a' + 'A') : (l);
 
+#if 0
 //A helper routine used to convert a string from lowercase to capital.
 //The string should be terminated by a zero,i.e,a C string.
-/**
- *
 static VOID ToCapital(LPSTR lpszString)
 {
 	int nIndex = 0;
@@ -271,9 +270,13 @@ static VOID ToCapital(LPSTR lpszString)
 		nIndex ++;
 	}
 }
- */
+#endif
 
-//Create a new file in the given file system.
+/*
+ * Create a new file in a given partition,the identifier
+ * of the partition can be obtained from the first letter of
+ * the lpszFileName parameter.
+ */
 BOOL CreateNewFile(__COMMON_OBJECT* lpThis,
 				   LPSTR            lpszFileName)
 {
@@ -287,42 +290,48 @@ BOOL CreateNewFile(__COMMON_OBJECT* lpThis,
 	int                           i;
 
 	FsIdentifier   = TO_CAPITAL(lpszFileName[0]);
-	//Create DRCB object first.
+	
+	/* Create a DRCB object to track the whole creating process. */
     pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	if (NULL == pDrcb)
 	{
 		goto __TERMINAL;
 	}
-
 	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
 	{
 		goto __TERMINAL;
 	}
 
+	/* Locate the file system object. */
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
-		if(FsIdentifier == pIoManager->FsArray[i].FileSystemIdentifier)  //Located the file system.
+		if(FsIdentifier == pIoManager->FsArray[i].FileSystemIdentifier)
 		{
-			pFsObject = (__DEVICE_OBJECT*)pIoManager->FsArray[i].pFileSystemObject; //Get the file system object.
+			pFsObject = (__DEVICE_OBJECT*)pIoManager->FsArray[i].pFileSystemObject;
 		}
 	}
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 
-	if(NULL == pFsObject)  //Can not locate the desired file system.
+	/* Can not locate the desired file system. */
+	if(NULL == pFsObject)
 	{
 		goto __TERMINAL;
 	}
-	//Check the validity of file system object.
+	/* Validate the file system object. */
 	if(DEVICE_OBJECT_SIGNATURE != pFsObject->dwSignature)
 	{
 		goto __TERMINAL;
 	}
 	pFsDriver = pFsObject->lpDriverObject;
 
-	//Initialie the DRCB object,then call DeviceCreate routine of file system object.
+	/* 
+	 * Initialie the DRCB object,then call DeviceCreate routine
+	 * of file system object,it's this routine that created file
+	 * on partition.
+	 */
 	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
 	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_CREATE;
 	pDrcb->dwInputLen      = StrLen(lpszFileName);
@@ -333,7 +342,7 @@ BOOL CreateNewFile(__COMMON_OBJECT* lpThis,
 		pDrcb);
 
 __TERMINAL:
-	if(NULL != pDrcb)  //DRCB object created yet,release it.
+	if(NULL != pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)pDrcb);
