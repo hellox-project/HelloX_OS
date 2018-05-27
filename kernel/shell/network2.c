@@ -164,15 +164,15 @@ ping_recv(int s)
       iphdr = (struct ip_hdr *)buf;
       iecho = (struct icmp_echo_hdr *)(buf + (IPH_HL(iphdr) * 4));
       if (((iecho->id == PING_ID) && (iecho->seqno == htons(ping_seq_num)) && iecho->type == ICMP_ER))
-			{
-				len = len - sizeof(struct ip_hdr) - sizeof(struct icmp_echo_hdr);  //Adjust received data's length,since it
-		                                                                       //includes IP and ICMP headers.
-				_hx_printf("  [%d] Reply from %s,size = %d,time = %d(ms)\r\n",ping_pkt_seq,inet_ntoa(fromaddr),len,ms);
-				ping_succ ++;
-				bResult = TRUE;
+	  {
+		  len = len - sizeof(struct ip_hdr) - sizeof(struct icmp_echo_hdr);  //Adjust received data's length,since it
+		                                                                     //includes IP and ICMP headers.
+		  _hx_printf("  [%d] Reply from %s,size = %d,time = %d(ms)\r\n",ping_pkt_seq,inet_ntoa(fromaddr),len,ms);
+		  ping_succ ++;
+		  bResult = TRUE;
       }
-	    else
-	    {
+	  else
+	  {
 		    //printf("  ping : Received invalid replay,drop it.\r\n");
       }
     }
@@ -220,7 +220,7 @@ void ping_Entry(void *arg)
 	}
 	else
 	{
-		PrintLine("   ping : Send out packet failed.");
+		_hx_printf("ping : Send out packet failed.");
 	}
 
 	//Try the specified times.

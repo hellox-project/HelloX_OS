@@ -17,6 +17,7 @@
 #include <kapi.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "shell.h"
 #include "fs.h"
@@ -38,7 +39,7 @@ static CHAR   Buffer[256] = {0};                   //Local buffer used by this t
 //
 static DWORD CommandParser(LPCSTR);
 static DWORD help(__CMD_PARA_OBJ*);        //help sub-command's handler.
-static DWORD exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
+static DWORD fs_exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
 static DWORD fslist(__CMD_PARA_OBJ*);
 static DWORD dir(__CMD_PARA_OBJ*);
 static DWORD cd(__CMD_PARA_OBJ*);
@@ -73,7 +74,7 @@ static struct __FDISK_CMD_MAP{
 	{"type",       type,      "  type     : Show a specified file's content."},
 	{"copy",       copy,      "  copy     : Copy file to other location,or reverse."},
 	{"use",        use,       "  use      : Set current file system."},
-	{"exit",       exit,      "  exit     : Exit the application."},
+	{"exit",       fs_exit,   "  exit     : Exit the application."},
 	{"help",       help,      "  help     : Print out this screen."},
 	{NULL,		   NULL,      NULL}
 };
@@ -171,10 +172,9 @@ DWORD fsEntry(LPVOID p)
 //
 //The exit command's handler.
 //
-static DWORD exit(__CMD_PARA_OBJ* lpCmdObj)
+static DWORD fs_exit(__CMD_PARA_OBJ* lpCmdObj)
 {
 	memzero(&FsGlobalData,sizeof(struct __FS_GLOBAL_DATA));
-
 	return SHELL_CMD_PARSER_TERMINAL;
 }
 
@@ -585,78 +585,173 @@ __TERMINAL:
 #endif
 }
 
+/* Helper routine to check if a given file name is relative. */
+static BOOL IsRelative(char* pszFileName)
+{
+	BUG_ON(NULL == pszFileName);
+	if (strlen(pszFileName) < 2)
+	{
+		return TRUE;
+	}
+	/* It's a absolately path if the second character is ':'. */
+	if (':' == pszFileName[1])
+	{
+		/* Only FS identifier and ':',no more characters. */
+		if (strlen(pszFileName) == 2)
+		{
+			return TRUE;
+		}
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 {
 #ifdef __CFG_SYS_DDF
-	HANDLE   hFile = NULL;
-	CHAR     Buffer[128];
+	HANDLE   hSourceFile = NULL;
+	HANDLE   hDestinationFile = NULL;
+	char*    pBuffer = NULL;
 	DWORD    dwReadSize = 0;
+	DWORD    dwWriteSize = 0;
 	DWORD    dwTotalRead = 0;
-	DWORD    i;
-	CHAR     FullName[MAX_FILE_NAME_LEN];
-	WORD     ch = 0x0700;
+	char     srcFullName[MAX_FILE_NAME_LEN];
+	char     dstFullName[MAX_FILE_NAME_LEN];
+	DWORD    dwFileSize = 0;
+	DWORD    dwBatSize = 0;
 
 	if (pCmdObj->byParameterNum < 3)
 	{
-		_hx_printf("  Please specify the source and destination file name.\r\n");
+		_hx_printf("Please specify the source and destination file name.\r\n");
 		goto __TERMINAL;
 	}
-	strcpy(FullName, FsGlobalData.CurrentDir);
-	strcat(FullName, pCmdObj->Parameter[1]);
-	ToCapital(FullName);
+	/* Construct source file's full name. */
+	if (IsRelative(pCmdObj->Parameter[1]))
+	{
+		/* Append current directory into the relative file name. */
+		strcpy(srcFullName, FsGlobalData.CurrentDir);
+		strcat(srcFullName, pCmdObj->Parameter[1]);
+	}
+	else
+	{
+		strcpy(srcFullName, pCmdObj->Parameter[1]);
+	}
+	ToCapital(srcFullName);
 
-	//Try to open the target file.
-	hFile = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
-		FullName,
+	/* Construct destination file's full name. */
+	if (IsRelative(pCmdObj->Parameter[2]))
+	{
+		/* Append current directory into the relative file name. */
+		strcpy(dstFullName, FsGlobalData.CurrentDir);
+		strcat(dstFullName, pCmdObj->Parameter[2]);
+	}
+	else
+	{
+		strcpy(dstFullName, pCmdObj->Parameter[2]);
+	}
+	ToCapital(dstFullName);
+
+	/* Can not copy one file to itself. */
+	if (0 == strcmp(srcFullName, dstFullName))
+	{
+		_hx_printf("Can not copy a file to it's self.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* Try to open the source file. */
+	hSourceFile = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
+		srcFullName,
 		FILE_ACCESS_READ,
 		0,
 		NULL);
-	if (NULL == hFile)
+	if (NULL == hSourceFile)
 	{
-		PrintLine("  Please specify a valid and present file name.");
+		_hx_printf("Can not open the source file[%s].\r\n",
+			srcFullName);
 		goto __TERMINAL;
 	}
-	//Try to read the target file and display it.
-	GotoHome();
-	ChangeLine();
+
+	/* Try to open or create the destination file name. */
+	hDestinationFile = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
+		dstFullName,
+		FILE_OPEN_ALWAYS,
+		0,
+		NULL);
+	if (NULL == hDestinationFile)
+	{
+		_hx_printf("Can not open the target file[%s].\r\n",
+			dstFullName);
+		goto __TERMINAL;
+	}
+
+	/* Get the source file's size. */
+	dwFileSize = GetFileSize(hSourceFile, NULL);
+	dwBatSize = dwFileSize / 20;
+
+	/* Allocate a buffer to hold the file's data. */
+#define __TMP_FILE_BUFFSZ (64 * 1024)
+	pBuffer = (char*)_hx_malloc(__TMP_FILE_BUFFSZ);
+	if (NULL == pBuffer)
+	{
+		_hx_printf("Failed to allocate data buffer.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* Copy data now. */
 	do {
+		/* Read the source file. */
 		if (!IOManager.ReadFile((__COMMON_OBJECT*)&IOManager,
-			hFile,
-			128,
-			Buffer,
+			hSourceFile,
+			__TMP_FILE_BUFFSZ,
+			pBuffer,
 			&dwReadSize))
 		{
-			PrintLine("  Can not read the target file.");
+			_hx_printf("Can not read the source file.\r\n");
 			goto __TERMINAL;
 		}
-		for (i = 0; i < dwReadSize; i++)
+
+		/* Write the data block into destination file. */
+		if (!IOManager.WriteFile((__COMMON_OBJECT*)&IOManager,
+			hDestinationFile,
+			dwReadSize,
+			pBuffer,
+			&dwWriteSize))
 		{
-			if ('\r' == Buffer[i])
-			{
-				GotoHome();
-				continue;
-			}
-			if ('\n' == Buffer[i])
-			{
-				ChangeLine();
-				continue;
-			}
-			ch += Buffer[i];
-			PrintCh(ch);
-			ch = 0x0700;
+			_hx_printf("Failed to write data into target file.\r\n");
+			goto __TERMINAL;
 		}
 		dwTotalRead += dwReadSize;
-	} while (dwReadSize == 128);
 
-	GotoHome();
-	ChangeLine();
-	_hx_printf("[type]: %d byte(s) read.\r\n", dwTotalRead);
+		/* Show out copying progress. */
+		if (dwBatSize < dwReadSize)
+		{
+			_hx_printf(".");
+			dwBatSize = dwFileSize / 20;
+		}
+		else
+		{
+			dwBatSize -= dwReadSize;
+		}
+	} while (dwReadSize == __TMP_FILE_BUFFSZ);
+#undef __TMP_FILE_BUFFSZ
+
+	_hx_printf("\r\n");
+	_hx_printf("[copy]: %d byte(s) copied.\r\n", dwTotalRead);
 
 __TERMINAL:
-	if (NULL != hFile)
+	if (NULL != hSourceFile)
 	{
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
-			hFile);
+			hSourceFile);
+	}
+	if (NULL != hDestinationFile)
+	{
+		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
+			hDestinationFile);
+	}
+	if (NULL != pBuffer)
+	{
+		_hx_free(pBuffer);
 	}
 	return SHELL_CMD_PARSER_SUCCESS;;
 #else
@@ -740,4 +835,3 @@ static DWORD init()
 	return 0;
 #endif
 }
-
