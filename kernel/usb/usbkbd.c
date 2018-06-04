@@ -145,20 +145,17 @@ static BYTE usb_scancode_shiftup[256] =
 };
 
 //The USB keyboard device found in system,it will be setby ScanUsbMouse routine.
-
 static __PHYSICAL_DEVICE* pUsbKeyboardDev = NULL;
 
 //Interrupt handler for USBHD.
 static BOOL _Keyboard_IntHandler(LPVOID pParam, LPVOID pEsp)
 {
-
 	return TRUE;
 }
 
 //Scan USB devices in system to find USB Keyboard device.
 static BOOL ScanUsbKeyboard()
 {
-
 	__PHYSICAL_DEVICE*              pPhyDev = NULL;
 	struct usb_device*              pUsbDev = NULL;
 	struct usb_interface*           pUsbInt = NULL;

@@ -1328,21 +1328,20 @@ struct us_data *ss)
 	}
 
 	/* set the handler pointers based on the protocol */
-	debug("Transport: ");
+	_hx_printf("USB storage transport: ");
 	switch (ss->protocol) {
 	case US_PR_CB:
-		debug("Control/Bulk\r\n");
+		_hx_printf("Control/Bulk\r\n");
 		ss->transport = usb_stor_CB_transport;
 		ss->transport_reset = usb_stor_CB_reset;
 		break;
-
 	case US_PR_CBI:
-		debug("Control/Bulk/Interrupt\r\n");
+		_hx_printf("Control/Bulk/Interrupt\r\n");
 		ss->transport = usb_stor_CB_transport;
 		ss->transport_reset = usb_stor_CB_reset;
 		break;
 	case US_PR_BULK:
-		debug("Bulk/Bulk/Bulk\r\n");
+		_hx_printf("Bulk/Bulk/Bulk\r\n");
 		ss->transport = usb_stor_BBB_transport;
 		ss->transport_reset = usb_stor_BBB_reset;
 		break;

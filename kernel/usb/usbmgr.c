@@ -175,6 +175,11 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 	pUsbCtrl->ctrlOps.get_ctrl_status = ops->get_ctrl_status;
 	pUsbCtrl->ctrlOps.InterruptHandler = ops->InterruptHandler;
 
+	pUsbCtrl->ctrlOps.CreateXferDescriptor = ops->CreateXferDescriptor;
+	pUsbCtrl->ctrlOps.StartXfer = ops->StartXfer;
+	pUsbCtrl->ctrlOps.StopXfer = ops->StopXfer;
+	pUsbCtrl->ctrlOps.DestroyXferDescriptor = ops->DestroyXferDescriptor;
+
 	//Save private data of the user specified.
 	pUsbCtrl->pUsbCtrl = priv;
 
@@ -318,10 +323,7 @@ static int _ControlMessage(__PHYSICAL_DEVICE* pUsbDev, unsigned long pipe, void 
 		return -1;
 	}
 	dev = (struct usb_device*)pUsbDev->lpPrivateInfo;
-	if (NULL == dev)
-	{
-		BUG();
-	}
+	BUG_ON(NULL == dev);
 	pUsbCtrl = (__COMMON_USB_CONTROLLER*)dev->controller;
 	return pUsbCtrl->ctrlOps.submit_control_msg(dev, pipe, buffer, transfer_len, setup);
 }
@@ -693,6 +695,177 @@ __TERMINAL:
 	return pReturn;
 }
 
+/* USB transfer in continuous mode. */
+/* 
+ * Create a new USB transfer descriptor,return the pointer if success,
+ * and NULL will be returned in case of failure.
+ */
+static __USB_XFER_DESCRIPTOR* _CreateXferDescriptor(__PHYSICAL_DEVICE* dev, unsigned long pipe,
+	void* buffer, int buff_len,struct devrequest* setup,int interval)
+{
+	__USB_XFER_DESCRIPTOR* pXferDesc = NULL;
+	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
+	struct usb_device* pUsbDev = NULL;
+	BOOL bResult = FALSE;
+
+	/* Parameters checking. */
+	if ((NULL == dev) || (NULL == buffer) || (0 == buff_len))
+	{
+		goto __TERMINAL;
+	}
+	/* Pipe type checking,must be one of CONTROL/BULK/INT/ISO. */
+	if ((usb_pipetype(pipe) != PIPE_CONTROL) &&
+		(usb_pipetype(pipe) != PIPE_BULK) && 
+		(usb_pipetype(pipe) != PIPE_INTERRUPT) &&
+		(usb_pipetype(pipe) != PIPE_ISOCHRONOUS))
+	{
+		goto __TERMINAL;
+	}
+	/* Request packet must be specified if the pipe is control. */
+	if (usb_pipetype(pipe) == PIPE_CONTROL)
+	{
+		if (NULL == setup)
+		{
+			goto __TERMINAL;
+		}
+	}
+
+	/* Get the corresponding USB device and it's controller. */
+	pUsbDev = (struct usb_device*)dev->lpPrivateInfo;
+	BUG_ON(NULL == pUsbDev);
+	pUsbCtrl = (__COMMON_USB_CONTROLLER*)pUsbDev->controller;
+	BUG_ON(NULL == pUsbCtrl);
+
+	/* Create the descriptor object. */
+	pXferDesc = (__USB_XFER_DESCRIPTOR*)_hx_malloc(sizeof(__USB_XFER_DESCRIPTOR));
+	if (NULL == pXferDesc)
+	{
+		goto __TERMINAL;
+	}
+	memset(pXferDesc, 0, sizeof(__USB_XFER_DESCRIPTOR));
+
+	/* Initialize it. */
+	pXferDesc->buffLength = buff_len;
+	pXferDesc->pBuffer = buffer;
+	pXferDesc->pipe = pipe;
+	pXferDesc->pPhyDev = dev;
+	pXferDesc->pCtrl = pUsbCtrl;
+	pXferDesc->timeout = USB_DEFAULT_XFER_TIMEOUT;
+	if (usb_pipetype(pipe) == PIPE_CONTROL)
+	{
+		pXferDesc->setup = setup;
+	}
+	pXferDesc->interval = interval;
+
+	/* 
+	 * Delivery the creating request to the bearing controller.
+	 * Just giveup if the underlay controller driver does not
+	 * support the continuous operation.
+	 */
+	if (NULL == pUsbCtrl->ctrlOps.CreateXferDescriptor)
+	{
+		goto __TERMINAL;
+	}
+	pXferDesc->priv = pUsbCtrl->ctrlOps.CreateXferDescriptor(
+		dev, pipe, buffer, buff_len, setup, interval);
+	if (NULL == pXferDesc->priv)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Everything is OK,mark as success. */
+	bResult = TRUE;
+	
+__TERMINAL:
+	if (bResult)
+	{
+		return pXferDesc;
+	}
+	/* Destroy all allocated resources in case of failure. */
+	if (pXferDesc)
+	{
+		_hx_free(pXferDesc);
+	}
+	return NULL;
+}
+
+/* 
+ * Start USB transfer operation.
+ * req_len specifies the data's length of this request,it must
+ * not exceed the buffer's length in xfer descriptor,which is
+ * desiganated when create the xfer descriptor.
+ *
+ * Return the transfered data length if success,return -1
+ * in case of failure.
+ */
+static int _StartXfer(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len)
+{
+	int xfer_sz = -1;
+
+	if (NULL == pXferDesc)
+	{
+		goto __TERMINAL;
+	}
+	BUG_ON(NULL == pXferDesc->pCtrl);
+	
+	/* Bounce to underlay controller to do the operation. */
+	if (NULL == pXferDesc->pCtrl->ctrlOps.StartXfer)
+	{
+		/* Not implemented yet. */
+		goto __TERMINAL;
+	}
+	xfer_sz = pXferDesc->pCtrl->ctrlOps.StartXfer(pXferDesc,req_len);
+
+__TERMINAL:
+	return xfer_sz;
+}
+
+/* Stop a USB xfer transaction. */
+static BOOL _StopXfer(__USB_XFER_DESCRIPTOR* pXferDesc)
+{
+	BOOL bResult = FALSE;
+
+	if (NULL == pXferDesc)
+	{
+		goto __TERMINAL;
+	}
+	BUG_ON(NULL == pXferDesc->pCtrl);
+
+	/* Call the underlay routine to handle the operation. */
+	if (NULL == pXferDesc->pCtrl->ctrlOps.StopXfer)
+	{
+		/* Not implemented yet. */
+		goto __TERMINAL;
+	}
+	bResult = pXferDesc->pCtrl->ctrlOps.StopXfer(pXferDesc);
+
+__TERMINAL:
+	return bResult;
+}
+
+/* Destroy a USB xfer descriptor. */
+static void _DestroyXferDescriptor(__USB_XFER_DESCRIPTOR* pXferDesc)
+{
+	if (NULL == pXferDesc)
+	{
+		return;
+	}
+	BUG_ON(NULL == pXferDesc->pCtrl);
+
+	/* Call controller's corresponding routine. */
+	if (NULL == pXferDesc->pCtrl->ctrlOps.DestroyXferDescriptor)
+	{
+		/* Not implemented yet. */
+		goto __TERMINAL;
+	}
+	pXferDesc->pCtrl->ctrlOps.DestroyXferDescriptor(pXferDesc);
+
+__TERMINAL:
+	/* Release the memory. */
+	_hx_free(pXferDesc);
+	return;
+}
+
 //Defination of USB Manager object.
 __USB_MANAGER USBManager = {
 	{ 0 },    //CtrlArray.
@@ -711,5 +884,11 @@ __USB_MANAGER USBManager = {
 	_BulkMessage,               //BulkMessage.
 	_ControlMessage,            //ControlMessage.
 	_InterruptMessage,          //InterruptMessage.
-	UsbMgrInit                  //Initialize.
+
+	_CreateXferDescriptor,      //CreateXferDescriptor.
+	_StartXfer,                 //StartXfer.
+	_StopXfer,                  //StopXfer.
+	_DestroyXferDescriptor,     //DestroyXferDescriptor.
+
+	UsbMgrInit,                 //Initialize.
 };

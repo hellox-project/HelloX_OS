@@ -306,9 +306,32 @@ void *poll_int_queue(struct usb_device *dev, struct int_queue *queue);
 #endif
 */
 
-//A structure to contain the common operations of USB controller,no matter the 
-//controller's type is OHCI,UHCI or EHCI and others...
-//Each USB controller object will contain one instance of this structure.
+/*
+* Common USB transfer descriptor.
+* It describes one USB xfer transaction in common,no USB
+* controller(OHCI/EHCI/xHCI...) specific information.
+* Controller specific information will be hooked into the
+* priv pointer of the descriptor.
+*/
+struct tag__COMMON_USB_CONTROLLER; /* Avoid early reference error. */
+typedef struct tag__USB_XFER_DESCRIPTOR {
+	struct tag__USB_XFER_DESCRIPTOR* pNext;  /* Points to next on in list. */
+	__PHYSICAL_DEVICE* pPhyDev; /* The corresponding physical device object. */
+	__u32 pipe; /* Pipe in the USB device. */
+	char* pBuffer; /* User data buffer pointer. */
+	int buffLength; /* User data buffer length. */
+	struct devrequest* setup; /* For control xfer. */
+	int interval; /* For interrupt xfer. */
+	unsigned long timeout;  /* Timeout value of this descriptor. */
+	struct tag__COMMON_USB_CONTROLLER* pCtrl; /* Underlay controller object. */
+	void* priv; /* Controller specific extension associated with the descriptor. */
+}__USB_XFER_DESCRIPTOR;
+
+/*
+ * A structure to contain the common operations of USB controller,no matter the 
+ * controller's type is OHCI,UHCI or EHCI and others...
+ * Each USB controller object will contain one instance of this structure.
+ */
 typedef struct tag__USB_CONTROLLER_OPERATIONS{
 	int (*usb_reset_root_port)(struct usb_device *dev);
 	int (*submit_bulk_msg)(struct usb_device *dev, unsigned long pipe,
@@ -323,6 +346,32 @@ typedef struct tag__USB_CONTROLLER_OPERATIONS{
 	void* (*poll_int_queue)(struct usb_device *dev, struct int_queue *queue);
 	unsigned long (*get_ctrl_status)(void* common_ctrl,DWORD ctrlFlags);
 	unsigned long (*InterruptHandler)(LPVOID pCommCtrl);  //Interrupt handler of the USB controller.
+	
+	/*
+	 * USB transfer operations in continues mode.
+	 * In USBManager object,there are 4 routines to support this operation mode:
+	 * 1. CreateXferDescriptor;
+	 * 2. StartXfer;
+	 * 3. StopXfer;
+	 * 4. DestroyXferDescriptor.
+	 * The user create a xfer descriptor first by calling CreateXferDescriptor,then
+	 * calls the StartXfer routine in loop,each call will return a batch of data in case
+	 * of success.Destroy the descriptor after xfering by calling DestroyXferDescriptor.
+	 * But the actual xfer operations are handled by the underlay controller,so
+	 * the above 4 routines will call controller specific corresponding version of
+	 * these routines.
+	 * The following routines are controller specific and should be implemented in
+	 * controller driver.
+	 * A bit of complicated,but this abstract can make the code portable and reusable,
+	 * and isolate the API and controller specific implementing code.
+	 */
+	void* (*CreateXferDescriptor)(__PHYSICAL_DEVICE* dev, unsigned long pipe,
+		void* buffer, int buff_len,
+		struct devrequest* setup, /* For control xfer. */
+		int interval); /* For interrupt xfer. */
+	int(*StartXfer)(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len);
+	BOOL(*StopXfer)(__USB_XFER_DESCRIPTOR* pXferDesc);
+	void(*DestroyXferDescriptor)(__USB_XFER_DESCRIPTOR* pXferDesc);
 }__USB_CONTROLLER_OPERATIONS;
 
 //Flags used to indicate which register to return when get_ctrl_status invoked.
@@ -403,11 +452,32 @@ typedef struct tag__USB_MANAGER{
 	//Get a physical device specified by id.
 	__PHYSICAL_DEVICE* (*GetUsbDevice)(__IDENTIFIER* id, __PHYSICAL_DEVICE* pStart);
 
-	//Common USB operations.
 	struct usb_configuration_descriptor* (*GetConfigDescriptor)(struct usb_device* dev, int cfgno);
+
+	/*
+	* USB transfer operations,when start a one time xfer,use these
+	* routines.For continuous data transfering,use CreateXferDescriptor/StartXfer
+	* instead.
+	*/
 	int (*BulkMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer, int transfer_len);
-	int (*ControlMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer,int transfer_len, struct devrequest *setup);
-	int (*InterruptMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer,int transfer_len, int interval);
+	int (*ControlMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer,int transfer_len, 
+		struct devrequest *setup);
+	int (*InterruptMessage)(__PHYSICAL_DEVICE *dev, unsigned long pipe, void *buffer,
+		int transfer_len, int interval);
+
+	/*
+	 * USB transfer operations in continues mode.
+	 * The user create a xfer descriptor first by calling CreateXferDescriptor,then
+	 * calls the StartXfer routine in loop,each call will return a batch of data in case
+	 * of success.Destroy the descriptor after xfering by calling DestroyXferDescriptor.
+	 */
+	__USB_XFER_DESCRIPTOR* (*CreateXferDescriptor)(__PHYSICAL_DEVICE* dev, unsigned long pipe,
+		void* buffer, int buff_len,
+		struct devrequest* setup, /* For control xfer. */
+		int interval); /* For interrupt xfer. */
+	int  (*StartXfer)(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len);
+	BOOL (*StopXfer)(__USB_XFER_DESCRIPTOR* pXferDesc);
+	void (*DestroyXferDescriptor)(__USB_XFER_DESCRIPTOR* pXferDesc);
 
 	//Initialization routine of USB Manager.
 	BOOL  (*Initialize)(struct tag__USB_MANAGER* pUsbMgr);

@@ -542,10 +542,34 @@ static BOOL IDEIntHandler(LPVOID pParam, LPVOID pEsp)
 //The main entry point of WINHD driver.
 BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 {
-	__PARTITION_EXTENSION *pPe = NULL;
+	__PHYSICAL_DEVICE* pPhyDev = NULL;
+	__IDENTIFIER id;
 	UCHAR Buff[USB_STORAGE_SECTOR_SIZE];
 	BOOL bResult = FALSE;
 	int i = 0;
+
+	/* 
+	 * Search all USB storage device(s) in system,by specifying
+	 * the device ID.
+	 */
+	id.dwBusType = BUS_TYPE_USB;
+	id.Bus_ID.USB_Identifier.ucMask = USB_IDENTIFIER_MASK_INTERFACECLASS;
+	id.Bus_ID.USB_Identifier.ucMask |= USB_IDENTIFIER_MASK_INTERFACESUBCLASS;
+	id.Bus_ID.USB_Identifier.bInterfaceClass = USB_CLASS_MASS_STORAGE;
+	for (id.Bus_ID.USB_Identifier.bInterfaceSubClass = US_SC_MIN;
+		id.Bus_ID.USB_Identifier.bInterfaceSubClass <= US_SC_MAX;
+		id.Bus_ID.USB_Identifier.bInterfaceSubClass++)
+	{
+		pPhyDev = USBManager.GetUsbDevice(&id, NULL);
+		while (pPhyDev)
+		{
+			_hx_printf("Get one USB storage device:[isc = %d].\r\n",
+				id.Bus_ID.USB_Identifier.bInterfaceSubClass);
+			/* Just put the initialization code here. */
+			/* Try to locate next one. */
+			pPhyDev = USBManager.GetUsbDevice(&id, pPhyDev);
+		}
+	}
 
 	//Try to scan all USB storage device(s) in system.
 	if (usb_stor_scan(1))

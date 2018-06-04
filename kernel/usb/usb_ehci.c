@@ -1312,7 +1312,248 @@ static unsigned long _get_ctrl_status(void* common_ctrl,DWORD ctrlFlag)
 	return -1;
 }
 
-//Create a common USB controller and initialize it according to EHCI.
+/*
+ * EHCI continuous transfer operations.
+ * These routines are called by USB Manager object's continuous xfer routines.
+ */
+/* Create a EHCI specific xfer descriptor and return it. */
+static void* _ehciCreateXferDescriptor(__PHYSICAL_DEVICE* dev, unsigned long pipe,
+	void* buffer, int buff_len,
+	struct devrequest* setup, /* For control xfer. */
+	int interval) /* For interrupt xfer. */
+{
+	struct usb_device* pUsbDev = NULL;
+	__USB_ASYNC_DESCRIPTOR* pAsyncDesc = NULL;
+	void* ret = NULL;
+
+	/* Parameters checking. */
+	if ((NULL == dev) || (NULL == buffer) || (0 == buff_len))
+	{
+		goto __TERMINAL;
+	}
+	/* Get the USB device object. */
+	pUsbDev = (struct usb_device*)dev->lpPrivateInfo;
+	BUG_ON(NULL == pUsbDev);
+
+	/* Create the EHCI specific xfer descriptor,according the xfer type. */
+	if (usb_pipetype(pipe) == PIPE_BULK)
+	{
+		pAsyncDesc = usbCreateAsyncDescriptor(pUsbDev,
+			pipe,
+			buffer,
+			buff_len,
+			NULL);
+		ret = pAsyncDesc;
+	}
+	else if (usb_pipetype(pipe) == PIPE_CONTROL)
+	{
+		/* Setup packet must be specified. */
+		BUG_ON(NULL == setup);
+		pAsyncDesc = usbCreateAsyncDescriptor(pUsbDev,
+			pipe,
+			buffer,
+			buff_len,
+			setup);
+		ret = pAsyncDesc;
+	}
+	else if (usb_pipetype(pipe) == PIPE_INTERRUPT)
+	{
+		/* Should create interrupt queue object. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_ISOCHRONOUS)
+	{
+		/* Should create a isochronous descriptor., */
+	}
+	else
+	{
+		/* Should not occur. */
+		BUG();
+	}
+
+__TERMINAL:
+	return ret;
+}
+
+/* 
+ * Start a EHCI specific xfer. 
+ * The requested data length is specified in req_len,and
+ * the actual transfered length is returned back.
+ */
+static int _ehciStartXfer(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len)
+{
+	int xfer_sz = -1;
+	int pipe = 0;
+	__USB_ASYNC_DESCRIPTOR* pAsyncDesc = NULL;
+	struct usb_device* dev = NULL;
+	__PHYSICAL_DEVICE* pPhyDev = NULL;
+
+	/* Check parameters. */
+	BUG_ON(NULL == pXferDesc);
+	/* Requested data length must be less than buffer's length. */
+	if (pXferDesc->buffLength < req_len)
+	{
+		_hx_printf("%s:invalid request data length[req = %d,buff_len = %d.\r\n",
+			req_len,
+			pXferDesc->buffLength);
+		goto __TERMINAL;
+	}
+
+	/* Get the corresponding USB device object. */
+	pPhyDev = pXferDesc->pPhyDev;
+	BUG_ON(NULL == pPhyDev);
+	dev = (struct usb_device*)pPhyDev->lpPrivateInfo;
+	BUG_ON(NULL == dev);
+
+	/* Start xfer according pipe type. */
+	pipe = pXferDesc->pipe;
+	if (usb_pipetype(pipe) == PIPE_BULK)
+	{
+		/* Bulk xfer. */
+		pAsyncDesc = (__USB_ASYNC_DESCRIPTOR*)pXferDesc->priv;
+		BUG_ON(NULL == pAsyncDesc);
+		if (usbStartAsyncXfer(pAsyncDesc, req_len))
+		{
+			xfer_sz = pAsyncDesc->xfersize;
+			dev->status = 0;
+			dev->act_len = xfer_sz;
+			goto __TERMINAL;
+		}
+		else /* Failed to do xfer. */
+		{
+			dev->status = USB_ST_STALLED;
+			xfer_sz = pAsyncDesc->err_code;
+			xfer_sz = -xfer_sz;
+			goto __TERMINAL;
+		}
+	}
+	else if (usb_pipetype(pipe) == PIPE_CONTROL)
+	{
+		/* Control xfer. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_INTERRUPT)
+	{
+		/* Interrupt xfer. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_ISOCHRONOUS)
+	{
+		/* Isochronous xfer. */
+	}
+	else
+	{
+		BUG();
+	}
+
+__TERMINAL:
+	return xfer_sz;
+}
+
+/*
+* Stop a EHCI specific xfer.
+* Other thread(s) can call this routine to cancel the pending
+* transfers that not it's own,since the pending xfer's owner
+* thread is in blocked status and can not do anything.
+*/
+static int _ehciStopXfer(__USB_XFER_DESCRIPTOR* pXferDesc)
+{
+	int pipe = 0;
+	__USB_ASYNC_DESCRIPTOR* pAsyncDesc = NULL;
+	struct usb_device* dev = NULL;
+	__PHYSICAL_DEVICE* pPhyDev = NULL;
+	BOOL bResult = FALSE;
+
+	/* Check parameters. */
+	BUG_ON(NULL == pXferDesc);
+
+	/* Get the corresponding USB device object. */
+	pPhyDev = pXferDesc->pPhyDev;
+	BUG_ON(NULL == pPhyDev);
+	dev = (struct usb_device*)pPhyDev->lpPrivateInfo;
+	BUG_ON(NULL == dev);
+
+	/* Stop xfer according pipe type. */
+	pipe = pXferDesc->pipe;
+	if (usb_pipetype(pipe) == PIPE_BULK)
+	{
+		/* Bulk xfer. */
+		pAsyncDesc = (__USB_ASYNC_DESCRIPTOR*)pXferDesc->priv;
+		BUG_ON(NULL == pAsyncDesc);
+		bResult = usbStopAsyncXfer(pAsyncDesc);
+		goto __TERMINAL;
+	}
+	else if (usb_pipetype(pipe) == PIPE_CONTROL)
+	{
+		/* Control xfer. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_INTERRUPT)
+	{
+		/* Interrupt xfer. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_ISOCHRONOUS)
+	{
+		/* Isochronous xfer. */
+	}
+	else
+	{
+		BUG();
+	}
+
+__TERMINAL:
+	return bResult;
+}
+
+/*
+* Destroy a EHCI specific xfer descriptor.
+*/
+static void _ehciDestroyXferDescriptor(__USB_XFER_DESCRIPTOR* pXferDesc)
+{
+	int pipe = 0;
+	__USB_ASYNC_DESCRIPTOR* pAsyncDesc = NULL;
+	struct usb_device* dev = NULL;
+	__PHYSICAL_DEVICE* pPhyDev = NULL;
+
+	/* Check parameters. */
+	BUG_ON(NULL == pXferDesc);
+
+	/* Get the corresponding USB device object. */
+	pPhyDev = pXferDesc->pPhyDev;
+	BUG_ON(NULL == pPhyDev);
+	dev = (struct usb_device*)pPhyDev->lpPrivateInfo;
+	BUG_ON(NULL == dev);
+
+	/* Stop xfer according pipe type. */
+	pipe = pXferDesc->pipe;
+	if (usb_pipetype(pipe) == PIPE_BULK)
+	{
+		/* Bulk xfer. */
+		pAsyncDesc = (__USB_ASYNC_DESCRIPTOR*)pXferDesc->priv;
+		BUG_ON(NULL == pAsyncDesc);
+		usbDestroyAsyncDescriptor(pAsyncDesc);
+		goto __TERMINAL;
+	}
+	else if (usb_pipetype(pipe) == PIPE_CONTROL)
+	{
+		/* Control xfer. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_INTERRUPT)
+	{
+		/* Interrupt xfer. */
+	}
+	else if (usb_pipetype(pipe) == PIPE_ISOCHRONOUS)
+	{
+		/* Isochronous xfer. */
+	}
+	else
+	{
+		BUG();
+	}
+
+__TERMINAL:
+	return;
+}
+
+/* 
+ * Create a common USB controller and initialize it according to EHCI.
+ */
 static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__PHYSICAL_DEVICE* pPhyDev,LPVOID pCtrl)
 {
 	__USB_CONTROLLER_OPERATIONS ctrlOps;
@@ -1326,6 +1567,11 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__PHYSICAL_DEVICE* pPhyDev,LPVOID 
 	ctrlOps.usb_reset_root_port = NULL;
 	ctrlOps.get_ctrl_status = _get_ctrl_status;
 	ctrlOps.InterruptHandler = EHCIIntHandler;
+
+	ctrlOps.CreateXferDescriptor = _ehciCreateXferDescriptor;
+	ctrlOps.StartXfer = _ehciStartXfer;
+	ctrlOps.StopXfer = _ehciStopXfer;
+	ctrlOps.DestroyXferDescriptor = _ehciDestroyXferDescriptor;
 
 	return USBManager.CreateUsbCtrl(&ctrlOps,USB_CONTROLLER_EHCI,pPhyDev,pCtrl);
 }

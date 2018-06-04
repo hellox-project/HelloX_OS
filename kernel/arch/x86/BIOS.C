@@ -26,8 +26,8 @@
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
-//Read HD sector's entry point.
-BOOL BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
+/* Read data from HD,can not exceed 4k length. */
+static BOOL __BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
 {
 	DWORD i;
 
@@ -99,13 +99,43 @@ __BIOS_FAILED:    //BIOS call failed.
 __BIOS_SUCCESS:   //BIOS call successed.
 	for(i = 0;i < 512 * nSectorNum;i ++) //Copy the sector data.
 	{
-		pBuffer[i] = ((BYTE*)BIOS_HD_BUFFER)[i];
+		pBuffer[i] = ((BYTE*)BIOS_HD_BUFFER_START)[i];
 	}
 	return TRUE;
 }
 
+/* Read data from hard disk,can support any length. */
+BOOL BIOSReadSector(int nHdNum, DWORD nStartSector, DWORD nSectorNum, BYTE* pBuffer)
+{
+	unsigned long total_length = nSectorNum * BIOS_HD_SECTOR_SIZE;
+	unsigned long total_sector = nSectorNum;
+	unsigned long start_sector = nStartSector;
+	BOOL bResult = FALSE;
+	char* local_buff = pBuffer;
+
+	/* At least BIOS_HD_BUFFER_LENGTH's data can be retrived in one batch. */
+	while (total_length > BIOS_HD_BUFFER_LENGTH)
+	{
+		bResult = __BIOSReadSector(nHdNum, start_sector, BIOS_HD_BUFFER_LENGTH / BIOS_HD_SECTOR_SIZE, local_buff);
+		if (!bResult)
+		{
+			goto __TERMINAL;
+		}
+		total_length -= BIOS_HD_BUFFER_LENGTH;
+		start_sector += BIOS_HD_BUFFER_LENGTH / BIOS_HD_SECTOR_SIZE;
+		total_sector -= BIOS_HD_BUFFER_LENGTH / BIOS_HD_SECTOR_SIZE;
+		local_buff += BIOS_HD_BUFFER_LENGTH;
+	}
+
+	/* Read the remaining data. */
+	bResult = __BIOSReadSector(nHdNum, start_sector, total_sector, local_buff);
+
+__TERMINAL:
+	return bResult;
+}
+
 //Write HD sector's entry point.
-BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
+static BOOL __BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
 {
 	DWORD i;
 
@@ -117,7 +147,7 @@ BOOL BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffe
 	//Copy the buf data to  sector buf
 	for(i = 0;i < 512 * nSectorNum;i ++) 
 	{
-		((BYTE*)BIOS_HD_BUFFER)[i] = pBuffer[i];
+		((BYTE*)BIOS_HD_BUFFER_START)[i] = pBuffer[i];
 	}
 #ifdef __GCC__
 	__asm__ (
@@ -179,6 +209,36 @@ __BIOS_FAILED:    //BIOS call failed.
 
 __BIOS_SUCCESS:   //BIOS call successed.
 	return TRUE;
+}
+
+/* Write data from hard disk,can support any length. */
+BOOL BIOSWriteSector(int nHdNum, DWORD nStartSector, DWORD nSectorNum, BYTE* pBuffer)
+{
+	unsigned long total_length = nSectorNum * BIOS_HD_SECTOR_SIZE;
+	unsigned long total_sector = nSectorNum;
+	unsigned long start_sector = nStartSector;
+	BOOL bResult = FALSE;
+	char* local_buff = pBuffer;
+
+	/* At least BIOS_HD_BUFFER_LENGTH's data can be written in one batch. */
+	while (total_length > BIOS_HD_BUFFER_LENGTH)
+	{
+		bResult = __BIOSWriteSector(nHdNum, start_sector, BIOS_HD_BUFFER_LENGTH / BIOS_HD_SECTOR_SIZE, local_buff);
+		if (!bResult)
+		{
+			goto __TERMINAL;
+		}
+		total_length -= BIOS_HD_BUFFER_LENGTH;
+		start_sector += BIOS_HD_BUFFER_LENGTH / BIOS_HD_SECTOR_SIZE;
+		total_sector -= BIOS_HD_BUFFER_LENGTH / BIOS_HD_SECTOR_SIZE;
+		local_buff += BIOS_HD_BUFFER_LENGTH;
+	}
+
+	/* Write the remaining data. */
+	bResult = __BIOSWriteSector(nHdNum, start_sector, total_sector, local_buff);
+
+__TERMINAL:
+	return bResult;
 }
 
 //Reboot the system.

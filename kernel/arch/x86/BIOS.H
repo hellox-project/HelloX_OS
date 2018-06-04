@@ -26,7 +26,16 @@
 #define BIOS_SERVICE_TOGRAPHIC   0x0004  //Switch to graphic mode.
 #define BIOS_SERVICE_TOTEXT      0x0005  //Switch back text mode from.
 
-#define BIOS_HD_BUFFER           0xF000  //Hard disk reading buffer in BIOS.
+/*
+ * The start address of real mode buffer,which is used to swap disk reading/writting data
+ * between real and protect mode.
+ * The length of this area is 4K,which ends in 640K of memory.
+ */
+#define BIOS_HD_BUFFER_START           0xF000
+#define BIOS_HD_BUFFER_LENGTH          4096
+
+/* Sector's size,fixed value. */
+#define BIOS_HD_SECTOR_SIZE            512
 
 //Service pro-type definition.
 //Reboot the system.
