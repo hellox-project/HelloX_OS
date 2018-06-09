@@ -539,6 +539,15 @@ static BOOL IDEIntHandler(LPVOID pParam, LPVOID pEsp)
 	return TRUE;
 }
 
+/* 
+ * Probe if a USB device is a storage type device,and 
+ * initialize it if so.
+ * It's in usb_storage.c file,just be called in driver
+ * entry routine of USB storage device,so just make it
+ * visible in this file.
+ */
+extern int usb_stor_probe_device(struct usb_device *dev);
+
 //The main entry point of WINHD driver.
 BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 {
@@ -546,6 +555,7 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 	__IDENTIFIER id;
 	UCHAR Buff[USB_STORAGE_SECTOR_SIZE];
 	BOOL bResult = FALSE;
+	struct usb_device* pUsbDev = NULL;
 	int i = 0;
 
 	/* 
@@ -565,17 +575,30 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 		{
 			_hx_printf("Get one USB storage device:[isc = %d].\r\n",
 				id.Bus_ID.USB_Identifier.bInterfaceSubClass);
-			/* Just put the initialization code here. */
+			pUsbDev = (struct usb_device*)pPhyDev->lpPrivateInfo;
+			BUG_ON(NULL == pUsbDev);
+			/* Make farther probing of this device. */
+			if (usb_stor_probe_device(pUsbDev))
+			{
+				/* 
+				 * No more resource to hold the storage device if
+				 * usb_stor_probe_device returns no zero,so just
+				 * break out.
+				 */
+				break;
+			}
 			/* Try to locate next one. */
 			pPhyDev = USBManager.GetUsbDevice(&id, pPhyDev);
 		}
 	}
 
-	//Try to scan all USB storage device(s) in system.
+#if 0
+	/* Try to scan all USB storage device(s) in system. */
 	if (usb_stor_scan(1))
 	{
 		goto __TERMINAL;
 	}
+#endif
 	
 	//Set operating functions for lpDrvObj first.
 	lpDrvObj->DeviceRead = DeviceRead;
@@ -592,11 +615,14 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 			return FALSE;
 		}
 
-		//Analy the MBR of USB HD and establish each partition object if there is.
+		/* 
+		 * Analyze the MBR of USB HD and establish each partition
+		 * object if there is. 
+		 */
 		InitPartitions(i, (BYTE*)&Buff[0], lpDrvObj);
 		bResult = TRUE;
 	}
-__TERMINAL:
+
 	return bResult;
 }
 

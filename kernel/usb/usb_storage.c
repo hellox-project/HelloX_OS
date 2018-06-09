@@ -32,7 +32,6 @@
 * only been tested with USB memory sticks.
 */
 
-
 #include <StdAfx.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -164,6 +163,7 @@ typedef int(*trans_reset)(struct us_data *data);
 
 struct us_data {
 	struct usb_device *pusb_dev;	 /* this usb_device */
+	__PHYSICAL_DEVICE* pPhyDev;      /* Corresponding physical device. */
 
 	unsigned int	flags;			/* from filter initially */
 #define USB_READY	(1 << 0)
@@ -184,6 +184,10 @@ struct us_data {
 	ccb		*srb;			/* current srb */
 	trans_reset	transport_reset;	/* reset routine */
 	trans_cmnd	transport;		/* transport routine */
+
+	/* Transfer descriptors for bulk xfer mode. */
+	__USB_XFER_DESCRIPTOR* pBulkInXfer;
+	__USB_XFER_DESCRIPTOR* pBulkOutXfer;
 };
 
 #ifdef CONFIG_USB_EHCI
@@ -263,7 +267,13 @@ static unsigned int usb_get_max_lun(struct us_data *us)
 	return (len > 0) ? *result : 0;
 }
 
-static int usb_stor_probe_device(struct usb_device *dev)
+/*
+ * Probe if the specified USB device is a storage device,
+ * and initialize it if it is.
+ * It will be called in process of USB storage driver's
+ * initialization phase.
+ */
+int usb_stor_probe_device(struct usb_device *dev)
 {
 	if (dev == NULL)
 		return -ENOENT; /* no more devices available */
@@ -493,6 +503,7 @@ static int usb_stor_BBB_reset(struct us_data *us)
 	* This comment stolen from FreeBSD's /sys/dev/usb/umass.c.
 	*/
 	debug("BBB_reset\r\n");
+	//_hx_printf("%s:USB storage reset...\r\n", __func__); /* For debugging. */
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 		US_BBB_RESET,
 		USB_TYPE_CLASS | USB_RECIP_INTERFACE,
@@ -1312,8 +1323,9 @@ struct us_data *ss)
 	/* Initialize the us_data structure with some useful info */
 	ss->flags = flags;
 	ss->ifnum = ifnum;
-	ss->pusb_dev = dev;
 	ss->attention_done = 0;
+	ss->pusb_dev = dev;
+	ss->pPhyDev = NULL;
 
 	/* If the device has subclass and protocol, then use that.  Otherwise,
 	* take data from the specific interface.
@@ -1407,6 +1419,14 @@ struct us_data *ss)
 		ss->irqmaxp = usb_maxpacket(dev, ss->irqpipe);
 		dev->irq_handle = usb_stor_irq;
 	}
+
+	/* 
+	 * Create USB bulk transfer descriptors here,we use them
+	 * handle continuous mode transfering.
+	 */
+	ss->pBulkInXfer = NULL;
+	ss->pBulkOutXfer = NULL;
+
 	dev->privptr = (void *)ss;
 	return 1;
 }
