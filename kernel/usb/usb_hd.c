@@ -47,8 +47,9 @@ extern unsigned long usb_stor_write(int device, lbaint_t blknr, lbaint_t blkcnt,
 	_hx_printf("%s failed:dwStartSect = %d,dwSectNum = %d,pBuffer = 0x%X,dev = %d.\r\n", \
     __func__,dwStartSect,dwSectNum,pBuffer,dev);
 
-//Local wraps of sector level reading and writing for USB device.
-static unsigned long __usbReadSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
+//Local wraps of sector level reading and writing for USB device,it can not request data size
+//exceeds USG_STORAGE_MAX_TRUNK_SIZE value.
+static unsigned long __local_usbReadSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
 {
 	BYTE* pAlignedBuff = NULL;
 	unsigned long ret = 0;
@@ -86,7 +87,47 @@ static unsigned long __usbReadSector(int dev, DWORD dwStartSect, DWORD dwSectNum
 	return ret;
 }
 
-static unsigned long __usbWriteSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
+/* 
+ * Read one or several sector(s) from USB storage device. 
+ * Any requested data length can be commited to this routine,it will be
+ * splittered into several __local_usbReadSector's call in case
+ * of the requested data length exceeds USG_STORAGE_MAX_TRUNK_SIZE.
+ */
+static unsigned long __usbReadSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
+{
+	unsigned long total_dl = dwSectNum * USB_STORAGE_SECTOR_SIZE;
+	char* tmpBuff = pBuffer;
+	unsigned long start_sect = dwStartSect;
+	unsigned long sect_num = dwSectNum;
+	unsigned long total_rd = 0, rd = 0;
+
+	while (total_dl > USB_STORAGE_MAX_TRUNK_SIZE)
+	{
+		rd = __local_usbReadSector(dev, start_sect,
+			USB_STORAGE_MAX_TRUNK_SIZE / USB_STORAGE_SECTOR_SIZE,
+			tmpBuff);
+		if (0 == rd)
+		{
+			return rd;
+		}
+		total_rd += rd;
+		/* Update start sector number and data buffer's pointer. */
+		start_sect += USB_STORAGE_MAX_TRUNK_SIZE / USB_STORAGE_SECTOR_SIZE;
+		sect_num -= USB_STORAGE_MAX_TRUNK_SIZE / USB_STORAGE_SECTOR_SIZE;
+		tmpBuff += USB_STORAGE_MAX_TRUNK_SIZE;
+		total_dl -= USB_STORAGE_MAX_TRUNK_SIZE;
+	}
+	/* Read the remainding data. */
+	rd = __local_usbReadSector(dev, start_sect, sect_num, tmpBuff);
+	if (0 == rd)
+	{
+		return rd;
+	}
+	total_rd += rd; 
+	return total_rd;
+}
+
+static unsigned long __local_usbWriteSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
 {
 	BYTE* pAlignedBuff = NULL;
 	unsigned long ret = 0;
@@ -119,6 +160,46 @@ static unsigned long __usbWriteSector(int dev, DWORD dwStartSect, DWORD dwSectNu
 		__USB_SECTOR_RW_DEBUG;
 	}
 	return ret;
+}
+
+/*
+* Write one or several sector(s) from USB storage device.
+* Any requested data length can be commited to this routine,it will be
+* splittered into several __local_usbReadSector's call in case
+* of the requested data length exceed USG_STORAGE_MAX_TRUNK_SIZE.
+*/
+static unsigned long __usbWriteSector(int dev, DWORD dwStartSect, DWORD dwSectNum, BYTE* pBuffer)
+{
+	unsigned long total_dl = dwSectNum * USB_STORAGE_SECTOR_SIZE;
+	char* tmpBuff = pBuffer;
+	unsigned long start_sect = dwStartSect;
+	unsigned long sect_num = dwSectNum;
+	unsigned long total_rt = 0, rt = 0;
+
+	while (total_dl > USB_STORAGE_MAX_TRUNK_SIZE)
+	{
+		rt = __local_usbWriteSector(dev, start_sect,
+			USB_STORAGE_MAX_TRUNK_SIZE / USB_STORAGE_SECTOR_SIZE,
+			tmpBuff);
+		if (0 == rt)
+		{
+			return rt;
+		}
+		total_rt += rt;
+		/* Update start sector number and data buffer's pointer. */
+		start_sect += USB_STORAGE_MAX_TRUNK_SIZE / USB_STORAGE_SECTOR_SIZE;
+		sect_num -= USB_STORAGE_MAX_TRUNK_SIZE / USB_STORAGE_SECTOR_SIZE;
+		tmpBuff += USB_STORAGE_MAX_TRUNK_SIZE;
+		total_dl -= USB_STORAGE_MAX_TRUNK_SIZE;
+	}
+	/* Read the remainding data. */
+	rt = __local_usbWriteSector(dev, start_sect, sect_num, tmpBuff);
+	if (0 == rt)
+	{
+		return rt;
+	}
+	total_rt += rt;
+	return total_rt;
 }
 
 //For each extension partition in hard disk,this function travels the
@@ -532,13 +613,6 @@ __TERMINAL:
 	return 0;
 }
 
-//Interrupt handler for USBHD.
-static BOOL IDEIntHandler(LPVOID pParam, LPVOID pEsp)
-{
-	PrintLine("  IDE interrupt occurs.");
-	return TRUE;
-}
-
 /* 
  * Probe if a USB device is a storage type device,and 
  * initialize it if so.
@@ -546,7 +620,7 @@ static BOOL IDEIntHandler(LPVOID pParam, LPVOID pEsp)
  * entry routine of USB storage device,so just make it
  * visible in this file.
  */
-extern int usb_stor_probe_device(struct usb_device *dev);
+extern int usb_stor_probe_device(__PHYSICAL_DEVICE* pPhyDev);
 
 //The main entry point of WINHD driver.
 BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
@@ -578,7 +652,7 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 			pUsbDev = (struct usb_device*)pPhyDev->lpPrivateInfo;
 			BUG_ON(NULL == pUsbDev);
 			/* Make farther probing of this device. */
-			if (usb_stor_probe_device(pUsbDev))
+			if (usb_stor_probe_device(pPhyDev))
 			{
 				/* 
 				 * No more resource to hold the storage device if
@@ -592,14 +666,6 @@ BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 		}
 	}
 
-#if 0
-	/* Try to scan all USB storage device(s) in system. */
-	if (usb_stor_scan(1))
-	{
-		goto __TERMINAL;
-	}
-#endif
-	
 	//Set operating functions for lpDrvObj first.
 	lpDrvObj->DeviceRead = DeviceRead;
 	lpDrvObj->DeviceWrite = DeviceWrite;

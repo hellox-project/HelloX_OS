@@ -36,7 +36,7 @@ typedef struct tag__USB_ASYNC_DESCRIPTOR{
 	//__PHYSICAL_DEVICE* pPhyDev;      //USB device object bearing the xfer.
 	struct usb_device* pUsbDev;      //Actual USB device that can be used directly.
 	__COMMON_USB_CONTROLLER* pCtrl;  //The controller handling this req.
-	HANDLE hOwnerThread;             //Thread handle of the descriptor owner.
+	//HANDLE hOwnerThread;             //Thread handle of the descriptor owner.
 	char* buffer;     //The data buffer.
 	int bufflength;   //Length of the data buffer,must not exceed USB_ASYNC_MAX_LENGTH.
 	int reqlength;    //Request length of xfer,can not exceed bufflength.

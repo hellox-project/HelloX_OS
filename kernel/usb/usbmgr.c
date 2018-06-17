@@ -756,6 +756,9 @@ static __USB_XFER_DESCRIPTOR* _CreateXferDescriptor(__PHYSICAL_DEVICE* dev, unsi
 		pXferDesc->setup = setup;
 	}
 	pXferDesc->interval = interval;
+	pXferDesc->err_code = 0;
+	/* Set the descriptoer's owner to current thread. */
+	pXferDesc->hOwnerThread = (HANDLE)KernelThreadManager.lpCurrentKernelThread;
 
 	/* 
 	 * Delivery the creating request to the bearing controller.
@@ -815,6 +818,14 @@ static int _StartXfer(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len)
 		goto __TERMINAL;
 	}
 	xfer_sz = pXferDesc->pCtrl->ctrlOps.StartXfer(pXferDesc,req_len);
+	if (xfer_sz < 0) /* Error occured. */
+	{
+		pXferDesc->err_code = xfer_sz;
+	}
+	else
+	{
+		pXferDesc->err_code = 0;
+	}
 
 __TERMINAL:
 	return xfer_sz;

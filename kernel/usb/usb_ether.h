@@ -39,11 +39,11 @@ struct ueth_data {
 	__KERNEL_THREAD_OBJECT* pDamonThread;
 
 	/*
-	 * USB asynchronous xfer descriptor,one for tx and
+	 * USB bulk xfer descriptor,one for tx and
 	 * one for rx.
 	 */
-	__USB_ASYNC_DESCRIPTOR* pRxDesc;
-	__USB_ASYNC_DESCRIPTOR* pTxDesc;
+	__USB_XFER_DESCRIPTOR* pRxDesc;
+	__USB_XFER_DESCRIPTOR* pTxDesc;
 
 	/*
 	 * Receiving and sending buffer,used by USB bulk

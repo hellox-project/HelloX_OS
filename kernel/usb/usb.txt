@@ -1,0 +1,56 @@
+USB subsystem under HelloX operating system,is described here in general.
+1. ABSTRACTION
+In order to make the code is independent to underlay controller's architecture,abstractions
+are made as follows:
+1.1 USB Manager's interfaces are independ from all USB controllers,such as OHCI/UHCI/EHCI/xHCI,
+the application can invode the USB Manager's interface routines without concerns underlay arch;
+1.2 The abstraction layer then invokes USB controller's implementation code of each routine;
+1.3 USB devices are enumerated in process of system loading,a centralized USB device database
+are constructed by USB Manager,any application can query it by specifying a USB device ID;
+1.4 Any USB controller,must implemente a series of routines,in order to register to kernel.
+The routines are defined in __USB_CONTROLLER_OPERATIONS structure;
+1.5 Routines in _USB_CONTROLLER_OPERATIONS are only visible to USB Manager;
+1.6 Controller specific data structures,operations,should be hiden in __USB_CONTROLLER_OPERATIONS's
+routines.
+
+2. DATA STRUCTURES
+2.1 Physical device:each USB device or USB function,corresponding to one physical
+device(__PHYSICAL_DEVICE object),which is the kernel's description in HelloX.The physical device
+is visiable to all applications in HelloX,i.e,application can get the physical device object by
+specifying it's ID and invoking GetUsbDevice routine of USB Manager;
+2.2 Physical device's lpPrivateInfo member,points to a usb_device structure,which describes
+USB specific information of the device,but there is no backward pointer,i.e,we can not get the
+physical device only giving the usb_device object.This rule is foundamental for abstraction.
+Physical device's device number contains the USB device ID and interface ID,which corresponding
+to a USB function together,so strict speaking,one physical device corresponding to one USB
+function,many physical devices may point to the same USB device object,since one USB device
+may corresponding to many USB functions;
+2.3 USB device object only save the general information of an usb device,such as device no,
+serial code,manufacture ID,and etc.Function specific information,for example,the USB pipe,
+tx/rx buffer,USB device/function speed and current status,are hold in device specific data
+structures,these structures are pointed by "priv" member of usb device structure.In most cases,
+there also a pointer in device specific structure that points back usb device,this scheme
+could falicite the programming process;
+2.4 Digram as follows:
+Physical_device_object -----------> USB_device_object ----------------> Device_specific_structure
+                                       ^                                        |
+									   |                                        |
+									   |-----------------------------------------
+
+3. DEVICE DRIVERS
+USB device driver's implementation may follow the this scheme:
+3.1 Search all USB device(s) in system by invoking GetUsbDevice routine of USB Manager,specifies
+device's ID,function class,or other identifier information;
+3.2 For each returned USB device(__PHYSICAL_DEVICE object will be returned),do some farther checking
+or probing,to make sure it can manage it;
+3.3 Construct the function specific data structure,may link the structure into "priv" member of USB
+device object,to manage this USB function;
+3.4 Create background kernel thread for data processing or tx/rx,if necessary;
+3.5 Register a status notification routine into USB Manager,this routine will be invoked by USB
+Manager in case of device status changed,such as device pulled out,device inserted in,etc;
+3.6 All resources,such as function specific data structure,rx/tx buffer,should be released in case
+of device pulled out,or the driver is unloaded;
+3.7 Device driver should register a logical device(__DEVICE_OBJECT) into kernel,with a name like
+"\\.\unique_device_name" format.This can expose the device visible to applications.Any application
+or system modules,may open the device by calling CreateFile routine and manipulate the device by
+ReadFile,WriteFile,or IOControl routines.

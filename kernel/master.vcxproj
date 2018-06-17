@@ -538,6 +538,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />
+    <Text Include="usb\usb.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

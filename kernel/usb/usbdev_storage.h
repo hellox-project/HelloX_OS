@@ -26,6 +26,14 @@
 #define USB_STORAGE_SECTOR_SIZE 512
 #endif
 
+/*
+ * Maximal trunk size when read or write sector.
+ * This value is restricted by USB controller's driver in current implementation,
+ * any data request exceed this size MUST be splittered into several requests,
+ * with each one does not exceed this value.
+ */
+#define USB_STORAGE_MAX_TRUNK_SIZE (USB_STORAGE_SECTOR_SIZE * 32) /* 16K. */
+
 //Main entry point of USB Storage device driver.
 BOOL USBStorage_DriverEntry(__DRIVER_OBJECT* lpDrvObj);
 

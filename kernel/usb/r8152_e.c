@@ -195,20 +195,20 @@ static BOOL __Commit_Nostop_Send(__ETHERNET_INTERFACE* pEthInt, char* pSendingBu
 	udev = ss->pusb_dev;
 	BUG_ON(NULL == udev);
 
-	BOOL bResult = usbStartAsyncXfer(ss->pTxDesc, length);
-	usbStopAsyncXfer(ss->pTxDesc);
+	actual_len = USBManager.StartXfer(ss->pTxDesc, length);
+	USBManager.StopXfer(ss->pTxDesc);
 
 	/* debug */
 	//_hx_printf("%s:len = %d,buff_num = %d,actual_len = %d.\r\n", 
 	//	__func__, length, buff_num, actual_len);
 
-	if (!bResult)
+	if (actual_len < 0)
 	{
 		if (pEthInt->ifState.dwTxErrorNum < 6)
 		{
 			_hx_printf("%s: bulk msg fail[err = %d,buf_l = %d,buff_n = %d].\r\n",
 				__func__,
-				ss->pTxDesc->err_code,
+				actual_len,
 				length,
 				buff_num);
 		}
@@ -370,8 +370,8 @@ __TERMINAL:
 	*/
 	if (pEthData->pTxDesc)
 	{
-		usbStopAsyncXfer(pEthData->pTxDesc);
-		usbDestroyAsyncDescriptor(pEthData->pTxDesc);
+		USBManager.StopXfer(pEthData->pTxDesc);
+		USBManager.DestroyXferDescriptor(pEthData->pTxDesc);
 		pEthData->pTxDesc = NULL;
 	}
 	if (NULL != pSendingBuff)
@@ -388,7 +388,7 @@ __TERMINAL:
 * process the incoming data in case of success.
 */
 static __ETHERNET_BUFFER* __r8152_nostop_recv(__ETHERNET_INTERFACE *eth,
-	__USB_ASYNC_DESCRIPTOR* pRxDesc)
+	__USB_XFER_DESCRIPTOR* pRxDesc)
 {
 	struct ueth_data *dev = (struct ueth_data *)eth->pIntExtension;
 	__ETHERNET_BUFFER* pEthBuffer = NULL;
@@ -406,15 +406,14 @@ static __ETHERNET_BUFFER* __r8152_nostop_recv(__ETHERNET_INTERFACE *eth,
 	/*
 	* Fetch USB incoming data from R8152,
 	*/
-	BOOL bResult = usbStartAsyncXfer(pRxDesc, 0);
-	usbStopAsyncXfer(pRxDesc);
-	if (!bResult) {
-		debug("Rx: failed to receive\n");
-		err = pRxDesc->err_code;
+	actual_len = USBManager.StartXfer(pRxDesc, 0);
+	USBManager.StopXfer(pRxDesc);
+	if (actual_len < 0) {
+		debug("Rx: failed to receive.\r\n");
+		err = actual_len;
 		goto __TERMINAL;
 	}
-	actual_len = pRxDesc->xfersize;
-	recv_buf = pRxDesc->buffer;
+	recv_buf = pRxDesc->pBuffer;
 
 	if (actual_len > RTL8152_AGG_BUF_SZ) {
 		_hx_printf("%s: received too many bytes %d\n", __func__, actual_len);
@@ -563,8 +562,8 @@ __TERMINAL:
 	*/
 	if (pEthData->pRxDesc)
 	{
-		usbStopAsyncXfer(pEthData->pRxDesc);
-		usbDestroyAsyncDescriptor(pEthData->pRxDesc);
+		USBManager.StopXfer(pEthData->pRxDesc);
+		USBManager.DestroyXferDescriptor(pEthData->pRxDesc);
 		/* Reset to NULL. */
 		pEthData->pRxDesc = NULL;
 	}
@@ -593,6 +592,7 @@ static void ProcessNicStatus(struct ueth_data* ss, unsigned short status)
 * of r8152 NIC,show warning message if NIC's status
 * change.
 */
+#if 0
 static DWORD __R8152_Damon(LPVOID pData)
 {
 	struct ueth_data* ss = (struct ueth_data*)pData;
@@ -625,6 +625,7 @@ static DWORD __R8152_Damon(LPVOID pData)
 	}
 	return 0;
 }
+#endif
 
 /*
 * A helper routine to register a new initialized R8152 device into
@@ -701,7 +702,7 @@ static int Unregister_R8152(struct usb_device* dev, struct ueth_data* ss)
 * device. It will be invoked when a new device is scaned in Driver Entry
 * routine.
 */
-static int Init_R8152(struct usb_device *dev, unsigned int ifnum)
+static int Init_R8152(__PHYSICAL_DEVICE* pPhyDev, unsigned int ifnum)
 {
 	struct usb_interface *iface;
 	struct usb_interface_descriptor *iface_desc;
@@ -711,6 +712,13 @@ static int Init_R8152(struct usb_device *dev, unsigned int ifnum)
 	struct r8152 *tp = NULL;
 	char recv_name[64];
 	static int ef_idx = 0;
+	struct usb_device *dev = NULL;
+
+	/* Parameter checking. */
+	BUG_ON(NULL == pPhyDev);
+	/* Get the corresponding usb device. */
+	dev = (struct usb_device*)pPhyDev->lpPrivateInfo;
+	BUG_ON(NULL == dev);
 
 	/* Construct a new management data struct of R8152. */
 	ss = _hx_malloc(sizeof(struct ueth_data));
@@ -837,18 +845,18 @@ static int Init_R8152(struct usb_device *dev, unsigned int ifnum)
 	* These 2 descriptors will be destroyed by the rx/tx thread before
 	* exit.
 	*/
-	ss->pRxDesc = usbCreateAsyncDescriptor(
-		ss->pusb_dev, usb_rcvbulkpipe(ss->pusb_dev, ss->ep_in),
-		ss->rx_buff, RTL8152_AGG_BUF_SZ, NULL);
+	ss->pRxDesc = USBManager.CreateXferDescriptor(
+		pPhyDev, usb_rcvbulkpipe(ss->pusb_dev, ss->ep_in),
+		ss->rx_buff, RTL8152_AGG_BUF_SZ, NULL, 0);
 	if (NULL == ss->pRxDesc)
 	{
 		_hx_printf("%s: create rx desc failed.\r\n", __func__);
 		goto __TERMINAL;
 	}
 
-	ss->pTxDesc = usbCreateAsyncDescriptor(
-		ss->pusb_dev, usb_sndbulkpipe(ss->pusb_dev, ss->ep_out),
-		ss->tx_buff, RTL8152_AGG_BUF_SZ, NULL);
+	ss->pTxDesc = USBManager.CreateXferDescriptor(
+		pPhyDev, usb_sndbulkpipe(ss->pusb_dev, ss->ep_out),
+		ss->tx_buff, RTL8152_AGG_BUF_SZ, NULL, 0);
 	if (NULL == ss->pTxDesc)
 	{
 		goto __TERMINAL;
@@ -956,13 +964,13 @@ __TERMINAL:
 			}
 			if (ss->pRxDesc)
 			{
-				usbStopAsyncXfer(ss->pRxDesc);
-				usbDestroyAsyncDescriptor(ss->pRxDesc);
+				USBManager.StopXfer(ss->pRxDesc);
+				USBManager.DestroyXferDescriptor(ss->pRxDesc);
 			}
 			if (ss->pTxDesc)
 			{
-				usbStopAsyncXfer(ss->pTxDesc);
-				usbDestroyAsyncDescriptor(ss->pTxDesc);
+				USBManager.StopXfer(ss->pTxDesc);
+				USBManager.DestroyXferDescriptor(ss->pTxDesc);
 			}
 			_hx_free(ss);
 		}
@@ -996,17 +1004,12 @@ BOOL R8152_DriverEntry(__DRIVER_OBJECT* lpDrvObj)
 		while (pPhyDev = USBManager.GetUsbDevice(&id, pPhyDev))
 		{
 			usb_dev = (struct usb_device*)pPhyDev->lpPrivateInfo;
-			if (NULL == usb_dev)
-			{
-				BUG();
-				goto __TERMINAL;
-			}
-			usb_dev->phy_dev = pPhyDev; /* Temporary usage. */
+			BUG_ON(NULL == usb_dev);
 
 			/* Initialize it,one successful initialization for a new found
 			* R8152 device will lead the successful of the whole routine.
 			*/
-			if (Init_R8152(usb_dev, 0))
+			if (Init_R8152(pPhyDev, 0))
 			{
 				bResult = TRUE;
 			}

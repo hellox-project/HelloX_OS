@@ -708,7 +708,6 @@ __USB_ASYNC_DESCRIPTOR* usbCreateAsyncDescriptor(struct usb_device* pUsbDev, uns
 	{
 		goto __TERMINAL;
 	}
-	pAsyncDesc->hOwnerThread = (HANDLE)KernelThreadManager.lpCurrentKernelThread;
 	pAsyncDesc->pCtrl = (__COMMON_USB_CONTROLLER*)pUsbDev->controller;
 	pAsyncDesc->pipe = pipe;
 	//pAsyncDesc->pPhyDev = pPhyDev;

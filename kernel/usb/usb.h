@@ -246,7 +246,7 @@ struct usb_device {
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
 	void* controller;		/* hardware controller private data */
-	void* phy_dev;          /* Point back to physical device. */
+	//void* phy_dev;          /* Point back to physical device. */
 #endif
 	/* slot_id - for xHCI enabled devices */
 	unsigned int slot_id;
@@ -324,6 +324,8 @@ typedef struct tag__USB_XFER_DESCRIPTOR {
 	int interval; /* For interrupt xfer. */
 	unsigned long timeout;  /* Timeout value of this descriptor. */
 	struct tag__COMMON_USB_CONTROLLER* pCtrl; /* Underlay controller object. */
+	HANDLE hOwnerThread; /* Thread that owns this descriptor. */
+	int err_code; /* Saves the last error for this descriptor. */
 	void* priv; /* Controller specific extension associated with the descriptor. */
 }__USB_XFER_DESCRIPTOR;
 
@@ -369,9 +371,9 @@ typedef struct tag__USB_CONTROLLER_OPERATIONS{
 		void* buffer, int buff_len,
 		struct devrequest* setup, /* For control xfer. */
 		int interval); /* For interrupt xfer. */
-	int(*StartXfer)(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len);
-	BOOL(*StopXfer)(__USB_XFER_DESCRIPTOR* pXferDesc);
-	void(*DestroyXferDescriptor)(__USB_XFER_DESCRIPTOR* pXferDesc);
+	int (*StartXfer)(__USB_XFER_DESCRIPTOR* pXferDesc,int req_len);
+	BOOL (*StopXfer)(__USB_XFER_DESCRIPTOR* pXferDesc);
+	void (*DestroyXferDescriptor)(__USB_XFER_DESCRIPTOR* pXferDesc);
 }__USB_CONTROLLER_OPERATIONS;
 
 //Flags used to indicate which register to return when get_ctrl_status invoked.

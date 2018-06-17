@@ -1221,5 +1221,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />
+    <Text Include="usb\usb.txt" />
   </ItemGroup>
 </Project>
