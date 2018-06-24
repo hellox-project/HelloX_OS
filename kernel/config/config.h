@@ -28,7 +28,7 @@
 //************************************************************************
 
 #define OS_VERSION   "    HelloX V1.82"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.820(Beta),build in 2018/05/29,by Garry.Xin]"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.820(Beta),build in 2018/06/19,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 

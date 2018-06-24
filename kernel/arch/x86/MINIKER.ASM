@@ -38,7 +38,6 @@
 
     %define DEF_INIT_ESP   0x013ffff0    ;;The initializing value of the ESP
                                          ;;register.
-    ;%define DEF_INIT_ESP  0x00001000     ;;---------- ** debug ** --------
 
 
     con_org_start_addr equ 0x00002000  ;;When this module,mini-kernal is l-
@@ -52,15 +51,11 @@
                                        ;;jump to the proper address to exe-
                                        ;;cute.
 
-    con_start_addr equ 0x00100000  ;;Start linear address of the mini-kernal.
+    con_mini_start equ 0x00100000      ;;Start linear address of the mini-kernal.
+    con_mast_start equ 0x00110000      ;;The master's start address when running.
 
-    ;con_start_addr equ 0x00002000  ;;-------------- ** debug ** ----------
-
-    con_mast_start equ 0x00110000  ;;The kermal,master's start address.
-    ;con_mast_start equ 0x00010000  ;;------------- ** debug **------------
-
-    con_mini_size  equ 0x00010000  ;;We assume the mini-kernal's size is 64K.
-    con_mast_size  equ 0x0008c000  ;;The master's length,not acceed 560k.
+    con_mini_size  equ 0x00004000      ;;Mini-kernal's size,fixed as 16k.
+    con_mast_size  equ 0x0008c000      ;;The master's length,can not acceed 560k.
 
 ;;--------------------------- ** Module header ** ------------------------
 ;;  The following section is the module's header.
@@ -1323,13 +1318,33 @@ np_set_notifyos_handler:         ;;This procedure set the notify os handler.
 ;;------------------------------------------------------------------------
 
 align 4
-gl_sysredirect:                  ;;Redirect code of mini-kenal,this code
-                                 ;;moves the mini-kernal from con_org_st-
-                                 ;;art_addr to con_start_addr.
-    mov ecx,con_mini_size + con_mast_size
+gl_sysredirect:
+    ;Redirect mini-kernel and master to their running location.
+    ;In order to save storage,make the loadable kernel image
+    ;larger,we packed the mini-kernel and master into one image
+    ;file,in which the mini-kernel occupies 16K,and master
+    ;occupies all the rest of the kernel image,follows miniker
+    ;immediately.
+    ;The base address of miniker and master are 0x100000 and 
+    ;0x110000 respectly,there is a space gap between running
+    ;and storage,so we must move the master to it's running position.
+    ;Miniker also be relocated to it's running position from
+    ;where it was loaded.
+
+    ;Relocate mini-kernel.
+    mov ecx,con_mini_size
     shr ecx,0x02
     mov esi,con_org_start_addr   ;;Original address.
-    mov edi,con_start_addr       ;;Target address.
+    mov edi,con_mini_start       ;;Miniker's target address.
+    cld
+    rep movsd
+
+    ;Relocate master.
+    mov ecx,con_mast_size
+    shr ecx,0x02
+    mov esi,con_org_start_addr
+    add esi,con_mini_size        ;;Master's original position.
+    mov edi,con_mast_start       ;;Miniker's target address.
     cld
     rep movsd
 
@@ -2815,9 +2830,9 @@ np_set_gdt_entry:                ;;This procedure finds the first empty gdt
     retn                         ;;End of the procedure.
 
 
-    times 47*1024 - ($ - $$) db 0x00    ;;The following two lines reserve
+    times 15*1024 - ($ - $$) db 0x00    ;;The following two lines reserve
                                         ;;some space,to make sure the mini-
-                                        ;;kernal's size is exactly 48k.
+                                        ;;kernal's size is exactly 16k.
     times 1024 - 108         db 0x00
 
 ;;------------------------------------------------------------------------

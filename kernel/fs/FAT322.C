@@ -157,14 +157,14 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpD
 		dwFirstCluster             = dwNextClus;
 	}
 
-	dwSector   = GetClusterSector(pFat32Fs,dwNextClus);		
+	dwSector = GetClusterSector(pFat32Fs,dwNextClus);		
 	if(0 == dwSector)
 	{		
 		goto __TERMINAL;
 	}
 
 	//Read the current cluster.
-	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,	dwSector,pFat32Fs->SectorPerClus,pClusBuffer))
+	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,dwSector,pFat32Fs->SectorPerClus,pClusBuffer))
 	{	
 		goto __TERMINAL;
 	}

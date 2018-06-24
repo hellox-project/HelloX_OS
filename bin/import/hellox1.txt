@@ -1,0 +1,2 @@
+HelloX is an operating system dedicated to IoT applications.
+Through which you can talk to everything.
