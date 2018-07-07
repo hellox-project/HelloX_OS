@@ -46,7 +46,7 @@
     <IntDir>.\Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>jvm;network;Lib;drivers;netcore</IncludePath>
+    <IncludePath>config;jvm;network;Lib;drivers;netcore</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -164,7 +164,9 @@
     <ClCompile Include="appldr\AppLoader_ELF.C" />
     <ClCompile Include="appldr\AppLoader_PE.C" />
     <ClCompile Include="appldr\AppLoader_STM32.C" />
+    <ClCompile Include="arch\x86\acpi.c" />
     <ClCompile Include="arch\x86\BIOSVGA.C" />
+    <ClCompile Include="arch\x86\smpx86.c" />
     <ClCompile Include="drivers\x86\com.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
     <ClCompile Include="drivers\x86\IDEHD.C" />
@@ -369,7 +371,9 @@
     <ClCompile Include="user\dpi.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="arch\x86\acpi.h" />
     <ClInclude Include="arch\x86\BIOSVGA.H" />
+    <ClInclude Include="arch\x86\smpx86.h" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
     <ClInclude Include="drivers\x86\pcnet.h" />
     <ClInclude Include="drivers\x86\rtl8111.h" />
@@ -537,6 +541,7 @@
     <None Include="revise.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="arch\x86\smp.txt" />
     <Text Include="netcore\pppox\readme.txt" />
     <Text Include="usb\usb.txt" />
   </ItemGroup>

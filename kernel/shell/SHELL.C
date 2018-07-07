@@ -12,10 +12,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "kapi.h"
 #include "shell.h"
 #include "ioctrl_s.h"
@@ -71,6 +68,7 @@ static DWORD SysNameHandler(__CMD_PARA_OBJ* pCmdParaObj);
 static DWORD TimeHandler(__CMD_PARA_OBJ* pCmdParaObj);
 static DWORD IoCtrlApp(__CMD_PARA_OBJ* pCmdParaObj);
 static DWORD SysDiagApp(__CMD_PARA_OBJ* pCmdParaObj);
+static DWORD SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj);
 #ifdef __CFG_APP_JVM
 static DWORD JvmHandler(__CMD_PARA_OBJ* pCmdParaObj);
 #endif
@@ -93,6 +91,7 @@ __CMD_OBJ  CmdObj[] = {
 	{"runtime"  ,    RunTimeHandler},
 	{"ioctrl"   ,    IoCtrlApp},
 	{"sysdiag"  ,    SysDiagApp},
+	{"sysinfo"  ,    SysInfoHandler},
 	{"loadapp"  ,    LoadappHandler},
 	{"la"       ,    LoadappHandler},
 #ifdef __CFG_APP_TELNET
@@ -174,6 +173,20 @@ __TERMINAL:
 			hCom1);
 	}
 
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+/* Platform specific sysinfo handler. */
+#ifdef __I386__
+extern void ShowSysInfo();
+#endif
+
+/* Handler of sysinfo command. */
+static DWORD SysInfoHandler(__CMD_PARA_OBJ* pCmdParaObj)
+{
+#ifdef __I386__
+	ShowSysInfo();
+#endif
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

@@ -833,7 +833,7 @@ __TERMINAL:
 //then is routine is called by VirtualAlloc.
 //
 static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
-					  LPVOID           lpDesiredAddr,
+					  const LPVOID     lpDesiredAddr,
 					  DWORD            dwSize,
 					  DWORD            dwAllocFlags,
 					  DWORD            dwAccessFlags,
@@ -908,7 +908,7 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 
 	lpVad->lpStartAddr = lpStartAddr;
 	lpVad->lpEndAddr   = (LPVOID)((DWORD)lpStartAddr + dwSize -1);
-	lpDesiredAddr      = lpStartAddr;
+	//lpDesiredAddr      = lpStartAddr;
 
 	if(lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
 		InsertIntoList((__COMMON_OBJECT*)lpMemMgr,lpVad);  //Insert into list or tree.

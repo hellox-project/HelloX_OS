@@ -722,6 +722,12 @@
     <ClCompile Include="netcore\nat\naticmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="arch\x86\acpi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\smpx86.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -1198,6 +1204,12 @@
     <ClInclude Include="netcore\nat\naticmp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="arch\x86\acpi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\smpx86.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1222,5 +1234,6 @@
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />
     <Text Include="usb\usb.txt" />
+    <Text Include="arch\x86\smp.txt" />
   </ItemGroup>
 </Project>

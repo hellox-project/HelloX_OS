@@ -1,0 +1,15 @@
+1. SMP startup,initialization,make AP to run,...;
+2. Spin lock in SMP;
+3. Interrupt dispatching;
+4. HelloX code revision;
+
+
+Conclusion already made:
+1. Only apply spin lock on the protecting of shared data structures;
+2. Spin lock with spin and interrupt disabled can fit every scenario,apply this mechanism in early stage of HelloX's SMP support;
+3. GetCurrentKernelThread's implementation should be revised,each CPU has it's own value respectively;
+4. 
+
+Progress record:
+1. Define __CFG_SYS_SMP macro in config.h file;
+2. Implemented GetCurrentKernelThread routine,not completed yet;...

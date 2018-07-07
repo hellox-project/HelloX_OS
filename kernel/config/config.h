@@ -15,7 +15,8 @@
 //    Lines number              :
 //***********************************************************************/
 
-#define __CONFIG_H__  //Include switch.
+#ifndef __CONFIG_H__
+#define __CONFIG_H__ 
 
 //Use Microsoft Visual Studio as compiler.Just use "define __GCC__" replacing this
 //if you use GCC as compiler.
@@ -48,9 +49,12 @@
 //#define __ARM11__
 //#define __STM32__
 
+/* SMP(Symmentric Multiple Processor support. */
+#define __CFG_SYS_SMP
+
 //************************************************************************
 //
-//  Hardware related definitions.
+//  Hardware related constant definitions.
 //
 //************************************************************************
 
@@ -63,6 +67,11 @@
 
 //The maximal TLS(Thread Local Storage) number.
 #define MAX_TLS_NUM        0x04
+
+/* Maximal logical CPU supported in case of SMP. */
+#if defined(__CFG_SYS_SMP)
+#define MAX_CPU_NUM 16
+#endif //__CFG_SYS_SMP
 
 //************************************************************************
 //
@@ -281,3 +290,5 @@
 #define _TIME_T_DEFINED
 
 //#define __GCC__
+
+#endif //__CONFIG_H__

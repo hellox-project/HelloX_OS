@@ -92,6 +92,7 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	LPSTR strRunTime     = "    runtime      : Display the total run time since last reboot.";
 	LPSTR strIoCtrlApp   = "    ioctrl       : Start IO control application.";
 	LPSTR strSysDiagApp  = "    sysdiag      : System or hardware diag application.";
+	LPSTR strSysInfo     = "    sysinfo      : Show hardware system information.";
 	LPSTR strFsApp       = "    fs           : File system operating application.";
 	LPSTR strFdiskApp    = "    fdisk        : Hard disk operating application.";
 	LPSTR strUsbVideo    = "    usbvideo     : USB video operations.";
@@ -118,6 +119,7 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	PrintLine(strRunTime);
 	PrintLine(strIoCtrlApp);
 	PrintLine(strSysDiagApp);
+	PrintLine(strSysInfo);
 	PrintLine(strFsApp);
 	PrintLine(strUsbVideo);
 	PrintLine(strNetApp);

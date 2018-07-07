@@ -21,14 +21,10 @@
 #ifndef __KTMGR_H__
 #define __KTMGR_H__
 
-#ifndef __TYPES_H__
 #include "types.h"
-#endif
-
 #include "commobj.h"
 #include "objqueue.h"
-
-#include "../config/config.h"
+#include "config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,7 +136,6 @@ END_DEFINE_OBJECT(__COMMON_SYNCHRONIZATION_OBJECT)
 //
 //Kernel thread's message.
 //
-
 BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MESSAGE)
     WORD             wCommand;
     WORD             wParam;
@@ -483,7 +478,8 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 	VOID                                     (*UnlockKernelThread)(
 		                                     __COMMON_OBJECT*           lpThis,
 											 __COMMON_OBJECT*           lpKernelThread);
-
+	/* Return the current running thread in currrent CPU. */
+	__COMMON_OBJECT*                         (*GetCurrentKernelThread)();
 END_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)          //End of the kernel thread manager's definition.
 
 //

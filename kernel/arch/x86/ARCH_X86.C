@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <sys/utsname.h>
 
+/* For ACPI operation. */
+#include "acpi.h"
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
@@ -102,6 +104,7 @@ BOOL HardwareInitialize()
 {
 	Frequency_Init();
 	Init_Sys_Clock();
+	ACPI_Init();
 	return TRUE;
 }
 

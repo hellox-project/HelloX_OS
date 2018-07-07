@@ -1465,6 +1465,21 @@ static
 	return;
 }
 
+/*
+ * Return the current running kernel thread,in current CPU.
+ * The current kernel threads are different in case of SMP,one kernel thread
+ * runs on each CPU and the total number of current running kernel thread equal
+ * to the CPU number in system.
+ */
+static __COMMON_OBJECT* _GetCurrentKernelThread()
+{
+#if defined(__CFG_SYS_SMP)
+	return NULL;
+#else
+	return KernelThreadManager.lpCurrentKernelThread;
+#endif
+}
+
 /**************************************************************
 ***************************************************************
 ***************************************************************
@@ -1472,7 +1487,6 @@ static
 //
 //The definition of Kernel Thread Manager.
 //
-
 __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	0,                                              //dwCurrentIRQL.
 	NULL,                                            //CurrentKernelThread.
@@ -1539,7 +1553,8 @@ __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	MsgQueueFull,                                    //MsgQueueFull routine.
 	MsgQueueEmpty,                                   //MsgQueueEmpty routine.
 	LockKernelThread,                                //LockKernelThread routine.
-	UnlockKernelThread                               //UnlockKernelThread routine.
+	UnlockKernelThread,                              //UnlockKernelThread routine.
+	_GetCurrentKernelThread                          //GetCurrentKernelThread.
 };
 
 //
