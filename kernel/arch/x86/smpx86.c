@@ -87,4 +87,39 @@ __TERMINAL:
 	return __ebx;
 }
 
+/* Spin lock operations. */
+void __raw_spin_lock(__SPIN_LOCK* sl)
+{
+	/* Use xchg instruction to guarantee the atomic operation. */
+	__asm {
+		push eax
+		push ebx
+		mov ebx,sl
+	__TRY_AGAIN:
+		mov eax,SPIN_LOCK_VALUE_LOCK
+		lock xchg eax,dword ptr [ebx]
+		test eax,eax
+		jnz __TRY_AGAIN
+		pop ebx
+		pop eax
+	}
+}
+
+void __raw_spin_unlock(__SPIN_LOCK* sl)
+{
+	/* 
+	 * Just reset the spin lock to initial value. 
+	 * Use xchg instruction instead of mov.
+	 */
+	__asm {
+		push eax
+		push ebx
+		mov ebx,sl
+		xor eax,eax
+		lock xchg dword ptr [ebx],eax
+		pop ebx
+		pop eax
+	}
+}
+
 #endif //__I386__

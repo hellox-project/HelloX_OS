@@ -1210,6 +1210,9 @@
     <ClInclude Include="arch\x86\smpx86.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\smp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">

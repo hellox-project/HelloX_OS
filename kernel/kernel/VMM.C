@@ -850,13 +850,16 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	__PAGE_INDEX_MANAGER*                   lpIndexMgr  = NULL;
 	DWORD                                   dwPteFlags  = 0;
 
-	if((NULL == lpThis) || (0 == dwSize))    //Parameter check.
+	/* Parameters checking. */
+	if ((NULL == lpThis) || (0 == dwSize))
+	{
 		return NULL;
-	if(VIRTUAL_AREA_ALLOCATE_IO != dwAllocFlags)    //Invalidate flags.
-		return NULL;
+	}
+	BUG_ON(VIRTUAL_AREA_ALLOCATE_IO != dwAllocFlags);
+
+	/* Obtain the page index manager object. */
 	lpIndexMgr = lpMemMgr->lpPageIndexMgr;
-	if(NULL == lpIndexMgr)    //Validate.
-		return NULL;
+	BUG_ON(NULL == lpIndexMgr);
 
 	lpStartAddr = (LPVOID)((DWORD)lpStartAddr & ~(PAGE_FRAME_SIZE - 1)); //Round up to page.
 
@@ -870,8 +873,10 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	lpVad = (__VIRTUAL_AREA_DESCRIPTOR*)KMemAlloc(sizeof(__VIRTUAL_AREA_DESCRIPTOR),
 		KMEM_SIZE_TYPE_ANY); //In order to avoid calling KMemAlloc routine in the
 	                         //critical section,we first call it here.
-	if(NULL == lpVad)        //Can not allocate memory.
+	if (NULL == lpVad)        //Can not allocate memory.
+	{
 		goto __TERMINAL;
+	}
 	lpVad->lpManager       = lpMemMgr;
 	lpVad->lpStartAddr     = NULL;
 	lpVad->lpEndAddr       = NULL;
@@ -927,8 +932,8 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 		if(!lpIndexMgr->ReservePage((__COMMON_OBJECT*)lpIndexMgr,
 			lpStartAddr,lpPhysical,dwPteFlags))
 		{
+			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 			PrintLine("Fatal Error : Internal data structure is not consist.");
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 			goto __TERMINAL;
 		}
 		dwSize -= PAGE_FRAME_SIZE;

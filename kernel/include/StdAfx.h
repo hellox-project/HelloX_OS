@@ -56,6 +56,10 @@
 #include "commobj.h"
 #endif
 
+#ifndef __SMP_H__
+#include "smp.h"
+#endif
+
 #ifndef __SYN_MECH_H__
 #if defined(__I386__)
 #include "../arch/x86/syn_mech.h"

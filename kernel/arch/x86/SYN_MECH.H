@@ -42,10 +42,7 @@ extern "C" {
 	(dwFlags = 0);
 #endif
 
-
-
 #ifdef __I386__
-
 #ifdef __GCC__
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)	\
 	__asm__ __volatile__("pushl %0; popf " :	 : "g"(dwFlags): "memory")
@@ -56,7 +53,6 @@ extern "C" {
 
 #endif
 #else
-
 #define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)
 	(dwFlags = 0);
 #endif
@@ -88,6 +84,18 @@ extern "C" {
 #else
 #define __ENABLE_INTERRUPT()
 #endif
+
+/* Flash TLB entry,specified by the virtual address. */
+#if defined(__I386__)
+#if defined(__CFG_SYS_VMM)
+#define __FLUSH_PAGE_TLB(mem_ptr) \
+{ \
+__asm invlpg mem_ptr \
+}
+#else
+#define __FLUSH_PAGE_TLB(ptr)
+#endif //__CFG_SYS_VMM
+#endif //__I386__
 
 #ifdef __I386__
 	#ifdef __GCC__

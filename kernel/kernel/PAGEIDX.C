@@ -13,9 +13,8 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "StdAfx.h"
-
-#include "stdio.h"
+#include <StdAfx.h>
+#include <stdio.h>
 
 //Page Index function is available only if the VMM function is enabled.
 #ifdef __CFG_SYS_VMM
@@ -27,7 +26,6 @@ static LPVOID GetPhysicalAddress(__COMMON_OBJECT*,LPVOID);
 static BOOL   ReservePage(__COMMON_OBJECT*,LPVOID,LPVOID,DWORD);
 static BOOL   SetPageFlags(__COMMON_OBJECT*,LPVOID,LPVOID,DWORD);
 static VOID   ReleasePage(__COMMON_OBJECT*,LPVOID);
-
 
 //
 //The implementation of PageInitialize routine.
@@ -144,7 +142,6 @@ static LPVOID GetPhysicalAddress(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 //
 //The implementation of ReservePage routine.
 //
-
 static BOOL ReservePage(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr,LPVOID lpPhysicalAddr,
 						DWORD dwFlags)
 {
@@ -191,6 +188,8 @@ static BOOL ReservePage(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr,LPVOID lpPh
 		if(dwFlags & PTE_FLAG_PRESENT)  //If present.
 			FORM_PTE_ENTRY(pte,(DWORD)lpPhysicalAddr);
 		lpNewPte[dwIndex] = pte;         //Set the page table entry.
+		/* Flush the just modified page TLB entry. */
+		__FLUSH_PAGE_TLB(lpVirtualAddr);
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags1);
 		return TRUE;
 	}
@@ -204,6 +203,8 @@ static BOOL ReservePage(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr,LPVOID lpPh
 		if(dwFlags & PTE_FLAG_PRESENT)
 			FORM_PTE_ENTRY(pte,(DWORD)lpPhysicalAddr);
 		lpNewPte[dwIndex] = pte;    //Set the page table entry.
+		/* Flush the just modified page TLB entry. */
+		__FLUSH_PAGE_TLB(lpVirtualAddr);
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags1);
 		return TRUE;
 	}
@@ -255,6 +256,8 @@ static BOOL SetPageFlags(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr,LPVOID lpP
 	if(dwFlags & PTE_FLAG_PRESENT)    //Should set a physical page frame.
 		FORM_PTE_ENTRY(pte,(DWORD)lpPhysicalAddr);
 	lpPte[dwIndex] = pte;    //Set the page table entry.
+	/* Flush the corresponding page TLB entry. */
+	__FLUSH_PAGE_TLB(lpVirtualAddr);
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags1);
 	return TRUE;
 }
@@ -289,6 +292,8 @@ static VOID ReleasePage(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 	//Clear the page table entry.
 	//
 	INIT_PTE_TO_NULL(lpPte[dwIndex]);
+	/* Flush the corresponding TLB entry. */
+	__FLUSH_PAGE_TLB(lpVirtualAddr);
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	return;
 }

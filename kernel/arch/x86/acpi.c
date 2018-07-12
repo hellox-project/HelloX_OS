@@ -462,6 +462,7 @@ void ACPI_Init()
 void ShowSysInfo()
 {
 	struct MADT* pMADT = NULL;
+	__DECLARE_SPIN_LOCK(spin_lock);
 
 	/* Get and show out MADT. */
 	pMADT = LocateMADT();
@@ -479,8 +480,12 @@ void ShowSysInfo()
 	}
 	ParseMADTEntry(pMADT);
 
+	__ACQUIRE_SPIN_LOCK(spin_lock);
 	int core_bits = GetCoreBits();
 	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
+	_hx_printf("spin lock value:%d\r\n", spin_lock);
+	__RELEASE_SPIN_LOCK(spin_lock);
+
 	_hx_printf("Core_bits = %d,logical_CPU_bits = %d\r\n", core_bits, logical_cpu_bits);
 	_hx_printf("Local processor ID:%d\r\n", __GetProcessorID());
 }

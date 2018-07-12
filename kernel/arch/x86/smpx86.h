@@ -17,6 +17,9 @@
 #ifndef __SMPX86_H__
 #define __SMPX86_H__
 
+/* For common SMP constants and structures. */
+#include <smp.h>
+
 /* CPU feature flags. */
 #define CPU_FEATURE_MASK_HTT (1 << 28)
 

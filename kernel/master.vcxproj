@@ -408,6 +408,7 @@
     <ClInclude Include="INCLUDE\PERF.H" />
     <ClInclude Include="include\process.h" />
     <ClInclude Include="INCLUDE\RINGBUFF.H" />
+    <ClInclude Include="include\smp.h" />
     <ClInclude Include="include\ssh\ssh.h" />
     <ClInclude Include="INCLUDE\STATCPU.H" />
     <ClInclude Include="INCLUDE\StdAfx.h" />
