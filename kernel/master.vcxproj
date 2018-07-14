@@ -176,6 +176,7 @@
     <ClCompile Include="drivers\x86\rtl8111.c" />
     <ClCompile Include="kernel\CharDisplay.C" />
     <ClCompile Include="kernel\process.c" />
+    <ClCompile Include="kernel\smp.c" />
     <ClCompile Include="kthread\idle.c" />
     <ClCompile Include="kthread\logcat.c" />
     <ClCompile Include="arch\x86\ARCH_X86.C" />

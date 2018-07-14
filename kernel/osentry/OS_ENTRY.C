@@ -31,6 +31,7 @@
 #include "console.h"
 #include "stdio.h"
 #include "buffmgr.h"
+#include "smp.h"
 
 #include "../shell/shell.h"
 #include "../shell/stat_s.h"
@@ -121,6 +122,15 @@ void __OS_Entry()
 	PrintLine(pszLoadWelcome);
 	GotoHome();
 	ChangeLine();
+
+	/* Initialize the Processor Manager first,in case of SMP enabled. */
+#if defined(__CFG_SYS_SMP)
+	if (!ProcessorManager.Initialize(&ProcessorManager))
+	{
+		pszErrorMsg = "INIT ERROR: Failed to initialize Processor Manager.";
+		goto __TERMINAL;
+	}
+#endif
 
 	//Prepare the OS initialization environment.It's worth noting that even the System
 	//object self is not initialized yet.

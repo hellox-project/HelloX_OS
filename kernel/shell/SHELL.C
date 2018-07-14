@@ -812,8 +812,7 @@ __END:
 	return dwResult;		
 }
 
-//Entry point of the text mode shell.
-//
+/* Entry point of the text mode shell. */
 DWORD ShellEntryPoint(LPVOID pData)
 {
 	StrCpy(DEF_PROMPT_STR,&s_szPrompt[0]);
@@ -823,10 +822,12 @@ DWORD ShellEntryPoint(LPVOID pData)
 	
 	Shell_Msg_Loop(s_szPrompt,CommandParser,QueryCmdName);
 
-	//When reach here,it means the shell thread will terminate.We will reboot
-	//the system in current version's implementation,since there is no interact
-	//mechanism between user and computer in case of no shell.
-	//NOTE:System clean up operations should be put here if necessary.
+	/*
+	 * When reach here,it means the shell thread will terminate.We will reboot
+	 * the system in current version's implementation,since there is no interact
+	 * mechanism between user and computer in case of no shell.
+	 * NOTE:System clean up operations should be put here if necessary.
+	 */
 #ifdef __I386__
 	BIOSReboot();
 #endif

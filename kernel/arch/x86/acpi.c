@@ -369,6 +369,11 @@ static void ParseMADTEntry(struct MADT* pMADT)
 				pLocalApic->flags);
 			entry_length = pLocalApic->entry_length;
 			pEntryBegin += entry_length;
+			/* Add the found processor into system. */
+			if (!ProcessorManager.AddProcessor(0, 0, pLocalApic->apic_id, 0))
+			{
+				_hx_printf("Failed to add processor[id = %d] into system.\r\n", pLocalApic->apic_id);
+			}
 			break;
 		case MADT_ENTRY_TYPE_ISO:
 			entry_length = *(pEntryBegin + 1);
@@ -463,6 +468,7 @@ void ShowSysInfo()
 {
 	struct MADT* pMADT = NULL;
 	__DECLARE_SPIN_LOCK(spin_lock);
+	DWORD dwFlags = 0;
 
 	/* Get and show out MADT. */
 	pMADT = LocateMADT();
@@ -480,14 +486,14 @@ void ShowSysInfo()
 	}
 	ParseMADTEntry(pMADT);
 
-	__ACQUIRE_SPIN_LOCK(spin_lock);
+	__ENTER_CRITICAL_SECTION_SMP(spin_lock, dwFlags);
 	int core_bits = GetCoreBits();
 	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
-	_hx_printf("spin lock value:%d\r\n", spin_lock);
-	__RELEASE_SPIN_LOCK(spin_lock);
+	__LEAVE_CRITICAL_SECTION_SMP(spin_lock, dwFlags);
+	//_hx_printf("Core_bits = %d,logical_CPU_bits = %d\r\n", core_bits, logical_cpu_bits);
+	//_hx_printf("Local processor ID:%d\r\n", __GetProcessorID());
 
-	_hx_printf("Core_bits = %d,logical_CPU_bits = %d\r\n", core_bits, logical_cpu_bits);
-	_hx_printf("Local processor ID:%d\r\n", __GetProcessorID());
+	ProcessorManager.ShowCPU(&ProcessorManager);
 }
 
 #endif //__I386__

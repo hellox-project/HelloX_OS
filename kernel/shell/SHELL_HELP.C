@@ -190,7 +190,6 @@ static 	void LoadHisCmd(SHELL_MSG_INFO*  pShellInfo,BOOL bUp)
 	CD_SetCursorPos(strlen(pShellInfo->pPrompt),CursorY);
 	CD_DelString(strlen(pShellInfo->pPrompt),CursorY,CMD_MAX_LEN);
 	CD_PrintString(szHisCmd,FALSE);
-
 }
 
 static INT OnExecCommand(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
@@ -285,7 +284,6 @@ static INT OnAnalyseCommands(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 	
 	//last cmd
 	nRet = OnExecCommand(pShellInfo,pCmdPos);
-
 	return nRet;
 }
 
@@ -303,16 +301,13 @@ static INT OnKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE   bt )
 
 			CD_GetCursorPos(&CursorX,&CursorY);		
 			CD_GetString(strlen(pShellInfo->pPrompt),CursorY,szCmdBuffer,sizeof(szCmdBuffer));	
-			
 			strtrim(szCmdBuffer,TRIM_LEFT|TRIM_RIGHT);			
 			CD_ChangeLine();
-					
 
 			if(OnAnalyseCommands(pShellInfo,szCmdBuffer) == EXIT_SHELL_COMMAND)				
 			{
 				return FALSE;
 			}
-			
 			PrintPrompt(pShellInfo);
 		}
 		break;
@@ -495,9 +490,7 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 	pShellInfo->pPrompt     = (char*)pPrompt;
 	pShellInfo->pCmdRoute   = pCmdRoute;
 	pShellInfo->pNameQuery   = pNameQuery;
-
 	pShellInfo->hHisInfoObj = His_CreateHisObj(HISCMD_MAX_COUNT);
-
 	PrintPrompt(pShellInfo);
 
 	while(TRUE)
@@ -538,10 +531,8 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 	}
 
 __TERMINAL:
-
 	His_DeleteHisObj(pShellInfo->hHisInfoObj);
 	KMemFree(pShellInfo,KMEM_SIZE_TYPE_ANY,0);
-
 	return 0;
 }
 

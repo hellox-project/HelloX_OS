@@ -122,4 +122,46 @@ void __raw_spin_unlock(__SPIN_LOCK* sl)
 	}
 }
 
+/* Return the flags register and disable the interrupt,before acquire spin lock. */
+unsigned long __smp_enter_critical_section(__SPIN_LOCK* sl)
+{
+	unsigned long dwFlags = 0;
+
+	BUG_ON(NULL == sl);
+	__asm {
+		push eax
+		pushfd
+		pop eax
+		mov dwFlags,eax
+		pop eax
+		cli
+	}
+	/* Acquire the spin lock. */
+	__raw_spin_lock(sl);
+	return dwFlags;
+}
+
+/* 
+ * Restore the flags saved by previous routine. 
+ * Spin lock will be released before that.
+ */
+unsigned long __smp_leave_critical_section(__SPIN_LOCK* sl, unsigned long dwFlags)
+{
+	unsigned long dwOldFlags = 0;
+
+	BUG_ON(NULL == sl);
+	__raw_spin_unlock(sl);
+	/* Get the old value of eFlags before we restore it to dwFlags. */
+	__asm{
+		push eax
+		pushfd
+		pop eax
+		mov dwOldFlags,eax
+		pop eax
+		push dwFlags
+		popfd
+	}
+	return dwOldFlags;
+}
+
 #endif //__I386__

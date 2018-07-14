@@ -728,6 +728,9 @@
     <ClCompile Include="arch\x86\smpx86.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="kernel\smp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
