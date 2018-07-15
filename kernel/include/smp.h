@@ -110,6 +110,13 @@ typedef struct tag__PROCESSOR_MANAGER {
 	BOOL (*AddProcessor)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid);
 	/* Set chip specific information. */
 	BOOL (*SetChipSpecific)(uint8_t domainid, uint8_t chipid, void* pSpec);
+	/* Get chip specific information. */
+	void* (*GetChipSpecific)(uint8_t domainid, uint8_t chipid);
+	/* Set logical CPU specific information. */
+	BOOL (*SetLogicalCPUSpecific)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid, void* pSpec);
+	/* Get Logical CPU specific information. */
+	void* (*GetLogicalCPUSpecific)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid);
+	/* Show out CPU information. */
 	VOID (*ShowCPU)(struct tag__PROCESSOR_MANAGER* pMgr);
 }__PROCESSOR_MANAGER;
 

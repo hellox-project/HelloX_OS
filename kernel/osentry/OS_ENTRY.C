@@ -95,16 +95,15 @@ extern DWORD _HCNMain(LPVOID);
  */
 void __OS_Entry()
 {
-	__KERNEL_THREAD_OBJECT*       lpIdleThread     = NULL;
-	__KERNEL_THREAD_OBJECT*       lpShellThread    = NULL;
-	__KERNEL_THREAD_OBJECT*		lpLogcatDaemonThread = NULL;
+	__KERNEL_THREAD_OBJECT* lpIdleThread = NULL;
+	__KERNEL_THREAD_OBJECT* lpShellThread = NULL;
+	__KERNEL_THREAD_OBJECT*	lpLogcatDaemonThread = NULL;
 #ifdef __CFG_USE_EOS
-	__KERNEL_THREAD_OBJECT*       lpUserThread     = NULL;
+	__KERNEL_THREAD_OBJECT* lpUserThread = NULL;
 #endif
-	DWORD                         dwIndex          = 0;
-	CHAR                          strInfo[128];
-	char*                         pszErrorMsg      = "INIT: OK,everything is done.";
-
+	DWORD dwIndex = 0;
+	CHAR strInfo[128];
+	char* pszErrorMsg = "INIT: OK,everything is done.";
 
 	/* 
 	 * Initialize display device under PC architecture,since 

@@ -164,4 +164,28 @@ unsigned long __smp_leave_critical_section(__SPIN_LOCK* sl, unsigned long dwFlag
 	return dwOldFlags;
 }
 
+/* Initialize the IOAPIC controller. */
+BOOL Init_IOAPIC()
+{
+	return TRUE;
+}
+
+/* Initialize the local APIC controller,it will be invoked by each AP. */
+BOOL Init_LocalAPIC()
+{
+	return TRUE;
+}
+
+/* Start all application processors. */
+BOOL Start_AP()
+{
+	return TRUE;
+}
+
+/* Stop all application processors. */
+BOOL Stop_AP()
+{
+	return TRUE;
+}
+
 #endif //__I386__

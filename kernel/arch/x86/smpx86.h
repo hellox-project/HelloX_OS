@@ -29,11 +29,32 @@ uint32_t GetCPUFeature();
 /* Get local processor's ID. */
 unsigned int __GetProcessorID();
 
+/* Get chip id giving the processor ID. */
+uint8_t __GetChipID(unsigned int processor_id);
+
+/* Get the core ID giving the processor ID. */
+uint8_t __GetCoreID(unsigned int processor_id);
+
+/* Get the logical CPU ID giving the processor ID. */
+uint8_t __GetLogicalCPUID(unsigned int processor_id);
+
 /* x86 chip specific information. */
 typedef struct tag__X86_CHIP_SPECIFIC {
 	unsigned long ioapic_base; /* Base address of IOAPIC. */
 	unsigned int global_intbase; /* Global interrupt base of IOAPIC. */
 	unsigned long lapic_base;  /* Base address of local APIC. */
 }__X86_CHIP_SPECIFIC;
+
+/* Initialize the IOAPIC controller. */
+BOOL Init_IOAPIC();
+
+/* Initialize the local APIC controller,it will be invoked by each AP. */
+BOOL Init_LocalAPIC();
+
+/* Start all application processors. */
+BOOL Start_AP();
+
+/* Stop all application processors. */
+BOOL Stop_AP();
 
 #endif  //__SMPX86_H__

@@ -26,8 +26,10 @@
 #include <stdint.h>
 #include <sys/utsname.h>
 
-/* For ACPI operation. */
+#if defined(__CFG_SYS_SMP)
 #include "acpi.h"
+#include "smpx86.h"
+#endif
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
@@ -102,10 +104,38 @@ static void Init_Sys_Clock()
 //This routine must be in GLOBAL scope since it will be called by other routines.
 BOOL __HardwareInitialize()
 {
+	BOOL bResult = FALSE;
+
+	/* Obtain CPU frequency and initialize system clock. */
 	Frequency_Init();
 	Init_Sys_Clock();
-	ACPI_Init();
-	return TRUE;
+
+	/* Do SMP related initializations. */
+#if defined(__CFG_SYS_SMP)
+	/* Initialize ACPI subsystem. */
+	if (!ACPI_Init())
+	{
+		goto __TERMINAL;
+	}
+	/* Initialize IOAPIC and local APIC. */
+	if (!Init_IOAPIC())
+	{
+		goto __TERMINAL;
+	}
+	if (!Init_LocalAPIC())
+	{
+		goto __TERMINAL;
+	}
+	/* Start all APs. */
+	if (!Start_AP())
+	{
+		goto __TERMINAL;
+	}
+#endif //__CFG_SYS_SMP
+
+	bResult = TRUE;
+__TERMINAL:
+	return bResult;
 }
 
 //Exception table.
@@ -592,7 +622,6 @@ VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
 {
 #ifdef __GCC__
 	asm volatile("outl %0,%1" : : "a" (dwVal), "dN" (wPort));
-
 #else
 	__asm{
 		push eax

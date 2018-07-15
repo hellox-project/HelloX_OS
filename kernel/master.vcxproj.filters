@@ -122,15 +122,6 @@
     <ClCompile Include="kthread\logcat.c">
       <Filter>Source Files\kthread</Filter>
     </ClCompile>
-    <ClCompile Include="arch\x86\ARCH_X86.C">
-      <Filter>Source Files\arch</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\BIOS.C">
-      <Filter>Source Files\arch</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\HELLOCN.C">
-      <Filter>Source Files\arch</Filter>
-    </ClCompile>
     <ClCompile Include="fs\FAT32.C">
       <Filter>Source Files\fs</Filter>
     </ClCompile>
@@ -394,9 +385,6 @@
     </ClCompile>
     <ClCompile Include="kernel\CharDisplay.C">
       <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\BIOSVGA.C">
-      <Filter>Source Files\arch</Filter>
     </ClCompile>
     <ClCompile Include="lib\atox.c">
       <Filter>Source Files\lib</Filter>
@@ -722,13 +710,25 @@
     <ClCompile Include="netcore\nat\naticmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="kernel\smp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="arch\x86\acpi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="arch\x86\smpx86.c">
+    <ClCompile Include="arch\x86\ARCH_X86.C">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kernel\smp.c">
+    <ClCompile Include="arch\x86\BIOS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\BIOSVGA.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\HELLOCN.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\smpx86.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -844,15 +844,6 @@
     <ClInclude Include="drivers\x86\MOUSE.H">
       <Filter>Header Files\drv_hdr</Filter>
     </ClInclude>
-    <ClInclude Include="arch\x86\ARCH.H">
-      <Filter>Header Files\arch_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="arch\x86\BIOS.H">
-      <Filter>Header Files\arch_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="arch\x86\SYN_MECH.H">
-      <Filter>Header Files\arch_hdr</Filter>
-    </ClInclude>
     <ClInclude Include="kthread\idle.h">
       <Filter>Header Files\kt_hdr</Filter>
     </ClInclude>
@@ -933,9 +924,6 @@
     </ClInclude>
     <ClInclude Include="dispaly\BIOSVGA.H">
       <Filter>Header Files\drv_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="arch\x86\BIOSVGA.H">
-      <Filter>Header Files\arch_hdr</Filter>
     </ClInclude>
     <ClInclude Include="lib\io.h">
       <Filter>Header Files\lib_hdr</Filter>
@@ -1207,13 +1195,25 @@
     <ClInclude Include="netcore\nat\naticmp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\smp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="arch\x86\acpi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\ARCH.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\BIOS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\BIOSVGA.H">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="arch\x86\smpx86.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\smp.h">
+    <ClInclude Include="arch\x86\SYN_MECH.H">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1227,19 +1227,18 @@
     <None Include="revise.txt">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="arch\x86\BOOTSECT.ASM">
-      <Filter>Source Files\arch</Filter>
+    <None Include="arch\x86\BOOTSECT.ASM" />
+    <None Include="arch\x86\hdbs.asm" />
+    <None Include="arch\x86\MINIKER.ASM" />
+    <None Include="arch\x86\ntfsbs.asm" />
+    <None Include="arch\x86\REALINIT.ASM" />
+    <None Include="arch\x86\realinit.bin">
+      <Filter>Resource Files</Filter>
     </None>
-    <None Include="arch\x86\MINIKER.ASM">
-      <Filter>Source Files\arch</Filter>
-    </None>
-    <None Include="arch\x86\REALINIT.ASM">
-      <Filter>Source Files\arch</Filter>
-    </None>
+    <None Include="arch\x86\realinit_g.asm" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />
     <Text Include="usb\usb.txt" />
-    <Text Include="arch\x86\smp.txt" />
   </ItemGroup>
 </Project>

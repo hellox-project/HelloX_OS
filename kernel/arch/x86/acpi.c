@@ -24,7 +24,8 @@
 #include "acpi.h"
 
 /* Only available under PC(or compitable) platforms. */
-#ifdef __I386__
+#if defined(__I386__)
+#if defined(__CFG_SYS_SMP)
 
 /* Helper routine to get a number's bit(s). */
 static int GetNumberBit(uint32_t number)
@@ -117,6 +118,30 @@ static int GetCoreBits()
 
 __TERMINAL:
 	return core_bits;
+}
+
+/* Get chip id giving the processor ID. */
+uint8_t __GetChipID(unsigned int processor_id)
+{
+	int core_bits = GetCoreBits();
+	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
+	return ((processor_id) & (~((1 << (logical_cpu_bits + core_bits)) - 1)));
+}
+
+/* Get the core ID giving the processor ID. */
+uint8_t __GetCoreID(unsigned int processor_id)
+{
+	int core_bits = GetCoreBits();
+	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
+	return (processor_id >> logical_cpu_bits) & ((1 << core_bits) - 1);
+}
+
+/* Get the logical CPU ID giving the processor ID. */
+uint8_t __GetLogicalCPUID(unsigned int processor_id)
+{
+	int core_bits = GetCoreBits();
+	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
+	return (processor_id) & ((1 << logical_cpu_bits) - 1);
 }
 
 /* RSDP descriptor signature. */
@@ -509,6 +534,7 @@ BOOL ACPI_Init()
 __TERMINAL:
 	return bResult;
 }
+#endif //__CFG_SYS_SMP
 
 /* Entry point of sysinfo command's handler. */
 void ShowSysInfo()
@@ -526,7 +552,7 @@ void ShowSysInfo()
 	}
 	else
 	{
-		_hx_printf("MADT@0x%0X:\r\n",pMADT);
+		_hx_printf("MADT@0x%0X:\r\n", pMADT);
 		_hx_printf("   Length:%d\r\n", pMADT->h.Length);
 		_hx_printf("   Local APIC addr:0x%0X\r\n", pMADT->local_APIC_addr);
 		_hx_printf("   entry_type:%d\r\n", pMADT->entry_type);
@@ -537,8 +563,9 @@ void ShowSysInfo()
 	int core_bits = GetCoreBits();
 	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
 #endif
-
+#if defined(__CFG_SYS_SMP)
 	ProcessorManager.ShowCPU(&ProcessorManager);
+#endif
 }
 
 #endif //__I386__

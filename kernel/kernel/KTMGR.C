@@ -1476,7 +1476,7 @@ static __COMMON_OBJECT* _GetCurrentKernelThread()
 #if defined(__CFG_SYS_SMP)
 	return NULL;
 #else
-	return KernelThreadManager.lpCurrentKernelThread;
+	return (__COMMON_OBJECT*)KernelThreadManager.lpCurrentKernelThread;
 #endif
 }
 

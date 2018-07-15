@@ -1023,7 +1023,6 @@ __SYSTEM System = {
 //Once an interrupt occurs,the low layer code (resides in Mini-Kernel) calls this routine,
 //this routine then calls DispatchInterrupt of system object.
 //
-
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
 	UCHAR    ucVector = (BYTE)(dwVector);

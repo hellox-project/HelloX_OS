@@ -262,6 +262,166 @@ __TERMINAL:
 	return bResult;
 }
 
+/* Return the chip specific information pointer. */
+static void* GetChipSpecific(uint8_t domainid, uint8_t chipid)
+{
+	void* pSpec = NULL;
+	__PROCESSOR_NODE* pDomain = NULL;
+	__PROCESSOR_NODE* pChip = NULL;
+	unsigned long ulFlags = 0;
+
+	__ENTER_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+	pDomain = ProcessorManager.pDomainList;
+	/* Locate the domain node. */
+	while (pDomain)
+	{
+		BUG_ON(pDomain->nodeType != PROCESSOR_NODE_TYPE_DOMAIN);
+		if (pDomain->nodeID == domainid)
+		{
+			break;
+		}
+		pDomain = pDomain->pNext;
+	}
+	if (NULL == pDomain)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	pChip = pDomain->pChildHead;
+	while (pChip)
+	{
+		BUG_ON(pChip->nodeType != PROCESSOR_NODE_TYPE_CHIP);
+		if (pChip->nodeID == chipid)
+		{
+			break;
+		}
+		pChip = pChip->pNext;
+	}
+	if (NULL == pChip)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	pSpec = pChip->pLevelSpecificPtr;
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+
+__TERMINAL:
+	return pSpec;
+}
+
+/*
+ * Local helper routine,get the processor node from hierarchy tree by giving
+ * domainid/chipid/coreid/lcpuid.
+ * It must not be called outside of this file,since it is not protected by spin
+ * lock.
+ */
+static __PROCESSOR_NODE* __GetProcessorNode_LogicalCPU(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid)
+{
+	__PROCESSOR_NODE* pDomain = NULL;
+	__PROCESSOR_NODE* pChip = NULL;
+	__PROCESSOR_NODE* pCore = NULL;
+	__PROCESSOR_NODE* pLogicalCPU = NULL;
+
+	pDomain = ProcessorManager.pDomainList;
+	while (pDomain)
+	{
+		BUG_ON(pDomain->nodeType != PROCESSOR_NODE_TYPE_DOMAIN);
+		if (pDomain->nodeID == domainid)
+		{
+			break;
+		}
+		pDomain = pDomain->pNext;
+	}
+	if (NULL == pDomain)
+	{
+		goto __TERMINAL;
+	}
+	pChip = pDomain->pChildHead;
+	while (pChip)
+	{
+		BUG_ON(pChip->nodeType != PROCESSOR_NODE_TYPE_CHIP);
+		if (pChip->nodeID == chipid)
+		{
+			break;
+		}
+		pChip = pChip->pNext;
+	}
+	if (NULL == pChip)
+	{
+		goto __TERMINAL;
+	}
+	pCore = pChip->pChildHead;
+	while (pCore)
+	{
+		BUG_ON(pCore->nodeType != PROCESSOR_NODE_TYPE_CORE);
+		if (pCore->nodeID == coreid)
+		{
+			break;
+		}
+		pCore = pCore->pNext;
+	}
+	if (NULL == pCore)
+	{
+		goto __TERMINAL;
+	}
+	pLogicalCPU = pCore->pChildHead;
+	while (pLogicalCPU)
+	{
+		BUG_ON(pLogicalCPU->nodeType != PROCESSOR_NODE_TYPE_LCPU);
+		if (pLogicalCPU->nodeID == lcpuid)
+		{
+			break;
+		}
+		pLogicalCPU = pLogicalCPU->pNext;
+	}
+
+__TERMINAL:
+	return pLogicalCPU;
+}
+
+/* Set logical CPU specific information. */
+static BOOL SetLogicalCPUSpecific(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid, void* pSpec)
+{
+	__PROCESSOR_NODE* pLogicalCPU = NULL;
+	unsigned long ulFlags = 0;
+	BOOL bResult = FALSE;
+
+	__ENTER_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+	pLogicalCPU = __GetProcessorNode_LogicalCPU(domainid, chipid, coreid, lcpuid);
+	if (NULL == pLogicalCPU)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	pLogicalCPU->pLevelSpecificPtr = pSpec;
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
+}
+
+/* Get Logical CPU specific information. */
+static void* GetLogicalCPUSpecific(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid)
+{
+	__PROCESSOR_NODE* pLogicalCPU = NULL;
+	void* pSpec = NULL;
+	unsigned long ulFlags = 0;
+
+	__ENTER_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+	pLogicalCPU = __GetProcessorNode_LogicalCPU(domainid, chipid, coreid, lcpuid);
+	if (NULL == pLogicalCPU)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	pSpec = pLogicalCPU->pLevelSpecificPtr;
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+
+__TERMINAL:
+	return pSpec;
+}
+
 /* Show out all CPU informatin. */
 static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 {
@@ -305,6 +465,9 @@ __PROCESSOR_MANAGER ProcessorManager = {
 	Initialize, /* Initializer. */
 	AddProcessor, /* AddProcessor routine. */
 	SetChipSpecific, /* SetChipSpecific routine. */
+	GetChipSpecific, /* GetChipSpecific routine. */
+	SetLogicalCPUSpecific, /* SetLogicalCPUSpecific routine. */
+	GetLogicalCPUSpecific, /* GetLogicalCPUSpecific routine. */
 	ShowCPU /* ShowCPU routine. */
 };
 
