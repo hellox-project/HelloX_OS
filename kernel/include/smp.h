@@ -80,6 +80,8 @@ unsigned long __smp_leave_critical_section(__SPIN_LOCK* sl, unsigned long dwFlag
 typedef struct tag__PROCESSOR_NODE {
 	uint8_t nodeType;
 	uint8_t nodeID;
+	/* A level specific pointer,contains level and arch specific info. */
+	void* pLevelSpecificPtr;
 	/* Child list's head and tail. */
 	struct tag__PROCESSOR_NODE* pChildHead;
 	struct tag__PROCESSOR_NODE* pChildTail;
@@ -106,6 +108,8 @@ typedef struct tag__PROCESSOR_MANAGER {
 	/* Process Manager offered operations. */
 	BOOL (*Initialize)(struct tag__PROCESSOR_MANAGER* pMgr);
 	BOOL (*AddProcessor)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid);
+	/* Set chip specific information. */
+	BOOL (*SetChipSpecific)(uint8_t domainid, uint8_t chipid, void* pSpec);
 	VOID (*ShowCPU)(struct tag__PROCESSOR_MANAGER* pMgr);
 }__PROCESSOR_MANAGER;
 

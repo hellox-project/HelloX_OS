@@ -25,7 +25,7 @@
 * Entry point of ACPI initialization process.
 * It will be invoked in process of hardware initialization.
 */
-void ACPI_Init();
+BOOL ACPI_Init();
 
 /* RSDP(Root System Description Pointer) structure,for 1.0. */
 #if defined(__MS_VC__)

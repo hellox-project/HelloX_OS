@@ -100,7 +100,7 @@ static void Init_Sys_Clock()
 //Architecture related initialization code,this routine will be called in the
 //begining of system initialization.
 //This routine must be in GLOBAL scope since it will be called by other routines.
-BOOL HardwareInitialize()
+BOOL __HardwareInitialize()
 {
 	Frequency_Init();
 	Init_Sys_Clock();

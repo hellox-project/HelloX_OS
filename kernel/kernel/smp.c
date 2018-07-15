@@ -64,7 +64,7 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	/* Not exist,allocate a new one domain. */
 	if (NULL == pDomainNode) 
 	{
-		pDomainNode = (__PROCESSOR_NODE*)_hx_malloc(sizeof(__PROCESSOR_NODE));
+		pDomainNode = (__PROCESSOR_NODE*)_hx_calloc(1, sizeof(__PROCESSOR_NODE));
 		if (NULL == pDomainNode)
 		{
 			__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
@@ -98,7 +98,7 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	}
 	if (NULL == pChipNode)
 	{
-		pChipNode = (__PROCESSOR_NODE*)_hx_malloc(sizeof(__PROCESSOR_NODE));
+		pChipNode = (__PROCESSOR_NODE*)_hx_calloc(1, sizeof(__PROCESSOR_NODE));
 		if (NULL == pChipNode)
 		{
 			__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
@@ -138,7 +138,7 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	}
 	if (NULL == pCoreNode)
 	{
-		pCoreNode = (__PROCESSOR_NODE*)_hx_malloc(sizeof(__PROCESSOR_NODE));
+		pCoreNode = (__PROCESSOR_NODE*)_hx_calloc(1, sizeof(__PROCESSOR_NODE));
 		if (NULL == pCoreNode)
 		{
 			__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
@@ -177,7 +177,7 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	}
 	if (NULL == pLogicalCPUNode)
 	{
-		pLogicalCPUNode = (__PROCESSOR_NODE*)_hx_malloc(sizeof(__PROCESSOR_NODE));
+		pLogicalCPUNode = (__PROCESSOR_NODE*)_hx_calloc(1, sizeof(__PROCESSOR_NODE));
 		if (NULL == pLogicalCPUNode)
 		{
 			__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
@@ -205,6 +205,56 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
 
+	/* Mark as success. */
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
+}
+
+static BOOL SetChipSpecific(uint8_t domainid, uint8_t chipid, void* pSpec)
+{
+	BOOL bResult = FALSE;
+	__PROCESSOR_NODE* pDomain = NULL;
+	__PROCESSOR_NODE* pChip = NULL;
+	unsigned long ulFlags = 0;
+
+	BUG_ON(NULL == pSpec);
+	__ENTER_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+	pDomain = ProcessorManager.pDomainList;
+	while (pDomain)
+	{
+		BUG_ON(pDomain->nodeType != PROCESSOR_NODE_TYPE_DOMAIN);
+		if (domainid == pDomain->nodeID)
+		{
+			break;
+		}
+		pDomain = pDomain->pNext;
+	}
+	if (NULL == pDomain)
+	{
+		/* Domain not exist. */
+		__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	pChip = pDomain->pChildHead;
+	while (pChip)
+	{
+		BUG_ON(pChip->nodeType != PROCESSOR_NODE_TYPE_CHIP);
+		if (chipid == pChip->nodeID)
+		{
+			break;
+		}
+		pChip = pChip->pNext;
+	}
+	if (NULL == pChip)
+	{
+		/* Can not found the chip object. */
+		__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	pChip->pLevelSpecificPtr = pSpec;
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
 	/* Mark as success. */
 	bResult = TRUE;
 
@@ -254,6 +304,7 @@ __PROCESSOR_MANAGER ProcessorManager = {
 
 	Initialize, /* Initializer. */
 	AddProcessor, /* AddProcessor routine. */
+	SetChipSpecific, /* SetChipSpecific routine. */
 	ShowCPU /* ShowCPU routine. */
 };
 

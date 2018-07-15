@@ -52,49 +52,47 @@
 #include "../usb/usb.h"
 #endif
 
-//Welcome information.
+/* Welcome information. */
 char* pszLoadWelcome   = "Welcome to use HelloX. Initializing now...";
 
-//Driver entry point array,this array resides in drventry.cpp file in the 
-//same directory as os_entry.cpp,which is OSENTRY in current version.
+/* 
+ * Driver entry point array,this array resides in drventry.cpp file in the 
+ * same directory as os_entry.cpp,which is OSENTRY in current version.
+ */
 extern __DRIVER_ENTRY_ARRAY DriverEntryArray[];
 
-//A dead loop routine.
-//static
+/* A dead loop routine. */
 static void DeadLoop(BOOL bDisableInt)
 {
-	//DWORD dwFlags;
+	//DWORD dwFlags = 0;
 	if (bDisableInt)
 	{
 		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
-		while (TRUE){
-		}
+		while (TRUE) {}
 		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{
-		while (TRUE){
-		}
+		while (TRUE) {}
 	}
 }
 
-//User entry point if used as EOS.
+/* User entry point if used as EOS. */
 #ifdef __CFG_USE_EOS
 extern DWORD _HCNMain(LPVOID);
 #endif
 
-//
-//The main entry of OS.When the OS kernel is loaded into memory and all hardware
-//context is initialized OK,Hello China OS's kernel will run from here.
-//This is a never finish(infinite) routine and will never end unless powers off 
-//the system or reboot the system.
-//It's main functions are initializing all system level objects and modules,loading kernel
-//mode hardware drivers,loading external function modules(such as GUI and network),then
-//creating several kernel thread(s) and entering a dead loop.
-//But the dead loop codes only run a short time since the kernel thread(s) will be 
-//scheduled once system clock occurs and the dead loop will end.
-//
-
+/*
+ * The main entry of OS.When the OS kernel is loaded into memory and all hardware
+ * context is initialized OK,Hello China OS's kernel will run from here.
+ * This is a never finish(infinite) routine and will never end unless powers off 
+ * the system or reboot the system.
+ * It's main functions are initializing all system level objects and modules,loading kernel
+ * mode hardware drivers,loading external function modules(such as GUI and network),then
+ * creating several kernel thread(s) and entering a dead loop.
+ * But the dead loop codes only run a short time since the kernel thread(s) will be 
+ * scheduled once system clock occurs and the dead loop will end.
+ */
 void __OS_Entry()
 {
 	__KERNEL_THREAD_OBJECT*       lpIdleThread     = NULL;
@@ -108,14 +106,18 @@ void __OS_Entry()
 	char*                         pszErrorMsg      = "INIT: OK,everything is done.";
 
 
-	//Initialize display device under PC architecture,since the rest output will rely on this.
+	/* 
+	 * Initialize display device under PC architecture,since 
+	 * the rest output will rely on this.
+	 */
 #ifdef __I386__
 	InitializeVGA();
 #endif
 
-	//Print out welcome message.
-	//Please note the output should put here that before the System.BeginInitialization routine,
-	//since it may cause the interrupt enable,which will lead the failure of system initialization.
+	/* Print out welcome message.
+	 * Please note the output should put here that before the System.BeginInitialization routine,
+	 * since it may cause the interrupt enable,which will lead the failure of system initialization.
+	 */
 	ClearScreen();
 	GotoHome();
 	ChangeLine();
@@ -123,7 +125,32 @@ void __OS_Entry()
 	GotoHome();
 	ChangeLine();
 
-	/* Initialize the Processor Manager first,in case of SMP enabled. */
+	/* 
+	 * Prepare the OS initialization environment.It's worth noting that even the System
+	 * object self is not initialized yet.
+	 */
+	if(!System.BeginInitialize((__COMMON_OBJECT*)&System))
+	{
+		pszErrorMsg = "INIT ERROR: System.BeginInitialization routine failed.";
+		goto __TERMINAL;
+	}
+
+	/*
+	 * Initialize memory management object.This object must be initialized before any other
+	 * system level objects since it's function maybe required by them.
+	 * All kernel memory management functions,such as _hx_malloc,KMemAlloc,and corresponding
+	 * free routines are unavailable until after this initialization.
+	 */
+	if(!AnySizeBuffer.Initialize(&AnySizeBuffer))
+	{
+		pszErrorMsg = "INIT ERROR: Failed to initialize AnySizeBuffer object.";
+		goto __TERMINAL;
+	}
+
+	/* 
+	 * Initialize the Processor Manager,in case of SMP enabled. 
+	 * It will be called in process of AP detection process in SMP.
+	 */
 #if defined(__CFG_SYS_SMP)
 	if (!ProcessorManager.Initialize(&ProcessorManager))
 	{
@@ -132,26 +159,20 @@ void __OS_Entry()
 	}
 #endif
 
-	//Prepare the OS initialization environment.It's worth noting that even the System
-	//object self is not initialized yet.
-
-	if(!System.BeginInitialize((__COMMON_OBJECT*)&System))
+	/* Initialize system level hardware. */
+	if (!System.HardwareInitialize((__COMMON_OBJECT*)&System))
 	{
-		pszErrorMsg = "INIT ERROR: System.BeginInitialization routine failed.";
+		pszErrorMsg = "INIT ERROR: Hardware initialization process failed.";
 		goto __TERMINAL;
 	}
 
-	//Initialize memory management object.This object must be initialized before any other
-	//system level objects since it's function maybe required by them.
-	if(!AnySizeBuffer.Initialize(&AnySizeBuffer))
-	{
-		pszErrorMsg = "INIT ERROR: Failed to initialize AnySizeBuffer object.";
-		goto __TERMINAL;
-	}
-
-#ifdef __CFG_SYS_VMM  //Enable VMM.
-	*(__PDE*)PD_START = NULL_PDE;    //Set the first page directory entry to NULL,to indicate
-	//this location is not initialized yet.
+	/* 
+	 * Set the first page directory entry to NULL,to indicate
+	 * this location is not initialized yet,in case of VMM is
+	 * enabled.
+	 */
+#ifdef __CFG_SYS_VMM
+	*(__PDE*)PD_START = NULL_PDE;
 #endif
 
 	//********************************************************************************
@@ -160,17 +181,22 @@ void __OS_Entry()
 	//
 	//********************************************************************************
 
-#ifdef __CFG_SYS_VMM    //Should enable virtual memory model.
-
+	/*
+	 * Create a virtual memory manager object in case of VMM is enabled.
+	 * Only one Virtual Memory Manager is exist in current version of HelloX,
+	 * since the kernel and application share the same lineary memory space.
+	 * One virtual memory manager will be created for each process in case
+	 * of process mechanism is enabled,in the future.
+	 */
+#ifdef __CFG_SYS_VMM
 	lpVirtualMemoryMgr = (__VIRTUAL_MEMORY_MANAGER*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
-		OBJECT_TYPE_VIRTUAL_MEMORY_MANAGER);    //Create virtual memory manager object.
-	if(NULL == lpVirtualMemoryMgr)    //Failed to create this object.
+		OBJECT_TYPE_VIRTUAL_MEMORY_MANAGER);
+	if(NULL == lpVirtualMemoryMgr)
 	{
 		pszErrorMsg = "INIT ERROR: Can not create VirtualMemoryManager object.";
 		goto __TERMINAL;
 	}
-
 	if(!lpVirtualMemoryMgr->Initialize((__COMMON_OBJECT*)lpVirtualMemoryMgr))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize VirtualMemoryManager object.";
@@ -178,39 +204,51 @@ void __OS_Entry()
 	}
 #endif
 
-
+	/* 
+	 * Initialize the Process Manager object. 
+	 * All processes in system,will be managed by this global object.
+	 */
 	if(!ProcessManager.Initialize((__COMMON_OBJECT*)&ProcessManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize ProcessManager object.";
 		goto __TERMINAL;
 	}
 
-	//Initialize Kernel Thread Manager object.
-	//Initialize the process manager object.
-
+	/* 
+	 * Initialize Kernel Thread Manager object.
+	 * All kernel thread objects are managed by this global object.
+	 */
 	if(!KernelThreadManager.Initialize((__COMMON_OBJECT*)&KernelThreadManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize KernelThreadManager object.";
 		goto __TERMINAL;
 	}
 
-	//Initialize System object.
+	/* System object's initialization. */
 	if(!System.Initialize((__COMMON_OBJECT*)&System))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize System object.";
 		goto __TERMINAL;
 	}
 
-	//Set the general interrupt handler,after this action,interrupt and
-	//exceptions in system can be handled by System object.
-	//This routine must be called earlier than any modules who will use
-	//system call.
+	/* 
+	 * Set the general interrupt handler,after this action,interrupt and
+	 * exceptions in system can be handled by System object.
+	 * This routine must be called earlier than any modules who will use
+	 * system call.
+	 */
 #ifdef __I386__
 	SetGeneralIntHandler(GeneralIntHandler);
 #endif
 
+	/* 
+	 * Initialize PageFrmaeManager object,when VMM is enabled. 
+	 * The physical memory is seperated into many page frames,
+	 * which size is 4K in most case,to convenient the management.
+	 * PageFrameManager object responses to manage all page 
+	 * frames.
+	 */
 #ifdef __CFG_SYS_VMM
-	//Initialize PageFrmaeManager object.
 	if(!PageFrameManager.Initialize((__COMMON_OBJECT*)&PageFrameManager,
 		(LPVOID)0x02000000,
 		(LPVOID)0x09FFFFFF))
@@ -220,16 +258,22 @@ void __OS_Entry()
 	}
 #endif
 
-	//Device Driver Framework related global functions.
+	/* 
+	 * Device drive framework's initialization phase,if it is 
+	 * enabled.
+	 * It maybe disabled by undefine the __CFG_SYS_DDF macro in
+	 * config.sys file,in some case such as embedded system,to
+	 * reduce the system's footprint.
+	 */
 #ifdef __CFG_SYS_DDF
-	//Initialize IOManager object.
+	/* IOManager object's initialization. */
 	if(!IOManager.Initialize((__COMMON_OBJECT*)&IOManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize IOManager object.";
 		goto __TERMINAL;
 	}
 
-	//Initialize DeviceManager object.
+	/* Initialize DeviceManager object. */
 	if(!DeviceManager.Initialize(&DeviceManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize DeviceManager object.";
@@ -237,7 +281,7 @@ void __OS_Entry()
 	}
 #endif
 
-	//Initialize CPU statistics object.
+	/* Initialize CPU statistics function,if is enabled. */
 #ifdef __CFG_SYS_CPUSTAT
 	if(!StatCpuObject.Initialize(&StatCpuObject))
 	{
@@ -246,14 +290,16 @@ void __OS_Entry()
 	}
 #endif
 
-	//Enable the virtual memory management mechanism if __CFG_SYS_VMM flag is defined.
+	/* 
+	 * Enable the virtual memory management mechanism,
+	 * if __CFG_SYS_VMM flag is defined,until then.
+	 */
 #ifdef __CFG_SYS_VMM
 	EnableVMM();
 #endif
 
-	//Initialize Ethernet Manager if it is enabled.
+	/* Initialize Ethernet Manager if it is enabled. */
 #ifdef __CFG_NET_ETHMGR
-
 	if(!EthernetManager.Initialize(&EthernetManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Ethernet Manager.\r\n";
@@ -261,7 +307,7 @@ void __OS_Entry()
 	}
 #endif
 
-//Initialize USB support if enabled.
+	/* Initialize USB support if enabled. */
 #ifdef __CFG_SYS_USB
 	USBManager.Initialize(&USBManager);
 #endif
@@ -275,27 +321,26 @@ void __OS_Entry()
 #ifdef __CFG_SYS_DDF
 	dwIndex = 0;
 	_hx_printf("\r\n");
+	/* Load embedded device driver(s) one by one. */
 	while(DriverEntryArray[dwIndex].Entry)
 	{
-		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex].Entry)) //Failed to load.
+		if(!IOManager.LoadDriver(DriverEntryArray[dwIndex].Entry))
 		{
-			//Show an error.
+			/* Just show out an error message in case of failure. */
 			_hx_sprintf(strInfo,"Warning: Failed to load driver [%s].", DriverEntryArray[dwIndex].pszDriverName);
 			PrintLine(strInfo);
 		}
 		else
 		{
-			//Show the correct loaded driver.
 			_hx_sprintf(strInfo, "Load driver [%s] OK.", DriverEntryArray[dwIndex].pszDriverName);
 			PrintLine(strInfo);
 		}
-		dwIndex++;  //Continue to load.
+		dwIndex++;
 	}
 #endif
 
-	//Initialize Console object if necessary.
+	/* Initialize Console object if necessary. */
 #ifdef __CFG_SYS_CONSOLE
-
 	if(!Console.Initialize(&Console))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize Console object.";
@@ -309,11 +354,12 @@ void __OS_Entry()
 	//
 	//********************************************************************************
 
-	//The first one is IDLE thread,which will be scheduled when no thread need to schedule,
-	//so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
-	//Also need to mention that this thread is mandatory and without any switch to turn off
-	//it.
-
+	/* 
+	 * The first one is IDLE thread,which will be scheduled when no thread need to schedule,
+	 * so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
+	 * Also need to mention that this thread is mandatory and without any switch to turn off
+	 * it.
+	 */
 	lpIdleThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -328,19 +374,20 @@ void __OS_Entry()
 		pszErrorMsg = "INIT ERROR: Can not create SystemIdle kernel thread.";
 		goto __TERMINAL;
 	}
-	//Disable suspend on this kernel thread,since it may lead system crash.
+
+	/* Disable suspend on this kernel thread,since it may lead system crash. */
 	KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIdleThread,
 		FALSE);
 
-	//Create statistics kernel thread.
+	/* Create system level statistics kernel thread,if enabled. */
 #ifdef __CFG_SYS_CPUSTAT
-
 	lpStatKernelThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
 		KERNEL_THREAD_STATUS_READY,
-		PRIORITY_LEVEL_HIGH,  //With high priority.
+		/* With high priority. */
+		PRIORITY_LEVEL_HIGH,
 		StatThreadRoutine,
 		NULL,
 		NULL,
@@ -352,13 +399,14 @@ void __OS_Entry()
 	}
 #endif
 
-	//Create shell thread.The shell thread's implementation code resides in shell.cpp
-	//file in shell directory.
-#ifdef __CFG_SYS_SHELL  //Shell can be eleminated by turn off this switch.
-	if(NULL == ModuleMgr.ShellEntry)  //Use default shell.
+	/* 
+	 * Create shell thread.The shell thread's implementation code resides in shell.cpp
+	 * file in shell directory.
+	 */
+#ifdef __CFG_SYS_SHELL
+	if(NULL == ModuleMgr.ShellEntry)
 	{
-
-		lpShellThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
+		lpShellThread = KernelThreadManager.CreateKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
 			KERNEL_THREAD_STATUS_READY,
@@ -373,9 +421,10 @@ void __OS_Entry()
 			goto __TERMINAL;
 		}
 	}
-	else    //Use other kernel module specified shell.
+	else
 	{
-		lpShellThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
+		/* Use other kernel module specified shell. */
+		lpShellThread = KernelThreadManager.CreateKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			0,
 			KERNEL_THREAD_STATUS_READY,
@@ -390,12 +439,18 @@ void __OS_Entry()
 			goto __TERMINAL;
 		}
 	}
-	g_lpShellThread = lpShellThread;     //Initialize the shell thread global variable.
-	//Print out the default system prompt,which can be changed by 'sysname' command.
-	//strcpy(&HostName[0],"[system-view]");
+	/* 
+	 * Save the shell thread to a global variable,thus it can be refered 
+	 * by other modules.
+	 */
+	g_lpShellThread = lpShellThread;
 #endif
 
-	//Initialize DeviceInputManager object.
+	/* 
+	 * Initialize DeviceInputManager object. 
+	 * All low level device input,such as keyboard,mouse,are captured by this
+	 * object first,make some analysis,then delivery to specific thread.
+	 */
 	if(!DeviceInputManager.Initialize((__COMMON_OBJECT*)&DeviceInputManager,
 		NULL,
 		(__COMMON_OBJECT*)lpShellThread))
@@ -410,9 +465,8 @@ void __OS_Entry()
 	//
 	//********************************************************************************
 
-	//Create user kernel thread.
+	/* Create user kernel thread,in embedded OS scenario. */
 #ifdef __CFG_USE_EOS
-
 	lpUserThread = KernelThreadManager.CreateKernelThread(   //Create shell thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -429,9 +483,8 @@ void __OS_Entry()
 	}
 #endif
 
-	//If log debugging functions is enabled.
+	/* If log debugging functions is enabled. */
 #ifdef __CFG_SYS_LOGCAT
-
 	lpLogcatDaemonThread = KernelThreadManager.CreateKernelThread(   //Create logcat daemon thread.
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -461,11 +514,25 @@ void __OS_Entry()
 	_hx_printf("\r\n");
 	_hx_printf("Loading process is successful.\r\n");
 	_hx_printf("\r\n");
+	/* 
+	 * End initialization routine is called finally. 
+	 * The system initialization flag is setoff in this routine,
+	 * interrupt is enabled also.
+	 * Hardware specific functions can also be put into this routine,such
+	 * as to turn on all APs in SMP environment.
+	 */
 	System.EndInitialize((__COMMON_OBJECT*)&System);
-	//Enter a dead loop to wait for the scheduling of kernel threads.
+
+	/* 
+	 * Enter a dead loop to wait for the scheduling of kernel threads.
+	 * Any interrupt will trigger the scheduling of kernel thread.
+	 */
 	DeadLoop(FALSE);
 
-	//The following code will never be executed if anything is correct.
+	/* 
+	 * The following code should never be executed if anything is in place.
+	 * Good bless it.
+	 */
 __TERMINAL:
 	GotoHome();
 	ChangeLine();

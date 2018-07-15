@@ -153,6 +153,7 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 
 	BOOL                                  (*BeginInitialize)(__COMMON_OBJECT* lpThis);  //Called before the operating system
 	                                                                                    //enter into initialization phase.
+	BOOL                                  (*HardwareInitialize)(__COMMON_OBJECT* lpThis);
 	BOOL                                  (*EndInitialize)(__COMMON_OBJECT* lpThis);    //Called after the OS finish the initialization
 	                                                                                    //phase.
 	BOOL                                  (*Initialize)(__COMMON_OBJECT* lpThis);

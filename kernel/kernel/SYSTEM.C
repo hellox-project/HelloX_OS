@@ -886,23 +886,41 @@ __DESTROY_TIMER:  //Destroy the timer object.
 	return (!bDestroyed);
 }
 
-//Hardware platform initialization routine,implemented in arch_xxx.c file and will be called
-//in BeginInitialize routine.
-extern BOOL HardwareInitialize(void);
-
-//Called before the OS enter initialization phase.It prepares the initialization evnironment
-//to run initializing code.Also hardware initialization routine will be called in this routine,
-//which is BeginSysInitialize implemented in arch_xxx.c file.
+/*
+ * Called before the OS enter initialization phase.It prepares the initialization evnironment
+ * to run initializing code,such as set the initialized flags to FALSE,disable interrupt,and
+ * other essential preparation.
+ * This routine must be called in begining of OS_Entry routine.
+ */
 static BOOL BeginInitialize(__COMMON_OBJECT* lpThis)
 {
 	System.bSysInitialized = FALSE;
-	//Call hardware initialization routine.
-	if(!HardwareInitialize())
+	//Interrupt must be disabled in OS initialization process.
+	__DISABLE_INTERRUPT();
+	return TRUE;
+}
+
+/* 
+ * Architecture specific initialization routine,implemented in arch_xxx.c file and will be called
+ * in HardwareInitialize routine.
+ * We make it invisble anywhere except here,by declaring it as external and 
+ * do not put it into any header file,to guarantee the routine can not be invoked anywhere else.
+ */
+extern BOOL __HardwareInitialize(void);
+
+/* 
+ * Hardware initialization phase.
+ * The arch specific hardware initialization routine,__HardwareInitialize,will be called
+ * in this function.
+ * HardwareInitialize routine must be implemented in arch specific source code,most case
+ * resides in arch_xxx.c file.
+ */
+static BOOL HardwareInitialize(__COMMON_OBJECT* lpThis)
+{
+	if (!__HardwareInitialize())
 	{
 		return FALSE;
 	}
-	//Interrupt must be disabled in OS initialization process.
-	__DISABLE_INTERRUPT();
 	return TRUE;
 }
 
@@ -965,8 +983,7 @@ static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis, UCHAR ucVector, __INTERRU
 ****************************************************************************************
 ***************************************************************************************/
 
-//The definition of system object.
-
+/* Global system object. */
 __SYSTEM System = {
 	NULL,                     //lpTimerQueue.
 	{0},                      //InterruptSlotArray[MAX_INTERRUPT_VECTOR].
@@ -979,6 +996,7 @@ __SYSTEM System = {
 	0,                        //ucReserved2;
 	0,                        //dwPhysicalMemorySize,
 	BeginInitialize,          //BeginInitialize,
+	HardwareInitialize,       //HardwareInitialize,
 	EndInitialize,            //EndInitialize,
     SystemInitialize,         //Initialize routine.
 	_GetClockTickCounter,     //GetClockTickCounter routine.

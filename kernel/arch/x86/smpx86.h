@@ -29,4 +29,11 @@ uint32_t GetCPUFeature();
 /* Get local processor's ID. */
 unsigned int __GetProcessorID();
 
+/* x86 chip specific information. */
+typedef struct tag__X86_CHIP_SPECIFIC {
+	unsigned long ioapic_base; /* Base address of IOAPIC. */
+	unsigned int global_intbase; /* Global interrupt base of IOAPIC. */
+	unsigned long lapic_base;  /* Base address of local APIC. */
+}__X86_CHIP_SPECIFIC;
+
 #endif  //__SMPX86_H__
