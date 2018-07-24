@@ -156,7 +156,7 @@ DWORD StatThreadRoutine(LPVOID lpData)
 
 	//Set a timer,to calculate statistics information periodic.
 	lpTimer = (__TIMER_OBJECT*)System.SetTimer((__COMMON_OBJECT*)&System,
-		KernelThreadManager.lpCurrentKernelThread,
+		__CURRENT_KERNEL_THREAD,
 		1024,
 		1000,
 		NULL,
@@ -165,7 +165,7 @@ DWORD StatThreadRoutine(LPVOID lpData)
 
 	while(TRUE)
 	{
-		if(KernelThreadManager.GetMessage((__COMMON_OBJECT*)KernelThreadManager.lpCurrentKernelThread,&msg)) //Get message to process.
+		if(KernelThreadManager.GetMessage((__COMMON_OBJECT*)__CURRENT_KERNEL_THREAD,&msg)) //Get message to process.
 		{
 			switch(msg.wCommand)
 			{

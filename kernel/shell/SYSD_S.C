@@ -247,7 +247,7 @@ static DWORD overload(__CMD_PARA_OBJ* lpCmdObj)
 	while(dwTimerNum)
 	{
 		lpTimerObject = System.SetTimer((__COMMON_OBJECT*)&System,
-			KernelThreadManager.lpCurrentKernelThread,
+			__CURRENT_KERNEL_THREAD,
 			dwTimerID,
 			dwTimeSpan,
 			NULL,
@@ -291,7 +291,7 @@ static DWORD beep(__CMD_PARA_OBJ* lpCmdObj)
 	//Now,the variable dwTimeSpan countains the time to beep.
 	//
 	lpTimerObject = System.SetTimer((__COMMON_OBJECT*)&System,
-		KernelThreadManager.lpCurrentKernelThread,
+		__CURRENT_KERNEL_THREAD,
 		dwTimerID,
 		dwTimeSpan,
 		NULL,
@@ -314,7 +314,7 @@ static DWORD beep(__CMD_PARA_OBJ* lpCmdObj)
 	
 	while(TRUE)
 	{
-		if(KernelThreadManager.GetMessage((__COMMON_OBJECT*)KernelThreadManager.lpCurrentKernelThread,&Msg))
+		if(KernelThreadManager.GetMessage((__COMMON_OBJECT*)__CURRENT_KERNEL_THREAD,&Msg))
 		{
 			if((Msg.wCommand == KERNEL_MESSAGE_TIMER) &&   //Beep time is over.
 			   (Msg.dwParam  == dwTimerID))

@@ -68,7 +68,7 @@ DWORD SetThreadPriority(HANDLE hThread,DWORD dwPriority)
 
 BOOL GetMessage(MSG* lpMsg)
 {
-	__KERNEL_THREAD_OBJECT*  lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	__KERNEL_THREAD_OBJECT*  lpKernelThread = __CURRENT_KERNEL_THREAD;
 	return KernelThreadManager.GetMessage((__COMMON_OBJECT*)lpKernelThread,lpMsg);
 }
 
@@ -93,7 +93,7 @@ BOOL EnableSuspend(HANDLE hThread,BOOL bEnable)
 	if(NULL == lpKernelThread)
 	{
 		//Operate on the current kernel thread.
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 	}
 	return KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpKernelThread,
@@ -108,7 +108,7 @@ BOOL SuspendKernelThread(HANDLE hThread)
 	if(NULL == lpKernelThread)
 	{
 		//Suspend the current kernel thread.
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 	}
 	return KernelThreadManager.SuspendKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
@@ -123,7 +123,7 @@ BOOL ResumeKernelThread(HANDLE hThread)
 	if(NULL == lpKernelThread)
 	{
 		//Operate on the current kernel thread.
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 	}
 	return KernelThreadManager.ResumeKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
@@ -138,7 +138,7 @@ HANDLE SetTimer(DWORD dwTimerID,
 {
 	return System.SetTimer(
 		(__COMMON_OBJECT*)&System,
-		KernelThreadManager.lpCurrentKernelThread,
+		__CURRENT_KERNEL_THREAD,
 		dwTimerID,
 		dwMillionSecond,
 		lpHandler,

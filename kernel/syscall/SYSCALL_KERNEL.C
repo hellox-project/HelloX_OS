@@ -215,7 +215,7 @@ static void   SC_LoadDriver(__SYSCALL_PARAM_BLOCK*  pspb)
 
 static void   SC_GetCurrentThread(__SYSCALL_PARAM_BLOCK*  pspb)
 {
-	pspb->lpRetValue = (LPVOID)KernelThreadManager.lpCurrentKernelThread;
+	pspb->lpRetValue = (LPVOID)__CURRENT_KERNEL_THREAD;
 }
 	
 static void   SC_GetDevice(__SYSCALL_PARAM_BLOCK*  pspb)

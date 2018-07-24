@@ -500,7 +500,7 @@ static VOID ReleaseTLSKey(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID pReserved)
 static BOOL GetTLSValue(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID* ppValue)
 {
 	__PROCESS_OBJECT*       pProcessObject = ProcessManager.GetCurrentProcess((__COMMON_OBJECT*)&ProcessManager);
-	__KERNEL_THREAD_OBJECT* pKernelThread  = KernelThreadManager.lpCurrentKernelThread;
+	__KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
 	BOOL                    bResult        = FALSE;
 	DWORD                   dwFlags;
 
@@ -521,7 +521,7 @@ static BOOL GetTLSValue(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID* ppValue)
 static BOOL SetTLSValue(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID pValue)
 {
 	__PROCESS_OBJECT*       pProcessObject = ProcessManager.GetCurrentProcess((__COMMON_OBJECT*)&ProcessManager);
-	__KERNEL_THREAD_OBJECT* pKernelThread  = KernelThreadManager.lpCurrentKernelThread;
+	__KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
 	BOOL                    bResult        = FALSE;
 	DWORD                   dwFlags;
 
@@ -559,7 +559,7 @@ static BOOL PMInitialize(__COMMON_OBJECT* lpThis)
 //Get current process from system.
 static __PROCESS_OBJECT* GetCurrentProcess(__COMMON_OBJECT* lpThis)
 {
-	__KERNEL_THREAD_OBJECT* lpCurrentThread = KernelThreadManager.lpCurrentKernelThread;
+	__KERNEL_THREAD_OBJECT* lpCurrentThread = __CURRENT_KERNEL_THREAD;
 
 	if(NULL == lpCurrentThread)
 	{

@@ -200,84 +200,6 @@
     <ClCompile Include="osentry\OS_ENTRY.C">
       <Filter>Source Files\osentry</Filter>
     </ClCompile>
-    <ClCompile Include="kernel\COMQUEUE.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\console.c">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\debug.c">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\DEVMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\DIM.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\IOMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\IOMGR2.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\KAPI.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\KERMOD.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\KMEMMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\KTMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\KTMGR2.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\MEM_FBL.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\MEMMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\MODMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\OBJMGR.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\OBJQUEUE.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\PAGEIDX.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\PCI_DRV.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\PERF.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\STATCPU.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\SYNOBJ.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\synobj2.c">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\SYSTEM.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\TYPES.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\VMM.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="network\api\api_lib.c">
       <Filter>Source Files\network</Filter>
     </ClCompile>
@@ -383,9 +305,6 @@
     <ClCompile Include="shell\SHELL_HELP.C">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
-    <ClCompile Include="kernel\CharDisplay.C">
-      <Filter>Source Files\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="lib\atox.c">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
@@ -418,9 +337,6 @@
     </ClCompile>
     <ClCompile Include="lib\signal.c">
       <Filter>Source Files\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\process.c">
-      <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="lib\math.c">
       <Filter>Source Files\lib</Filter>
@@ -710,9 +626,6 @@
     <ClCompile Include="netcore\nat\naticmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kernel\smp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="arch\x86\acpi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -729,6 +642,93 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="arch\x86\smpx86.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\chardisplay.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\comqueue.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\console.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\debug.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\devmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\dim.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\iomgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\iomgr2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\kapi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\kermod.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\kmemmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\ktmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\ktmgr2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\mem_fbl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\memmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\modmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\objmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\objqueue.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\pageidx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\pci_drv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\perf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\process.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\smp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\statcpu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\synobj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\synobj2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\system.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\vmm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

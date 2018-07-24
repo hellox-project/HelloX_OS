@@ -133,7 +133,7 @@ int  pthread_mutex_init (pthread_mutex_t* mutex,const pthread_mutexattr_t * attr
 	(*mutex)->lock_idx         = 0;
 	(*mutex)->recursive_count  = 0;
 	(*mutex)->kind             = PTHREAD_MUTEX_DEFAULT;
-	(*mutex)->ownerThread.p    = KernelThreadManager.lpCurrentKernelThread;
+	(*mutex)->ownerThread.p    = __CURRENT_KERNEL_THREAD;
 	(*mutex)->event            = pMutex;
 
 	return S_OK;

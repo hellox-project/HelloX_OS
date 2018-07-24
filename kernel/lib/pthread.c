@@ -92,7 +92,7 @@ int  pthread_join (pthread_t thread, void **value_ptr)
 
 pthread_t  pthread_self (void)
 {
-	return (HANDLE)KernelThreadManager.lpCurrentKernelThread;
+	return (HANDLE)__CURRENT_KERNEL_THREAD;
 }
 
 int  pthread_cancel (pthread_t thread)

@@ -223,7 +223,7 @@ __TERMINAL:
 		 * Accumulate the just allocated block into 
 		 * owner thread's total memory usage counter.
 		 */
-		lpUsedHeader->pOwnerThread = KernelThreadManager.lpCurrentKernelThread;
+		lpUsedHeader->pOwnerThread = __CURRENT_KERNEL_THREAD;
 		if (lpUsedHeader->pOwnerThread)
 		{
 			lpUsedHeader->pOwnerThread->dwTotalMemSize += lpUsedHeader->dwBlockSize;
@@ -421,7 +421,7 @@ static VOID Free(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuffer)
 		{
 			__LOG("Memory owner destroyed[block_sz = %d,curr:%s,int:%d]\r\n",
 				lpUsedHeader->dwBlockSize,
-				KernelThreadManager.lpCurrentKernelThread->KernelThreadName,
+				__CURRENT_KERNEL_THREAD->KernelThreadName,
 				System.ucCurrInt);
 		}
 	}

@@ -274,7 +274,7 @@ static DWORD __R8152_Send(LPVOID pData)
 	* of initialization.
 	* Set to current thead to facilite debugging.
 	*/
-	pEthData->pTxDesc->hOwnerThread = (HANDLE)KernelThreadManager.lpCurrentKernelThread;
+	pEthData->pTxDesc->hOwnerThread = (HANDLE)__CURRENT_KERNEL_THREAD;
 
 	//Check the message queue.
 	while (KernelThreadManager.GetMessage(NULL, &msg))
@@ -532,7 +532,7 @@ static DWORD __R8152_Recv(LPVOID pData)
 	* of initialization.
 	* Set to current thead to facilite debugging.
 	*/
-	pEthData->pRxDesc->hOwnerThread = (HANDLE)KernelThreadManager.lpCurrentKernelThread;
+	pEthData->pRxDesc->hOwnerThread = (HANDLE)__CURRENT_KERNEL_THREAD;
 
 	while (TRUE)
 	{

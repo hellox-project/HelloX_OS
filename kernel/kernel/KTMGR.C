@@ -17,32 +17,28 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "stdio.h"
 #include "types.h"
 #include "system.h"
 #include "commobj.h"
 #include "process.h"
 #include "stdio.h"
+#include "stdlib.h"
 #include "ktmgr.h"
-
 
 //
 //Pre-declare for extern global routines,these routines may
 //be implemented in KTMGRx.CPP file,where x is 2,3,etc.
 //
-extern __THREAD_HOOK_ROUTINE SetThreadHook(DWORD dwHookType,
-										   __THREAD_HOOK_ROUTINE lpRoutine);
-extern VOID                  CallThreadHook(DWORD dwHookType,
-											__KERNEL_THREAD_OBJECT* lpPrev,
-											__KERNEL_THREAD_OBJECT* lpNext);
-extern __KERNEL_THREAD_OBJECT* GetScheduleKernelThread(__COMMON_OBJECT* lpThis,
-													   DWORD dwPriority);
+extern __THREAD_HOOK_ROUTINE SetThreadHook(DWORD dwHookType, 
+	__THREAD_HOOK_ROUTINE lpRoutine);
+extern VOID CallThreadHook(DWORD dwHookType, __KERNEL_THREAD_OBJECT* lpPrev,
+	__KERNEL_THREAD_OBJECT* lpNext);
+extern __KERNEL_THREAD_OBJECT* GetScheduleKernelThread(__COMMON_OBJECT* lpThis, 
+	DWORD dwPriority);
 extern VOID AddReadyKernelThread(__COMMON_OBJECT* lpThis,
-								 __KERNEL_THREAD_OBJECT* lpKernelThread);
+	__KERNEL_THREAD_OBJECT* lpKernelThread);
 extern VOID KernelThreadWrapper(__COMMON_OBJECT*);
 extern VOID KernelThreadClean(__COMMON_OBJECT*,DWORD);
 extern DWORD WaitForKernelThreadObject(__COMMON_OBJECT* lpThis);
@@ -69,28 +65,42 @@ BOOL KernelThreadInitialize(__COMMON_OBJECT* lpThis)
 	__PRIORITY_QUEUE*       lpMsgWaitingQueue = NULL;
 	int                     i;
 
-	if(NULL == lpThis)  //Parameter check.
+	if (NULL == lpThis)
+	{
 		goto __TERMINAL;
+	}
 
 	lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpThis;
+	/* 
+	 * Create the waiting queue,to hold the kernel thread that wait 
+	 * for this one to run end.
+	 */
 	lpWaitingQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(
 		&ObjectManager,
 		NULL,
 		OBJECT_TYPE_PRIORITY_QUEUE);
-	if(NULL == lpWaitingQueue)    //Failed to create the waiting queue object.
+	if (NULL == lpWaitingQueue)
+	{
 		goto __TERMINAL;
+	}
+	if (!lpWaitingQueue->Initialize((__COMMON_OBJECT*)lpWaitingQueue))
+	{
+		goto __TERMINAL;
+	}
 
-	if(!lpWaitingQueue->Initialize((__COMMON_OBJECT*)lpWaitingQueue))
-	    //Failed to initialize the waiting queue object.
-		goto __TERMINAL;
+	/* Create message waiting queue. */
 	lpMsgWaitingQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(
 		&ObjectManager,
 		NULL,
 		OBJECT_TYPE_PRIORITY_QUEUE);
-	if(NULL == lpMsgWaitingQueue)  //Can not create message waiting queue.
+	if (NULL == lpMsgWaitingQueue)
+	{
 		goto __TERMINAL;
-	if(!lpMsgWaitingQueue->Initialize((__COMMON_OBJECT*)lpMsgWaitingQueue))
+	}
+	if (!lpMsgWaitingQueue->Initialize((__COMMON_OBJECT*)lpMsgWaitingQueue))
+	{
 		goto __TERMINAL;
+	}
 
 	lpKernelThread->lpWaitingQueue    = lpWaitingQueue;
 	lpKernelThread->lpMsgWaitingQueue = lpMsgWaitingQueue;
@@ -104,11 +114,17 @@ BOOL KernelThreadInitialize(__COMMON_OBJECT* lpThis)
 	{
 		lpKernelThread->MultipleWaitObjectArray[i] = NULL;
 	}
+#if defined(__CFG_SYS_SMP)
+	/* Use current CPU as the cpuAffinity value. */
+	lpKernelThread->cpuAffinity = __CURRENT_PROCESSOR_ID;
+#endif
 
+	/* OK. */
 	bResult = TRUE;
 
 __TERMINAL:
-	if(!bResult)        //Initialize failed.
+	/* Release all object(s) that created in case of failure. */
+	if(!bResult)
 	{
 		if(lpWaitingQueue != NULL)
 			ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpWaitingQueue);
@@ -123,46 +139,88 @@ __TERMINAL:
 //
 VOID KernelThreadUninitialize(__COMMON_OBJECT* lpThis)
 {
-	__KERNEL_THREAD_OBJECT*   lpKernelThread = NULL;
-	//__PRIORITY_QUEUE*         lpWaitingQueue = NULL;
-	//__EVENT*                  lpMsgEvent     = NULL;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpThis;;
 
-	if(NULL == lpThis)    //Parameter check.
+	if(NULL == lpKernelThread)
 	{
 		return;
 	}
-
-	lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpThis;
-
 	//Reset signature first.
 	lpKernelThread->dwObjectSignature = 0;
-
 	//Destroy waiting queue.
 	ObjectManager.DestroyObject(&ObjectManager,
 		(__COMMON_OBJECT*)lpKernelThread->lpWaitingQueue);
-
 	//Destroy message waiting queue.
 	ObjectManager.DestroyObject(&ObjectManager,
 		(__COMMON_OBJECT*)lpKernelThread->lpMsgWaitingQueue);
-
 	return;
 }
 
-//
-//The implementation of Kernel Thread Manager.
-//
+/* Helper routine to initialize kernel thread's ready queues. */
+static BOOL InitReadyQueue(__COMMON_OBJECT* lpThis)
+{
+	__KERNEL_THREAD_MANAGER* pManager = (__KERNEL_THREAD_MANAGER*)lpThis;
+	BOOL bResult = FALSE;
+	__PRIORITY_QUEUE* pPriorityQueue = NULL;
+	__KERNEL_THREAD_READY_QUEUE* pReadyQueue = NULL;
+	int processorNum = ProcessorManager.GetProcessorNum();
 
-//Initializing routine of Kernel Thread Manager.
+	BUG_ON(NULL == pManager);
+	/* 
+	 * Create one ready queue for each processor,and create MAX_KERNEL_THREAD_PRIORITY + 1 
+	 * priority queue objects for each ready queue object.
+	 * Any failure will lead this routine's failure.
+	 */
+	for (int qIndex = 0; qIndex < processorNum; qIndex++)
+	{
+		pReadyQueue = (__KERNEL_THREAD_READY_QUEUE*)_hx_calloc(1, sizeof(__KERNEL_THREAD_READY_QUEUE));
+		if (NULL == pReadyQueue)
+		{
+			goto __TERMINAL;
+		}
+#if defined(__CFG_SYS_SMP)
+		/* Initialize spin lock. */
+		pReadyQueue->spin_lock = SPIN_LOCK_INIT_VALUE;
+#endif
+		/* Create priority queue for each priority level. */
+		for (int i = 0; i < MAX_KERNEL_THREAD_PRIORITY + 1; i++)
+		{
+			pPriorityQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,
+				NULL,
+				OBJECT_TYPE_PRIORITY_QUEUE);
+			if (NULL == pPriorityQueue)
+			{
+				goto __TERMINAL;
+			}
+			if (!pPriorityQueue->Initialize((__COMMON_OBJECT*)pPriorityQueue))
+			{
+				goto __TERMINAL;
+			}
+			pReadyQueue->ThreadQueue[i] = pPriorityQueue;
+		}
+		/* Save the ready queue pointer to corresponding processor's slot. */
+		pManager->KernelThreadReadyQueue[qIndex] = pReadyQueue;
+	}
+	/* Everything is OK. */
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;;
+}
+
+/* 
+ * Initializing routine of Kernel Thread Manager,it will be
+ * invoked in process of OS initialization.The failure of
+ * kernel thread manager's initialization will lead the failure
+ * of OS initialization.
+ */
 static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 {
 	BOOL                       bResult          = FALSE;
 	__KERNEL_THREAD_MANAGER*   lpMgr            = NULL;
-	__PRIORITY_QUEUE*          lpRunningQueue   = NULL;
-	__PRIORITY_QUEUE*          lpReadyQueue     = NULL;
 	__PRIORITY_QUEUE*          lpSuspendedQueue = NULL;
 	__PRIORITY_QUEUE*          lpSleepingQueue  = NULL;
 	__PRIORITY_QUEUE*          lpTerminalQueue  = NULL;
-	DWORD i;
 
 	if(NULL == lpThis)
 	{
@@ -170,30 +228,10 @@ static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 	}
 	lpMgr = (__KERNEL_THREAD_MANAGER*)lpThis;
 
-	//
-	//The following code creates all objects required by Kernel Thread Manager.
-	//If any error occurs,the initializing process is terminaled.
-	//
-	lpRunningQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_PRIORITY_QUEUE);
-	if(NULL == lpRunningQueue)
-	{
-		goto __TERMINAL;
-	}
-	if(FALSE == lpRunningQueue->Initialize((__COMMON_OBJECT*)lpRunningQueue))
-	{
-		goto __TERMINAL;
-	}
-
-	lpReadyQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_PRIORITY_QUEUE);
-	if(NULL == lpReadyQueue)
-	{
-		goto __TERMINAL;
-	}
-	if(FALSE == lpReadyQueue->Initialize((__COMMON_OBJECT*)lpReadyQueue))
-	{
-		goto __TERMINAL;
-	}
-
+	/*
+	 * The following code creates all objects required by Kernel Thread Manager.
+	 * If any error occurs,the initializing process is ternimated and jump to fail.
+	 */
 	lpSuspendedQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_PRIORITY_QUEUE);
 	if(NULL == lpSuspendedQueue)
 	{
@@ -203,7 +241,6 @@ static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 	{
 		goto __TERMINAL;
 	}
-
 	lpSleepingQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_PRIORITY_QUEUE);
 	if(NULL == lpSleepingQueue)
 	{
@@ -213,7 +250,6 @@ static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 	{
 		goto __TERMINAL;
 	}
-
 	lpTerminalQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_PRIORITY_QUEUE);
 	if(NULL == lpTerminalQueue)
 	{
@@ -224,17 +260,15 @@ static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 		goto __TERMINAL;
 	}
 
-
 	//
 	//Now,the objects required by Kernel Thread Manager are created and initialized success-
 	//fully,initialize the kernel thread manager itself now.
 	//
-	lpMgr->lpRunningQueue    = lpRunningQueue;
-	//lpMgr->lpReadyQueue      = lpReadyQueue;
 	lpMgr->lpSuspendedQueue  = lpSuspendedQueue;
 	lpMgr->lpSleepingQueue   = lpSleepingQueue;
 	lpMgr->lpTerminalQueue   = lpTerminalQueue;
 
+#if 0
 	//Initializes the ready queue array.Any element failure can cause the whole
 	//process to fail.
 	for(i = 0;i < MAX_KERNEL_THREAD_PRIORITY + 1;i ++)
@@ -252,18 +286,29 @@ static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 		}
 		lpMgr->ReadyQueue[i] = lpReadyQueue;
 	}
+#endif
 
-	lpMgr->lpCurrentKernelThread = NULL;
+	/* Initialize the ready queue array of kernel thread. */
+	if (!InitReadyQueue(lpThis))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Reset current kernel thread handle array. */
+#if defined(__CFG_SYS_SMP)
+	for (int i = 0; i < MAX_CPU_NUM; i++)
+	{
+		lpMgr->CurrentKernelThread[i] = NULL;
+	}
+#else
+	lpMgr->CurrentKernelThread[0] = NULL;
+#endif
 
 	bResult = TRUE;
 
 __TERMINAL:
 	if(!bResult)  //If failed to initialize the Kernel Thread Manager.
 	{
-		if(NULL != lpRunningQueue)  //Destroy the objects created just now.
-			ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpRunningQueue);
-		if(NULL != lpReadyQueue)
-			ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpReadyQueue);
 		if(NULL != lpSuspendedQueue)
 			ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpSuspendedQueue);
 		if(NULL != lpSleepingQueue)
@@ -303,36 +348,40 @@ static __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             
 		goto __TERMINAL;
 	}
 
-	if((KERNEL_THREAD_STATUS_READY != dwStatus) &&      //The initation status of a kernel
-		                                                //thread should only be READY or
-														//SUSPENDED.If the initation status
-														//is READY,then the kernel thread maybe
-														//scheduled to run in the NEXT schedule
-														//circle(please note the kernel thread
-														//does not be scheduled immediately),
-														//else,the kernel thread will be susp-
-														//ended,the kernel thread in this status
-														//can be activated by kResumeKernelThread
-														//calls.
-	   (KERNEL_THREAD_STATUS_SUSPENDED != dwStatus))
-	    goto __TERMINAL;
-
-	lpMgr = (__KERNEL_THREAD_MANAGER*)lpThis;
-
-	lpKernelThread = (__KERNEL_THREAD_OBJECT*)ObjectManager.CreateObject(&ObjectManager,
-		NULL,
-		OBJECT_TYPE_KERNEL_THREAD);
-
-	if(NULL == lpKernelThread)    //If failed to create the kernel thread object.
-		goto __TERMINAL;
-
-	if(!lpKernelThread->Initialize((__COMMON_OBJECT*)lpKernelThread))    //Failed to initialize.
+	/* 
+	 * The initation status of a kernel
+	 * thread should only be READY or
+	 * SUSPENDED.If the initation status
+	 * is READY,then the kernel thread maybe
+	 * scheduled to run in the NEXT schedule
+	 * circle(please note the kernel thread
+	 * does not be scheduled immediately),
+	 * else,the kernel thread will be susp-
+	 * ended,the kernel thread in this status
+	 * can be activated by kResumeKernelThread
+	 * system call.
+	 */
+	if ((KERNEL_THREAD_STATUS_READY != dwStatus) && 
+		(KERNEL_THREAD_STATUS_SUSPENDED != dwStatus))
 	{
 		goto __TERMINAL;
 	}
 
-	if(0 == dwStackSize)          //If the dwStackSize is zero,then allocate the default size's
-		                          //stack.
+	lpMgr = (__KERNEL_THREAD_MANAGER*)lpThis;
+	lpKernelThread = (__KERNEL_THREAD_OBJECT*)ObjectManager.CreateObject(&ObjectManager,
+		NULL,
+		OBJECT_TYPE_KERNEL_THREAD);
+	if (NULL == lpKernelThread)
+	{
+		goto __TERMINAL;
+	}
+	if(!lpKernelThread->Initialize((__COMMON_OBJECT*)lpKernelThread))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Use default kernel thread stack size if not specified. */
+	if(0 == dwStackSize)
 	{
 		dwStackSize = DEFAULT_STACK_SIZE;
 	}
@@ -344,13 +393,14 @@ static __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             
 		}
 	}
 
+	/* Create kernel thread's stack. */
 	lpStack = KMemAlloc(dwStackSize,KMEM_SIZE_TYPE_ANY);
-	if(NULL == lpStack)    //Failed to create kernel thread stack.
+	if(NULL == lpStack)
 	{
 		goto __TERMINAL;
 	}
 
-	//The following code initializes the kernel thread object created just now.
+	/* initializes the kernel thread object created just now. */
 	lpKernelThread->dwThreadID            = lpKernelThread->dwObjectID;
 	lpKernelThread->dwThreadStatus        = dwStatus;
 	lpKernelThread->dwThreadPriority      = dwPriority;
@@ -375,17 +425,20 @@ static __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             
 	lpKernelThread->dwWaitingStatus       = OBJECT_WAIT_WAITING;
 	lpKernelThread->dwSuspendFlags        = 0;
 
-	//Copy kernel thread name.
+	/* 
+	 * Copy kernel thread's name into kernel thread object. 
+	 * Use the stupid method instead of strcpy just for safety.:-)
+	 */
 	i = 0;
 	if(lpszName)
 	{
 		for(i = 0;i < MAX_THREAD_NAME - 1;i ++)
 		{
-			if(lpszName[i] == 0)  //End.
+			if(lpszName[i] == 0)
 			{
 				break;
 			}
-		lpKernelThread->KernelThreadName[i] = lpszName[i];
+			lpKernelThread->KernelThreadName[i] = lpszName[i];
 		}
 	}
 	lpKernelThread->KernelThreadName[i] = 0;  //Set string's terminator.
@@ -409,22 +462,24 @@ static __KERNEL_THREAD_OBJECT* kCreateKernelThread(__COMMON_OBJECT*             
 		}
 	}
 
-	if(KERNEL_THREAD_STATUS_READY == dwStatus)         //Add into Ready Queue.
+	/* Add it into ready queue if status is READY. */
+	if(KERNEL_THREAD_STATUS_READY == dwStatus)
 	{
 		lpMgr->AddReadyKernelThread((__COMMON_OBJECT*)lpMgr,
 			lpKernelThread);
 	}
-	else                                               //Add into Suspended Queue.
+	/* Add it into suspending queue otherwise. */
+	else
 	{
 		if(!lpMgr->lpSuspendedQueue->InsertIntoQueue((__COMMON_OBJECT*)lpMgr->lpSuspendedQueue,
 			(__COMMON_OBJECT*)lpKernelThread,dwPriority))
 			goto __TERMINAL;
 	}
-
-	//Call the create hook.
+	/* Call the corresponding creating hook routine. */
 	lpMgr->CallThreadHook(THREAD_HOOK_TYPE_CREATE,lpKernelThread,
 		NULL);
-	bSuccess = TRUE;  //Now,the TRANSACTION of create a kernel thread is successfully.
+	/* God bless,anything is in place. */
+	bSuccess = TRUE;
 
 __TERMINAL:
 	if(!bSuccess)
@@ -638,7 +693,7 @@ static
 	DWORD                            dwFlags            = 0;
 
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpCurrent = KernelThreadManager.lpCurrentKernelThread;
+	lpCurrent = __CURRENT_KERNEL_THREAD;
 	switch(lpCurrent->dwThreadStatus)  //Do different actions according to status.
 	{
 	case KERNEL_THREAD_STATUS_RUNNING:
@@ -659,7 +714,7 @@ static
 				lpCurrent);  //Insert into ready queue.
 			lpNew->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
 			lpNew->dwTotalRunTime += SYSTEM_TIME_SLICE;
-			KernelThreadManager.lpCurrentKernelThread = lpNew;
+			__CURRENT_KERNEL_THREAD = lpNew;
 			//Call schedule hook before swich.
 			KernelThreadManager.CallThreadHook(
 				THREAD_HOOK_TYPE_ENDSCHEDULE | THREAD_HOOK_TYPE_BEGINSCHEDULE,
@@ -692,7 +747,7 @@ static
 		{
 			lpNew->dwTotalRunTime += SYSTEM_TIME_SLICE;
 			lpNew->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
-			KernelThreadManager.lpCurrentKernelThread = lpNew;
+			__CURRENT_KERNEL_THREAD = lpNew;
 			//Call schedule hook routine.
 			KernelThreadManager.CallThreadHook(
 				THREAD_HOOK_TYPE_ENDSCHEDULE | THREAD_HOOK_TYPE_BEGINSCHEDULE,
@@ -720,7 +775,7 @@ static
 		}
 		lpNew->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
 		lpNew->dwTotalRunTime += SYSTEM_TIME_SLICE;
-		KernelThreadManager.lpCurrentKernelThread = lpNew;
+		__CURRENT_KERNEL_THREAD = lpNew;
 		//Call schedule hook.
 		KernelThreadManager.CallThreadHook(
 			THREAD_HOOK_TYPE_ENDSCHEDULE | THREAD_HOOK_TYPE_BEGINSCHEDULE,
@@ -751,7 +806,7 @@ static VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 		return;
 	}
 
-	if(NULL == lpMgr->lpCurrentKernelThread)   //The routine is called first time.
+	if(NULL == lpMgr->CurrentKernelThread[__CURRENT_PROCESSOR_ID])   //The routine is called first time.
 	{
 		lpNextThread = KernelThreadManager.GetScheduleKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
@@ -762,7 +817,7 @@ static VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 			//BUG();
 			return;
 		}
-		KernelThreadManager.lpCurrentKernelThread = lpNextThread;
+		__CURRENT_KERNEL_THREAD = lpNextThread;
 		lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
 		lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 		//Call schedule hook.
@@ -773,7 +828,7 @@ static VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 	}
 	else  //Not the first time be called.
 	{
-		lpCurrentThread = KernelThreadManager.lpCurrentKernelThread;
+		lpCurrentThread = __CURRENT_KERNEL_THREAD;
 		//This code line saves the context of current kernel thread.
 		lpCurrentThread->lpKernelThreadContext = (__KERNEL_THREAD_CONTEXT*)lpESP;
 
@@ -815,7 +870,7 @@ static VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 			}
 			lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 			lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
-			lpMgr->lpCurrentKernelThread = lpNextThread;
+			lpMgr->CurrentKernelThread[__CURRENT_PROCESSOR_ID] = lpNextThread;
 			KernelThreadManager.CallThreadHook(
 				THREAD_HOOK_TYPE_BEGINSCHEDULE,NULL,lpNextThread);
 			__SwitchTo(lpNextThread->lpKernelThreadContext);
@@ -842,7 +897,7 @@ static VOID ScheduleFromInt(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 
 				lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 				lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
-				lpMgr->lpCurrentKernelThread = lpNextThread;
+				lpMgr->CurrentKernelThread[__CURRENT_PROCESSOR_ID] = lpNextThread;
 				KernelThreadManager.CallThreadHook(
 					THREAD_HOOK_TYPE_BEGINSCHEDULE,NULL,lpNextThread);
 				__SwitchTo(lpNextThread->lpKernelThreadContext);
@@ -883,7 +938,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 
 	//The following section should not be interruptted.
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(NULL == KernelThreadManager.lpCurrentKernelThread)   //The routine is called first time.
+	if(NULL == __CURRENT_KERNEL_THREAD)   //The routine is called first time.
 	{
 		lpNextThread = KernelThreadManager.GetScheduleKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
@@ -895,7 +950,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 			return NULL;
 		}
-		KernelThreadManager.lpCurrentKernelThread = lpNextThread;
+		__CURRENT_KERNEL_THREAD = lpNextThread;
 		lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
 		lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 		//Call schedule hook.
@@ -907,7 +962,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 	}
 	else  //Not the first time be called.
 	{
-		lpCurrentThread = KernelThreadManager.lpCurrentKernelThread;
+		lpCurrentThread = __CURRENT_KERNEL_THREAD;
 		//Saves the context of current kernel thread.
 		lpCurrentThread->lpKernelThreadContext = (__KERNEL_THREAD_CONTEXT*)lpESP;
 
@@ -926,7 +981,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 				__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 				return NULL;
 			}
-			KernelThreadManager.lpCurrentKernelThread = lpNextThread;
+			__CURRENT_KERNEL_THREAD = lpNextThread;
 			lpNextThread->dwThreadStatus  = KERNEL_THREAD_STATUS_RUNNING;
 			lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 			//lpContext = lpCurrentThread->lpKernelThreadContext;
@@ -957,7 +1012,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 			{
 				lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 				lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
-				KernelThreadManager.lpCurrentKernelThread = lpNextThread;
+				__CURRENT_KERNEL_THREAD = lpNextThread;
 				//Call schedule hook routine.
 				KernelThreadManager.CallThreadHook(
 					THREAD_HOOK_TYPE_ENDSCHEDULE | THREAD_HOOK_TYPE_BEGINSCHEDULE,
@@ -986,7 +1041,7 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 
 				lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
 				lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
-				KernelThreadManager.lpCurrentKernelThread = lpNextThread;
+				__CURRENT_KERNEL_THREAD = lpNextThread;
 				KernelThreadManager.CallThreadHook(
 					THREAD_HOOK_TYPE_BEGINSCHEDULE,NULL,lpNextThread);
 				__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
@@ -1004,41 +1059,70 @@ LPVOID UniSchedule(__COMMON_OBJECT* lpThis,LPVOID lpESP)
 
 #endif  //__CFG_SYS_IS
 
-//SetThreadPriority.
+/* 
+ * Change the specified kernel thread's priority level,or change 
+ * current kernel thread's priority level if no kernel thread is 
+ * specified by lpKernelThread.
+ * The old priority level will be returned.
+ */
 static DWORD  kSetThreadPriority(__COMMON_OBJECT* lpKernelThread,DWORD dwPriority)
 {
 	__KERNEL_THREAD_OBJECT*    lpThread = NULL;
 	DWORD                      dwOldPri = PRIORITY_LEVEL_IDLE;
 	DWORD                      dwFlags  = 0;
 
-	if(NULL == lpKernelThread)
-		return PRIORITY_LEVEL_IDLE;
-	
-	lpThread = (__KERNEL_THREAD_OBJECT*)lpKernelThread;
+	if (NULL == lpKernelThread)
+	{
+		lpThread = __CURRENT_KERNEL_THREAD;
+	}
+	else
+	{
+		lpThread = (__KERNEL_THREAD_OBJECT*)lpKernelThread;
+	}
+	/* Validate the priority level's value. */
+	if (dwPriority > MAX_KERNEL_THREAD_PRIORITY)
+	{
+		return dwOldPri;
+	}
+	/* Can not be interrupted when exchange the priority level value. */
+	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 	dwOldPri = lpThread->dwThreadPriority;
-	//ENTER_CRITICAL_SECTION();
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	lpThread->dwThreadPriority = dwPriority;
-	//LEAVE_CRITICAL_SECTION();
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 
 	return dwOldPri;
 }
 
-//GetThreadPriority.
+/* 
+ * Get the specified kernel thread's priority level. 
+ * Current kernel thread's priority level will be returned
+ * if lpKernelThread is NULL.
+ */
 static DWORD  GetThreadPriority(__COMMON_OBJECT* lpKernelThread)
 {
-	//__KERNEL_THREAD_OBJECT*    lpThread = NULL;
+	__KERNEL_THREAD_OBJECT*    lpThread = NULL;
+	DWORD dwOldPriority = 0;
+	unsigned long ulFlags = 0;
 
 	if(NULL == lpKernelThread)
 	{
-		return PRIORITY_LEVEL_IDLE;
+		lpThread = __CURRENT_KERNEL_THREAD;
 	}
-	return ((__KERNEL_THREAD_OBJECT*)lpKernelThread)->dwThreadPriority;
+	else
+	{
+		lpThread = (__KERNEL_THREAD_OBJECT*)lpKernelThread;
+	}
+	__ENTER_CRITICAL_SECTION(NULL, ulFlags);
+	dwOldPriority = lpThread->dwThreadPriority;
+	__LEAVE_CRITICAL_SECTION(NULL, ulFlags);
+
+	return dwOldPriority;
 }
 
-//Terminate a kernel thread.Only support the scenario that one kernel thread terminates itself,
-//don't support one kernel thread terminates other kernel thread,for safety reason.
+/* 
+ * Terminate a kernel thread.Only support the scenario that one kernel thread terminates itself,
+ * don't support one kernel thread terminates other kernel thread,for safety reason.
+ */
 static DWORD  TerminateKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread,DWORD dwExitCode)
 {
 	__KERNEL_THREAD_MANAGER* lpManager      = (__KERNEL_THREAD_MANAGER*)lpThis;
@@ -1055,20 +1139,20 @@ static DWORD  TerminateKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpT
 		return 0;
 	}
 	//Get current kernel thread object.
-	lpKernelThread = lpManager->lpCurrentKernelThread;
+	lpKernelThread = lpManager->CurrentKernelThread[__CURRENT_PROCESSOR_ID];
 	KernelThreadClean((__COMMON_OBJECT*)lpKernelThread,dwExitCode);
 	return 0;  //This clause will never reach.
 }
 
-//
-//Sleep Routine.
-//This routine do the following:
-// 1. Updates the dwNextWakeupTick value of kernel thread manager;
-// 2. Modifies the current kernel thread's status to SLEEPING;
-// 3. Puts the current kernel thread into sleeping queue of kernel thread manager;
-// 4. Schedules another kernel thread to run;
-// 5. If the specified sleep time is 0,then do a re-schedule.
-//
+/*
+ * Sleep Routine.
+ * This routine do the following:
+ *  1. Updates the dwNextWakeupTick value of kernel thread manager;
+ *  2. Modifies the current kernel thread's status to SLEEPING;
+ *  3. Puts the current kernel thread into sleeping queue of kernel thread manager;
+ *  4. Schedules another kernel thread to run;
+ *  5. If the specified sleep time is 0,then do a re-schedule.
+ */
 static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwMillisecond)
 {
 	__KERNEL_THREAD_MANAGER*           lpManager      = (__KERNEL_THREAD_MANAGER*)lpThis;
@@ -1095,8 +1179,7 @@ static BOOL kSleep(__COMMON_OBJECT* lpThis,/*__COMMON_OBJECT* lpKernelThread,*/D
 		return TRUE;
 	}
 
-	//lpManager = (__KERNEL_THREAD_MANAGER*)lpThis;
-	lpKernelThread = lpManager->lpCurrentKernelThread;
+	lpKernelThread = lpManager->CurrentKernelThread[__CURRENT_PROCESSOR_ID];
 	if(NULL == lpKernelThread)    //The routine is called in system initializing process.
 	{
 		BUG();
@@ -1148,15 +1231,15 @@ static DWORD  _SetLastError(/*__COMMON_OBJECT* lpKernelThread,*/DWORD dwNewError
 {
 	DWORD  dwOldError = 0;
 
-	dwOldError = KernelThreadManager.lpCurrentKernelThread->dwLastError;
-	KernelThreadManager.lpCurrentKernelThread->dwLastError = dwNewError;
+	dwOldError = __CURRENT_KERNEL_THREAD->dwLastError;
+	__CURRENT_KERNEL_THREAD->dwLastError = dwNewError;
 	return dwOldError;
 }
 
 //GetLastError.
 static DWORD _GetLastError(/*__COMMON_OBJECT* lpKernelThread*/)
 {
-	return KernelThreadManager.lpCurrentKernelThread->dwLastError;
+	return __CURRENT_KERNEL_THREAD->dwLastError;
 }
 
 //kGetThreadID.
@@ -1164,7 +1247,7 @@ static DWORD kGetThreadID(__COMMON_OBJECT* lpKernelThread)
 {
 	if(NULL == lpKernelThread)  //Return current kernel thread's ID.
 	{
-		return KernelThreadManager.lpCurrentKernelThread->dwThreadID;
+		return __CURRENT_KERNEL_THREAD->dwThreadID;
 	}
 
 	return ((__KERNEL_THREAD_OBJECT*)lpKernelThread)->dwThreadID;
@@ -1175,7 +1258,7 @@ static DWORD GetThreadStatus(__COMMON_OBJECT* lpKernelThread)
 {
 	if(NULL == lpKernelThread)  //Return current kernel thread's ID.
 	{
-		return KernelThreadManager.lpCurrentKernelThread->dwThreadStatus;
+		return __CURRENT_KERNEL_THREAD->dwThreadStatus;
 	}
 
 	return ((__KERNEL_THREAD_OBJECT*)lpKernelThread)->dwThreadStatus;
@@ -1231,7 +1314,7 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 	}
 	if(NULL == lpThread)  //Send message to current kernel thread.
 	{
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 	}
 	else  //Send message to the specified target thread.
 	{
@@ -1247,7 +1330,7 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 		_hx_printf("[k-warning]:Message queue of kthread [%s] is full,msg[cmd:%d,sendor:%s] droped.\r\n",
 			lpKernelThread->KernelThreadName,
 			lpMsg->wCommand,
-			KernelThreadManager.lpCurrentKernelThread->KernelThreadName);
+			__CURRENT_KERNEL_THREAD->KernelThreadName);
 		goto __TERMINAL;
 	}
 	//Message queue not full,put the message to the queue.
@@ -1304,7 +1387,7 @@ static BOOL MgrGetMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lpM
 	}
 	if(NULL == lpThread)  //Get message from current kernel thread's queue.
 	{
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 	}
 	else  //Get message from the specified kernel thread.
 	{
@@ -1356,7 +1439,7 @@ static BOOL MgrPeekMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 	}
 	if(NULL == lpThread)  //Get message from current kernel thread's queue.
 	{
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 	}
 	else  //Get message from the specified kernel thread.
 	{
@@ -1402,65 +1485,54 @@ static BOOL LockKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
 	__KERNEL_THREAD_OBJECT*                    lpKernelThread   = NULL;
 	DWORD                                      dwFlags          = 0;
 
-	if(NULL == lpThis)    //Parameter check.
+	if(NULL == lpThis)
 	{
 		return FALSE;
 	}
-
 	lpManager = (__KERNEL_THREAD_MANAGER*)lpThis;
-
-	//ENTER_CRITICAL_SECTION();
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpKernelThread = (NULL == lpThread) ? lpManager->lpCurrentKernelThread : 
-	(__KERNEL_THREAD_OBJECT*)lpThread;    //If lpThread is NULL,then lock the current kernel thread.
-
+	//If lpThread is NULL,then lock the current kernel thread.
+	lpKernelThread = (NULL == lpThread) ? lpManager->CurrentKernelThread[__CURRENT_PROCESSOR_ID] : 
+		(__KERNEL_THREAD_OBJECT*)lpThread;
 	if(KERNEL_THREAD_STATUS_RUNNING != lpKernelThread->dwThreadStatus)
 	{
-		//LEAVE_CRITICAL_SECTION();
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		return FALSE;
 	}
-
-	lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;    //Once mark the status of
-	                                                                  //the target thread to
-	                                                                  //BLOCKED,it will never be
-	                                                                  //switched out.
-	//LEAVE_CRITICAL_SECTION();
+	/*
+	 * Once mark the status of the target thread to BLOCKED,it will never be
+	 * switched out.
+	 */
+	lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	return TRUE;
 }
 
 //
-//The following routine unlockes a kernel thread who is locked by LockKernelThread routine.
+// Unlockes a kernel thread who is locked by LockKernelThread routine.
 //
-
-static
-
- VOID UnlockKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
+static VOID UnlockKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpThread)
 {
 	__KERNEL_THREAD_MANAGER*               lpManager       = NULL;
 	__KERNEL_THREAD_OBJECT*                lpKernelThread  = NULL;
 	DWORD                                  dwFlags         = 0;
 
-	if(NULL == lpThis)    //Parameter check.
+	if(NULL == lpThis)
 	{
 		return;
 	}
 
 	lpManager = (__KERNEL_THREAD_MANAGER*)lpThis;
-
-	//ENTER_CRITICAL_SECTION();
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpKernelThread = (NULL == lpThread) ? lpManager->lpCurrentKernelThread : 
-	(__KERNEL_THREAD_OBJECT*)lpThread;
-	if(KERNEL_THREAD_STATUS_BLOCKED != lpKernelThread->dwThreadStatus)  //If not be locked.
+	lpKernelThread = (NULL == lpThread) ? lpManager->CurrentKernelThread[__CURRENT_PROCESSOR_ID] : 
+		(__KERNEL_THREAD_OBJECT*)lpThread;
+	/* Just return if the kernel thread's status is not blocked. */
+	if(KERNEL_THREAD_STATUS_BLOCKED != lpKernelThread->dwThreadStatus)
 	{
-		//LEAVE_CRITICAL_SECTION();
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		return;
 	}
 	lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
-	//LEAVE_CRITICAL_SECTION();
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	return;
 }
@@ -1473,11 +1545,78 @@ static
  */
 static __COMMON_OBJECT* _GetCurrentKernelThread()
 {
+	return (__COMMON_OBJECT*)__CURRENT_KERNEL_THREAD;
+}
+
 #if defined(__CFG_SYS_SMP)
-	return NULL;
-#else
-	return (__COMMON_OBJECT*)KernelThreadManager.lpCurrentKernelThread;
+/*
+ * Change the specified kernel thread's cpu affinity value,the old 
+ * affinity value will be returned.
+ */
+static int ChangeAffinity(__COMMON_OBJECT* lpTargetThread, int newAffinity)
+{
+	__KERNEL_THREAD_OBJECT* lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpTargetThread;
+	int oldAffinity = -1;
+	unsigned long ulFlags = 0;
+
+	/* If no target kernel thread is specified,just apply on current one. */
+	if (NULL == lpKernelThread)
+	{
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
+	}
+	if (newAffinity >= MAX_CPU_NUM)
+	{
+		goto __TERMINAL;
+	}
+
+	/*
+	 * Just change the affinity value.
+	 * It will be moved to appropriate ready queue corresponding the processor
+	 * when AddReadyKernelThread is called.
+	 */
+	__ENTER_CRITICAL_SECTION(NULL, ulFlags);
+	oldAffinity = lpKernelThread->cpuAffinity;
+	lpKernelThread->cpuAffinity = newAffinity;
+	__LEAVE_CRITICAL_SECTION(NULL, ulFlags);
+
+__TERMINAL:
+	return oldAffinity;
+}
 #endif
+
+/* Start to schedule kernel thread(s) after OS's initialization phase. */
+static BOOL StartScheduling()
+{
+	__KERNEL_THREAD_OBJECT* lpNextThread = NULL;
+
+	/* 
+	 * Current kernel thread of current processor must be NULL,since the
+	 * scheduling process is not started yet.
+	 */
+	BUG_ON(NULL != __CURRENT_KERNEL_THREAD);
+
+	/* Fetch a ready kernel thread from ready queue. */
+	lpNextThread = KernelThreadManager.GetScheduleKernelThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		0);
+	/* At least one kernel thread should in the ready queue. */
+	BUG_ON(NULL == lpNextThread);
+
+	__CURRENT_KERNEL_THREAD = lpNextThread;
+	lpNextThread->dwThreadStatus = KERNEL_THREAD_STATUS_RUNNING;
+	lpNextThread->dwTotalRunTime += SYSTEM_TIME_SLICE;
+	/* Call the begin scheduling hook routine. */
+	KernelThreadManager.CallThreadHook(
+		THREAD_HOOK_TYPE_BEGINSCHEDULE, NULL, lpNextThread);
+	/* Switch to the target kernel thread. */
+	__SwitchTo_Directly(lpNextThread->lpKernelThreadContext);
+
+	/* 
+	 * Should not reach here,since the executing path will divert to
+	 * the kernel thread lpNextThread.
+	 */
+	BUG();
+	return FALSE;
 }
 
 /**************************************************************
@@ -1488,18 +1627,13 @@ static __COMMON_OBJECT* _GetCurrentKernelThread()
 //The definition of Kernel Thread Manager.
 //
 __KERNEL_THREAD_MANAGER KernelThreadManager = {
-	0,                                              //dwCurrentIRQL.
-	NULL,                                            //CurrentKernelThread.
-
-	NULL,                                            //lpRunningQueue.
-	//NULL,                                            //lpReadyQueue.
+	0,                                               //dwCurrentIRQL.
+	{0},                                             //CurrentKernelThread.
 	NULL,                                            //lpSuspendedQueue.
 	NULL,                                            //lpSleepingQueue.
 	NULL,                                            //lpTerminalQueue.
-
-	{0},                                             //Ready queue array.
-	//0,                                              //dwClockTickCounter.
-	0,                                              //dwNextWakeupTick.
+	{0},                                             //KernelThreadReadyQueue array.
+	0,                                               //dwNextWakeupTick.
 
 	NULL,                                            //lpCreateHook.
 	NULL,                                            //lpEndScheduleHook.
@@ -1511,10 +1645,8 @@ __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	GetScheduleKernelThread,                         //GetScheduleKernelThread.
 	AddReadyKernelThread,                            //AddReadyKernelThread.
 	KernelThreadMgrInit,                             //Initialize routine.
-
 	kCreateKernelThread,                              //kCreateKernelThread routine.
 	kDestroyKernelThread,                             //kDestroyKernelThread routine.
-
 	kEnableSuspend,                                   //kEnableSuspend routine.
 	kSuspendKernelThread,                             //kSuspendKernelThread routine.
 	kResumeKernelThread,                              //kResumeKernelThread routine.
@@ -1531,19 +1663,14 @@ __KERNEL_THREAD_MANAGER KernelThreadManager = {
 
 	SetThreadPriority,                               //SetThreadPriority routine.
 	GetThreadPriority,                               //GetThreadPriority routine.
-
 	TerminateKernelThread,                           //TerminalKernelThread routine.
-	kSleep,                                           //Sleep routine.
+	kSleep,                                          //Sleep routine.
 	CancelSleep,                                     //CancelSleep routine.
-
 	SetCurrentIRQL,                                  //SetCurrentIRQL routine.
 	GetCurrentIRQL,                                  //GetCurrentIRQL routine.
-
 	GetLastError,                                    //GetLastError routine.
 	SetLastError,                                    //SetLastError routine.
-
 	GetThreadID,                                     //GetThreadID routine.
-
 	GetThreadStatus,                                 //GetThreadStatus routine.
 	SetThreadStatus,                                 //SetThreadStatus routine.
 
@@ -1554,7 +1681,11 @@ __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	MsgQueueEmpty,                                   //MsgQueueEmpty routine.
 	LockKernelThread,                                //LockKernelThread routine.
 	UnlockKernelThread,                              //UnlockKernelThread routine.
-	_GetCurrentKernelThread                          //GetCurrentKernelThread.
+	_GetCurrentKernelThread,                         //GetCurrentKernelThread.
+#if defined(__CFG_SYS_SMP)
+	ChangeAffinity,                                  //ChangeAffinity.
+#endif
+	StartScheduling                                  //StartScheduling.
 };
 
 //

@@ -131,7 +131,7 @@ __TRY_AGAIN:
 		goto __TERMINAL;
 	}
 	//Resource unavailable,wait it.
-	pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	pKernelThread = __CURRENT_KERNEL_THREAD;
 	pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
 	pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
@@ -209,7 +209,7 @@ __TRY_AGAIN:
 		goto __TERMINAL;
 	}
 	//Block the current kernel thread to wait.
-	pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	pKernelThread = __CURRENT_KERNEL_THREAD;
 	pKernelThread->dwThreadStatus      = KERNEL_THREAD_STATUS_BLOCKED;
 	pKernelThread->dwWaitingStatus    &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus    |= OBJECT_WAIT_WAITING;
@@ -477,7 +477,7 @@ __TRY_AGAIN:
 
 	if(WAIT_TIME_INFINITE == dwMillionSecond)  //Wait until mail available.
 	{
-		pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		pKernelThread = __CURRENT_KERNEL_THREAD;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
@@ -492,7 +492,7 @@ __TRY_AGAIN:
 	}
 	else  //Wait a specific time.
 	{
-		pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		pKernelThread = __CURRENT_KERNEL_THREAD;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
@@ -631,7 +631,7 @@ __TRY_AGAIN:
 
 	if(WAIT_TIME_INFINITE == dwMillionSecond)  //Wait until mailbox has empty slot to contain mail.
 	{
-		pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		pKernelThread = __CURRENT_KERNEL_THREAD;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
@@ -646,7 +646,7 @@ __TRY_AGAIN:
 	}
 	else  //Wait a specific time.
 	{
-		pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		pKernelThread = __CURRENT_KERNEL_THREAD;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
@@ -874,7 +874,7 @@ VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 	//Put the current kernel thread into pending queue,and release mutex,in
 	//one atomic operation.
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	pKernelThread = __CURRENT_KERNEL_THREAD;
 	pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
 	pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
@@ -972,7 +972,7 @@ __TERMINAL:
 	//Put the current kernel thread into pending queue,and release mutex,in
 	//one atomic operation.
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	pKernelThread = __CURRENT_KERNEL_THREAD;
 	pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
 	pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
@@ -1011,7 +1011,7 @@ __TERMINAL:
 		BUG();
 	}
 	//Record the current kernel thread.
-	pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	pKernelThread = __CURRENT_KERNEL_THREAD;
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	
 	dwResult = TimeOutWaiting((__COMMON_OBJECT*)pCond,pCond->lpPendingQueue,pKernelThread,

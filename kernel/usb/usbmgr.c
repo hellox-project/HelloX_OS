@@ -758,7 +758,7 @@ static __USB_XFER_DESCRIPTOR* _CreateXferDescriptor(__PHYSICAL_DEVICE* dev, unsi
 	pXferDesc->interval = interval;
 	pXferDesc->err_code = 0;
 	/* Set the descriptoer's owner to current thread. */
-	pXferDesc->hOwnerThread = (HANDLE)KernelThreadManager.lpCurrentKernelThread;
+	pXferDesc->hOwnerThread = (HANDLE)__CURRENT_KERNEL_THREAD;
 
 	/* 
 	 * Delivery the creating request to the bearing controller.

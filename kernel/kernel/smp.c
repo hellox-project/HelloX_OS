@@ -203,6 +203,8 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 			pCoreNode->pChildTail = pLogicalCPUNode;
 		}
 	}
+	/* Increment the processor number. */
+	ProcessorManager.nProcessorNum++;
 	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
 
 	/* Mark as success. */
@@ -422,6 +424,19 @@ __TERMINAL:
 	return pSpec;
 }
 
+/* Return the processor's ID,on which the current kernel thread is running. */
+static unsigned int GetCurrentProcessorID()
+{
+	/* Just call the arch specific routine. */
+	return __GetProcessorID();
+}
+
+/* Return the processor number in system. */
+static int GetProcessorNum()
+{
+	return ProcessorManager.nProcessorNum;
+}
+
 /* Show out all CPU informatin. */
 static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 {
@@ -431,22 +446,25 @@ static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 	__PROCESSOR_NODE* pLogicalCPUNode = NULL;
 
 	BUG_ON(NULL == pMgr);
+	__READ_BARRIER();
 	pDomainNode = pMgr->pDomainList;
+	_hx_printf("  %d processor(s) in system.\r\n", ProcessorManager.GetProcessorNum());
+	_hx_printf("  Processor topology as:\r\n");
 	while (pDomainNode)
 	{
-		_hx_printf("  domain:%d\r\n", pDomainNode->nodeID);
+		_hx_printf("    domain:%d\r\n", pDomainNode->nodeID);
 		pChipNode = pDomainNode->pChildHead;
 		while (pChipNode)
 		{
-			_hx_printf("    chip:%d\r\n", pChipNode->nodeID);
+			_hx_printf("      chip:%d\r\n", pChipNode->nodeID);
 			pCoreNode = pChipNode->pChildHead;
 			while (pCoreNode)
 			{
-				_hx_printf("      core:%d\r\n", pCoreNode->nodeID);
+				_hx_printf("        core:%d\r\n", pCoreNode->nodeID);
 				pLogicalCPUNode = pCoreNode->pChildHead;
 				while (pLogicalCPUNode)
 				{
-					_hx_printf("        logical CPU:%d\r\n", pLogicalCPUNode->nodeID);
+					_hx_printf("          logical CPU:%d\r\n", pLogicalCPUNode->nodeID);
 					pLogicalCPUNode = pLogicalCPUNode->pNext;
 				}
 				pCoreNode = pCoreNode->pNext;
@@ -461,6 +479,7 @@ static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 __PROCESSOR_MANAGER ProcessorManager = {
 	NULL, /* Domain list header. */
 	SPIN_LOCK_INIT_VALUE, /* spin_lock. */
+	0, /* nProcessorNum. */
 
 	Initialize, /* Initializer. */
 	AddProcessor, /* AddProcessor routine. */
@@ -468,6 +487,8 @@ __PROCESSOR_MANAGER ProcessorManager = {
 	GetChipSpecific, /* GetChipSpecific routine. */
 	SetLogicalCPUSpecific, /* SetLogicalCPUSpecific routine. */
 	GetLogicalCPUSpecific, /* GetLogicalCPUSpecific routine. */
+	GetCurrentProcessorID, /* GetCurrentProcessorID routine. */
+	GetProcessorNum, /* GetProcessorNum routine. */
 	ShowCPU /* ShowCPU routine. */
 };
 

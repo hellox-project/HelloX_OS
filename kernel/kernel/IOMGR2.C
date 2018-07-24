@@ -134,10 +134,8 @@ BOOL DrcbInitialize(__COMMON_OBJECT*  lpThis)
 
 	lpDrcb->lpSynObject        = lpSynObject;
 
-	//ENTER_CRITICAL_SECTION();
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpDrcb->lpKernelThread     = KernelThreadManager.lpCurrentKernelThread;
-	//LEAVE_CRITICAL_SECTION();
+	lpDrcb->lpKernelThread = __CURRENT_KERNEL_THREAD;
 	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 
 	lpDrcb->dwStatus           = DRCB_STATUS_INITIALIZED;

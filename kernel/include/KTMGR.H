@@ -21,26 +21,23 @@
 #ifndef __KTMGR_H__
 #define __KTMGR_H__
 
+#include "config.h"
 #include "types.h"
 #include "commobj.h"
 #include "objqueue.h"
-#include "config.h"
+#include "smp.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-
 //
 //***********************************************************************
 //
-//#define SYSTEM_TIME_SLICE  10    //***** debug *****
 #define MAX_THREAD_NAME    32    //Maximal kernel thread name's length.
 
 DECLARE_PREDEFINED_OBJECT(__KERNEL_FILE)
 DECLARE_PREDEFINED_OBJECT(__EVENT)
-
 
 //Kernel thread's context.
 //This structure is obsolete now,and it's definition is not right even.So please
@@ -79,7 +76,6 @@ END_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
 //The following macro is used to initialize a kernel thread's executation
 //context.
 //
-
 #define INIT_EFLAGS_VALUE 512
 #define INIT_KERNEL_THREAD_CONTEXT_I(lpContext,initEip,initEsp) \
     (lpContext)->dwEFlags    = INIT_EFLAGS_VALUE;               \
@@ -99,7 +95,6 @@ END_DEFINE_OBJECT(__KERNEL_THREAD_CONTEXT)
 //In order to access the members of a context giving it's base address,
 //we define the following macros to make this job easy.
 //
-
 #define CONTEXT_OFFSET_EFLAGS        0x00
 #define CONTEXT_OFFSET_CS            0x04
 #define CONTEXT_OFFSET_EIP           0x08
@@ -132,7 +127,6 @@ END_DEFINE_OBJECT(__COMMON_SYNCHRONIZATION_OBJECT)
 	DWORD                (*WaitForThisObject)(__COMMON_OBJECT*); \
 	DWORD                dwObjectSignature;
 
-
 //
 //Kernel thread's message.
 //
@@ -151,7 +145,6 @@ END_DEFINE_OBJECT(__KERNEL_THREAD_MESSAGE)
 #define MAX_KTHREAD_MSG_NUM 32  //The maximal message number in the kernel thread's message
                                 //queue.
 #endif
-
 								
 #define KERNEL_THREAD_STATUS_RUNNING    0x00000001  //Kernel thread's status.
 #define KERNEL_THREAD_STATUS_READY      0x00000002
@@ -219,16 +212,14 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
     __KERNEL_THREAD_CONTEXT*             lpKernelThreadContext;   //Added in V1.5.
     DWORD                                dwThreadID;
 	__COMMON_OBJECT*                     lpOwnProcess;            //The process owns the kernel thread.
-	DWORD                                dwThreadStatus;          //Kernel Thread's current
-	                                                              //status.
-	__PRIORITY_QUEUE*                    lpWaitingQueue;          //Waiting queue of the
-	                                                              //kernel thread object.
-	                                                              //One kernel thread who
-	                                                              //want to wait the current
-	                                                              //kernel thread object
-	                                                              //will be put into this
-	                                                              //queue.
-
+	DWORD                                dwThreadStatus;          //Kernel Thread's current status.
+	/* 
+	 * Waiting queue of the kernel thread object.
+	 * One kernel thread who want to wait the current
+	 * kernel thread object will be put into this queue,
+	 * unless the current thread's status is TERMINAL.
+	 */
+	__PRIORITY_QUEUE*                    lpWaitingQueue;
 	DWORD                                dwThreadPriority;        //Initialize priority.
 	DWORD                                dwScheduleCounter;       //Schedule counter,used to
 	                                                              //control the scheduler.
@@ -243,15 +234,20 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	DWORD                                (*KernelThreadRoutine)(LPVOID);  //Start address.
 	LPVOID                               lpRoutineParam;
 
-	//The following four members are used to manage the message queue of the
-	//current kernel thread.
+	/*
+	 * Message queue of the kernel thread,include the variables,such as
+	 * queue head and tail index,to manipulate the message queue.
+	 */
 	__KERNEL_THREAD_MESSAGE              KernelThreadMsg[MAX_KTHREAD_MSG_NUM];
 	volatile UCHAR                       ucMsgQueueHeader;
 	volatile UCHAR                       ucMsgQueueTrial;
 	volatile UCHAR                       ucCurrentMsgNum;
 	UCHAR                                ucAligment;
-	volatile UINT                        nMsgReceived;  //How many messages received from start.
-	volatile UINT                        nMsgDroped;    //Messages droped,caused by queue full or others.
+	/* How many messages received from start. */
+	volatile UINT                        nMsgReceived;
+	/* Messages droped,caused by queue full or others. */
+	volatile UINT                        nMsgDroped;
+	/* Pending queue to wait the message's arrival or fetching. */
 	__PRIORITY_QUEUE*                    lpMsgWaitingQueue;
 
 	DWORD                                dwUserData;    //User private data.
@@ -269,6 +265,19 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	//TLS array.
 	LPVOID                               TLS[MAX_TLS_NUM];
 
+	/*
+	 * CPU affinity. 
+	 * It's the CPU id on which the kernel thread is running,in SMP 
+	 * environment,and only available when the SMP is enabled.
+	 * It's default value when created is the current CPU id,and
+	 * can be changed by ChangeAffinity routine of KernelThreadManager.
+	 * When changed the kernel thread will be moved to target CPU's
+	 * ready queue and will be scheduled in this CPU.
+	 */
+#if defined(__CFG_SYS_SMP)
+	volatile int cpuAffinity;
+#endif
+
 	//Suspending flags and suspending counter,used to manage the suspending operations for kernel thread.
 	//The meanings of each bit as follows:
 	// bit0 - bit15:  Suspending counter,incremented by kSuspendKernelThread routine and decremented by
@@ -277,7 +286,6 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	//                status.
 	// SUSPEND_FLAG_MASK is used to seperate these 2 parts.
 	volatile DWORD                       dwSuspendFlags;
-
 END_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 
 //Flags to control the suspending operation on kernel thread.
@@ -302,29 +310,65 @@ BOOL KernelThreadInitialize(__COMMON_OBJECT* lpThis);
 VOID KernelThreadUninitialize(__COMMON_OBJECT* lpThis);
 
 
-typedef DWORD (*__KERNEL_THREAD_ROUTINE)(LPVOID);  //Kernel thread's start routine.
-typedef DWORD (*__THREAD_HOOK_ROUTINE)(__KERNEL_THREAD_OBJECT*,
-									   DWORD*);    //Thread hook's protype.
+//Kernel thread's start routine.
+typedef DWORD (*__KERNEL_THREAD_ROUTINE)(LPVOID);
+//Thread hook routine's protype.
+typedef DWORD (*__THREAD_HOOK_ROUTINE)(__KERNEL_THREAD_OBJECT*, DWORD*);
 
+/* Hook types. */
 #define THREAD_HOOK_TYPE_CREATE        0x00000001
 #define THREAD_HOOK_TYPE_ENDSCHEDULE   0x00000002
 #define THREAD_HOOK_TYPE_BEGINSCHEDULE 0x00000004
 #define THREAD_HOOK_TYPE_TERMINAL      0x00000008
 
-//Kernel Thread Manager's definition.
+/* 
+ * Ready queue object to hold kernel thread(s) with READY status. 
+ * MAX_KERNEL_THREAD_PRIORITY object queues in each ready queue,
+ * hold all ready kernel thread(s) with corresponding priority level.
+ * There as many as processor number ready queue(s) in system,each
+ * processor has it's own ready queue.
+ * The ready queue object is created in process of KernelThreadManager's
+ * initialization,according to the actual processor number detected
+ * by ProcessorManager.
+ * A ready queue pointer array is hold by KernelThreadManager object,
+ * the array's size is same as MAX_CPU_NUM defined in config.h file,when
+ * SMP is enabled.
+ */
+typedef struct tag__KERNEL_THREAD_READY_QUEUE {
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	__PRIORITY_QUEUE* ThreadQueue[MAX_KERNEL_THREAD_PRIORITY + 1];
+}__KERNEL_THREAD_READY_QUEUE;
 
+//Kernel Thread Manager's definition.
 BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
     DWORD                                    dwCurrentIRQL;
-    __KERNEL_THREAD_OBJECT*                  lpCurrentKernelThread;   //Current kernel thread.
 
-    __PRIORITY_QUEUE*                        lpRunningQueue;
+	/* Current kernel thread's handle,each CPU has has one. */
+#if defined(__CFG_SYS_SMP)
+	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[MAX_CPU_NUM];
+#else /* UP. */
+	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[0];
+#endif
+
+	/* 
+	 * A macro to obtain current kernel thread,each CPU will get different 
+	 * current kernel thread instance by using this macro.
+	 */
+#define __CURRENT_KERNEL_THREAD (KernelThreadManager.CurrentKernelThread[__CURRENT_PROCESSOR_ID])
+
 	__PRIORITY_QUEUE*                        lpSuspendedQueue;
 	__PRIORITY_QUEUE*                        lpSleepingQueue;
 	__PRIORITY_QUEUE*                        lpTerminalQueue;
-	__PRIORITY_QUEUE*                        ReadyQueue[MAX_KERNEL_THREAD_PRIORITY + 1];
+	/* Ready queue object array. */
+#if defined(__CFG_SYS_SMP)
+	__KERNEL_THREAD_READY_QUEUE* KernelThreadReadyQueue[MAX_CPU_NUM];
+#else
+	__KERNEL_THREAD_READY_QUEUE* KernelThreadReadyQueue[0];
+#endif
 
 	DWORD                                    dwNextWakeupTick;
-
 	__THREAD_HOOK_ROUTINE                    lpCreateHook;
 	__THREAD_HOOK_ROUTINE                    lpEndScheduleHook;
 	__THREAD_HOOK_ROUTINE                    lpBeginScheduleHook;
@@ -480,7 +524,13 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											 __COMMON_OBJECT*           lpKernelThread);
 	/* Return the current running thread in currrent CPU. */
 	__COMMON_OBJECT*                         (*GetCurrentKernelThread)();
-END_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)          //End of the kernel thread manager's definition.
+#if defined(__CFG_SYS_SMP)
+	/* Change the specified kernel thread's cpu affinity value. */
+	int                                      (*ChangeAffinity)(__COMMON_OBJECT* lpTargetThread, int newAffinity);
+#endif
+	/* Start the scheduling process,it will be called after the initialization of OS. */
+	BOOL                                     (*StartScheduling)();
+END_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)   //End of the kernel thread manager's definition.
 
 //
 //Global functions declare.
@@ -511,7 +561,6 @@ extern __KERNEL_THREAD_MANAGER KernelThreadManager;
 //Event object's definition.
 //The event object is inherited from common object and common synchronization object.
 //
-
 BEGIN_DEFINE_OBJECT(__EVENT)
     INHERIT_FROM_COMMON_OBJECT
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
@@ -601,6 +650,5 @@ DWORD WaitForMultipleObjects(
 
 #ifdef __cplusplus
 }
-#endif
-
-#endif
+#endif //__cplusplus
+#endif //__KTMGR_H__

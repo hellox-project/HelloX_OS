@@ -434,7 +434,7 @@ VOID __BUG(LPSTR lpszFileName,DWORD dwLineNum)
 	else  //In thread context.
 	{
 		_hx_printf("Current kthread: %s\r\n",
-			KernelThreadManager.lpCurrentKernelThread->KernelThreadName);
+			__CURRENT_KERNEL_THREAD->KernelThreadName);
 	}
 	//Enter infinite loop.
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);

@@ -354,11 +354,15 @@ void __OS_Entry()
 	//********************************************************************************
 
 	/* 
-	 * The first one is IDLE thread,which will be scheduled when no thread need to schedule,
+	 * The first one is IDLE thread,which will be scheduled when there is no other ready thread,
 	 * so it's priority is the lowest one in system,which is PRIORITY_LEVEL_LOWEST.
-	 * Also need to mention that this thread is mandatory and without any switch to turn off
+	 * Also need to mention that this thread is mandatory and no pre-configed switch to turn off
 	 * it.
+	 * It's name is constructed as "idle[#]",where # is the processor number on which the IDLE 
+	 * thread will run.
 	 */
+	char idleName[16];
+	_hx_sprintf(idleName, "idle[%d]", __CURRENT_PROCESSOR_ID);
 	lpIdleThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -367,7 +371,7 @@ void __OS_Entry()
 		SystemIdle,
 		NULL,
 		NULL,
-		"IDLE");
+		&idleName[0]);
 	if(NULL == lpIdleThread)
 	{
 		pszErrorMsg = "INIT ERROR: Can not create SystemIdle kernel thread.";
@@ -510,23 +514,29 @@ void __OS_Entry()
 	}
 #endif
 
-	_hx_printf("\r\n");
-	_hx_printf("Loading process is successful.\r\n");
-	_hx_printf("\r\n");
 	/* 
 	 * End initialization routine is called finally. 
-	 * The system initialization flag is setoff in this routine,
-	 * interrupt is enabled also.
+	 * The system initialization flag is setoff in this routine.
 	 * Hardware specific functions can also be put into this routine,such
 	 * as to turn on all APs in SMP environment.
+	 * Failure of this routine alse lead the totally failure of OS.
 	 */
-	System.EndInitialize((__COMMON_OBJECT*)&System);
+	if (!System.EndInitialize((__COMMON_OBJECT*)&System))
+	{
+		pszErrorMsg = "INIT ERROR: Failed to invoke EndInitialize routine.";
+		goto __TERMINAL;
+	}
 
+	/* Start schedule the kernel thread(s) in ready queue. */
+	KernelThreadManager.StartScheduling();
+
+#if 0
 	/* 
 	 * Enter a dead loop to wait for the scheduling of kernel threads.
 	 * Any interrupt will trigger the scheduling of kernel thread.
 	 */
 	DeadLoop(FALSE);
+#endif
 
 	/* 
 	 * The following code should never be executed if anything is in place.

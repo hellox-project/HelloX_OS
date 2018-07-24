@@ -71,6 +71,9 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext);
 VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
 					 __KERNEL_THREAD_CONTEXT** lppNewContext);
 
+/* Switch to the specified target thread directly. */
+VOID __SwitchTo_Directly(__KERNEL_THREAD_CONTEXT* lpContext);
+
 //Get Time Stamp Counter of current CPU.
 VOID __GetTsc(__U64*);
 

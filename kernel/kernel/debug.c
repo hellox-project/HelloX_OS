@@ -55,7 +55,7 @@ static void __Log(__DEBUG_MANAGER *pThis, char *tag, char *msg)
 	//
 
 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
-	lpCurrentThread = KernelThreadManager.lpCurrentKernelThread;
+	lpCurrentThread = __CURRENT_KERNEL_THREAD;
 	StrCpy(lpCurrentThread->KernelThreadName,pMsg->name);
 	pMsg->tid = lpCurrentThread->dwThreadID;
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
@@ -156,7 +156,7 @@ static void __Logk(__DEBUG_MANAGER *pThis, char *tag, char *msg)
 	// FIXME
 	//
 	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
-	lpCurrentThread = KernelThreadManager.lpCurrentKernelThread;
+	lpCurrentThread = __CURRENT_KERNEL_THREAD;
 	StrCpy(lpCurrentThread->KernelThreadName,pMsg->name);
 	pMsg->tid = lpCurrentThread->dwThreadID;
 	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);

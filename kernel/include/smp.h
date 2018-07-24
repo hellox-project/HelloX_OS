@@ -28,6 +28,9 @@ typedef volatile unsigned int __SPIN_LOCK;
 /* Initial value is unlocked. */
 #define SPIN_LOCK_INIT_VALUE SPIN_LOCK_VALUE_UNLOCK
 
+/* Get local processor's ID,it must be implemented in arch specific source code. */
+unsigned int __GetProcessorID();
+
 /* 
  * Architecture specific spin lock operations,must be implemented in
  * arch specific source code.
@@ -61,6 +64,20 @@ unsigned long __smp_leave_critical_section(__SPIN_LOCK* sl, unsigned long dwFlag
 /* Acquire and release the specified spin lock. */
 #define __ACQUIRE_SPIN_LOCK(sl_name) __raw_spin_lock(&sl_name)
 #define __RELEASE_SPIN_LOCK(sl_name) __raw_spin_unlock(&sl_name)
+
+/* General memory barriers. */
+#if defined(__CFG_SYS_SMP)
+#define __MEMORY_BARRIER() {__asm lock add dword ptr [esp],0}
+#else
+#define __MEMORY)_BARRIER()
+#endif
+
+/* 
+ * Write and read barriers,just bounce to general memory barrier now. 
+ * Maybe optimized farther.
+ */
+#define __READ_BARRIER() __MEMORY_BARRIER()
+#define __WRITE_BARRIER() __MEMORY_BARRIER()
 
 /*
  * All processors in system are organized as follows :
@@ -104,6 +121,8 @@ typedef struct tag__PROCESSOR_MANAGER {
 	__PROCESSOR_NODE* pDomainList;
 	/* Spin lock used to protect the domain list. */
 	__SPIN_LOCK spin_lock;
+	/* How many logical CPU(Processor) in system. */
+	volatile int nProcessorNum;
 
 	/* Process Manager offered operations. */
 	BOOL (*Initialize)(struct tag__PROCESSOR_MANAGER* pMgr);
@@ -116,9 +135,20 @@ typedef struct tag__PROCESSOR_MANAGER {
 	BOOL (*SetLogicalCPUSpecific)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid, void* pSpec);
 	/* Get Logical CPU specific information. */
 	void* (*GetLogicalCPUSpecific)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid);
+	/* Get current processor ID. */
+	unsigned int (*GetCurrentProcessorID)();
+	/* Get the processor number. */
+	int (*GetProcessorNum)();
 	/* Show out CPU information. */
 	VOID (*ShowCPU)(struct tag__PROCESSOR_MANAGER* pMgr);
 }__PROCESSOR_MANAGER;
+
+/* Get the current processor's ID,no matter in SMP or UP environment. */
+#if defined(__CFG_SYS_SMP)
+#define __CURRENT_PROCESSOR_ID (ProcessorManager.GetCurrentProcessorID())
+#else /* UP environment. */
+#define __CURRENT_PROCESSOR_ID (0)
+#endif
 
 /* Global Processor Manager Instance,only available when SMP is enabled. */
 #if defined(__CFG_SYS_SMP)

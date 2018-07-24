@@ -167,12 +167,68 @@ unsigned long __smp_leave_critical_section(__SPIN_LOCK* sl, unsigned long dwFlag
 /* Initialize the IOAPIC controller. */
 BOOL Init_IOAPIC()
 {
+	__X86_CHIP_SPECIFIC* pSpec = NULL;
+	uint32_t* pBase = NULL;
+
+	/* 
+	 * Obtain the chip specific information from ProcessorManager, then 
+	 * reserve the IO memory of IOAPIC by calling VirtualAlloc,since paging
+	 * is enabled when this routine is called.
+	 */
+	pSpec = ProcessorManager.GetChipSpecific(0, 0);
+	BUG_ON(NULL == pSpec);
+	pBase = (uint32_t*)VirtualAlloc(
+		(LPVOID)pSpec->ioapic_base,
+		0x100000, /* 1M memory space. */
+		VIRTUAL_AREA_ALLOCATE_IO,
+		VIRTUAL_AREA_ACCESS_RW,
+		"IOAPIC");
+	if (NULL == pBase)
+	{
+		_hx_printf("%s:failed to remap IOAPIC base.\r\n", __func__);
+		return FALSE;
+	}
+	if (pBase != (LPVOID)pSpec->ioapic_base)
+	{
+		_hx_printf("%s:IO APIC base addr is occupied.\r\n", __func__);
+		return FALSE;
+	}
+	/* Initialize the IOAPIC now. */
+	_hx_printf("IOAPIC base:0x%X,value = 0x%X\r\n", pBase, __readl(pBase));
 	return TRUE;
 }
 
 /* Initialize the local APIC controller,it will be invoked by each AP. */
 BOOL Init_LocalAPIC()
 {
+	__X86_CHIP_SPECIFIC* pSpec = NULL;
+	uint32_t* pBase = NULL;
+
+	/*
+	* Obtain the chip specific information from ProcessorManager, then
+	* reserve the IO memory of local APIC by calling VirtualAlloc,since paging
+	* is enabled when this routine is called.
+	*/
+	pSpec = ProcessorManager.GetChipSpecific(0, 0);
+	BUG_ON(NULL == pSpec);
+	pBase = (uint32_t*)VirtualAlloc(
+		(LPVOID)pSpec->lapic_base,
+		0x100000, /* 1M memory space. */
+		VIRTUAL_AREA_ALLOCATE_IO,
+		VIRTUAL_AREA_ACCESS_RW,
+		"IOAPIC");
+	if (NULL == pBase)
+	{
+		_hx_printf("%s:failed to remap local APIC base.\r\n", __func__);
+		return FALSE;
+	}
+	if (pBase != (LPVOID)pSpec->lapic_base)
+	{
+		_hx_printf("%s:local APIC base addr is occupied.\r\n", __func__);
+		return FALSE;
+	}
+	/* Initialize the IOAPIC now. */
+	_hx_printf("Local APIC base:0x%X,value = 0x%X\r\n", pBase, __readl(pBase));
 	return TRUE;
 }
 

@@ -574,12 +574,12 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 		//Call thread hook here,because current kernel thread is
 		//interrupted.
 		//If interrupt occurs before any kernel thread is scheduled,
-		//lpCurrentKernelThread is NULL.
-		if(KernelThreadManager.lpCurrentKernelThread)
+		//CurrentKernelThread is NULL.
+		if(__CURRENT_KERNEL_THREAD)
 		{
 			KernelThreadManager.CallThreadHook(
 				THREAD_HOOK_TYPE_ENDSCHEDULE,
-				KernelThreadManager.lpCurrentKernelThread,
+				__CURRENT_KERNEL_THREAD,
 				NULL);
 		}
 	}
@@ -657,7 +657,7 @@ __RETFROMINT:
 //Default handler of Exception.
 static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 {
-         __KERNEL_THREAD_OBJECT* pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+         __KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
          DWORD dwFlags;
          static DWORD totalExcepNum = 0;
 
@@ -908,6 +908,9 @@ static BOOL BeginInitialize(__COMMON_OBJECT* lpThis)
  */
 extern BOOL __HardwareInitialize(void);
 
+/* Will be called after the OS's initialization. */
+extern BOOL __EndHardwareInitialize();
+
 /* 
  * Hardware initialization phase.
  * The arch specific hardware initialization routine,__HardwareInitialize,will be called
@@ -927,7 +930,14 @@ static BOOL HardwareInitialize(__COMMON_OBJECT* lpThis)
 //Called after the OS finish initialization.
 static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 {
+	/* Invoke the end initialization routine of arch. */
+	if (!__EndHardwareInitialize())
+	{
+		return FALSE;
+	}
 	System.bSysInitialized = TRUE;
+
+#if 0
 	__ENABLE_INTERRUPT();
 
 	//In process of PC's loading,there may one or several interrupt(s) occurs,
@@ -940,6 +950,7 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 	__ENABLE_INTERRUPT();
 	__ENABLE_INTERRUPT();
 	__ENABLE_INTERRUPT();
+#endif
 #endif
 	return TRUE;
 }

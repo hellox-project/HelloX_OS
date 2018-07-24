@@ -354,7 +354,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 	}
 	result->dwTimeOut = 0;
 	result->pNext = NULL;
-	result->pOwnerThread = KernelThreadManager.lpCurrentKernelThread;
+	result->pOwnerThread = __CURRENT_KERNEL_THREAD;
 	result->QueueIntHandler = _ehciQueueIntHandler;
 	result->pUsbDev = dev;
 	result->dwStatus = INT_QUEUE_STATUS_INITIALIZED;

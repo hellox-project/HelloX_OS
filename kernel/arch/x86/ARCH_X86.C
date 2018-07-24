@@ -117,6 +117,24 @@ BOOL __HardwareInitialize()
 	{
 		goto __TERMINAL;
 	}
+#endif //__CFG_SYS_SMP
+
+	bResult = TRUE;
+__TERMINAL:
+	return bResult;
+}
+
+/* 
+ * Called after the OS kernel is finish the initialization phase. 
+ * After this routine,the system is in running state.
+ * Initialize IOAPIC and local APIC,start all APs,in SMP environment,
+ * should be achieved in this routine.
+ */
+BOOL __EndHardwareInitialize()
+{
+	BOOL bResult = FALSE;
+
+#if defined(__CFG_SYS_SMP)
 	/* Initialize IOAPIC and local APIC. */
 	if (!Init_IOAPIC())
 	{
@@ -131,10 +149,11 @@ BOOL __HardwareInitialize()
 	{
 		goto __TERMINAL;
 	}
-#endif //__CFG_SYS_SMP
-
 	bResult = TRUE;
 __TERMINAL:
+#else
+	bResult = TRUE;
+#endif //__CFG_SYS_SMP
 	return bResult;
 }
 
@@ -225,10 +244,11 @@ VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
 	return;
 }
 
-//
-//This routine switches the current executing path to the new one identified
-//by lpContext.
-//
+/*
+ * This routine switches the current executing path to the new one identified
+ * by lpContext,and acknowledge the interrupt controller before switch to target
+ * kernel thread.
+ */
 #ifndef __GCC__
 __declspec(naked)
 #endif
@@ -269,6 +289,53 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 		out 0x20,al
 		out 0xa0,al
 
+		pop eax
+		iretd
+	}
+#endif
+}
+
+/* 
+ * Switch to the specified kernel thread directly,without acknowledging the interrupt
+ * controller.
+ */
+ /*
+ * This routine switches the current executing path to the new one identified
+ * by lpContext,and acknowledge the interrupt controller before switch to target
+ * kernel thread.
+ */
+#ifndef __GCC__
+__declspec(naked)
+#endif
+VOID __SwitchTo_Directly(__KERNEL_THREAD_CONTEXT* lpContext)
+{
+#ifdef __GCC__
+	__asm__(
+		".code32						\n\t "
+		"pushl 	%%ebp					\n\t"
+		"movl	%%esp,	%%ebp			\n\t"
+		"movl	0x08(%%ebp),	%%esp	\n\t"
+		"popl	%%ebp	\n\t"
+		"popl	%%edi	\n\t"
+		"popl	%%esi	\n\t"
+		"popl	%%edx	\n\t"
+		"popl	%%ecx	\n\t"
+		"popl	%%ebx	\n\t"
+		"popl	%%eax	\n\t"
+		"iret			\n\t"
+		: :
+	);
+#else
+	__asm {
+		push ebp
+		mov ebp, esp
+		mov esp, dword ptr[ebp + 0x08]  //Restore ESP.
+		pop ebp
+		pop edi
+		pop esi
+		pop edx
+		pop ecx
+		pop ebx
 		pop eax
 		iretd
 	}

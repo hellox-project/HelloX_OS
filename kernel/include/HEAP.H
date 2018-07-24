@@ -40,7 +40,7 @@ END_DEFINE_OBJECT(__VIRTUAL_AREA_NODE)
 #define DEFAULT_VIRTUAL_AREA_SIZE  1024*64      //64K
 
 #define MIN_BLOCK_SIZE             16
-#define CURRENT_KERNEL_THREAD      (KernelThreadManager.lpCurrentKernelThread)
+#define CURRENT_KERNEL_THREAD      __CURRENT_KERNEL_THREAD
 
 //
 //Some operating system routines wrapper.

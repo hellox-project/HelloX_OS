@@ -26,9 +26,6 @@
 /* Get CPU supported feature flags. */
 uint32_t GetCPUFeature();
 
-/* Get local processor's ID. */
-unsigned int __GetProcessorID();
-
 /* Get chip id giving the processor ID. */
 uint8_t __GetChipID(unsigned int processor_id);
 

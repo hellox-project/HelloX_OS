@@ -370,7 +370,7 @@ DWORD kWaitForEventObject(__COMMON_OBJECT* lpThis)
 	}
 	else
 	{
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
@@ -418,7 +418,7 @@ DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
 		KernelThreadManager.ScheduleFromProc(NULL);
 		return OBJECT_WAIT_TIMEOUT;
 	}
-	lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	lpKernelThread = __CURRENT_KERNEL_THREAD;
 	while(EVENT_STATUS_FREE != lpEvent->dwEventStatus)
 	{
 		if(dwTimeOutTick <= System.dwClockTickCounter)
@@ -484,7 +484,7 @@ DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 	/*
 	 * Check if is recursive obtaining.
 	 */
-	if (KernelThreadManager.lpCurrentKernelThread == lpMutex->lpCurrentOwner)
+	if (__CURRENT_KERNEL_THREAD == lpMutex->lpCurrentOwner)
 	{
 		lpMutex->nCurrOwnCount--;
 		if (lpMutex->nCurrOwnCount > 0) /* Just return. */
@@ -544,7 +544,7 @@ static DWORD WaitForMutexObject(__COMMON_OBJECT* lpThis)
 	{
 		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;  //Modify the current status.
 		lpMutex->dwWaitingNum  ++;    //Increment the counter.
-		lpMutex->lpCurrentOwner = KernelThreadManager.lpCurrentKernelThread;
+		lpMutex->lpCurrentOwner = __CURRENT_KERNEL_THREAD;
 		lpMutex->nCurrOwnCount  = 1;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		return OBJECT_WAIT_RESOURCE;  //The current kernel thread successfully occupy
@@ -552,7 +552,7 @@ static DWORD WaitForMutexObject(__COMMON_OBJECT* lpThis)
 	}
 	else    //The status of the mutex is occupied.
 	{
-		if (lpMutex->lpCurrentOwner == KernelThreadManager.lpCurrentKernelThread) //Recurse obtain.
+		if (lpMutex->lpCurrentOwner == __CURRENT_KERNEL_THREAD) //Recurse obtain.
 		{
 			lpMutex->nCurrOwnCount += 1;
 			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
@@ -562,7 +562,7 @@ static DWORD WaitForMutexObject(__COMMON_OBJECT* lpThis)
 		 * The mutex object is occupied and the current owner is not the
 		 * one try to obtain it.
 		 */
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
@@ -629,7 +629,7 @@ static DWORD WaitForMutexObjectEx(__COMMON_OBJECT* lpThis,DWORD dwMillionSecond)
 	{
 		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;
 		lpMutex->dwWaitingNum ++;
-		lpMutex->lpCurrentOwner = KernelThreadManager.lpCurrentKernelThread;
+		lpMutex->lpCurrentOwner = __CURRENT_KERNEL_THREAD;
 		lpMutex->nCurrOwnCount = 1;
 		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		//KernelThreadManager.ScheduleFromProc(NULL);  //Re-schedule here.
@@ -640,7 +640,7 @@ static DWORD WaitForMutexObjectEx(__COMMON_OBJECT* lpThis,DWORD dwMillionSecond)
 		/*
 		 * Check if recursive obtaining.
 		 */
-		if (lpMutex->lpCurrentOwner == KernelThreadManager.lpCurrentKernelThread)
+		if (lpMutex->lpCurrentOwner == __CURRENT_KERNEL_THREAD)
 		{
 			lpMutex->nCurrOwnCount += 1;
 			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
@@ -652,7 +652,7 @@ static DWORD WaitForMutexObjectEx(__COMMON_OBJECT* lpThis,DWORD dwMillionSecond)
 			KernelThreadManager.ScheduleFromProc(NULL); //Re-schedule here.
 			return OBJECT_WAIT_TIMEOUT;
 		}
-		lpKernelThread = KernelThreadManager.lpCurrentKernelThread;
+		lpKernelThread = __CURRENT_KERNEL_THREAD;
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		//Waiting on mutex's waiting queue.
@@ -1094,7 +1094,7 @@ static DWORD WaitForAll(__COMMON_OBJECT** pObjectArray,
 	BOOL                          bTryAgain     = FALSE;
 	int                           i;
 
-	pKernelThread = KernelThreadManager.lpCurrentKernelThread;
+	pKernelThread = __CURRENT_KERNEL_THREAD;
 __TRY_AGAIN:
 	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	while(TRUE)
