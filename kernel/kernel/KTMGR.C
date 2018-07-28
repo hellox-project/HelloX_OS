@@ -1588,12 +1588,41 @@ __TERMINAL:
 static BOOL StartScheduling()
 {
 	__KERNEL_THREAD_OBJECT* lpNextThread = NULL;
+#if defined(__CFG_SYS_SMP)
+	uint32_t cpuStartFlags = 0;
+	unsigned long ulFlags = 0;
+#endif 
 
 	/* 
 	 * Current kernel thread of current processor must be NULL,since the
 	 * scheduling process is not started yet.
 	 */
 	BUG_ON(NULL != __CURRENT_KERNEL_THREAD);
+
+#if defined(__CFG_SYS_SMP)
+	/* 
+	 * Mark the current CPU's start flag to 1,indicates the current
+	 * CPU is ready to schedule.
+	 */
+	__ENTER_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);
+	KernelThreadManager.cpuStartFlags |= (1 << __CURRENT_PROCESSOR_ID);
+	__LEAVE_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);
+
+	/* Wait all CPU(s) in system ready to schedule. */
+	cpuStartFlags = (1 << ProcessorManager.GetProcessorNum());
+	cpuStartFlags -= 1;
+	/*while (TRUE)
+	{
+		__ENTER_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);
+		if (KernelThreadManager.cpuStartFlags == cpuStartFlags)
+		{
+			__LEAVE_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);
+			_hx_printf("All CPUs are ready,start scheduling...\r\n");
+			break;
+		}
+		__LEAVE_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);
+	}*/
+#endif //__CFG_SYS_SMP.
 
 	/* Fetch a ready kernel thread from ready queue. */
 	lpNextThread = KernelThreadManager.GetScheduleKernelThread(
@@ -1629,6 +1658,10 @@ static BOOL StartScheduling()
 __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	0,                                               //dwCurrentIRQL.
 	{0},                                             //CurrentKernelThread.
+#if defined(__CFG_SYS_SMP)
+	0,                                               //cpuStartFlags.
+	SPIN_LOCK_INIT_VALUE,                            //spin_lock.
+#endif 
 	NULL,                                            //lpSuspendedQueue.
 	NULL,                                            //lpSleepingQueue.
 	NULL,                                            //lpTerminalQueue.

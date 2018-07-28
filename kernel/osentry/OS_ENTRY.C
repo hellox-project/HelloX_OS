@@ -67,9 +67,7 @@ static void DeadLoop(BOOL bDisableInt)
 	//DWORD dwFlags = 0;
 	if (bDisableInt)
 	{
-		//__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 		while (TRUE) {}
-		//__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 	}
 	else
 	{
@@ -82,18 +80,13 @@ static void DeadLoop(BOOL bDisableInt)
 extern DWORD _HCNMain(LPVOID);
 #endif
 
-/*
- * The main entry of OS.When the OS kernel is loaded into memory and all hardware
- * context is initialized OK,Hello China OS's kernel will run from here.
- * This is a never finish(infinite) routine and will never end unless powers off 
- * the system or reboot the system.
+/* 
+ * Initialization code of BSP.
  * It's main functions are initializing all system level objects and modules,loading kernel
  * mode hardware drivers,loading external function modules(such as GUI and network),then
- * creating several kernel thread(s) and entering a dead loop.
- * But the dead loop codes only run a short time since the kernel thread(s) will be 
- * scheduled once system clock occurs and the dead loop will end.
+ * creating several kernel thread(s) and begin to schedule kernel threads.
  */
-void __OS_Entry()
+static void __OS_Entry_BSP()
 {
 	__KERNEL_THREAD_OBJECT* lpIdleThread = NULL;
 	__KERNEL_THREAD_OBJECT* lpShellThread = NULL;
@@ -530,14 +523,6 @@ void __OS_Entry()
 	/* Start schedule the kernel thread(s) in ready queue. */
 	KernelThreadManager.StartScheduling();
 
-#if 0
-	/* 
-	 * Enter a dead loop to wait for the scheduling of kernel threads.
-	 * Any interrupt will trigger the scheduling of kernel thread.
-	 */
-	DeadLoop(FALSE);
-#endif
-
 	/* 
 	 * The following code should never be executed if anything is in place.
 	 * Good bless it.
@@ -547,6 +532,44 @@ __TERMINAL:
 	ChangeLine();
 	PrintLine(pszErrorMsg);  //Show error msg.
 	DeadLoop(TRUE);
+}
+
+#if defined(__CFG_SYS_SMP)
+/* 
+ * Initialization routine of AP processors in SMP environment.
+ * It initializes AP CPU's data structures and registers,creates
+ * the essential kernel threads such as idle,then start scheduling.
+ * It's function is much less than the BSP's corresponding one.
+ */
+static void __OS_Entry_AP()
+{
+
+}
+#endif
+
+/*
+* The main entry of OS.When the OS kernel is loaded into memory and all hardware
+* context is initialized OK,HelloX kernel will run from here.
+* This routine may called many times as the number of CPU(s) in system,but only the first
+* time,is called by BSP,all other calls are made by AP processors.There is a flag in
+* System object,named bspInitialized,is set to 1 after the first time's call,so when this
+* flag is 1,AP processor's initialization code will be invoked.
+*/
+void __OS_Entry()
+{
+#if defined(__CFG_SYS_SMP)
+	if (!System.bspInitialized)
+	{
+		__OS_Entry_BSP();
+	}
+	else
+	{
+		__OS_Entry_AP();
+	}
+#else
+	/* Just call the BSP's entry routine if there is no more CPU. */
+	__OS_Entry_BSP();
+#endif //__CFG_SYS_SMP.
 }
 
 //------------------------------------------------------------------------------

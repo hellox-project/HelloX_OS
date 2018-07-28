@@ -163,11 +163,10 @@ VOID CD_PrintString(LPSTR pStr,BOOL cl)
 
 #ifdef __CFG_SYS_CONSOLE
 	Console.PrintStr(pStr);
-	
-		if(cl == TRUE)
-			{
-	    CD_ChangeLine();	
-			}
+	if(cl == TRUE)
+	{
+		CD_ChangeLine();
+	}
 #endif	
 }
 

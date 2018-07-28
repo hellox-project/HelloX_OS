@@ -129,7 +129,20 @@ END_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
 BEGIN_DEFINE_OBJECT(__SYSTEM)
     __PRIORITY_QUEUE*                     lpTimerQueue;
 	__INTERRUPT_SLOT                      InterruptSlotArray[MAX_INTERRUPT_VECTOR];
-	volatile UCHAR                        ucCurrInt; /* Current interrupt or exception vector. */
+
+	/* Current interrupt or exception vector. */
+	volatile UCHAR                        ucCurrInt;
+
+#if defined(__CFG_SYS_SMP)
+	/* Spin lock to protect the system object. */
+	__SPIN_LOCK spin_lock;
+	/* 
+	 * Set to 1 when BSP finished the initialization phase. 
+	 * Other AP(s) initialization can not start unless this flag
+	 * is set to 1.
+	 */
+	volatile unsigned char bspInitialized;
+#endif
 
 	volatile DWORD                        dwClockTickCounter;    //Records how many clock
 	                                                             //tickes have occured since

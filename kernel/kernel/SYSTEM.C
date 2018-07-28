@@ -930,7 +930,23 @@ static BOOL HardwareInitialize(__COMMON_OBJECT* lpThis)
 //Called after the OS finish initialization.
 static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 {
-	/* Invoke the end initialization routine of arch. */
+	__SYSTEM* pSystem = (__SYSTEM*)lpThis;
+
+	BUG_ON(NULL == pSystem);
+
+#if defined(__CFG_SYS_SMP)
+	/* 
+	 * Mark the BSP initialized flag to 1,so other AP(s) 
+	 * in system can start their initialization.
+	 */
+	pSystem->bspInitialized = 1;
+#endif
+
+	/* 
+	 * Invoke the end initialization routine of arch. 
+	 * AP(s) in system in case of SMP environment can
+	 * start their initialization in this routine.
+	 */
 	if (!__EndHardwareInitialize())
 	{
 		return FALSE;
@@ -999,6 +1015,10 @@ __SYSTEM System = {
 	NULL,                     //lpTimerQueue.
 	{0},                      //InterruptSlotArray[MAX_INTERRUPT_VECTOR].
 	0,                        //ucCurrInt.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,     //spin_lock.
+	0,                        //bspInitialized.
+#endif 
 	0,                        //dwClockTickCounter,
 	0,                        //dwNextTimerTick,
 	0,                        //ucIntNestLeve;

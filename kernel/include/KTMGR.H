@@ -353,6 +353,19 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 #endif
 
 	/* 
+	 * CPU start status flags,the corresponding bit is set to 1 
+	 * when the CPU start successful.
+	 */
+#if defined(__CFG_SYS_SMP)
+#if MAX_CPU_NUM > 32
+#error "MAX_CPU_NUM can not exceed 32."
+#else
+	volatile uint32_t cpuStartFlags;
+	__SPIN_LOCK spin_lock;
+#endif
+#endif //__CFG_SYS_SMP
+
+	/* 
 	 * A macro to obtain current kernel thread,each CPU will get different 
 	 * current kernel thread instance by using this macro.
 	 */
