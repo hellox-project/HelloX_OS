@@ -714,6 +714,73 @@ int _hx_printf(const char* fmt,...)
 	return 0;
 }
 
+#if defined(__CFG_SYS_SMP)
+/* Spin lock used by _hx_printk routine. */
+static __SPIN_LOCK sl_printk = SPIN_LOCK_INIT_VALUE;
+#endif
+
+int _hx_printk(const char* fmt, ...)
+{
+	//Define local buffer according kernel thread's stack size.
+#if DEFAULT_STACK_SIZE <= 2048
+	char buff[128];
+#else
+	char buff[256];
+#endif
+	va_list args;
+	int n;
+	int i = 0;
+	DWORD x, y; //Cursor position control.
+	WORD wr = 0x0700;
+	unsigned long ulFlags = 0;
+
+	va_start(args, fmt);
+	n = _hx_vsprintf(buff, fmt, args);
+	va_end(args);
+
+	/* Show out the formated string buffer. */
+#if defined(__CFG_SYS_SMP)
+	__ENTER_CRITICAL_SECTION_SMP(sl_printk, ulFlags);
+#else
+	__ENTER_CRITICAL_SECTION(NULL, ulFlags);
+#endif
+	while (buff[i])
+	{
+		if ('\n' == buff[i])
+		{
+			GotoHome();
+			ChangeLine();
+			i++;
+			continue;
+		}
+		if ('\r' == buff[i])
+		{
+			GotoHome();
+			i++;
+			continue;
+		}
+		if ('\t' == buff[i])
+		{
+			CD_GetCursorPos((WORD*)&x, (WORD*)&y);
+			x = x + TAB_SPACE_NUM - (x % TAB_SPACE_NUM);
+			CD_SetCursorPos((WORD)x, (WORD)y);
+			i++;
+			continue;
+		}
+		wr += buff[i];
+		PrintCh(wr);
+		wr -= buff[i];
+		i++;
+	}
+#if defined(__CFG_SYS_SMP)
+	__LEAVE_CRITICAL_SECTION_SMP(sl_printk, ulFlags);
+#else
+	__LEAVE_CRITICAL_SECTION(NULL, ulFlags);
+#endif
+
+	return 0;
+}
+
 //_hx_snprintf routine,same as snprintf routine in libc.
 int _hx_snprintf(char *buf,size_t n, const char *fmt, ...)
 {

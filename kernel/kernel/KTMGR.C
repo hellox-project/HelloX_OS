@@ -1617,7 +1617,7 @@ static BOOL StartScheduling()
 		if (KernelThreadManager.cpuStartFlags == cpuStartFlags)
 		{
 			__LEAVE_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);
-			_hx_printf("All CPUs are ready,start scheduling...\r\n");
+			_hx_printk("All CPUs are ready,start scheduling...\r\n");
 			break;
 		}
 		__LEAVE_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, ulFlags);

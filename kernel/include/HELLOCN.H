@@ -22,40 +22,11 @@ extern "C" {
 
 #define __MINIKER_BASE      0x00100000    //Mini-kernal's base address when running.
 
-#define __MINIKER_LEN       16*1024       //The mini-kernal's length.
+#define __MINIKER_LEN       8*1024        //The mini-kernal's length.
 #define __MASTER_BASE       0x00110000    //The master's base address when running.
 
-	//PrintStr's base address.
-#define __PRINTSTR_BASE     (__MINIKER_LEN + __MINIKER_BASE - 0x04)
-	//ChangeAttr's base address.
-#define __CHANGEATTR_BASE   (__MINIKER_LEN + __MINIKER_BASE - 0x08)
-	//ClearScreen's base address.
-#define __CLEARSCREEN_BASE  (__MINIKER_LEN + __MINIKER_BASE - 0x0c)
-	//PrintCh's base address.
-#define __PRINTCH_BASE      (__MINIKER_LEN + __MINIKER_BASE - 0x10)
-	//GotoHome's base address.
-#define __GOTOHOME_BASE     (__MINIKER_LEN + __MINIKER_BASE - 0x14)
-	//ChangeLine's base address.
-#define __CHANGELINE_BASE   (__MINIKER_LEN + __MINIKER_BASE - 0x18)
-
-#define __HEXTOSTR_BASE     (__MINIKER_LEN + __MINIKER_BASE - 0x1c)
-#define __STRCPY_BASE       (__MINIKER_LEN + __MINIKER_BASE - 0x20)
-#define __STRLEN_BASE       (__MINIKER_LEN + __MINIKER_BASE - 0x24)
-
-	//SetKeyHandler's base address.
-#define __SETNOTIFYOS_BASE  (__MINIKER_LEN + __MINIKER_BASE - 0x28)
-
-	//GotoPrev's base address.
-#define __GOTOPREV_BASE     (__MINIKER_LEN + __MINIKER_BASE - 0x2c)
-
 	//Timer handler's base address
-#define __TIMERHANDLER_BASE (__MINIKER_LEN + __MINIKER_BASE - 0x30)
-
-	//Set GDT entry handler's base address.
-#define __SETGDTENTRY_BASE  (__MINIKER_LEN + __MINIKER_BASE - 0x34)
-
-	//Clear GDT entry handler's base address.
-#define __CLGDTENTRY_BASE   (__MINIKER_LEN + __MINIKER_BASE - 0x38)
+#define __TIMERHANDLER_BASE (__MINIKER_LEN + __MINIKER_BASE - 0x04)
 
 	//
 	//Handler procedure's defination.

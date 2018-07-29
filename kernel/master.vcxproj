@@ -165,10 +165,10 @@
     <ClCompile Include="appldr\AppLoader_PE.C" />
     <ClCompile Include="appldr\AppLoader_STM32.C" />
     <ClCompile Include="arch\x86\acpi.c" />
-    <ClCompile Include="arch\x86\ARCH_X86.C" />
-    <ClCompile Include="arch\x86\BIOS.C" />
-    <ClCompile Include="arch\x86\BIOSVGA.C" />
-    <ClCompile Include="arch\x86\HELLOCN.C" />
+    <ClCompile Include="arch\x86\arch_x86.c" />
+    <ClCompile Include="arch\x86\bios.c" />
+    <ClCompile Include="arch\x86\biosvga.c" />
+    <ClCompile Include="arch\x86\hellocn.c" />
     <ClCompile Include="arch\x86\smpx86.c" />
     <ClCompile Include="drivers\x86\com.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
@@ -373,11 +373,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\acpi.h" />
-    <ClInclude Include="arch\x86\ARCH.H" />
-    <ClInclude Include="arch\x86\BIOS.H" />
-    <ClInclude Include="arch\x86\BIOSVGA.H" />
+    <ClInclude Include="arch\x86\arch.h" />
+    <ClInclude Include="arch\x86\bios.h" />
+    <ClInclude Include="arch\x86\biosvga.h" />
     <ClInclude Include="arch\x86\smpx86.h" />
-    <ClInclude Include="arch\x86\SYN_MECH.H" />
+    <ClInclude Include="arch\x86\syn_mech.h" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
     <ClInclude Include="drivers\x86\pcnet.h" />
     <ClInclude Include="drivers\x86\rtl8111.h" />
@@ -535,11 +535,11 @@
     <ClInclude Include="usb\xhci.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="arch\x86\BOOTSECT.ASM" />
+    <None Include="arch\x86\bootsect.asm" />
     <None Include="arch\x86\hdbs.asm" />
-    <None Include="arch\x86\MINIKER.ASM" />
+    <None Include="arch\x86\miniker.asm" />
     <None Include="arch\x86\ntfsbs.asm" />
-    <None Include="arch\x86\REALINIT.ASM" />
+    <None Include="arch\x86\realinit.asm" />
     <None Include="arch\x86\realinit.bin" />
     <None Include="arch\x86\realinit_g.asm" />
     <None Include="Authors.txt" />

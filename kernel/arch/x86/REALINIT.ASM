@@ -21,8 +21,7 @@
     bits 16                      ;;The real mode code.
  
     org 0x0000
-    ;org 0x0100                   ;;------------ ** debug ** --------------
- 
+	
     %define DEF_RINIT_START 0x01000  ;;Start address of this module.
                                      ;;This code is loaded into memory by
                                      ;;boot sector,and resides at 0x01000.

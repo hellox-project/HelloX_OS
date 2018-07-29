@@ -19,7 +19,6 @@
 
 #ifdef __I386__  //Only available in x86 based PC platform.
 
-
 INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 {
 #ifdef __GCC__

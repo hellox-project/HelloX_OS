@@ -543,7 +543,20 @@ __TERMINAL:
  */
 static void __OS_Entry_AP()
 {
+	int cpuID = __CURRENT_PROCESSOR_ID;
 
+	/* Show a banner. */
+	_hx_printk("Start processor[%d] now...\r\n", cpuID);
+
+	/* Initialize page table registers if necessary. */
+
+	/* Create idle thread for the current CPU. */
+
+	/* Start to schedule kernel thread. */
+	KernelThreadManager.StartScheduling();
+
+	/* Should never reach here. */
+	BUG();
 }
 #endif
 

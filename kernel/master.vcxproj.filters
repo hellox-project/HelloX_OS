@@ -626,24 +626,6 @@
     <ClCompile Include="netcore\nat\naticmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="arch\x86\acpi.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\ARCH_X86.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\BIOS.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\BIOSVGA.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\HELLOCN.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="arch\x86\smpx86.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="kernel\chardisplay.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -729,6 +711,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kernel\vmm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\acpi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\arch_x86.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\bios.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\biosvga.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\hellocn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\smpx86.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1201,19 +1201,19 @@
     <ClInclude Include="arch\x86\acpi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="arch\x86\ARCH.H">
+    <ClInclude Include="arch\x86\arch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="arch\x86\BIOS.H">
+    <ClInclude Include="arch\x86\bios.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="arch\x86\BIOSVGA.H">
+    <ClInclude Include="arch\x86\biosvga.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="arch\x86\smpx86.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="arch\x86\SYN_MECH.H">
+    <ClInclude Include="arch\x86\syn_mech.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1227,11 +1227,11 @@
     <None Include="revise.txt">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="arch\x86\BOOTSECT.ASM" />
+    <None Include="arch\x86\bootsect.asm" />
     <None Include="arch\x86\hdbs.asm" />
-    <None Include="arch\x86\MINIKER.ASM" />
+    <None Include="arch\x86\miniker.asm" />
     <None Include="arch\x86\ntfsbs.asm" />
-    <None Include="arch\x86\REALINIT.ASM" />
+    <None Include="arch\x86\realinit.asm" />
     <None Include="arch\x86\realinit.bin">
       <Filter>Resource Files</Filter>
     </None>

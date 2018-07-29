@@ -30,16 +30,29 @@ typedef unsigned int     size_t;
 
 #define MAX_BUFFER_SIZE 512
 
-#define NOFLOAT  //Kernel does not support floating point number yet.
+//Kernel does not support floating point number yet.
+#define NOFLOAT
 
+/* Standard print routine of libc,hellox specific version. */
 int _hx_sprintf(char* buf,const char* fmt,...);
 int _hx_printf(const char* fmt,...);
 int _hx_vsprintf(char *buf, const char *fmt, va_list args);
 int _hx_vfprintf(void* stream,const char* fmt,va_list args);
-
 int _hx_snprintf(char* buf,size_t n,const char* fmt,...);
 
-#define TAB_SPACE_NUM 8  //How many space in a tab key.
+/* 
+ * Can be called in any context include process of system 
+ * initialization.
+ * It uses spin lock to protect the output device such as
+ * VGA,thus several CPUs or threads can call it safety,
+ * without worry about the outputs from different target 
+ * mixed together.
+ * Avoid to using it since it wastes CPU cycles very much.
+ */
+int _hx_printk(const char* fmt, ...);
+
+//How many space in a tab key.
+#define TAB_SPACE_NUM 8
 
 //Simulate standard printf routine.
 #ifndef printf
@@ -61,3 +74,7 @@ int _hx_snprintf(char* buf,size_t n,const char* fmt,...);
 #define snprintf _hx_snprintf
 #endif
 
+//printk.
+#ifndef printk
+#define printk _hx_printk
+#endif
