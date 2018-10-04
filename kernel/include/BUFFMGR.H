@@ -16,6 +16,10 @@
 #ifndef __BUFFMGR_H__
 #define __BUFFMGR_H__
 
+/* For spin lock. */
+#include <config.h>
+#include <smp.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,6 +49,10 @@ extern "C" {
                                               //can be used.
 
 typedef struct tag__BUFFER_CONTROL_BLOCK{
+#if defined(__CFG_SYS_SMP)
+	/* Spin lock to protect this object in SMP. */
+	__SPIN_LOCK spin_lock;
+#endif
 	volatile DWORD                    dwFlags;
 	volatile LPVOID                   lpPoolStartAddress;
 	volatile DWORD                    dwPoolSize;       //Total memory size.

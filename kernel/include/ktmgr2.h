@@ -20,37 +20,49 @@
 #ifndef __KTMGR2_H__
 #define __KTMGR2_H__
 
-#ifndef __TYPES_H__
 #include "types.h"
-#endif
-
 #include "ktmgr.h"
 #include "commobj.h"
-#include "comqueue.h"
 
-
-//A helper structure used to transfer parameters to time out waiting handler,
-//which is a basic routine to implements time out waiting for synchronization
-//kernel objects.
+/* 
+ * A helper structure used to transfer parameters 
+ * to time out waiting handler, which is a basic 
+ * routine to implements time out waiting for synchronization
+ * kernel objects.
+ */
 typedef struct{
-	__COMMON_OBJECT*        lpSynObject;    //Synchronous object.
-	__PRIORITY_QUEUE*       lpWaitingQueue; //Waiting queue of the synchronous object.
-	__KERNEL_THREAD_OBJECT* lpKernelThread; //Kernel thread who want to wait.
-	VOID (*TimeOutCallback)(VOID*);         //Synchronization object specified call back routine when time out.
+	/* Synchronous object. */
+	__COMMON_OBJECT* lpSynObject;
+	/* Waiting queue of the synchronous object. */
+	__PRIORITY_QUEUE* lpWaitingQueue;
+	/* Kernel thread who want to wait. */
+	__KERNEL_THREAD_OBJECT* lpKernelThread;
+	/* Synchronization object specified call back routine when time out. */
+	VOID (*TimeOutCallback)(VOID*);
 }__TIMER_HANDLER_PARAM;
 
 //Definition of Semaphore objects.
 BEGIN_DEFINE_OBJECT(__SEMAPHORE)
     INHERIT_FROM_COMMON_OBJECT
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
-	DWORD                dwMaxSem;    //Maximal semaphore counter,default is 1.
-    DWORD                dwCurrSem;   //Current value of semaphore,default same as dwMaxSem.
-	__PRIORITY_QUEUE*    lpWaitingQueue;  //Kernel thread(s) waiting for the semaphore.
-	//Change default sem counters,this routine should be called before any WaitForThisObject or
-	//WaitForThisObjectEx operations since it can not wake up already blocked kernel thread.
-	BOOL                 (*SetSemaphoreCount)(__COMMON_OBJECT*,DWORD,DWORD); 
-	BOOL                 (*ReleaseSemaphore)(__COMMON_OBJECT*,DWORD* pdwPrevCount);
-	DWORD                (*WaitForThisObjectEx)(__COMMON_OBJECT*,DWORD dwMillionSecond,DWORD* pdwWait);
+	/* Maximal semaphore counter,default is 1. */
+	volatile DWORD dwMaxSem;
+	/* Current value of semaphore,default same as dwMaxSem. */
+    volatile DWORD dwCurrSem;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	/* Kernel thread(s) waiting for the semaphore. */
+	__PRIORITY_QUEUE* lpWaitingQueue;
+	/*
+	 * Change default sem counters,this routine should 
+	 * be called before any WaitForThisObject or WaitForThisObjectEx
+	 * operations since it can not wake up already blocked 
+	 * kernel thread.
+	 */
+	BOOL (*SetSemaphoreCount)(__COMMON_OBJECT*,DWORD,DWORD); 
+	BOOL (*ReleaseSemaphore)(__COMMON_OBJECT*,DWORD* pdwPrevCount);
+	DWORD (*WaitForThisObjectEx)(__COMMON_OBJECT*,DWORD dwMillionSecond,DWORD* pdwWait);
 END_DEFINE_OBJECT(__SEMAPHORE)
 
 //Initializer and Uninitializer of semaphore object.
@@ -74,6 +86,9 @@ BEGIN_DEFINE_OBJECT(__MAIL_BOX)
 	DWORD                dwMessageTail;    //Pointing to message array's tail.
 	__PRIORITY_QUEUE*    lpSendingQueue;   //Kernel thread(s) try to send mail.
 	__PRIORITY_QUEUE*    lpGettingQueue;   //Kernel thread(s) try to get mail.
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 
 	//Set mailbox's size,default is 1.This routine should be called before any SendMail or
 	//GetMail operations since it can not wake up any already blocked kernel thread.
@@ -88,14 +103,19 @@ END_DEFINE_OBJECT(__MAIL_BOX)
 BOOL MailboxInitialize(__COMMON_OBJECT* pMailbox);
 VOID MailboxUninitialize(__COMMON_OBJECT* pMailbox);
 
-//Definition of __CONDITION object.This object is conforms POSIX standard pthread_cond_xxx
-//operations,to fit the requirement of JamVM's porting.
+/* 
+ * Definition of __CONDITION object.This object is conforms POSIX standard pthread_cond_xxx
+ * operations,to fit the requirement of JamVM's porting.
+ */
 BEGIN_DEFINE_OBJECT(__CONDITION)
 	INHERIT_FROM_COMMON_OBJECT
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
 	//How many thread(s) pending on the condition object.
 	volatile int nThreadNum;
     __PRIORITY_QUEUE* lpPendingQueue;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 	//Wait a condition object until the condition satisfied.
 	DWORD (*CondWait)(__COMMON_OBJECT* pCond,__COMMON_OBJECT* pMutex);
 	//Wait a condition object until the condition satisfied or time out.

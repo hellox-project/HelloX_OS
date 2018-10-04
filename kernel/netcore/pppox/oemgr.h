@@ -20,6 +20,10 @@
 /* Compile only the PPPOE switch is enabled. */
 #ifdef __CFG_NET_PPPOE
 
+/* For spin lock in SMP. */
+#include <config.h>
+#include <TYPES.H>
+
 /* For ip_addr_t. */
 #include "lwip/ip_addr.h"
 /* For err_t type. */
@@ -98,7 +102,7 @@ typedef struct tag__PPP_SENDPACKET_BLOCK{
  * Maximal out going list and incoming list's size,the out going packet or
  * incoming frame will be droped if the list size exceed this value.
  */
-#define PPPOE_MAX_PENDINGLIST_SIZE 128
+#define PPPOE_MAX_PENDINGLIST_SIZE 256
 
 /* PPPoE manager object. */
 typedef struct tag__PPPOE_MANAGER{
@@ -114,6 +118,11 @@ typedef struct tag__PPPOE_MANAGER{
 	__PPPOE_POSTFRAME_BLOCK* pIncomFirst;
 	__PPPOE_POSTFRAME_BLOCK* pIncomLast;
 	volatile int nIncomSize;
+
+	/* Spin lock under SMP. */
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 
 	/* Handle of PPPoE main thread. */
 	HANDLE hMainThread;

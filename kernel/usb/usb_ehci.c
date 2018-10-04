@@ -1589,6 +1589,10 @@ int _ehci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 	* ehci_set_controller_priv to change any of these function pointers.
 	*/
 	ctrl->ops = default_ehci_ops;
+	/* Init spin lock in SMP. */
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(ctrl->spin_lock, "ehci");
+#endif
 
 	//rc = ehci_hcd_init(index, init, &ctrl->hccr, &ctrl->hcor);
 	//if (rc)

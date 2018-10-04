@@ -340,6 +340,7 @@ DWORD SysDiagApp(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	__KERNEL_THREAD_OBJECT*        lpSysDiagThread    = NULL;
 
+#if 0
 	/*
 	 * sysdiag app's priority level is set to HIGH,since
 	 * in some case the system may enter busying status by
@@ -361,9 +362,33 @@ DWORD SysDiagApp(__CMD_PARA_OBJ* pCmdParaObj)
 		"SYS DIAG");
 	if(NULL == lpSysDiagThread)    //Can not create the kernel thread.
 	{
-		PrintLine("Can not start system diag application,please retry again.");
+		_hx_printk("Can not start system diag application,please retry again.\r\n");
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
+#endif
+
+	unsigned int nAffinity = 0;
+	lpSysDiagThread = KernelThreadManager.CreateKernelThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		0,
+		KERNEL_THREAD_STATUS_SUSPENDED,
+		PRIORITY_LEVEL_HIGH,
+		SysDiagStart,
+		NULL,
+		NULL,
+		"SYS DIAG");
+	if (NULL == lpSysDiagThread)    //Can not create the kernel thread.
+	{
+		_hx_printk("Can not start system diag application,please retry again.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+#if defined(__CFG_SYS_SMP)
+	nAffinity = ProcessorManager.GetScheduleCPU();
+#endif
+	KernelThreadManager.ChangeAffinity((__COMMON_OBJECT*)lpSysDiagThread,
+		nAffinity);
+	KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+		(__COMMON_OBJECT*)lpSysDiagThread);
 
 	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
 		(__COMMON_OBJECT*)lpSysDiagThread);

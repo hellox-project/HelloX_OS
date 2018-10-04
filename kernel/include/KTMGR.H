@@ -145,13 +145,31 @@ END_DEFINE_OBJECT(__KERNEL_THREAD_MESSAGE)
 #define MAX_KTHREAD_MSG_NUM 32  //The maximal message number in the kernel thread's message
                                 //queue.
 #endif
-								
-#define KERNEL_THREAD_STATUS_RUNNING    0x00000001  //Kernel thread's status.
+
+/* 
+ * Status value of a kernel thread. 
+ */
+#define KERNEL_THREAD_STATUS_RUNNING    0x00000001
 #define KERNEL_THREAD_STATUS_READY      0x00000002
 #define KERNEL_THREAD_STATUS_SUSPENDED  0x00000003
 #define KERNEL_THREAD_STATUS_SLEEPING   0x00000004
 #define KERNEL_THREAD_STATUS_TERMINAL   0x00000005
 #define KERNEL_THREAD_STATUS_BLOCKED    0x00000006
+#define KERNEL_THREAD_STATUS_DESTROYED  0x00000007
+
+/* 
+ * Waiting tags,indicates what kind of object the
+ * current kernel thread is waiting for,when current
+ * kernel thread's status is BLOCKED.
+ */
+#define KERNEL_THREAD_WAITTAG_MESSAGE   1
+#define KERNEL_THREAD_WAITTAG_SEMAPHORE 2
+#define KERNEL_THREAD_WAITTAG_MAILBOX   3
+#define KERNEL_THREAD_WAITTAG_MUTEX     4
+#define KERNEL_THREAD_WAITTAG_KTHREAD   5
+#define KERNEL_THREAD_WAITTAG_EVENT     6
+#define KERNEL_THREAD_WAITTAG_MULTIPLE  7
+#define KERNEL_THREAD_WAITTAG_COND      8
 
 //
 //Definition of kernel thread's priority.
@@ -212,7 +230,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
     __KERNEL_THREAD_CONTEXT*             lpKernelThreadContext;   //Added in V1.5.
     DWORD                                dwThreadID;
 	__COMMON_OBJECT*                     lpOwnProcess;            //The process owns the kernel thread.
-	DWORD                                dwThreadStatus;          //Kernel Thread's current status.
+	volatile DWORD                       dwThreadStatus;          //Kernel Thread's current status.
 	/* 
 	 * Waiting queue of the kernel thread object.
 	 * One kernel thread who want to wait the current
@@ -265,6 +283,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	//TLS array.
 	LPVOID                               TLS[MAX_TLS_NUM];
 
+#if defined(__CFG_SYS_SMP)
 	/*
 	 * CPU affinity. 
 	 * It's the CPU id on which the kernel thread is running,in SMP 
@@ -274,8 +293,9 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	 * When changed the kernel thread will be moved to target CPU's
 	 * ready queue and will be scheduled in this CPU.
 	 */
-#if defined(__CFG_SYS_SMP)
-	volatile int cpuAffinity;
+	__atomic_t cpuAffinity;
+	/* spin lock to protect the object. */
+	__SPIN_LOCK spin_lock;
 #endif
 
 	//Suspending flags and suspending counter,used to manage the suspending operations for kernel thread.
@@ -349,7 +369,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 #if defined(__CFG_SYS_SMP)
 	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[MAX_CPU_NUM];
 #else /* UP. */
-	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[0];
+	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[1];
 #endif
 
 	/* 
@@ -378,7 +398,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 #if defined(__CFG_SYS_SMP)
 	__KERNEL_THREAD_READY_QUEUE* KernelThreadReadyQueue[MAX_CPU_NUM];
 #else
-	__KERNEL_THREAD_READY_QUEUE* KernelThreadReadyQueue[0];
+	__KERNEL_THREAD_READY_QUEUE* KernelThreadReadyQueue[1];
 #endif
 
 	DWORD                                    dwNextWakeupTick;
@@ -417,7 +437,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 											  LPVOID                    lpOwnerProcess,
 											  LPSTR                     lpszName);
 
-	VOID                                     (*DestroyKernelThread)(__COMMON_OBJECT* lpThis,
+	BOOL                                     (*DestroyKernelThread)(__COMMON_OBJECT* lpThis,
 		                                     __COMMON_OBJECT*           lpKernelThread
 											 );
 
@@ -539,7 +559,7 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 	__COMMON_OBJECT*                         (*GetCurrentKernelThread)();
 #if defined(__CFG_SYS_SMP)
 	/* Change the specified kernel thread's cpu affinity value. */
-	int                                      (*ChangeAffinity)(__COMMON_OBJECT* lpTargetThread, int newAffinity);
+	int                                      (*ChangeAffinity)(__COMMON_OBJECT* lpTargetThread, unsigned int newAffinity);
 #endif
 	/* Start the scheduling process,it will be called after the initialization of OS. */
 	BOOL                                     (*StartScheduling)();
@@ -577,12 +597,16 @@ extern __KERNEL_THREAD_MANAGER KernelThreadManager;
 BEGIN_DEFINE_OBJECT(__EVENT)
     INHERIT_FROM_COMMON_OBJECT
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
-	volatile DWORD        dwEventStatus;
-    __PRIORITY_QUEUE*     lpWaitingQueue;
-	DWORD                 (*SetEvent)(__COMMON_OBJECT*);
-	DWORD                 (*ResetEvent)(__COMMON_OBJECT*);
-	DWORD                 (*WaitForThisObjectEx)(__COMMON_OBJECT*,
-		                                         DWORD);  //Time out waiting operation.
+	volatile DWORD dwEventStatus;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+    __PRIORITY_QUEUE* lpWaitingQueue;
+	DWORD (*SetEvent)(__COMMON_OBJECT*);
+	DWORD (*ResetEvent)(__COMMON_OBJECT*);
+	DWORD (*PulseEvent)(__COMMON_OBJECT*);
+	/* Time out waiting operation. */
+	DWORD                 (*WaitForThisObjectEx)(__COMMON_OBJECT*, DWORD);
 END_DEFINE_OBJECT(__EVENT)
 
 #define EVENT_STATUS_FREE            0x00000001    //Event status.
@@ -611,16 +635,23 @@ VOID EventUninitialize(__COMMON_OBJECT*);          //and uninitializing routine.
 //The definition of MUTEX object.
 //
 BEGIN_DEFINE_OBJECT(__MUTEX)
-    INHERIT_FROM_COMMON_OBJECT                  //Inherit from __COMMON_OBJECT.
-	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT  //Inherit from common synchronization object.
-	volatile DWORD     dwMutexStatus;
-    volatile DWORD     dwWaitingNum;
-	__KERNEL_THREAD_OBJECT* lpCurrentOwner;     //Current owner of the mutex object.
-	volatile int       nCurrOwnCount;           //Current owner counter.
+    INHERIT_FROM_COMMON_OBJECT
+	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
+	volatile DWORD dwMutexStatus;
+    volatile DWORD dwWaitingNum;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	/* Current owner of the mutex object. */
+	__KERNEL_THREAD_OBJECT* lpCurrentOwner;
+	/* Current owner counter. */
+	volatile int nCurrOwnCount;
+	/* Waiting queue. */
     __PRIORITY_QUEUE* lpWaitingQueue;
-    DWORD             (*ReleaseMutex)(__COMMON_OBJECT* lpThis);
-	DWORD             (*WaitForThisObjectEx)(__COMMON_OBJECT* lpThis,
-		                                     DWORD dwMillionSecond); //Extension waiting.
+    DWORD (*ReleaseMutex)(__COMMON_OBJECT* lpThis);
+	/* Timeout waiting. */
+	DWORD (*WaitForThisObjectEx)(__COMMON_OBJECT* lpThis,
+		DWORD dwMillionSecond);
 END_DEFINE_OBJECT(__MUTEX)
 
 #define MUTEX_STATUS_FREE      0x00000001
@@ -633,6 +664,8 @@ END_DEFINE_OBJECT(__MUTEX)
 BOOL MutexInitialize(__COMMON_OBJECT* lpThis);
 VOID MutexUninitialize(__COMMON_OBJECT* lpThis);
 
+/* WaitForMultipleObjects only available in UP(non SMP) environment. */
+#if !defined(__CFG_SYS_SMP)
 //-----------------------------------------------------------------------------------
 //
 //                            Multiple object waiting mechanism's definition.
@@ -657,6 +690,7 @@ DWORD WaitForMultipleObjects(
 							 DWORD dwMillionSeconds,         //Time out value.
 							 int* pnSignalObjectIndex        //Index of the first signaled object if not wait all.
 							 );
+#endif 
 
 //Will wait forever,never return if no desired resource can be obtained.
 #define WAIT_TIME_INFINITE   0xFFFFFFFF

@@ -69,10 +69,13 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext);
 
 //Saves current kernel thread's context,and switches to the new one.
 VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
-					 __KERNEL_THREAD_CONTEXT** lppNewContext);
+	__KERNEL_THREAD_CONTEXT** lppNewContext);
 
-/* Switch to the specified target thread directly. */
-VOID __SwitchTo_Directly(__KERNEL_THREAD_CONTEXT* lpContext);
+/*
+ * Acknowledge interrupt from default interrupt controller,
+ * it's 8259 PIC in PC.
+ */
+void __AckDefaultInterrupt();
 
 //Get Time Stamp Counter of current CPU.
 VOID __GetTsc(__U64*);
@@ -82,6 +85,9 @@ VOID __GetTime(BYTE*);
 
 //Microsecond level delay.
 VOID __MicroDelay(DWORD dwmSeconds);
+
+/* Return the frequency of CPU. */
+uint64_t __GetCPUFrequency();
 
 //Simulate a NOP instruction.
 #ifdef __I386__

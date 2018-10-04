@@ -481,7 +481,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 		}
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 	/* hook up to periodic list */
 	list = &ctrl->periodic_queue;
 	result->last->qh_link = list->qh_link;
@@ -498,7 +498,7 @@ struct int_queue* EHCICreateIntQueue(struct usb_device *dev,
 		result->pNext = ctrl->pIntQueueFirst;
 		ctrl->pIntQueueFirst = result;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 
 	flush_dcache_range((unsigned long)result->last,
 		ALIGN_END_ADDR(struct QH, result->last, 1));
@@ -630,7 +630,7 @@ int EHCIDestroyIntQueue(struct usb_device *dev,struct int_queue *queue)
 	//Remove it from the controller's pending list if it is in.It's a bit complicated since
 	//the pending list is a one direction link list,and we also are not sure if the queue is
 	//in list.
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 	if (NULL != ctrl->pIntQueueFirst)
 	{
 		if (queue == ctrl->pIntQueueFirst)
@@ -666,7 +666,7 @@ int EHCIDestroyIntQueue(struct usb_device *dev,struct int_queue *queue)
 			}
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 
 	if (NULL != queue->pNext)
 	{

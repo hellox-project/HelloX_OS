@@ -13,15 +13,11 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
-#include "types.h"
-#include "ktmgr.h"
-#include <../config/config.h>
-#include "process.h"
-#include "kmemmgr.h"
-#include "iomgr.h"
+#include <StdAfx.h>
+#include <types.h>
+#include <ktmgr.h>
+#include <process.h>
+
 //
 //The following array is used by Object Manager to create object.
 //Once a new object type is defined,you must add one line in the
@@ -70,8 +66,6 @@ BEGIN_DECLARE_INIT_DATA(ObjectInitData)
 	OBJECT_INIT_DATA(OBJECT_TYPE_VIRTUAL_MEMORY_MANAGER,sizeof(__VIRTUAL_MEMORY_MANAGER),
 	VmmInitialize,VmmUninitialize)
 #endif
-	//OBJECT_INIT_DATA(OBJECT_TYPE_COMMON_QUEUE,sizeof(__COMMON_QUEUE),
-	//CommQueueInit,CommQueueUninit)
 
 	OBJECT_INIT_DATA(OBJECT_TYPE_SEMAPHORE,sizeof(__SEMAPHORE),
 	SemInitialize,SemUninitialize)
@@ -90,7 +84,7 @@ END_DECLARE_INIT_DATA()
 static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER*,__COMMON_OBJECT*,DWORD);
 static __COMMON_OBJECT* GetObjectByID(__OBJECT_MANAGER*,DWORD);
 static __COMMON_OBJECT* GetFirstObjectByType(__OBJECT_MANAGER*,DWORD);
-static VOID             DestroyObject(__OBJECT_MANAGER*,__COMMON_OBJECT*);
+static VOID DestroyObject(__OBJECT_MANAGER*,__COMMON_OBJECT*);
 
 //
 //The definition of the ObjectManager,the first object and the only object in Hello
@@ -98,6 +92,9 @@ static VOID             DestroyObject(__OBJECT_MANAGER*,__COMMON_OBJECT*);
 //
 __OBJECT_MANAGER    ObjectManager = {
 	1,                                  //Current avaiable object ID.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,
+#endif
 	{0},
 	CreateObject,                       //CreateObject routine.
 	GetObjectByID,                      //GetObjectByID routine.
@@ -117,9 +114,9 @@ __OBJECT_MANAGER    ObjectManager = {
 //   If successfully,returns the base address of new created object,
 //   otherwise,returns NULL.
 //
-static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,    //Object Manager.
-									 __COMMON_OBJECT*  lpObjectOwner,      //Object's owner.
-									 DWORD             dwType)
+static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,
+	__COMMON_OBJECT* lpObjectOwner,
+	DWORD dwType)
 {
 	__COMMON_OBJECT* pObject         = NULL;
 	DWORD            dwLoop          = 0;
@@ -132,7 +129,8 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,    //Obj
 		goto __TERMINAL;
 	}
 
-	while(TRUE)    //To find the initialize data of this type object.
+	/* Find the initialize data of this type object. */
+	while(TRUE)
 	{
 		if(MAX_OBJECT_TYPE == dwLoop)
 		{
@@ -150,25 +148,27 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,    //Obj
 		dwLoop ++;
 	}
 	
-	if(FALSE == bFind)    //If can not find the corrent initialize data.
+	if(FALSE == bFind)
 	{
+		/* Give up if can not find the initialize data. */
 		goto __TERMINAL;
 	}
 
 	dwObjectSize = ObjectInitData[dwLoop].dwObjectSize;
-	if(0 == dwObjectSize)  //Invalid object size.
+	if(0 == dwObjectSize)
 	{
+		/* Invalid object size. */
 		goto __TERMINAL;
 	}
 
 	pObject = (__COMMON_OBJECT*)KMemAlloc(dwObjectSize,KMEM_SIZE_TYPE_ANY);
-	if(NULL == pObject)  //Can not allocate memory.
+	if(NULL == pObject)
 	{
 		goto __TERMINAL;
 	}
 
-	//The following lines initialize the new created object.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/* Initialize the new created object. */
+	__ENTER_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 	pObject->dwObjectID = lpObjectManager->dwCurrentObjectID;
 	lpObjectManager->dwCurrentObjectID ++;     //Now,update the Object Manager's status.
 
@@ -178,10 +178,8 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,    //Obj
 	pObject->Uninitialize     = ObjectInitData[dwLoop].Uninitialize;
 	pObject->lpObjectOwner    = lpObjectOwner;
 
-	//The following code insert the new created object into ObjectArrayList.
-	if(NULL == lpObjectManager->ObjectListHeader[dwType].lpFirstObject)  //If this is the
-		                                                                 //first object of
-																		 //this type.
+	/* Insert the new created object into ObjectArrayList. */
+	if(NULL == lpObjectManager->ObjectListHeader[dwType].lpFirstObject)
 	{
 		pObject->lpNextObject = NULL;
 		pObject->lpPrevObject = NULL;
@@ -191,7 +189,7 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,    //Obj
 			lpObjectManager->ObjectListHeader[dwType].dwMaxObjectID = pObject->dwObjectID;
 		}
 		lpObjectManager->ObjectListHeader[dwType].dwObjectNum ++;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 		goto __TERMINAL;
 	}
 
@@ -205,7 +203,7 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,    //Obj
 		lpObjectManager->ObjectListHeader[dwType].dwMaxObjectID = pObject->dwObjectID;
 	}
 	lpObjectManager->ObjectListHeader[dwType].dwObjectNum ++;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock, dwFlags);
 
 __TERMINAL:
 	return pObject;
@@ -222,45 +220,48 @@ __TERMINAL:
 // Output:
 //   The base address of the object,if failed,returns NULL.
 //
-
 static __COMMON_OBJECT* GetObjectByID(__OBJECT_MANAGER* lpObjectManager,
-									  DWORD             dwObjectID)
+	DWORD dwObjectID)
 {
 	__COMMON_OBJECT*         lpObject     = NULL;
 	DWORD                    dwLoop       = 0;
 	__OBJECT_LIST_HEADER*    lpListHeader = NULL;
 	BOOL                     bFind        = FALSE;
 
-	if(NULL == lpObjectManager)  //Parameters check.
+	if(NULL == lpObjectManager)
 	{
 		goto __TERMINAL;
 	}
 
-	for(dwLoop = 0;dwLoop < MAX_OBJECT_TYPE;dwLoop ++)    //For every object type.
+	/* For every object type. */
+	for(dwLoop = 0;dwLoop < MAX_OBJECT_TYPE;dwLoop ++)
 	{
 		lpListHeader = &(lpObjectManager->ObjectListHeader[dwLoop]);
-		if(lpListHeader->dwMaxObjectID < dwObjectID)  //If the maximal ID smaller than dwObjectID.
+		/* If the maximal ID smaller than dwObjectID. */
+		if(lpListHeader->dwMaxObjectID < dwObjectID)
 		{
 			continue;
 		}
 
 		lpObject = lpListHeader->lpFirstObject;
-		while(lpObject)    //For every object in this type list.
+		/* For every object in this type list. */
+		while(lpObject)
 		{
-			if(lpObject->dwObjectID == dwObjectID)  //Now,find the correct object.
+			if(lpObject->dwObjectID == dwObjectID)
 			{
 				bFind = TRUE;
 				break;
 			}
-			lpObject = lpObject->lpNextObject;      //Seek the next object.
+			lpObject = lpObject->lpNextObject;
 		}
-		if(TRUE == bFind)  //Find the correct object.
+		if(TRUE == bFind)
 		{
 			break;
 		}
 	}
 
-	if(FALSE == bFind)    //If can not find the correct object,set the return value to NULL.
+	/* If can not find the correct object,set the return value to NULL. */
+	if(FALSE == bFind)
 	{
 		lpObject = NULL;
 	}
@@ -268,7 +269,6 @@ static __COMMON_OBJECT* GetObjectByID(__OBJECT_MANAGER* lpObjectManager,
 __TERMINAL:
 	return lpObject;
 }
-
 
 //
 // Get the first object by type.Using this function,you can list all of the objects
@@ -286,7 +286,7 @@ static __COMMON_OBJECT* GetFirstObjectByType(__OBJECT_MANAGER* lpObjectManager,
 {
 	__COMMON_OBJECT* lpObject = NULL;
 
-	if((NULL == lpObjectManager) || (dwObjectType >= MAX_OBJECT_TYPE))    //Parameter check.
+	if((NULL == lpObjectManager) || (dwObjectType >= MAX_OBJECT_TYPE))
 	{
 		goto __TERMINAL;
 	}
@@ -309,28 +309,29 @@ __TERMINAL:
 //   No.
 //
 static VOID DestroyObject(__OBJECT_MANAGER* lpObjectManager,
-						  __COMMON_OBJECT*  lpObject)
+	__COMMON_OBJECT*  lpObject)
 {
 	__OBJECT_LIST_HEADER*      lpListHeader      = NULL;
 	__COMMON_OBJECT*           lpTmpObject       = NULL;
 	DWORD                      dwMaxID           = 0;
 	DWORD                      dwFlags;
 
-	if((NULL == lpObjectManager) || (NULL == lpObject))  //Parameters check.
+	/* Parameters check. */
+	if((NULL == lpObjectManager) || (NULL == lpObject))
 	{
 		goto __TERMINAL;
 	}
 
-	if(lpObject->dwObjectType >= MAX_OBJECT_TYPE)  //If the type value exceed maximal value.
+	if(lpObject->dwObjectType >= MAX_OBJECT_TYPE)
 	{
 		goto __TERMINAL;
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 	lpListHeader = &(lpObjectManager->ObjectListHeader[lpObject->dwObjectType]);
 	if(NULL == lpListHeader->lpFirstObject)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 		goto __TERMINAL;
 	}
 	dwMaxID = lpObject->dwObjectID;  //Record the object's ID.
@@ -363,17 +364,16 @@ static VOID DestroyObject(__OBJECT_MANAGER* lpObjectManager,
 			lpListHeader->dwObjectNum --;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 
-	lpObject->Uninitialize(lpObject);    //Call the Uninitialize routine to de-initialize
-	                                     //the current object.
+	/* Call the Uninitialize routine to de-initialize the current object.*/
+	lpObject->Uninitialize(lpObject);
+	/* Release the object. */
+	KMemFree((LPVOID)lpObject,KMEM_SIZE_TYPE_ANY,lpObject->dwObjectSize);
 
-	KMemFree((LPVOID)lpObject,KMEM_SIZE_TYPE_ANY,lpObject->dwObjectSize);  //Free the
-	                                                                       //Object's memory.
-
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(dwMaxID >= lpListHeader->dwMaxObjectID)  //Now,should update the current list's maximal
-		                                        //object ID.
+	__ENTER_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
+	/* Update maximal object ID. */
+	if(dwMaxID >= lpListHeader->dwMaxObjectID)
 	{
 		lpTmpObject = lpListHeader->lpFirstObject;
 		dwMaxID = lpTmpObject ? lpTmpObject->dwObjectID : 0;
@@ -386,8 +386,9 @@ static VOID DestroyObject(__OBJECT_MANAGER* lpObjectManager,
 			lpTmpObject = lpTmpObject->lpNextObject;
 		}
 	}
-	lpListHeader->dwMaxObjectID = dwMaxID;  //Update the current list's maximal ID value.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	/* Update the current list's maximal ID value. */
+	lpListHeader->dwMaxObjectID = dwMaxID;
+	__LEAVE_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 
 __TERMINAL:
 	return;

@@ -165,10 +165,12 @@
     <ClCompile Include="appldr\AppLoader_PE.C" />
     <ClCompile Include="appldr\AppLoader_STM32.C" />
     <ClCompile Include="arch\x86\acpi.c" />
+    <ClCompile Include="arch\x86\apic.c" />
     <ClCompile Include="arch\x86\arch_x86.c" />
     <ClCompile Include="arch\x86\bios.c" />
     <ClCompile Include="arch\x86\biosvga.c" />
     <ClCompile Include="arch\x86\hellocn.c" />
+    <ClCompile Include="arch\x86\pic.c" />
     <ClCompile Include="arch\x86\smpx86.c" />
     <ClCompile Include="drivers\x86\com.c" />
     <ClCompile Include="drivers\x86\IDEBASE.C" />
@@ -178,7 +180,6 @@
     <ClCompile Include="drivers\x86\pcnet.c" />
     <ClCompile Include="drivers\x86\rtl8111.c" />
     <ClCompile Include="kernel\chardisplay.c" />
-    <ClCompile Include="kernel\comqueue.c" />
     <ClCompile Include="kernel\console.c" />
     <ClCompile Include="kernel\debug.c" />
     <ClCompile Include="kernel\devmgr.c" />
@@ -373,9 +374,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\acpi.h" />
+    <ClInclude Include="arch\x86\apic.h" />
     <ClInclude Include="arch\x86\arch.h" />
     <ClInclude Include="arch\x86\bios.h" />
     <ClInclude Include="arch\x86\biosvga.h" />
+    <ClInclude Include="arch\x86\pic.h" />
     <ClInclude Include="arch\x86\smpx86.h" />
     <ClInclude Include="arch\x86\syn_mech.h" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
@@ -387,7 +390,6 @@
     <ClInclude Include="include\byteord.h" />
     <ClInclude Include="include\CharDisplay.H" />
     <ClInclude Include="INCLUDE\COMMOBJ.H" />
-    <ClInclude Include="INCLUDE\COMQUEUE.H" />
     <ClInclude Include="include\console.h" />
     <ClInclude Include="include\debug.h" />
     <ClInclude Include="INCLUDE\DEVMGR.H" />

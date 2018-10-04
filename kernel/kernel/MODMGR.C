@@ -13,16 +13,12 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "modmgr.h"
 #include "kapi.h"
 #include "string.h"
 #include "types.h"
 #include "commobj.h"
-#include "comqueue.h"
 #include "stdio.h"
 #include "kapi.h"
 #include "process.h"

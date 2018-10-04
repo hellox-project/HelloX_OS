@@ -28,8 +28,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.82"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.820(Beta),build in 2018/07/29,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.83"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.830(Beta),build in 2018/10/01,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
@@ -160,7 +160,7 @@
 //************************************************************************
 
 //Include IDE driver in OS.
-#define __CFG_DRV_IDE
+//#define __CFG_DRV_IDE
 
 //Include COM driver in OS.
 #define __CFG_DRV_COM

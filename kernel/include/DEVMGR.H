@@ -16,18 +16,18 @@
 #ifndef __DEVMGR_H__
 #define __DEVMGR_H__
 
+/* The maximal bus number supported by Hello China currently. */
+#define MAX_BUS_NUM        16
+/* Maximal resource records one device can have. */
+#define MAX_RESOURCE_NUM    7
+/* The maximal length of device's name. */
+#define MAX_DEV_NAME       32
 
-#define MAX_BUS_NUM        16    //The maximal bus number supported by Hello China currently.
-#define MAX_RESOURCE_NUM    7    //Maximal resource records one device can have.
-#define MAX_DEV_NAME       32    //The maximal length of device's name.
-
-//
-//The definition of device identifier.
-//
+/* The definition of device identifier. */
 typedef struct{
 	DWORD             dwBusType;
 	union{
-		//PCI device or function's identifier.
+		/* Identifier for a PCI device. */
 		struct{
 			UCHAR     ucMask;
 			WORD      wVendor;
@@ -37,12 +37,12 @@ typedef struct{
 			WORD      wReserved;
 		}PCI_Identifier;
 
-		//ISA bus device identifier.
+		/* Identifier for ISA bus device. */
 		struct{
 			DWORD     dwDevice;
 		}ISA_Identifier;
 
-		//USB device or interface identifer.
+		/* USB device or interface identifer. */
 		struct{
 			UCHAR ucMask;
 			UCHAR bDeviceClass;
@@ -57,7 +57,7 @@ typedef struct{
 	}Bus_ID;
 }__IDENTIFIER;
 
-//Member masks of USB identifier.
+/* Member masks of USB identifier. */
 #define USB_IDENTIFIER_MASK_DEVICECLASS          0x01
 #define USB_IDENTIFIER_MASK_DEVICESUBCLASS       0x02
 #define USB_IDENTIFIER_MASK_DEVICEPROTOCOL       0x04
@@ -71,24 +71,27 @@ typedef struct{
 //Check if 2 device IDs are match,i.e,the pIdFullClass includes the first one.
 BOOL DeviceIdMatch(__IDENTIFIER* pIdSubclass, __IDENTIFIER* pIdFullClass);
 
-//
-//The definition of resource descriptor object.
-//
+/* Resource descriptor object. */
 typedef struct tag__RESOURCE{
-	struct tag__RESOURCE*         lpNext;
-	struct tag__RESOURCE*         lpPrev;
-	DWORD               dwResType;        //Resource type.
+	struct tag__RESOURCE* lpNext;
+	struct tag__RESOURCE* lpPrev;
+	/* Resource type. */
+	DWORD dwResType;
 	union{
+		/* IO port for x86. */
 		struct{
 			WORD        wStartPort;
 			WORD        wEndPort;
-		}IOPort;                          //IO Port resource descriptor.
+		}IOPort;
+		/* Memory region. */
 		struct{
 			LPVOID      lpStartAddr;
 			LPVOID      lpEndAddr;
-		}MemoryRegion;                    //Memory region resource descriptor.
-		UCHAR ucVector;                   //Interrupt vector.
-		LPVOID usbIntAssocBase;           //Base address of USB interface association.
+		}MemoryRegion;
+		/* Interrupt vector. */
+		UCHAR ucVector;
+		/* Base address of USB interface association. */
+		LPVOID usbIntAssocBase;
 	}Dev_Res;
 }__RESOURCE;
 
@@ -107,46 +110,54 @@ typedef struct tag__RESOURCE{
 struct __PHYSICAL_DEVICE;
 struct __SYSTEM_BUS;
 
-//
-//The definition of physical device object.
-//This object is used to describe a abstract object resides on bus.
-//
-struct tag__PHYSICAL_DEVICE{
-	__IDENTIFIER                   DevId;                  //Device's identifier.
-	DWORD                          dwNumber;               //Device number in a system bus.
-	UCHAR                          strName[MAX_DEV_NAME];  //Device's name.
-	__RESOURCE                     Resource[MAX_RESOURCE_NUM];  //Resource descripotrs.
-	struct tag__PHYSICAL_DEVICE*   lpNext;
-	//struct tag__PHYSICAL_DEVICE* lpPrev;
-	struct tag__SYSTEM_BUS*        lpHomeBus;      //Bus where the device resides.
-	struct tag__SYSTEM_BUS*        lpChildBus;     //Child bus,if the device is a bridge.
-	LPVOID                         lpPrivateInfo;  //Pointing to a bus type specific structure
-                                                   //used to describe specific bus.
-	//Physical device operations.
-	DWORD   (*ReadDeviceConfig)(struct tag__PHYSICAL_DEVICE* dev, DWORD dwConfig,int size);
-	BOOL    (*WriteDeviceConfig)(struct tag__PHYSICAL_DEVICE* dev, DWORD dwConfig, DWORD dwVal,int size);
-};
+/*
+ * Physical device object,used to describe a device object on system bus.
+ * Each device that HelloX can identify will be managed by one of this
+ * object.
+ */
+typedef struct tag__PHYSICAL_DEVICE{
+	/* Device's identifier. */
+	__IDENTIFIER DevId;
+	/* Device number in a system bus. */
+	DWORD dwNumber;
+	/* Device's name. */
+	UCHAR strName[MAX_DEV_NAME];
+	/* Resource descripotrs describes the resources that the device occupying. */
+	__RESOURCE Resource[MAX_RESOURCE_NUM];
+	/* Physical device list. */
+	struct tag__PHYSICAL_DEVICE* lpNext;
+	/* Bus where the device resides. */
+	struct tag__SYSTEM_BUS* lpHomeBus;
+	/* Child bus,if the device is a bridge. */
+	struct tag__SYSTEM_BUS* lpChildBus;
+	/* Pointing to device specific information. */
+	LPVOID lpPrivateInfo;
+	/* Operations can apply on physical device. */
+	DWORD (*ReadDeviceConfig)(struct tag__PHYSICAL_DEVICE* dev, DWORD dwConfig,int size);
+	BOOL (*WriteDeviceConfig)(struct tag__PHYSICAL_DEVICE* dev, DWORD dwConfig, DWORD dwVal,int size);
+}__PHYSICAL_DEVICE;
 
-//
-//The definition of system bus object.
-//This object is used to describe a common bus.
-//
-struct tag__SYSTEM_BUS{
-	struct tag__SYSTEM_BUS*      lpParentBus;    //Parent bus.
-	struct tag__PHYSICAL_DEVICE* lpDevListHdr;   //List devices in this bus.
-	struct tag__PHYSICAL_DEVICE* lpHomeBridge;   //The bridge this bus attachs on.
-	__RESOURCE                   Resource;       //Resource list header in this bus.
+/*
+ * The definition of system bus object.
+ * This object is used to describe a common bus.
+ */
+typedef struct tag__SYSTEM_BUS{
+	/* Parent bus. */
+	struct tag__SYSTEM_BUS* lpParentBus;
+	/* Physical device(s) on this bus. */
+	struct tag__PHYSICAL_DEVICE* lpDevListHdr;
+	/* The bridge this bus attachs on. */
+	struct tag__PHYSICAL_DEVICE* lpHomeBridge;
+	/* Resource list header in this bus. */
+	__RESOURCE Resource;
 
-	DWORD                        dwBusNum;       //Bus number.
-	DWORD                        dwBusType;      //Bus type.
-
+	/* Bus number and bus type. */
+	DWORD dwBusNum;
+	DWORD dwBusType;
 	//BUS operations.
 	DWORD   (*ReadConfig)(struct tag__SYSTEM_BUS* bus, DWORD dwConfigReg,int size);
 	BOOL    (*WriteConfig)(struct tag__SYSTEM_BUS* bus, DWORD dwConfigReg, DWORD dwVal,int size);
-};
-
-typedef struct tag__PHYSICAL_DEVICE __PHYSICAL_DEVICE;
-typedef struct tag__SYSTEM_BUS      __SYSTEM_BUS;
+}__SYSTEM_BUS;
 
 //BUS types.
 #define BUS_TYPE_NULL            0x00000000
@@ -166,38 +177,46 @@ typedef struct tag__SYSTEM_BUS      __SYSTEM_BUS;
 #define VIRTUAL_MEMORY_TO_PCI(dev,ptr) ((void*)ptr)
 #define PHYSICAL_MEMORY_TO_PCI(dev,ptr) ((void*)ptr)
 
-//
-//The definition of device manager object.
-//This object is a global object,all physical device releated operations,are offered
-//by this object.
-//
+/*
+ * The definition of device manager object.
+ * This object is a global object,all physical device releated operations,are offered
+ * by this object.
+ */
 typedef struct tag__DEVICE_MANAGER{
-	__SYSTEM_BUS                 SystemBus[MAX_BUS_NUM];    //Bus array.
-	__RESOURCE                   FreePortResource;          //Used to link free port region
-	                                                        //together.
-	__RESOURCE                   UsedPortResource;          //Links used port region together.
+	/* Lock to protect this object. */
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	/* Bus array. */
+	__SYSTEM_BUS SystemBus[MAX_BUS_NUM];
+	/* Used to link free port region together. */
+	__RESOURCE FreePortResource;
+	/* Links used port region together. */
+	__RESOURCE UsedPortResource;
 
-	BOOL                         (*Initialize)(struct tag__DEVICE_MANAGER*);    //Initialize routine.
-	__PHYSICAL_DEVICE*           (*GetDevice)(struct tag__DEVICE_MANAGER*,
-		                                      DWORD               dwBusType,
-											  __IDENTIFIER*       lpIdentifier,
-											  __PHYSICAL_DEVICE*  lpStart);
-
-	BOOL                         (*AppendDevice)(struct tag__DEVICE_MANAGER*,
-		                                         __PHYSICAL_DEVICE*);
-
-	VOID                         (*DeleteDevice)(struct tag__DEVICE_MANAGER*,
-		                                         __PHYSICAL_DEVICE*);
-	
-	BOOL                         (*CheckPortRegion)(struct tag__DEVICE_MANAGER*,
-		                                            __RESOURCE*);
-
-	BOOL                         (*ReservePortRegion)(struct tag__DEVICE_MANAGER*,
-		                                              __RESOURCE*);
-
-	VOID                         (*ReleasePortRegion)(struct tag__DEVICE_MANAGER*,
-		                                              __RESOURCE*);
-
+	/* Operations that device manager can offer. */
+	/* Initializer of device manager. */
+	BOOL (*Initialize)(struct tag__DEVICE_MANAGER*);
+	/* Get a device from system given it's bus type and device ID. */
+	__PHYSICAL_DEVICE* (*GetDevice)(struct tag__DEVICE_MANAGER*,
+		DWORD dwBusType,
+		__IDENTIFIER* lpIdentifier,
+		__PHYSICAL_DEVICE* lpStart);
+	/* Append a new physical device into device manager. */
+	BOOL (*AppendDevice)(struct tag__DEVICE_MANAGER*,
+		__PHYSICAL_DEVICE*);
+	/* Delete a specified physical device. */
+	VOID (*DeleteDevice)(struct tag__DEVICE_MANAGER*,
+		__PHYSICAL_DEVICE*);
+	/* Check if a port range is free. */
+	BOOL (*CheckPortRegion)(struct tag__DEVICE_MANAGER*,
+		__RESOURCE*);
+	/* Reserve a range of port. */
+	BOOL (*ReservePortRegion)(struct tag__DEVICE_MANAGER*,
+		__RESOURCE*);
+	/* Release port range. */
+	VOID (*ReleasePortRegion)(struct tag__DEVICE_MANAGER*,
+		__RESOURCE*);
 }__DEVICE_MANAGER;
 
 /****************************************************************************************

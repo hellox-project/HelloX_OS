@@ -629,9 +629,6 @@
     <ClCompile Include="kernel\chardisplay.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kernel\comqueue.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="kernel\console.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -731,6 +728,12 @@
     <ClCompile Include="arch\x86\smpx86.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="arch\x86\apic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\pic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -740,9 +743,6 @@
       <Filter>Header Files\include</Filter>
     </ClInclude>
     <ClInclude Include="INCLUDE\COMMOBJ.H">
-      <Filter>Header Files\include</Filter>
-    </ClInclude>
-    <ClInclude Include="INCLUDE\COMQUEUE.H">
       <Filter>Header Files\include</Filter>
     </ClInclude>
     <ClInclude Include="include\console.h">
@@ -1214,6 +1214,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="arch\x86\syn_mech.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\apic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\pic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

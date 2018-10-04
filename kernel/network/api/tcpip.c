@@ -111,10 +111,10 @@ tcpip_thread(void *arg)
 			/* Fetch incoming packet(s) and process it from incoming list. */
 			while (TRUE)
 			{
-				__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+				__ENTER_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 				if (0 == pExt->nIncomePktSize) /* No pending packet. */
 				{
-					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 					BUG_ON(NULL != pExt->pIncomePktFirst);
 					BUG_ON(NULL != pExt->pIncomePktLast);
 					break;
@@ -131,7 +131,7 @@ tcpip_thread(void *arg)
 						BUG_ON(pExt->nIncomePktSize != 0);
 						pExt->pIncomePktLast = NULL;
 					}
-					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 				}
 				/* Process it. */
 #if LWIP_ETHERNET
@@ -237,13 +237,13 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 	* Use critical section since this routine maybe called in NIC
 	* interrupt handler.
 	*/
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 	if (0 == pExt->nIncomePktSize) /* No packet in list yet. */
 	{
 		if (sys_mbox_valid(&mbox)) {
 			msg = (struct tcpip_msg *)memp_malloc(MEMP_TCPIP_MSG_INPKT);
 			if (msg == NULL) {
-				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+				__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 				_hx_free(pIncomPkt);
 				return ERR_MEM;
 			}
@@ -252,7 +252,7 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 			msg->msg.inp.p = p;
 			msg->msg.inp.netif = inp;
 			if (sys_mbox_trypost(&mbox, msg) != ERR_OK) {
-				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+				__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 				memp_free(MEMP_TCPIP_MSG_INPKT, msg);
 				_hx_free(pIncomPkt);
 				return ERR_MEM;
@@ -261,7 +261,7 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 			pExt->pIncomePktLast = pIncomPkt;
 			pExt->pIncomePktFirst = pIncomPkt;
 			pExt->nIncomePktSize++;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 			return ERR_OK;
 		}
 	}
@@ -271,7 +271,7 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 		pExt->pIncomePktLast->pNext = pIncomPkt;
 		pExt->pIncomePktLast = pIncomPkt;
 		pExt->nIncomePktSize++;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 		return ERR_OK;
 	}
 	return ERR_VAL;

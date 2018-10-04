@@ -55,9 +55,6 @@ typedef unsigned short    UWCHAR;
 #define __MEM_ALLOC(size)   KMemAlloc(size,KMEM_SIZE_TYPE_ANY)
 #define __MEM_FREE(p)       KMemFree(p,KMEM_SIZE_TYPE_ANY,0)
  
-//#define __ENTER_CRITICAL_SECTION(a,b)
-//#define __LEAVE_CRITICAL_SECTION(a,b)
- 
 //NTFS file name's length.
 #define NTFS_FILENAME_SIZE       256
  

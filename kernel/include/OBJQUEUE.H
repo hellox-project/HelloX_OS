@@ -15,6 +15,9 @@
 #ifndef __OBJQUEUE_H__
 #define __OBJQUEUE_H__
 
+/* For spin lock. */
+#include <TYPES.H>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,26 +33,28 @@ END_DEFINE_OBJECT(__PRIORITY_QUEUE_ELEMENT)
 //The definition of Priority Queue.
 
 BEGIN_DEFINE_OBJECT(__PRIORITY_QUEUE)
-    INHERIT_FROM_COMMON_OBJECT                            //Inherit from __COMMON_OBJECT.
-    __PRIORITY_QUEUE_ELEMENT     ElementHeader;
-    DWORD                        dwCurrElementNum;
-	BOOL                         (*InsertIntoQueue)(
-		                         __COMMON_OBJECT* lpThis,
-								 __COMMON_OBJECT* lpObject,
-								 DWORD            dwPriority
-								 );
-	BOOL                         (*DeleteFromQueue)(
-		                         __COMMON_OBJECT* lpThis,
-								 __COMMON_OBJECT* lpObject
-								 );
-	__COMMON_OBJECT*             (*GetHeaderElement)(
-		                         __COMMON_OBJECT* lpThis,
-								 DWORD*           lpPriority
-								 );
+    INHERIT_FROM_COMMON_OBJECT //Inherit from __COMMON_OBJECT.
+    __PRIORITY_QUEUE_ELEMENT ElementHeader;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	/* Validate the object. */
+	DWORD dwObjectSignature;
+	/* How many queue element(s) in the queue. */
+    DWORD dwCurrElementNum;
+	/* Routines to operate the queue. */
+	BOOL (*InsertIntoQueue)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpObject,
+		DWORD dwPriority);
+	BOOL (*DeleteFromQueue)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpObject);
+	__COMMON_OBJECT* (*GetHeaderElement)(__COMMON_OBJECT* lpThis,
+		DWORD* lpPriority);
+	BOOL (*ObjectInQueue)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpObject);
 END_DEFINE_OBJECT(__PRIORITY_QUEUE)
 
 //Initialize routine and Uninitialize's definition.
-
 BOOL PriQueueInitialize(__COMMON_OBJECT* lpThis);
 VOID PriQueueUninitialize(__COMMON_OBJECT* lpThis);
 

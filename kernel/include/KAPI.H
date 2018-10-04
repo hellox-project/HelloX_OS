@@ -42,10 +42,6 @@
 #endif
 #endif
 
-#ifndef __COMQUEUE_H__
-#include "comqueue.h"
-#endif
-
 #ifndef __OBJQUEUE_H__
 #include "objqueue.h"
 #endif
@@ -180,6 +176,14 @@ VOID DestroyEvent(HANDLE hEvent);
 //Set event object's status to signaling.This will wakeup all thread(s)
 //waiting this event object.
 DWORD SetEvent(HANDLE hEvent);
+
+/* 
+ * Palse an event object,this is the combination operations of 
+ * SetEvent and ResetEvent,in atomic.
+ * All kernel threads waiting on the event will be waken up,the
+ * previous status is retuned.
+ */
+DWORD PulseEvent(HANDLE hEvent);
 
 //Set event object's status to unsignal.
 DWORD ResetEvent(HANDLE hEvent);

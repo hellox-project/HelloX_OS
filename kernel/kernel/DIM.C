@@ -20,54 +20,57 @@
 #include "types.h"
 #include "hellocn.h"
 #include "kapi.h"
+
 //
-//The implementation of Initialize routine.
+//Initializer of DIM object.
 //
 static BOOL DimInitialize(__COMMON_OBJECT* lpThis,
-						  __COMMON_OBJECT* lpFocusThread,
-						  __COMMON_OBJECT* lpShellThread)
+	__COMMON_OBJECT* lpFocusThread,
+	__COMMON_OBJECT* lpShellThread)
 {
-	__DEVICE_INPUT_MANAGER*    lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
+	__DEVICE_INPUT_MANAGER* lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
+	unsigned long ulFlags;
 
-	if(NULL == lpInputMgr)    //Parameter check.
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpInputMgr);
 
+	__ENTER_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, ulFlags);
 	lpInputMgr->lpFocusKernelThread = (__KERNEL_THREAD_OBJECT*)lpFocusThread;
 	lpInputMgr->lpShellKernelThread = (__KERNEL_THREAD_OBJECT*)lpShellThread;
+	__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, ulFlags);
 
 	return TRUE;
 }
 
-
-//
-//Send a device message to a specified kernel thread,or to the default shell thread
-//if target thread is not specified.
-//
-static DWORD SendDeviceMessage(__COMMON_OBJECT*    lpThis,
-							   __DEVICE_MESSAGE*   lpDevMsg,
-							   __COMMON_OBJECT*    lpTarget)
+/*
+ * Send a device message to a specified kernel thread,or to the default shell thread
+ * if target thread is not specified.
+ */
+static DWORD SendDeviceMessage(__COMMON_OBJECT* lpThis,
+	__DEVICE_MESSAGE* lpDevMsg,
+	__COMMON_OBJECT* lpTarget)
 {
-	__DEVICE_INPUT_MANAGER*    lpInputMgr     = (__DEVICE_INPUT_MANAGER*)lpThis;
-	__KERNEL_THREAD_MESSAGE*   lpThreadMsg    = (__KERNEL_THREAD_MESSAGE*)lpDevMsg;
-	DWORD                      dwFlags        = 0;
+	__DEVICE_INPUT_MANAGER* lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
+	__KERNEL_THREAD_MESSAGE* lpThreadMsg = (__KERNEL_THREAD_MESSAGE*)lpDevMsg;
+	unsigned long dwFlags = 0;
 
-	if((NULL == lpInputMgr) || (NULL == lpThreadMsg))    //Parameter check.
-	{
-		return DEVICE_MANAGER_FAILED;
-	}
+	BUG_ON((NULL == lpInputMgr) || (NULL == lpThreadMsg));
 
+	/* Send device input message to target kernel thread if specified. */
 	if(lpTarget != NULL)
 	{
 		KernelThreadManager.SendMessage(lpTarget,lpThreadMsg);
 		return DEVICE_MANAGER_SUCCESS;
 	}
 
-	//The following code should not be interrupted.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(lpInputMgr->lpFocusKernelThread != NULL)  //DIM contains a valid current focus thread object.
+	/* Send message to current focus or shell thread. */
+	__ENTER_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
+	if(lpInputMgr->lpFocusKernelThread != NULL)
 	{
+		/* 
+		 * DIM contains a valid current focus thread object. 
+		 * But device input message can not be sent to it if
+		 * it's a terminaled kernel thread.
+		 */
 		if(KERNEL_THREAD_STATUS_TERMINAL == lpInputMgr->lpFocusKernelThread->dwThreadStatus)
 		{
 			//Clear the current focus thread since it's status is TERMINAL.
@@ -75,85 +78,83 @@ static DWORD SendDeviceMessage(__COMMON_OBJECT*    lpThis,
 			//Send to the default shell thread if exist.
 			if(NULL != lpInputMgr->lpShellKernelThread)
 			{
-				KernelThreadManager.SendMessage((__COMMON_OBJECT*)(lpInputMgr->lpShellKernelThread),
+				KernelThreadManager.SendMessage(
+					(__COMMON_OBJECT*)(lpInputMgr->lpShellKernelThread),
 					lpThreadMsg);
-				__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+				__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 				return DEVICE_MANAGER_SUCCESS;
 			}
-			else    //The current shell kernel thread is not exists.
+			else
 			{
-				__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+				/* The current shell kernel thread is not exists. */
+				__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 				return DEVICE_MANAGER_NO_SHELL_THREAD;
 			}
 		}
-		else  //Current focus kernel thread is not terminated,send the message to it.
+		else
 		{
-			KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpInputMgr->lpFocusKernelThread,
+			/* Just send it to current focus kernel thread. */
+			KernelThreadManager.SendMessage(
+				(__COMMON_OBJECT*)lpInputMgr->lpFocusKernelThread,
 				lpThreadMsg);
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 			return DEVICE_MANAGER_SUCCESS;
 		}
 	}
-	else //The current focus kernel thread is not exists,send to default shell thread.
+	else
 	{
+		/* The current focus kernel thread is not exists,send to default shell thread. */
 		if(NULL != lpInputMgr->lpShellKernelThread)
 		{
 			KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpInputMgr->lpShellKernelThread,
 				lpThreadMsg);
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 			return DEVICE_MANAGER_SUCCESS;
 		}
 		else
 		{
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			/* No kernel thread is available to receive device message. */
+			__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 			return DEVICE_MANAGER_NO_SHELL_THREAD;
 		}
 	}
 }
 
-//
-//Set the current focus thread.
-//
-static __COMMON_OBJECT* SetFocusThread(__COMMON_OBJECT*  lpThis,
-									   __COMMON_OBJECT*  lpFocusThread)
+/* Set the current focus thread. */
+static __COMMON_OBJECT* SetFocusThread(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpFocusThread)
 {
-	__DEVICE_INPUT_MANAGER*    lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
-	__KERNEL_THREAD_OBJECT*    lpRetVal   = NULL;
-	DWORD                      dwFlags    = 0;
+	__DEVICE_INPUT_MANAGER* lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
+	__KERNEL_THREAD_OBJECT* lpRetVal = NULL;
+	unsigned long dwFlags = 0;
 	
-	if(NULL == lpInputMgr)    //Parameter check.
-	{
-		return (__COMMON_OBJECT*)lpRetVal;
-	}
+	BUG_ON(NULL == lpInputMgr);
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpRetVal                        = lpInputMgr->lpFocusKernelThread;
+	__ENTER_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
+	lpRetVal = lpInputMgr->lpFocusKernelThread;
 	lpInputMgr->lpFocusKernelThread = (__KERNEL_THREAD_OBJECT*)lpFocusThread;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 
 	return (__COMMON_OBJECT*)lpRetVal;
 }
 
-//
-//Set the default shell thread.Any device input message will be sent to this thread if no
-//current focus thread exist.
-//
-static __COMMON_OBJECT* SetShellThread(__COMMON_OBJECT*  lpThis,
-									   __COMMON_OBJECT*  lpShellThread)
+/*
+ * Set the default shell thread.Any device input message will be sent to this thread if no
+ * current focus thread exist.
+ */
+static __COMMON_OBJECT* SetShellThread(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpShellThread)
 {
-	__DEVICE_INPUT_MANAGER*    lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
-	__KERNEL_THREAD_OBJECT*    lpRetVal   = NULL;
-	DWORD                      dwFlags    = 0;
+	__DEVICE_INPUT_MANAGER* lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
+	__KERNEL_THREAD_OBJECT* lpRetVal = NULL;
+	unsigned long dwFlags = 0;
 	
-	if(NULL == lpInputMgr)    //Parameter check.
-	{
-		return (__COMMON_OBJECT*)lpRetVal;
-	}
+	BUG_ON(NULL == lpInputMgr);
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 	lpRetVal = lpInputMgr->lpShellKernelThread;
 	lpInputMgr->lpShellKernelThread = (__KERNEL_THREAD_OBJECT*)lpShellThread;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 
 	return (__COMMON_OBJECT*)lpRetVal;
 }
@@ -170,6 +171,9 @@ static __COMMON_OBJECT* SetShellThread(__COMMON_OBJECT*  lpThis,
 __DEVICE_INPUT_MANAGER DeviceInputManager = {
 	NULL,                                     //lpFocusKernelThread.
 	NULL,                                     //lpShellKernelThread.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,
+#endif
 	SendDeviceMessage,                        //SendDeviceMessage routine.
 	SetFocusThread,                           //SetFocusThread routine.
 	SetShellThread,                           //SetShellThread routine.

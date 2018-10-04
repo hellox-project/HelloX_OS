@@ -437,7 +437,11 @@ typedef struct tag__USB_MANAGER{
 	//Alias of usb_dev global array.
 	struct usb_device* UsbDevArray[USB_MAX_DEVICE];
 	int dev_index;
-	int nPhysicalDevNum;  //How many USB physical device in system.
+	//How many USB physical device in system.
+	int nPhysicalDevNum;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 
 	//Physical device list,each USB device has one element in this list.
 	__PHYSICAL_DEVICE* pUsbDeviceRoot;

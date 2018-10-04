@@ -351,12 +351,12 @@ void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
 
 static void r8152_mdio_write(struct r8152 *tp, u32 reg_addr, u32 value)
 {
-	ocp_reg_write(tp, OCP_BASE_MII + reg_addr * 2, value);
+	ocp_reg_write(tp, (u16)(OCP_BASE_MII + reg_addr * 2), (u16)value);
 }
 
 static int r8152_mdio_read(struct r8152 *tp, u32 reg_addr)
 {
-	return ocp_reg_read(tp, OCP_BASE_MII + reg_addr * 2);
+	return ocp_reg_read(tp, (u16)(OCP_BASE_MII + reg_addr * 2));
 }
 
 void sram_write(struct r8152 *tp, u16 addr, u16 data)
@@ -1035,7 +1035,7 @@ void r8152b_get_version(struct r8152 *tp)
 	for (i = 0; i < ARRAY_SIZE(r8152_versions); i++) {
 		if (tcr == r8152_versions[i].tcr) {
 			/* Found a supported version */
-			tp->version = r8152_versions[i].version;
+			tp->version = (u8)r8152_versions[i].version;
 			tp->supports_gmii = r8152_versions[i].gmii;
 			break;
 		}
@@ -1418,7 +1418,7 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 	/*
 	* Link the new created ethernet buffer to sending list.
 	*/
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 	if (NULL == ss->pSndListLast)  //First element.
 	{
 		pNewBuff->pNext = NULL;
@@ -1426,7 +1426,7 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 		ss->pSndListFirst = pNewBuff;
 		pEthInt->nSendingQueueSz += 1;
 		EthernetManager.nDrvSendingQueueSz += 1;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 
 		/*
 		* Send sending message to the corresponding RX_TX thread
@@ -1442,11 +1442,11 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 			/*
 			* Remove it from list.
 			*/
-			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			__ENTER_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			ss->pSndListLast = ss->pSndListFirst = NULL;
 			pEthInt->nSendingQueueSz--;
 			EthernetManager.nDrvSendingQueueSz--;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			EthernetManager.DestroyEthernetBuffer(pNewBuff);
 			return bResult;
 		}
@@ -1455,7 +1455,7 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 	{
 		if (pEthInt->nSendingQueueSz >= MAX_ETH_SENDINGQUEUESZ)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			EthernetManager.DestroyEthernetBuffer(pNewBuff);
 			bResult = FALSE;
 		}
@@ -1468,7 +1468,7 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 			ss->pSndListLast = pNewBuff;
 			pEthInt->nSendingQueueSz++;
 			EthernetManager.nDrvSendingQueueSz++;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			bResult = TRUE;
 		}
 	}

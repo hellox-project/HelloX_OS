@@ -357,8 +357,18 @@ static struct MADT* LocateMADT()
 	return (struct MADT*)LocateSDT("APIC");
 }
 
-/* Parse MADT entries one by one. */
-static void ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
+/* 
+ * Parse MADT entries one by one. 
+ * Returns TRUE if anything is in place,else
+ * FALSE will be returned,and the system may
+ * stop to initialize or just run in UP mode.
+ * The following case may casue failure:
+ * 1. Can not allocate interrupt controller object;
+ * 2. Failed to add found processor into ProcessorManager;
+ * 3. Too many processors detected(exceed MAX_CPU_NUM);
+ * 4. There is no MADT entry at all.
+ */
+static BOOL ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
 {
 	char* pEntryBegin = NULL;
 	char* pEntryEnd = NULL;
@@ -367,6 +377,10 @@ static void ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
 	char entry_length = 0;
 	int core_bits = GetCoreBits();
 	int logical_cpu_bits = GetLogicalCPUBits(core_bits);
+	int logical_cpu_id = 0, core_id = 0, chip_id = 0;
+	__LOGICALCPU_SPECIFIC* plcpuSpecific = NULL;
+	int processor_detected = 0;
+	BOOL bResult = FALSE;
 
 	/* Parameters checking. */
 	BUG_ON(NULL == pMADT);
@@ -398,18 +412,36 @@ static void ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
 			break;
 		case MADT_ENTRY_TYPE_LAPIC:
 			pLocalApic = (struct __LOCAL_APIC*)pEntryBegin;
-//#if 0
+			/* Show out the information. */
 			_hx_printf("LocalAPIC:processor_id = %d,apic_id = %d,flags = 0x%X\r\n",
 				pLocalApic->processor_id,
 				pLocalApic->apic_id,
 				pLocalApic->flags);
-//#endif
+			/* Move to next entry. */
 			entry_length = pLocalApic->entry_length;
 			pEntryBegin += entry_length;
+			/* The corresponding processor is not enabled. */
+			if (0 == pLocalApic->flags)
+			{
+				break;
+			}
+			processor_detected++;
+			if (processor_detected > MAX_CPU_NUM)
+			{
+				_hx_printk("Too many processors detected,can not support yet.\r\n");
+				goto __TERMINAL;
+			}
+			/* Create a logical CPU specific information object. */
+			plcpuSpecific = (__LOGICALCPU_SPECIFIC*)_hx_calloc(1,
+				sizeof(__LOGICALCPU_SPECIFIC));
+			if (NULL == plcpuSpecific)
+			{
+				goto __TERMINAL;
+			}
 			/* Substract the chip ID,core ID,and logical CPU ID. */
-			int logical_cpu_id = (pLocalApic->apic_id) & ((1 << logical_cpu_bits) - 1);
-			int core_id = (pLocalApic->apic_id >> logical_cpu_bits) & ((1 << core_bits) - 1);
-			int chip_id = (pLocalApic->apic_id) & (~((1 << (logical_cpu_bits + core_bits)) - 1));
+			logical_cpu_id = (pLocalApic->apic_id) & ((1 << logical_cpu_bits) - 1);
+			core_id = (pLocalApic->apic_id >> logical_cpu_bits) & ((1 << core_bits) - 1);
+			chip_id = (pLocalApic->apic_id) & (~((1 << (logical_cpu_bits + core_bits)) - 1));
 			/* 
 			 * Add the found processor into system,using the parameters above. 
 			 * Set domain ID to 0 forcefully since we do not support more than one domain yet.
@@ -417,7 +449,10 @@ static void ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
 			if (!ProcessorManager.AddProcessor(0, chip_id, core_id, logical_cpu_id))
 			{
 				_hx_printf("Failed to add processor[id = %d] into system.\r\n", pLocalApic->apic_id);
+				goto __TERMINAL;
 			}
+			/* Set logical CPU specific information. */
+			ProcessorManager.SetLogicalCPUSpecific(0, chip_id, core_id, logical_cpu_id, (void*)plcpuSpecific);
 			/* Save chip specific information. */
 			ProcessorManager.SetChipSpecific(0, chip_id, (void*)pChipSpec);
 			break;
@@ -445,9 +480,11 @@ static void ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
 			goto __TERMINAL;
 		}
 	}
+
+	bResult = TRUE;
 	/* Program can jump here in case of exception case. */
 __TERMINAL:
-	return;
+	return bResult;
 }
 
 /* Show out RSDP descriptor information. */

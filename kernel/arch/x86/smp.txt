@@ -13,3 +13,14 @@ Conclusion already made:
 Progress record:
 1. Define __CFG_SYS_SMP macro in config.h file;
 2. Implemented GetCurrentKernelThread routine,not completed yet;...
+
+The following synchronization objects are revised to support SMP:
+1. Mailbox,include the common used TimeoutWaiting routine,APIs;
+2. 
+
+The following synchronization objects should be revised:
+1. Semaphore;
+2. Event(Check wait event process again);
+3. Mutex;
+4. KernelThread;
+5. Condition;

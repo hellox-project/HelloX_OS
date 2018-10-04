@@ -20,13 +20,33 @@
 extern "C" {
 #endif
 
-#define __MINIKER_BASE      0x00100000    //Mini-kernal's base address when running.
+/* Mini-kernal's base address when running. */
+#define __MINIKER_BASE 0x00100000
+/* The master's base address in memory. */
+#define __MASTER_BASE       0x00110000
 
-#define __MINIKER_LEN       8*1024        //The mini-kernal's length.
-#define __MASTER_BASE       0x00110000    //The master's base address when running.
+/* 
+ * Offset of general interrupt handler in mini kernel. 
+ * The general interrupt handler's base address is put
+ * into here by master,and will be invoked by mini kernel
+ * when interrupt raise.
+ */
+#define __GENERAL_INT_HANDLER_OFFSET (8*1024 - 0x04)
+/* General interrupt handler's address. */
+#define __GENERAL_INT_HANDLER_BASE (__GENERAL_INT_HANDLER_OFFSET + __MINIKER_BASE)
 
-	//Timer handler's base address
-#define __TIMERHANDLER_BASE (__MINIKER_LEN + __MINIKER_BASE - 0x04)
+/*
+ * Base address of SMP trampoline,all AP processor(s) in SMP environment 
+ * will jump to here to start after launched by BSP.
+ * It's in miniker module,the base address is related to start position of
+ * physical memory,value as:
+ * Trampoline base = 
+ *     4K(The realinit.bin's loaded address) +
+ *     4K(The realinit.bin's size) +
+ *     8K(The trampolie's offset in miniker)
+ *     = 16K
+ */
+#define __SMP_TRAMPOLINE_BASE (16*1024)
 
 	//
 	//Handler procedure's defination.

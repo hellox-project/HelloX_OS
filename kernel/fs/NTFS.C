@@ -532,12 +532,12 @@ static __NTFS_FILE_OBJECT* NtfsCreateFileByFR(__NTFS_FILE_SYSTEM* pFileSystem,BY
                    }
          }
          //Insert the file into file system's list.
-         __ENTER_CRITICAL_SECTION(NULL,dwFlags);
+         __ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
          pNewFile->pNext  = pFileSystem->fileRoot.pNext;
          pNewFile->pPrev  = &(pFileSystem->fileRoot);
          pFileSystem->fileRoot.pNext->pPrev = pNewFile;
          pFileSystem->fileRoot.pNext = pNewFile;
-         __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+         __LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
  
          bResult = TRUE;
  
@@ -688,10 +688,10 @@ VOID NtfsDestroyFile(__NTFS_FILE_OBJECT* pFileObject)
                    return;
          }
          //Delete it from file system's file list.
-         __ENTER_CRITICAL_SECTION(NULL,dwFlags);
+         __ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
          pFileObject->pPrev->pNext = pFileObject->pNext;
          pFileObject->pNext->pPrev = pFileObject->pPrev;
-         __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+         __LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
          //Release file's buffer.
          if(pFileObject->pFileBuffer)
          {

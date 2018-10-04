@@ -122,12 +122,15 @@ END_DEFINE_OBJECT(__OBJECT_LIST_HEADER)
 #define MAX_OBJECT_TYPE    64         //The maximal types in this version.
 
 BEGIN_DEFINE_OBJECT(__OBJECT_MANAGER)
-    DWORD                        dwCurrentObjectID;
-	__OBJECT_LIST_HEADER         ObjectListHeader[MAX_OBJECT_TYPE];
-	__COMMON_OBJECT*             (*CreateObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*,DWORD);
-	__COMMON_OBJECT*             (*GetObjectByID)(struct tag__OBJECT_MANAGER*,DWORD);
-	__COMMON_OBJECT*             (*GetFirstObjectByType)(struct tag__OBJECT_MANAGER*,DWORD);
-	VOID                         (*DestroyObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*);
+    DWORD dwCurrentObjectID;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	__OBJECT_LIST_HEADER ObjectListHeader[MAX_OBJECT_TYPE];
+	__COMMON_OBJECT* (*CreateObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*,DWORD);
+	__COMMON_OBJECT* (*GetObjectByID)(struct tag__OBJECT_MANAGER*,DWORD);
+	__COMMON_OBJECT* (*GetFirstObjectByType)(struct tag__OBJECT_MANAGER*,DWORD);
+	VOID (*DestroyObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*);
 END_DEFINE_OBJECT(__OBJECT_MANAGER)
 
 //

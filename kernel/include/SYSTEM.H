@@ -35,12 +35,8 @@
 extern "C" {
 #endif
 
-//
-//Interrupt object's definition.
-//The interrupt object is used to manage system interrupt.
-//
-
-typedef BOOL (*__INTERRUPT_HANDLER)(LPVOID lpEsp,LPVOID);    //Interrupt handler's pro-type.
+/* Interrupt handler's pro-type. */
+typedef BOOL (*__INTERRUPT_HANDLER)(LPVOID lpEsp,LPVOID);
 
 //Maximal interrupt vector supported now.
 //#define MAX_INTERRUPT_VECTOR  256  //Moved to config.h file.
@@ -71,25 +67,32 @@ BEGIN_DEFINE_OBJECT(__INTERRUPT_OBJECT)
 	LPVOID                        lpHandlerParam;
 END_DEFINE_OBJECT(__INTERRUPT_OBJECT)
 
-BOOL InterruptInitialize(__COMMON_OBJECT* lpThis);    //Interrupt object's initializing routine.
-VOID InterruptUninitialize(__COMMON_OBJECT* lpThis);  //Uninitializing routine.
+/* Interrupt object's initializing routine. */
+BOOL InterruptInitialize(__COMMON_OBJECT* lpThis);
+/* Uninitializing routine of interrupt object. */
+VOID InterruptUninitialize(__COMMON_OBJECT* lpThis);
 
 //
 //Timer object's definition.
 //The timer object is used to manage the system timer.
 //
-typedef DWORD    (*__DIRECT_TIMER_HANDLER)(LPVOID);    //Timer handler's protype.
+typedef DWORD (*__DIRECT_TIMER_HANDLER)(LPVOID);
 
 BEGIN_DEFINE_OBJECT(__TIMER_OBJECT)
     INHERIT_FROM_COMMON_OBJECT
-	//__TIMER_OBJECT*             lpPrevTimerObject;
-    //__TIMER_OBJECT*             lpNextTimerObject;
-	DWORD                       dwTimerID;            //Timer ID,one kernel thread may set
-	                                                  //several timers,this is it's ID.
-	DWORD                       dwTimeSpan;           //Timer span in millisecond.
-	__KERNEL_THREAD_OBJECT*     lpKernelThread;       //The kernel thread who set the timer.
+	DWORD dwObjectSignature;
+	/* 
+	 * Timer ID,one kernel thread may set several timer objects
+	 * concurrently,use ID to distinguish each one.
+	 */
+	DWORD                       dwTimerID;
+	/* Timer span in millisecond. */
+	DWORD                       dwTimeSpan;
+	/* The kernel thread who set the timer. */
+	__KERNEL_THREAD_OBJECT*     lpKernelThread;
 	LPVOID                      lpHandlerParam;
-	DWORD                       (*DirectTimerHandler)(LPVOID);       //lpHandlerParam is it's parameter.
+	DWORD                       (*DirectTimerHandler)(LPVOID);
+	/* Flags to control the timer's action. */
 	DWORD                       dwTimerFlags;
 END_DEFINE_OBJECT(__TIMER_OBJECT)
 
@@ -127,11 +130,15 @@ END_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
 //The following is the definition of system object.
 //
 BEGIN_DEFINE_OBJECT(__SYSTEM)
-    __PRIORITY_QUEUE*                     lpTimerQueue;
-	__INTERRUPT_SLOT                      InterruptSlotArray[MAX_INTERRUPT_VECTOR];
+    __PRIORITY_QUEUE* lpTimerQueue;
+	__INTERRUPT_SLOT InterruptSlotArray[MAX_INTERRUPT_VECTOR];
 
 	/* Current interrupt or exception vector. */
-	volatile UCHAR                        ucCurrInt;
+#if defined(__CFG_SYS_SMP)
+	volatile UCHAR ucCurrInt[MAX_CPU_NUM];
+#else
+	volatile UCHAR ucCurrInt[1];
+#endif
 
 #if defined(__CFG_SYS_SMP)
 	/* Spin lock to protect the system object. */
@@ -144,78 +151,108 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 	volatile unsigned char bspInitialized;
 #endif
 
-	volatile DWORD                        dwClockTickCounter;    //Records how many clock
-	                                                             //tickes have occured since
-	                                                             //system start.
-	volatile DWORD                        dwNextTimerTick;       //When dwClockTickCounter
-	                                                             //reaches this number,
-	                                                             //one or many timer event
-	                                                             //set by kernel thread
-	                                                             //should be processed.
-	volatile UCHAR                        ucIntNestLevel;        //Interrupt nesting level.
-#define IN_INTERRUPT()  (System.ucIntNestLevel)                  //Current context is interrupt.
-#define IN_KERNELTHREAD() (System.ucIntNestLevel == 0)           //Current context is process.
+	/* Records how many clock tickes has ellapsed since system start.*/
+	volatile DWORD dwClockTickCounter;
+	/* 
+	 * When dwClockTickCounter reaches this number, one or more timer events 
+	 * set by kernel thread should be processed. 
+	 */
+	volatile DWORD dwNextTimerTick;
+	
+	/* Interrupt nesting level,for each CPU. */
+#if defined(__CFG_SYS_SMP)
+	volatile UCHAR ucIntNestLevel[MAX_CPU_NUM];
+#else
+	volatile UCHAR ucIntNestLevel[1];
+#endif
 
-	volatile UCHAR                        bSysInitialized;       //Indicate if the system is initialized successfully.
-#define IN_SYSINITIALIZATION() (FALSE == System.bSysInitialized) //To check if the system is under initialization phase.
+	/* Current context is in interrupt. */
+#define IN_INTERRUPT()  (System.ucIntNestLevel[__CURRENT_PROCESSOR_ID])
+	/* Current execution context is in process(kernel thread). */
+#define IN_KERNELTHREAD() (System.ucIntNestLevel[__CURRENT_PROCESSOR_ID] == 0)
 
-	UCHAR                                 ucReserved1;           //Align to 4 bytes border.
-	UCHAR                                 ucReserved2;
+	/* Indicate if the system is initialized successfully. */
+	volatile UCHAR bSysInitialized;
+	/* To check if the system is under initialization phase. */
+#define IN_SYSINITIALIZATION() (FALSE == System.bSysInitialized)
 
-	DWORD                                 dwPhysicalMemorySize;
+	/* Align to 4 bytes border. */
+	UCHAR ucReserved1;
+	UCHAR ucReserved2;
 
-	BOOL                                  (*BeginInitialize)(__COMMON_OBJECT* lpThis);  //Called before the operating system
-	                                                                                    //enter into initialization phase.
-	BOOL                                  (*HardwareInitialize)(__COMMON_OBJECT* lpThis);
-	BOOL                                  (*EndInitialize)(__COMMON_OBJECT* lpThis);    //Called after the OS finish the initialization
-	                                                                                    //phase.
-	BOOL                                  (*Initialize)(__COMMON_OBJECT* lpThis);
-	DWORD                                 (*GetClockTickCounter)(__COMMON_OBJECT* lpThis);
-	DWORD                                 (*GetSysTick)(DWORD* pdwHigh32);
-	DWORD                                 (*GetPhysicalMemorySize)(__COMMON_OBJECT* lpThis);
-	VOID                                  (*DispatchInterrupt)(__COMMON_OBJECT* lpThis,
-		                                                       LPVOID           lpEsp,
-		                                                       UCHAR            ucVector);
-	VOID                                  (*DispatchException)(__COMMON_OBJECT* lpThis,
-		                                                       LPVOID           lpEsp,
-															   UCHAR            ucVector);
+	/* How many physical memory in system. */
+	DWORD dwPhysicalMemorySize;
 
-	__COMMON_OBJECT*                      (*ConnectInterrupt)(__COMMON_OBJECT* lpThis,
-		                                                      __INTERRUPT_HANDLER InterruptHandler,
-															  LPVOID           lpHandlerParam,
-									        	   			  UCHAR            ucVector,
-											        		  UCHAR            ucReserved1,
-													          UCHAR            ucReserved2,
-											         		  UCHAR            ucInterruptMode,
-												        	  BOOL             bIfShared,
-										         			  DWORD            dwCPUMask
-												        	  );
-	VOID                                  (*DisconnectInterrupt)(__COMMON_OBJECT* lpThis,
-		                                                         __COMMON_OBJECT* lpIntObj);
+	/* Called before the operating system enter into initialization phase. */
+	BOOL (*BeginInitialize)(__COMMON_OBJECT* lpThis);
+	/* Hook to initialize hardware,should be implemented in arch specific. */
+	BOOL (*HardwareInitialize)(__COMMON_OBJECT* lpThis);
+	/* Called after the OS finish the initialization phase. */
+	BOOL (*EndInitialize)(__COMMON_OBJECT* lpThis);
+	/* Initialize system object itself. */
+	BOOL (*Initialize)(__COMMON_OBJECT* lpThis);
+	DWORD (*GetClockTickCounter)(__COMMON_OBJECT* lpThis);
+	DWORD (*GetSysTick)(DWORD* pdwHigh32);
+	DWORD (*GetPhysicalMemorySize)(__COMMON_OBJECT* lpThis);
+	/* Dispatch interrupt. */
+	VOID  (*DispatchInterrupt)(__COMMON_OBJECT* lpThis,
+		LPVOID lpEsp,
+		UCHAR ucVector);
+	/* Dispatch exception. */
+	VOID (*DispatchException)(__COMMON_OBJECT* lpThis,
+		LPVOID lpEsp,
+		UCHAR ucVector);
+	/* Connect a interrupt vector to it's handler. */
+	__COMMON_OBJECT* (*ConnectInterrupt)(__COMMON_OBJECT* lpThis,
+		__INTERRUPT_HANDLER InterruptHandler,
+		LPVOID lpHandlerParam,
+		UCHAR ucVector,
+		UCHAR ucReserved1,
+		UCHAR ucReserved2,
+		UCHAR ucInterruptMode,
+		BOOL bIfShared,
+		DWORD dwCPUMask);
+	/* Disconnect interrupt. */
+	VOID (*DisconnectInterrupt)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpIntObj);
 
+	/* Set a timer. */
+	__COMMON_OBJECT* (*SetTimer)(__COMMON_OBJECT* lpThis,
+		__KERNEL_THREAD_OBJECT* lpKernelThread,
+		DWORD dwTimerID,
+		DWORD dwTimeSpan,
+		__DIRECT_TIMER_HANDLER DirectTimerHandler,
+		LPVOID lpHandlerParam,
+		DWORD dwTimerFlags);
+	/* Cancel a timer. */
+	BOOL (*CancelTimer)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpTimer);
 
-	__COMMON_OBJECT*                      (*SetTimer)(__COMMON_OBJECT*         lpThis,
-		                                              __KERNEL_THREAD_OBJECT*  lpKernelThread,
-											          DWORD                    dwTimerID,
-											          DWORD                    dwTimeSpan,
-											          __DIRECT_TIMER_HANDLER   DirectTimerHandler,
-											          LPVOID                   lpHandlerParam,
-													  DWORD                    dwTimerFlags
-											          );
-	BOOL                                  (*CancelTimer)(__COMMON_OBJECT* lpThis,
-		                                                 __COMMON_OBJECT* lpTimer);
-	BOOL                                  (*GetInterruptStat)(__COMMON_OBJECT* lpThis, UCHAR ucVector,
-		                                                      __INTERRUPT_VECTOR_STAT* pStat);
+	/* Get interrupt statistics information. */
+	BOOL(*GetInterruptStat)(__COMMON_OBJECT* lpThis, UCHAR ucVector,
+		__INTERRUPT_VECTOR_STAT* pStat);
 END_DEFINE_OBJECT(__SYSTEM)
 
-#define TIMER_FLAGS_ONCE        0x00000001    //Set a timer with this flags,the timer only
-                                              //apply once,i.e,the kernel thread who set
-											  //the timer can receive timer message only
-											  //once.
-#define TIMER_FLAGS_ALWAYS      0x00000002    //Set a timer with this flags,the timer will
-											  //availiable always,only if the kernel thread
-											  //cancel the timer by calling CancelTimer.
-
+/* 
+ * Set a timer with this flags,the timer only
+ * apply once,i.e,the kernel thread who set
+ * the timer can receive timer message only
+ * once.
+ */
+#define TIMER_FLAGS_ONCE        0x00000001
+/* 
+ * Set a timer with this flags,the timer will
+ * availiable always,only if the kernel thread
+ * cancel the timer by calling CancelTimer.
+ */
+#define TIMER_FLAGS_ALWAYS      0x00000002
+/*
+ * The timer will not be deleted automatically after
+ * fired,only available for one shot timer.
+ */
+#define TIMER_FLAGS_NOAUTODEL   0x00000004
+/* The one shot timer is fired. */
+#define TIMER_FLAGS_FIRED       0x00000008
 
 /**************************************************************************************
 ***************************************************************************************
@@ -223,20 +260,20 @@ END_DEFINE_OBJECT(__SYSTEM)
 ***************************************************************************************
 **************************************************************************************/
 
-extern __SYSTEM System;    //Declares a global object--System.
+/* Global system object,only one in system. */
+extern __SYSTEM System;
 
-extern __PERF_RECORDER  TimerIntPr;    //Performance recorder object used to mesure
-                                       //the performance of timer interrupt.
+/* 
+ * Performance recorder object used to mesure
+ * the performance of timer interrup
+ */
+extern __PERF_RECORDER  TimerIntPr;
 
-//-------------------------------------------------------------------------------------
-//
-//        General Interrupt Handler's declaration.
-//
-//-------------------------------------------------------------------------------------
-
-//typedef VOID (*__GENERAL_INTERRUPT_HANDLER)(DWORD,LPVOID);    //General interrupt handler's
-                                                              //protype.
-
+/* 
+ * General interrupt handler,the unified interrupt entry point 
+ * for all interrupt(s) and exception(s).
+ * It is mainly invoked by mini kernel.
+ */
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp);
 
 #ifdef __cplusplus

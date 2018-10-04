@@ -294,14 +294,14 @@ static DWORD __R8152_Send(LPVOID pData)
 			bShouldBreak = FALSE;
 			while (TRUE)
 			{
-				__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+				__ENTER_CRITICAL_SECTION_SMP(pEthData->spin_lock, dwFlags);
 				/*
 				* Fetch one ethernet frame from sending list.
 				*/
 				pEthBuff = pEthData->pSndListFirst;
 				if (NULL == pEthBuff) /* No pending frame. */
 				{
-					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(pEthData->spin_lock, dwFlags);
 					break;
 				}
 				/*
@@ -344,7 +344,7 @@ static DWORD __R8152_Send(LPVOID pData)
 						break;
 					}
 				}
-				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+				__LEAVE_CRITICAL_SECTION_SMP(pEthData->spin_lock, dwFlags);
 				/* Send out the packed ethernet buffers. */
 				if (buff_num)
 				{
@@ -727,6 +727,10 @@ static int Init_R8152(__PHYSICAL_DEVICE* pPhyDev, unsigned int ifnum)
 		goto __TERMINAL;
 	}
 	memset(ss, 0, sizeof(struct ueth_data));
+	/* Init spin lock in SMP. */
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(ss->spin_lock, "usb_eth");
+#endif
 
 	/* let's examine the device now */
 	iface = &dev->config.if_desc[ifnum];

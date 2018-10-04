@@ -49,7 +49,7 @@ DWORD  MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	DWORD  dwFreeTimesL;
 	DWORD  dwFreeTimesH;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(AnySizeBuffer.spin_lock, dwFlags);
 	dwPoolSize      = AnySizeBuffer.dwPoolSize;
 	dwFreeSize      = AnySizeBuffer.dwFreeSize;
 	dwFreeBlocks    = AnySizeBuffer.dwFreeBlocks;
@@ -59,7 +59,7 @@ DWORD  MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	dwAllocTimesH      = AnySizeBuffer.dwAllocTimesH;
 	dwFreeTimesL       = AnySizeBuffer.dwFreeTimesL;
 	dwFreeTimesH       = AnySizeBuffer.dwFreeTimesH;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(AnySizeBuffer.spin_lock, dwFlags);
 
 	PrintLine("    Free block list algorithm is adopted:");
 	//Get and dump out memory usage status.

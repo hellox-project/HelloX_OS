@@ -175,39 +175,42 @@ static DWORD GetRangeSize(DWORD dwValue)
 	}
 }
 
-//
-//The following routine filles resource array of a physical device object.
-//
+/* The following routine filles resource array of a physical device object. */
 static VOID PciFillDevResources(DWORD dwConfigReg,__PHYSICAL_DEVICE* lpPhyDev)
 {
-	DWORD            dwTmp      = 0;
-	DWORD            dwOrg      = 0;
-	DWORD            dwSize     = 0;
-	DWORD            dwIndex    = 0;
-	DWORD            dwLoop     = 0;
+	DWORD dwTmp = 0, dwOrg = 0;
+	DWORD dwSize = 0;
+	DWORD dwIndex = 0;
+	DWORD dwLoop = 0;
 
-	if((0 == dwConfigReg) || (NULL == lpPhyDev)) //Invalid parameters.
+	if ((0 == dwConfigReg) || (NULL == lpPhyDev))
+	{
 		return;
+	}
 
 	dwConfigReg &= 0xFFFFFF00;    //Clear the offset part.
 	dwConfigReg += PCI_CONFIG_OFFSET_BASE1;  //Pointing to the first base address register.
 	for(dwLoop = 0;dwLoop < 6;dwLoop ++)  //Read resources.
 	{
 		__outd(CONFIG_REGISTER,dwConfigReg);
-		dwOrg = __ind(DATA_REGISTER);     //Read and save the original value.
-		//__outd(CONFIG_REGISTER,0xFFFFFFFF);
+		/* Read and save the original value. */
+		dwOrg = __ind(DATA_REGISTER);
 		__outd(DATA_REGISTER,0xFFFFFFFF);
 		dwTmp = __ind(DATA_REGISTER);
-		if((0 == dwTmp) || (0xFFFFFFFF == dwTmp)) //This base address register is not used.
+		/* This base address register is not used. */
+		if((0 == dwTmp) || (0xFFFFFFFF == dwTmp))
 		{
 			dwConfigReg += 4;
-			__outd(DATA_REGISTER,dwOrg);        //Restore original value.
+			/* Restore original value. */
+			__outd(DATA_REGISTER,dwOrg);
 			continue;
 		}
 
-		__outd(DATA_REGISTER,dwOrg);            //Restore original value.
-		if(dwOrg & 0x00000001)  //IO Port range.
+		/* Restore original value. */
+		__outd(DATA_REGISTER,dwOrg);
+		if(dwOrg & 0x00000001)
 		{
+			/* IO Port range. */
 			dwSize = GetRangeSize(dwTmp);
 			dwOrg &= 0xFFFFFFFE;   //Clear the lowest bit.
 			lpPhyDev->Resource[dwIndex].dwResType = RESOURCE_TYPE_IO;
@@ -215,8 +218,9 @@ static VOID PciFillDevResources(DWORD dwConfigReg,__PHYSICAL_DEVICE* lpPhyDev)
 			lpPhyDev->Resource[dwIndex].Dev_Res.IOPort.wEndPort   = 
 				(WORD)(dwOrg + dwSize - 1);
 		}
-		else    //Memory map range.
+		else
 		{
+			/* Memory map range. */
 			dwOrg &= 0xFFFFFFF0;    //Clear the lowest 4 bits.
 			dwSize = GetRangeSize(dwTmp);
 			lpPhyDev->Resource[dwIndex].dwResType = RESOURCE_TYPE_MEMORY;
@@ -228,29 +232,30 @@ static VOID PciFillDevResources(DWORD dwConfigReg,__PHYSICAL_DEVICE* lpPhyDev)
 		dwConfigReg += 4;
 	}
 
-	//
-	//Now,we should obtain interrupt vector information from configure space.
-	//
+	/* Obtain interrupt vector information from configure space. */
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_INTLINE;
 	__outd(CONFIG_REGISTER,dwConfigReg);
 	dwTmp = __ind(DATA_REGISTER);
-	if(0xFF == (UCHAR)dwTmp)        //No interrupt vector is present.
+	/* No interrupt vector is present. */
+	if (0xFF == (UCHAR)dwTmp)
+	{
 		return;
+	}
 	lpPhyDev->Resource[dwIndex].dwResType = RESOURCE_TYPE_INTERRUPT;
 	lpPhyDev->Resource[dwIndex].Dev_Res.ucVector  = (UCHAR)dwTmp;
 	return;
 }
 
-//
-//This routine reads resource information from a type 1 header,and fills them into
-//physical device's resource array.Primary bus number,secondary bus number and sub-ordinate
-//bus number are the most three parameters for PCI-PCI bridge.
-//
+/*
+ * This routine reads resource information from a type 1 header,and fills them into
+ * physical device's resource array.Primary bus number,secondary bus number and sub-ordinate
+ * bus number are the most three parameters for PCI-PCI bridge.
+ */
 static VOID PciFillBridgeResources(DWORD dwConfigReg,__PHYSICAL_DEVICE* lpPhyDev)
 {
-	__PCI_DEVICE_INFO*             pDevInfo  = NULL;
-	DWORD                          dwTmp     = 0;
+	__PCI_DEVICE_INFO* pDevInfo = NULL;
+	DWORD dwTmp = 0;
 
 	if(NULL == lpPhyDev)
 	{
@@ -268,30 +273,42 @@ static VOID PciFillBridgeResources(DWORD dwConfigReg,__PHYSICAL_DEVICE* lpPhyDev
 	return;
 }
 
-//
-//The following routine is used to add one PCI device(physical device) into a PCI
-//bus.
-//It first create a physical device and a PCI information structure,then initializes
-//them by reading data from configure space.
-//
+/*
+ * Add one PCI device(physical device) into a PCI
+ * bus.
+ * It first create a physical device and a PCI information structure,then initializes
+ * them by reading data from configure space.
+ */
 static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 {
-	__PCI_DEVICE_INFO*                    lpDevInfo      = NULL;
-	__PHYSICAL_DEVICE*                    lpPhyDev       = NULL;
-	DWORD                                 dwFlags        = 0;
-	BOOL                                  bResult        = FALSE;
-	DWORD                                 dwTmp          = 0;
+	__PCI_DEVICE_INFO* lpDevInfo = NULL;
+	__PHYSICAL_DEVICE* lpPhyDev = NULL;
+	BOOL bResult = FALSE;
+	DWORD dwTmp = 0;
 
-	if((0 == dwConfigReg) || (NULL == lpSysBus)) //Invalid parameters.
+	/* Basic checking. */
+	if ((0 == dwConfigReg) || (NULL == lpSysBus))
+	{
 		return;
+	}
+	/* Only available in process of system initialization. */
+	BUG_ON(!IN_SYSINITIALIZATION());
 
-	lpPhyDev = (__PHYSICAL_DEVICE*)KMemAlloc(sizeof(__PHYSICAL_DEVICE), KMEM_SIZE_TYPE_ANY);  //Create physical device.
-	if(NULL == lpPhyDev)
+	/* Create physical device. */
+	lpPhyDev = (__PHYSICAL_DEVICE*)KMemAlloc(sizeof(__PHYSICAL_DEVICE), KMEM_SIZE_TYPE_ANY);
+	if (NULL == lpPhyDev)
+	{
 		goto __TERMINAL;
+	}
+	memset(lpPhyDev, 0, sizeof(__PHYSICAL_DEVICE));
 
+	/* Create PCI device information structure. */
 	lpDevInfo = (__PCI_DEVICE_INFO*)KMemAlloc(sizeof(__PCI_DEVICE_INFO), KMEM_SIZE_TYPE_ANY);
-	if(NULL == lpDevInfo)  //Can not allocate information structure.
+	if (NULL == lpDevInfo)
+	{
 		goto __TERMINAL;
+	}
+	memset(lpDevInfo, 0, sizeof(__PCI_DEVICE_INFO));
 	
 	lpDevInfo->DeviceNum   = (dwConfigReg >> 11) & 0x0000001F;  //Get device number.
 	lpDevInfo->FunctionNum = (dwConfigReg >> 8) & 0x00000007;   //Get function number.
@@ -301,18 +318,16 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpPhyDev->dwNumber = dwConfigReg & 0x0000FF00;
 	lpPhyDev->dwNumber >>= 8;
 
-	//
-	//The following code initializes identifier member of physical device.
-	//
+	/* Initializes identifier member of physical device. */
 	dwConfigReg &= 0xFFFFFF00;    //Clear offset part.
 	dwConfigReg += PCI_CONFIG_OFFSET_VENDOR;
 	__outd(CONFIG_REGISTER,dwConfigReg);
 	dwTmp = __ind(DATA_REGISTER);  //Read vendor ID and device ID.
 
-	lpPhyDev->DevId.dwBusType               = BUS_TYPE_PCI;
-	lpPhyDev->DevId.Bus_ID.PCI_Identifier.ucMask   = PCI_IDENTIFIER_MASK_ALL;
-	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wVendor  = (WORD)dwTmp;
-	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wDevice  = (WORD)(dwTmp >> 16);
+	lpPhyDev->DevId.dwBusType = BUS_TYPE_PCI;
+	lpPhyDev->DevId.Bus_ID.PCI_Identifier.ucMask = PCI_IDENTIFIER_MASK_ALL;
+	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wVendor = (WORD)dwTmp;
+	lpPhyDev->DevId.Bus_ID.PCI_Identifier.wDevice = (WORD)(dwTmp >> 16);
 
 	dwConfigReg &= 0xFFFFFF00;
 	dwConfigReg += PCI_CONFIG_OFFSET_REVISION;  //Get revision ID and class code.
@@ -320,37 +335,42 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	dwTmp = __ind(DATA_REGISTER);
 
 	lpPhyDev->DevId.Bus_ID.PCI_Identifier.dwClass = dwTmp;
-	lpDevInfo->dwClassCode                 = dwTmp;  //Save to information struct also.
+	/* Save to information struct also. */
+	lpDevInfo->dwClassCode = dwTmp;
 
 	dwConfigReg &= 0xFFFFFF00;
-	dwConfigReg += PCI_CONFIG_OFFSET_CACHELINESZ;    //Get header type.
+	/* Get header type. */
+	dwConfigReg += PCI_CONFIG_OFFSET_CACHELINESZ;
 	__outd(CONFIG_REGISTER,dwConfigReg);
 	dwTmp = __ind(DATA_REGISTER);
 	
-	lpPhyDev->DevId.Bus_ID.PCI_Identifier.ucHdrType = (UCHAR)(dwTmp >> 16); //Get header type.
+	/* Get header type. */
+	lpPhyDev->DevId.Bus_ID.PCI_Identifier.ucHdrType = (UCHAR)(dwTmp >> 16);
 
-	//
-	//The following code initializes the resource information required by device.
-	//
+	/* Initializes the resource information required by device. */
 	switch((dwTmp >> 16) & 0x7F)
 	{
-	case 0:         //Normal PCI device.
+	case 0:         
+		/* Normal PCI device. */
 		lpDevInfo->dwDeviceType = PCI_DEVICE_TYPE_NORMAL;
 		dwConfigReg &= 0xFFFFFF00;
 		PciFillDevResources(dwConfigReg,lpPhyDev);
 		bResult = TRUE;
 		break;
-	case 1:         //PCI-PCI bridge.
+	case 1:
+		/* PCI-PCI bridge. */
 		lpDevInfo->dwDeviceType = PCI_DEVICE_TYPE_BRIDGE;
 		dwConfigReg &= 0xFFFFFF00;
 		PciFillBridgeResources(dwConfigReg,lpPhyDev);
 		bResult = TRUE;
 		break;
-	case 2:        //CardBus-PCI bridge.
+	case 2:
+		/* CardBus-PCI bridge. */
 		lpDevInfo->dwDeviceType = PCI_DEVICE_TYPE_CARDBUS;
 		bResult = TRUE;
 		break;
-	default:       //Not supported yet.
+	default:
+		/* Not supported yet. */
 		lpDevInfo->dwDeviceType = PCI_DEVICE_TYPE_UNSUPPORTED;
 		bResult = TRUE;
 		break;
@@ -360,180 +380,166 @@ static VOID PciAddDevice(DWORD dwConfigReg,__SYSTEM_BUS* lpSysBus)
 	lpPhyDev->ReadDeviceConfig  = PciReadDeviceConfig;
 	lpPhyDev->WriteDeviceConfig = PciWriteDeviceConfig;
 
-	//
-	//Now,we have finished to initialize resource information,so we insert the physical device
-	//object into system bus.
-	//
+	/*
+	 * Now,we have finished to initialize resource information,just insert the physical device
+	 * object into system bus.
+	 */
 	lpPhyDev->lpHomeBus = lpSysBus;
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	lpPhyDev->lpNext = lpSysBus->lpDevListHdr;
-	lpSysBus->lpDevListHdr = lpPhyDev;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	bResult = DeviceManager.AppendDevice(&DeviceManager, lpPhyDev);
 
 __TERMINAL:
 	if(!bResult)
 	{
-		if(lpPhyDev)  //Release memory.
-			KMemFree((LPVOID)lpPhyDev,KMEM_SIZE_TYPE_ANY,0);
-		if(lpDevInfo)
-			KMemFree((LPVOID)lpDevInfo,KMEM_SIZE_TYPE_ANY,0);
+		if (lpPhyDev)
+		{
+			KMemFree((LPVOID)lpPhyDev, KMEM_SIZE_TYPE_ANY, 0);
+		}
+		if (lpDevInfo)
+		{
+			KMemFree((LPVOID)lpDevInfo, KMEM_SIZE_TYPE_ANY, 0);
+		}
 	}
 	return;
 }
 
-//
-//The following routine scans all devices on one system bus,and inserts them into
-//system bus's device list.
-//
+/*
+ * Scans all devices on one system bus,and inserts them into
+ * system bus's device list.
+ */
 static VOID PciScanDevices(__SYSTEM_BUS* lpSysBus)
 {
-	DWORD                           dwConfigReg   = 0x80000000;
-	DWORD                           dwLoop        = 0;
-	DWORD                           dwTmp         = 0;
+	DWORD dwConfigReg = 0x80000000;
+	DWORD dwLoop = 0, dwTmp = 0;
 
-	if(NULL == lpSysBus) //Parameter check.
+	if (NULL == lpSysBus)
+	{
 		return;
+	}
 
 	dwTmp =  lpSysBus->dwBusNum;
 	dwTmp &= 0x000000FF;    //Only reserve the lowest 7 bits.
 	dwConfigReg += (dwTmp << 16);  //Now,dwConfigReg value countains the bus number.
 
-	//
-	//The following code scans all devices and functions in one PCI bus,if there is
-	//a device or function,it calles PciAddDevice routine to initialize it and add it
-	//to system bus's device list.
-	//
-	for(dwLoop = 0;dwLoop < 0x100;dwLoop ++)  //For every devices and functions.
+	/*
+	 * The following code scans all devices and functions in one PCI bus,if there is
+	 * a device or function,it calles PciAddDevice routine to initialize it and add it
+	 * to system bus's device list.
+	 */
+	for(dwLoop = 0;dwLoop < 0x100;dwLoop ++)
 	{
 		dwConfigReg &= 0xFFFF0000;
-		dwConfigReg += (dwLoop << 8);  //Now,dwConfigReg countains the bus number,device number,
-		                               //and function number.
+		/* Now,dwConfigReg countains the bus number,device number, and function number. */
+		dwConfigReg += (dwLoop << 8);
 
 		__outd(CONFIG_REGISTER,dwConfigReg);
 		dwTmp = __ind(DATA_REGISTER);
 
-		if(0xFFFFFFFF == dwTmp)        //The device or function does not exist.
+		/* The device or function does not exist. */
+		if (0xFFFFFFFF == dwTmp)
+		{
 			continue;
-		/*
-		//
-		//Now,find one PCI device,first,we check if it is a multi-function device,
-		//if so,enumerate all sub-functions of this physical device,and add them to
-		//system bus,otherwise,add the current physical device to system bus,and
-		//increment 7 to dwLoop to skip all functions bound to this physical device.
-		//
-		dwConfigReg += PCI_CONFIG_OFFSET_CACHELINESZ;
-		__outd(CONFIG_REGISTER,dwConfigReg);
-		dwTmp = __ind(DATA_REGISTER);        //Read one double word countaining the header
-		                                     //type segment.
-		dwConfigReg -= PCI_CONFIG_OFFSET_CACHELINESZ;
-		if(dwTmp & 0x00800000)               //This is a multiple function device.
-		{
-			PciAddDevice(dwConfigReg,lpSysBus);
 		}
-		else                                 //This is a single function device.
-		{
-			PciAddDevice(dwConfigReg,lpSysBus);
-			dwLoop += 7;                     //Skip all other functions of current device.
-		}*/
-		PciAddDevice(dwConfigReg,lpSysBus);  //Add to system device.
+		/* Add the probed device into system. */
+		PciAddDevice(dwConfigReg,lpSysBus);
 	}
 	return;
 }
 
-//
-//The following routine scans a PCI bus and all it's child buses(if exist),for each bus,use
-//one element of SystemBus array(in DeviceManager object) to record it.
-//This routine returns the largest bus number in this bus tree,if failed,returns MAX_DWORD_VALUE,
-//which is 0xFFFFFFFF currently.
-//
+/*
+ * Scans a PCI bus and all it's child buses(if exist).For each bus,use
+ * one element of SystemBus array(in DeviceManager object) to record it.
+ * This routine returns the largest bus number in this bus tree,if failed,
+ * returns MAX_DWORD_VALUE, which is 0xFFFFFFFF currently.
+ */
 static DWORD PciScanBus(__DEVICE_MANAGER* lpDevMgr, __PHYSICAL_DEVICE* lpBridge, DWORD dwBusNum)
 {
-	DWORD               dwLoop                     = 0;
-	DWORD               dwFlags                    = 0;
-	//__PCI_DEVICE_INFO*  lpDevInfo                  = NULL;
-	__PHYSICAL_DEVICE*  lpPhyDev                   = NULL;
-	DWORD               dwSubNum                   = dwBusNum;
+	DWORD dwLoop = 0;
+	__PHYSICAL_DEVICE* lpPhyDev = NULL;
+	DWORD dwSubNum = dwBusNum;
 
-	if(NULL == lpDevMgr)  //Parameter check.
+	/* Basic checking. */
+	BUG_ON(NULL == lpDevMgr);
+	/* 
+	 * This routine can be called only in process of system 
+	 * initialization,so no locks are obtained when initialize
+	 * the physial device list or other global data structures.
+	 */
+	BUG_ON(!IN_SYSINITIALIZATION());
+	if(255 <= dwBusNum)
 	{
+		/* Maximal bus number should not exceed 255. */
 		return MAX_DWORD_VALUE;
 	}
-	if(255 <= dwBusNum)   //Maximal bus number should not exceed 255.
-	{
-		return MAX_DWORD_VALUE;
-	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	for(dwLoop = 0;dwLoop < MAX_BUS_NUM;dwLoop ++)
 	{
-		if(BUS_TYPE_NULL == lpDevMgr->SystemBus[dwLoop].dwBusType)
+		if (BUS_TYPE_NULL == lpDevMgr->SystemBus[dwLoop].dwBusType)
+		{
 			break;
+		}
 	}
-	if(MAX_BUS_NUM == dwLoop) //Can not find a free bus,the number of system buses exceed
-		                      //MAX_BUS_NUM.
+	if(MAX_BUS_NUM == dwLoop)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* Can not find a free bus,the number of system buses exceed MAX_BUS_NUM. */
 		return MAX_DWORD_VALUE;
 	}
 
-	//
-	//Now,we have found a free system bus element,so initialize it.
-	//
-	lpDevMgr->SystemBus[dwLoop].dwBusType      = BUS_TYPE_PCI;
-	lpDevMgr->SystemBus[dwLoop].dwBusNum       = dwBusNum;
-	lpDevMgr->SystemBus[dwLoop].lpHomeBridge   = lpBridge;
-	if(lpBridge)    //If the current bus is not root bus.
+	/* Now we have found a free system bus element,initialize it. */
+	lpDevMgr->SystemBus[dwLoop].dwBusType = BUS_TYPE_PCI;
+	lpDevMgr->SystemBus[dwLoop].dwBusNum = dwBusNum;
+	lpDevMgr->SystemBus[dwLoop].lpHomeBridge = lpBridge;
+	if(lpBridge)
 	{
+		/* If the current bus is not root bus. */
 		lpDevMgr->SystemBus[dwLoop].lpParentBus = lpBridge->lpHomeBus;
-		lpBridge->lpChildBus                    = &lpDevMgr->SystemBus[dwLoop];
+		lpBridge->lpChildBus = &lpDevMgr->SystemBus[dwLoop];
 	}
 	//Set PCI bus operations.
 	lpDevMgr->SystemBus[dwLoop].ReadConfig  = PciReadConfig;
 	lpDevMgr->SystemBus[dwLoop].WriteConfig = PciWriteConfig;
 
-	PciScanDevices(&lpDevMgr->SystemBus[dwLoop]);  //Scan all devices on this bus.
+	/* Scan all devices on this bus. */
+	PciScanDevices(&lpDevMgr->SystemBus[dwLoop]);
 	lpPhyDev = lpDevMgr->SystemBus[dwLoop].lpDevListHdr;
-	while(lpPhyDev)    //Now,scan all child buses of the current bus.
+	/* Scan all child buses of the current bus. */
+	while(lpPhyDev)
 	{
 		if(PCI_DEVICE_TYPE_BRIDGE == 
-			((__PCI_DEVICE_INFO*)lpPhyDev->lpPrivateInfo)->dwDeviceType) //This is a PCI-PCI
-			                                                             //bridge.
+			((__PCI_DEVICE_INFO*)lpPhyDev->lpPrivateInfo)->dwDeviceType)
 		{
-			dwSubNum = PciScanBus(lpDevMgr,lpPhyDev,//++dwBusNum); //Scan child bus.
+			/* PCI bridge. */
+			dwSubNum = PciScanBus(lpDevMgr,
+				lpPhyDev,
 				((__PCI_DEVICE_INFO*)lpPhyDev->lpPrivateInfo)->ucSecondary);
 		}
 		lpPhyDev = lpPhyDev->lpNext;
 	}
-
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-
 	return dwSubNum;
 }
 
-//
-//The implementation of PciBusDriver routine.
-//This is the entry routine for all system bus drivers,it is called by DeviceManager when
-//this object is initializing.
-//This routine checks if there is(are) PCI bus(es) in system,if not,returns FALSE,else,scan
-//all PCI buses,configure all devices reside on the PCI buses,and returns TRUE.
-//
+/*
+ * This is the entry routine for all system bus drivers,it is called by DeviceManager when
+ * it is initializing.
+ * This routine checks if there is(are) PCI bus(es) in system,if not,returns FALSE,else,scan
+ * all PCI buses,configure all devices reside on the PCI buses,and returns TRUE.
+ */
 BOOL PciBusDriver(__DEVICE_MANAGER* lpDevMgr)
 {
-	BOOL          bResult           = FALSE;
+	BOOL bResult = FALSE;
 
-	if(NULL == lpDevMgr)
-		return FALSE;
+	BUG_ON(NULL == lpDevMgr);
+	/* Only available in process of system initialization. */
+	BUG_ON(!IN_SYSINITIALIZATION());
 
-	//
-	//First,probe if there is PCI bus present.
-	//
+	/* Probe if there is PCI bus present. */
 	bResult = PciBusProbe();
-	if(!bResult)  //No PCI bus.
+	if (!bResult)
+	{
+		/* No PCI bus presents. */
 		return FALSE;
+	}
 
-	//
-	//Now,should scan all PCI devices.
-	//
+	/* Scan all PCI device(s) attaching on the PCI bus system. */
 	PciScanBus(lpDevMgr,NULL,0);
 	return TRUE;
 }

@@ -219,12 +219,12 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT*                 lpThis,
 		goto __TERMINAL;
 	}
 	pProcessNode->pKernelObject = (__COMMON_OBJECT*)pProcessObject;
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pProcessManager->spin_lock, dwFlags);
 	pProcessNode->prev = &pProcessManager->ProcessList;
 	pProcessNode->next = pProcessManager->ProcessList.next;
 	pProcessManager->ProcessList.next->prev = pProcessNode;
 	pProcessManager->ProcessList.next = pProcessNode;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pProcessManager->spin_lock, dwFlags);
 
 	//Set the process's status to READY.
 	pProcessObject->dwProcessStatus = PROCESS_STATUS_READY;
@@ -284,7 +284,7 @@ static VOID DestroyProcess(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpObject)
 	}
 
 	//Delete it from the global process list.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pProcessManager->spin_lock, dwFlags);
 	pListNode = pProcessManager->ProcessList.next;
 	while(pListNode != &pProcessManager->ProcessList)
 	{
@@ -300,7 +300,7 @@ static VOID DestroyProcess(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpObject)
 		pListNode->prev->next = pListNode->next;
 		pListNode->next = pListNode->prev = NULL;  //Set as flags.
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pProcessManager->spin_lock, dwFlags);
 
 	if(pListNode->next != NULL)  //Does not find the process object in global list.
 	{
@@ -354,7 +354,7 @@ static BOOL LinkKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpProcess,
 	pListNode->next          = NULL;
 	pListNode->prev          = NULL;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
 	//Check if the kernel thread is the first kernel thread of the process.
 	if(NULL == lpProcessObject->lpMainKernelThread)
 	{
@@ -368,7 +368,7 @@ static BOOL LinkKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpProcess,
 		lpProcessObject->KernelThreadList.prev       = pListNode;
 		lpProcessObject->nKernelThreadNum ++;  //Update total thread number.
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
 
 	if(NULL == pListNode->next)
 	{
@@ -414,7 +414,7 @@ static BOOL UnlinkKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpProces
 
 	//Now travel the whole kernel thread list of the process,find the list node and detach it
 	//from list.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
 	pListNode = lpProcessObject->KernelThreadList.next;
 	while(pListNode != &lpProcessObject->KernelThreadList)
 	{
@@ -436,7 +436,7 @@ static BOOL UnlinkKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpProces
 	{
 		bResult = FALSE;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
 
 	//Release list node.
 	if(bResult)
@@ -459,7 +459,7 @@ static BOOL GetTLSKey(__COMMON_OBJECT* lpThis,DWORD* pTLSKey,LPVOID pReserved)
 
 	//Try to find a unused TLS slot,each slot corresponding to the index of
 	//TLS array in Kernel Thread Object.The TLS key is the index value.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	for(i = 0;i < MAX_TLS_NUM;i ++)
 	{
 		if((pProcessObject->dwTLSFlags >> i) & 0x01)
@@ -472,7 +472,7 @@ static BOOL GetTLSKey(__COMMON_OBJECT* lpThis,DWORD* pTLSKey,LPVOID pReserved)
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 
 	if(MAX_TLS_NUM == i)  //Can not find free TLS slot.
 	{
@@ -491,9 +491,9 @@ static VOID ReleaseTLSKey(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID pReserved)
 	{
 		return;
 	}
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	pProcessObject->dwTLSFlags &= ~(0x01 << TLSKey);
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	return;
 }
 
@@ -508,13 +508,13 @@ static BOOL GetTLSValue(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID* ppValue)
 	{
 		return FALSE;
 	}
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	if(pProcessObject->dwTLSFlags & (0x01 << TLSKey))
 	{
 		*ppValue = pKernelThread->TLS[TLSKey];
 		bResult  = TRUE;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	return bResult;
 }
 
@@ -529,13 +529,13 @@ static BOOL SetTLSValue(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID pValue)
 	{
 		return FALSE;
 	}
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	if(pProcessObject->dwTLSFlags & (0x01 << TLSKey))
 	{
 		pKernelThread->TLS[TLSKey] = pValue;
 		bResult  = TRUE;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
 	return bResult;
 }
 
@@ -549,6 +549,9 @@ static BOOL PMInitialize(__COMMON_OBJECT* lpThis)
 		return FALSE;
 	}
 
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pProcessManager->spin_lock, "processmgr");
+#endif
 	//Initialize the global process list.
 	pProcessManager->ProcessList.prev = &pProcessManager->ProcessList;
 	pProcessManager->ProcessList.next = &pProcessManager->ProcessList;
@@ -572,7 +575,9 @@ static __PROCESS_OBJECT* GetCurrentProcess(__COMMON_OBJECT* lpThis)
 //processes.
 __PROCESS_MANAGER ProcessManager = {
 	{0},
-
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,       //spin_lock.
+#endif
 	//Operation routines.
 	CreateProcess,              //CreateProcess.
 	DestroyProcess,             //DestroyProcess.
@@ -583,7 +588,6 @@ __PROCESS_MANAGER ProcessManager = {
 	GetTLSValue,                //GetTLSValue.
 	SetTLSValue,                //SetTLSValue.
 	GetCurrentProcess,          //GetCurrentProcess.
-
 	PMInitialize                //Initialize.
 };
 

@@ -23,82 +23,88 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "types.h"
 #include "commobj.h"
 #include "ktmgr.h"
 #include "system.h"
 #include "hellocn.h"
+#include "stdio.h"
 #include "kapi.h"
 
 
 //Timer handler routine for all synchronous object.
 static DWORD WaitingTimerHandler(LPVOID lpData)
 {
-	__TIMER_HANDLER_PARAM*   lpHandlerParam = (__TIMER_HANDLER_PARAM*)lpData;
-	DWORD                    dwFlags;
+	__TIMER_HANDLER_PARAM* lpHandlerParam = (__TIMER_HANDLER_PARAM*)lpData;
+	unsigned long dwFlags;
 
-	if(NULL == lpHandlerParam)
-	{
-		BUG();
-		return 0;
-	}
+	BUG_ON(NULL == lpHandlerParam);
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);  //Acquire kernel thread object's spinlock.
+	/* Should be protected by kernel thread's spinlock. */
+	__ENTER_CRITICAL_SECTION_SMP(lpHandlerParam->lpKernelThread->spin_lock,dwFlags);
 	switch(lpHandlerParam->lpKernelThread->dwWaitingStatus & OBJECT_WAIT_MASK)
 	{
 		case OBJECT_WAIT_RESOURCE:
 		case OBJECT_WAIT_DELETED:
 			break;
 		case OBJECT_WAIT_WAITING:
-			if(lpHandlerParam->TimeOutCallback)  //Call the specified time out call back.
+			if(lpHandlerParam->TimeOutCallback)
 			{
+				/* Call the specified time out call back. */
 				lpHandlerParam->TimeOutCallback((VOID*)lpHandlerParam);
 			}
-			else  //Use the default implementation,it works for most synchronization kernel objects.
+			else
 			{
-				lpHandlerParam->lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
-				lpHandlerParam->lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_TIMEOUT;
-				//Delete the lpKernelThread from waiting queue.
-				lpHandlerParam->lpWaitingQueue->DeleteFromQueue(
+				/* 
+				 * Delete the lpKernelThread from waiting queue. 
+				 * The deletion may fail if the kernel is already
+				 * deleted by other CPU,since there maybe a contention
+				 * exist,for we don't acquire the spin lock of
+				 * corresponding synchronous object.
+				 */
+				if (lpHandlerParam->lpWaitingQueue->DeleteFromQueue(
 					(__COMMON_OBJECT*)lpHandlerParam->lpWaitingQueue,
-					(__COMMON_OBJECT*)lpHandlerParam->lpKernelThread);
-				//Also should decrement reference counter of the synchronization object if it has.
-				//Add this kernel thread to ready queue.
-				lpHandlerParam->lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
-				KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
-					lpHandlerParam->lpKernelThread);
+					(__COMMON_OBJECT*)lpHandlerParam->lpKernelThread))
+				{
+					/* Use the default implementation,it works for most synchronization kernel objects. */
+					lpHandlerParam->lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
+					lpHandlerParam->lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_TIMEOUT;
+					//Also should decrement reference counter of the synchronization object if it has.
+					//Add this kernel thread to ready queue.
+					lpHandlerParam->lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
+					KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+						lpHandlerParam->lpKernelThread);
+				}
 			}
 			break;
 		default:
 			BUG();
 			break;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpHandlerParam->lpKernelThread->spin_lock, dwFlags);
 	return 0;
 }
 
-//
-//TimeOutWaiting is a global routine used by any synchronous objects' WaitForThisObjectEx
-//routine.
-//
+/*
+ * TimeOutWaiting is a global routine used by any synchronous objects' 
+ * WaitForThisObjectEx routine.
+ */
 DWORD TimeOutWaiting(__COMMON_OBJECT* lpSynObject,      //Synchronous object.
 					 __PRIORITY_QUEUE* lpWaitingQueue,  //Waiting queue.
 					 __KERNEL_THREAD_OBJECT* lpKernelThread,  //Who want to wait.
 					 DWORD dwMillionSecond,  //Time out value in millionsecond.
 					 VOID (*TimeOutCallback)(VOID*))  //Call back routine when timeout.
 {
-	__TIMER_OBJECT*           lpTimerObj;
-	__TIMER_HANDLER_PARAM     HandlerParam;
+	__TIMER_OBJECT* lpTimerObj = NULL;
+	__TIMER_HANDLER_PARAM HandlerParam;
+	unsigned long ulFlags;
 
+	/* Validate parameters. */
 	if((NULL == lpSynObject) || (NULL == lpWaitingQueue) ||
-	   (NULL == lpKernelThread) || (0 == dwMillionSecond))  //Invalid parameters.
+	   (NULL == lpKernelThread) || (0 == dwMillionSecond))
 	{
 		BUG();
-		return OBJECT_WAIT_FAILED;
 	}
 
 	//Initialize HandlerParam.
@@ -107,10 +113,23 @@ DWORD TimeOutWaiting(__COMMON_OBJECT* lpSynObject,      //Synchronous object.
 	HandlerParam.lpWaitingQueue  = lpWaitingQueue;
 	HandlerParam.TimeOutCallback = TimeOutCallback;
 
-	//lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
-	//lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
-
-	//Set a one time timer.
+	/* 
+	 * Use one shot timer to wake up the waiting kernel thread
+	 * when timeout.Use TIMER_FLAGS_NOAUTODEL flag to avoid deleting
+	 * of timer by kernel,since this may lead 'twice deleting' of
+	 * timer object as follows:
+	 * 1. The kernel thread put itself into waiting queue of syn object;
+	 * 2. One shot timer is set as follows;
+	 * 3. The synchronous object is signal and all kernel threads waiting
+	 *    for it are waken up and ready to run(but not run immediately),
+	 *    it's waiting status is set to OBJECT_WAIT_RESOURCE;
+	 * 4. Then the timer is triggered and timeout handler is called;
+	 * 5. Suppose the timer object is automatically destroyed at the moment by
+	 *    interrupt handler;
+	 * 6. When the kernel thread is put into run,it will delete the timer
+	 *    object again,this lead 'twice deleting' of timer object.
+	 * So we use NOAUTODEL flag to avoid this contention.
+	 */
 	lpTimerObj = (__TIMER_OBJECT*)System.SetTimer((__COMMON_OBJECT*)&System,
 		lpKernelThread,
 #define TIMEOUT_WAITING_TIMER_ID 2048
@@ -118,28 +137,42 @@ DWORD TimeOutWaiting(__COMMON_OBJECT* lpSynObject,      //Synchronous object.
 		dwMillionSecond,
 		WaitingTimerHandler,
 		(LPVOID)&HandlerParam,
-		TIMER_FLAGS_ONCE);
+		TIMER_FLAGS_ONCE | TIMER_FLAGS_NOAUTODEL);
 	if(NULL == lpTimerObj)
 	{
+		_hx_printk("%s:failed to set timer.\r\n", __func__);
 		return OBJECT_WAIT_FAILED;
 	}
 
-	KernelThreadManager.ScheduleFromProc(NULL);  //Re-schedule.
+	KernelThreadManager.ScheduleFromProc(NULL);
 
-	//Once reach here,it means the waiting kernel thread was waken up.
+	/* The waiting kernel thread was waken up. */
+	__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, ulFlags);
 	switch(lpKernelThread->dwWaitingStatus & OBJECT_WAIT_MASK)
 	{
-		case OBJECT_WAIT_RESOURCE:  //Got resource.
+		case OBJECT_WAIT_RESOURCE:
+			/* Got resource successfully. */
+			__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, ulFlags);
 			System.CancelTimer((__COMMON_OBJECT*)&System,
 				(__COMMON_OBJECT*)lpTimerObj);  //Cancel timer.
 			return OBJECT_WAIT_RESOURCE;
 
-		case OBJECT_WAIT_DELETED:   //Synchronous object was deleted.
+		case OBJECT_WAIT_DELETED:
+			/* Synchronous object was deleted. */
+			__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, ulFlags);
 			System.CancelTimer((__COMMON_OBJECT*)&System,
 				(__COMMON_OBJECT*)lpTimerObj);
 			return OBJECT_WAIT_DELETED;
 
-		case OBJECT_WAIT_TIMEOUT:   //Time out.
+		case OBJECT_WAIT_TIMEOUT:
+			/* 
+			 * Wait timeout,no need to cancel timer since it already be 
+			 * destroyed in process of system timer interrupt handler.
+			 */
+			__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, ulFlags);
+			/* Destroy the timer object since it's no auto delete timer. */
+			System.CancelTimer((__COMMON_OBJECT*)&System,
+				(__COMMON_OBJECT*)lpTimerObj);
 			return OBJECT_WAIT_TIMEOUT;
 		default:
 			break;
@@ -156,6 +189,7 @@ static DWORD kWaitForEventObject(__COMMON_OBJECT*);
 static DWORD kSetEvent(__COMMON_OBJECT*);
 static DWORD kResetEvent(__COMMON_OBJECT*);
 static DWORD kWaitForEventObjectEx(__COMMON_OBJECT*,DWORD);
+static DWORD PulseEvent(__COMMON_OBJECT*);
 
 //---------------------------------------------------------------------------------
 //
@@ -163,43 +197,44 @@ static DWORD kWaitForEventObjectEx(__COMMON_OBJECT*,DWORD);
 //
 //----------------------------------------------------------------------------------
 
-//
-//Event object's initializing routine.
-//This routine initializes the members of an event object.
-//
-
+/*
+ * Event object's initializing routine.
+ * This routine initializes the members of an event object.
+ */
 BOOL EventInitialize(__COMMON_OBJECT* lpThis)
 {
 	BOOL                  bResult          = FALSE;
-	__EVENT*              lpEvent          = NULL;
+	__EVENT*              lpEvent          = (__EVENT*)lpThis;
 	__PRIORITY_QUEUE*     lpPriorityQueue  = NULL;
 
-	if(NULL == lpThis)
-		goto __TERMINAL;
+	BUG_ON(NULL == lpEvent);
 
-	lpEvent = (__EVENT*)lpThis;
-
+	/* Create waiting queue of event object. */
 	lpPriorityQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,NULL,
 		OBJECT_TYPE_PRIORITY_QUEUE);
 	if(NULL == lpPriorityQueue)
 	{
 		goto __TERMINAL;
 	}
-
 	bResult = lpPriorityQueue->Initialize((__COMMON_OBJECT*)lpPriorityQueue);
 	if(!bResult)
 	{
 		goto __TERMINAL;
 	}
 
-	lpEvent->lpWaitingQueue      = lpPriorityQueue;
-	lpEvent->dwEventStatus       = EVENT_STATUS_OCCUPIED;
-	lpEvent->SetEvent            = kSetEvent;
-	lpEvent->ResetEvent          = kResetEvent;
+	/* Initialize the event object. */
+	lpEvent->lpWaitingQueue = lpPriorityQueue;
+	lpEvent->dwEventStatus = EVENT_STATUS_OCCUPIED;
+	lpEvent->SetEvent = kSetEvent;
+	lpEvent->ResetEvent = kResetEvent;
+	lpEvent->PulseEvent = PulseEvent;
 	lpEvent->WaitForThisObjectEx = kWaitForEventObjectEx;
-	lpEvent->WaitForThisObject   = kWaitForEventObject;
-	lpEvent->dwObjectSignature   = KERNEL_OBJECT_SIGNATURE;
-	bResult                      = TRUE;
+	lpEvent->WaitForThisObject = kWaitForEventObject;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(lpEvent->spin_lock,"event");
+#endif
+	lpEvent->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
+	bResult = TRUE;
 
 __TERMINAL:
 	if(!bResult)
@@ -210,31 +245,23 @@ __TERMINAL:
 	return bResult;
 }
 
-//
-//Event object's uninitializing routine.
-//Safety deleted is support by EVENT object,so in this routine,
-//if there are kernel threads waiting for this object,then wakeup
-//all kernel threads,and then destroy the event object.
-//
-
+/* 
+ * Event object's uninitializing routine.
+ * Safety deleted is support by EVENT object,so in this routine,
+ * if there are kernel threads waiting for this object,then wakeup
+ * all kernel threads,and then destroy the event object.
+ */
 VOID EventUninitialize(__COMMON_OBJECT* lpThis)
 {
-	__EVENT*                 lpEvent          = NULL;
-	__PRIORITY_QUEUE*        lpPriorityQueue  = NULL;
-	__KERNEL_THREAD_OBJECT*  lpKernelThread   = NULL;
-	DWORD                    dwFlags;
+	__EVENT* lpEvent = (__EVENT*)lpThis;
+	__PRIORITY_QUEUE* lpPriorityQueue = NULL;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	unsigned long dwFlags, dwFlags1;
 
-	if(NULL == lpThis)
-	{
-		BUG();
-		return;
-	}
+	BUG_ON(NULL == lpEvent);
 
-	lpEvent = (__EVENT*)lpThis;
-
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpEvent->spin_lock,dwFlags);
 	lpPriorityQueue = lpEvent->lpWaitingQueue;
-	//if(EVENT_STATUS_FREE != EVENT_STATUS_FREE)
 	if (EVENT_STATUS_FREE != lpEvent->dwEventStatus)
 	{
 		//Should wake up all kernel thread(s) who waiting for this object.
@@ -244,62 +271,70 @@ VOID EventUninitialize(__COMMON_OBJECT* lpThis)
 			NULL);
 		while(lpKernelThread)
 		{
+			__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 			lpKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_DELETED;
 			KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 				lpKernelThread);
+			__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 			lpKernelThread = (__KERNEL_THREAD_OBJECT*)
 				lpPriorityQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)lpPriorityQueue,
 				NULL);
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 
-	//Clear the kernel object's signature.
+	/* Clear the kernel object's signature and destroy it. */
 	lpEvent->dwObjectSignature = 0;
-
 	ObjectManager.DestroyObject(&ObjectManager,
-		(__COMMON_OBJECT*)lpPriorityQueue);          //*******CAUTION!!!************
+		(__COMMON_OBJECT*)lpPriorityQueue);
 	return;
 }
 
-//
-//The implementation of SetEvent.
-//This routine do the following:
-// 1. Saves the previous status into a local variable;
-// 2. Sets the current status of the event to EVENT_STATUS_FREE;
-// 3. Wakes up all kernel thread(s) in it's waiting queue.
-// 4. Returns the previous status.
-//
-//static
-DWORD kSetEvent(__COMMON_OBJECT* lpThis)
+/*
+ * PulseEvent,it as the combination of SetEvent and ResetEvent in
+ * atomic,the previous status will be retuned.
+ */
+static DWORD PulseEvent(__COMMON_OBJECT* lpThis)
 {
-	DWORD                     dwPreviousStatus     = EVENT_STATUS_OCCUPIED;
-	__EVENT*                  lpEvent              = NULL;
-	__KERNEL_THREAD_OBJECT*   lpKernelThread       = NULL;
-	DWORD                     dwFlags              = 0;
+	DWORD                     dwPreviousStatus = EVENT_STATUS_OCCUPIED;
+	__EVENT*                  lpEvent = NULL;
+	__KERNEL_THREAD_OBJECT*   lpKernelThread = NULL;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
 
-	if(NULL == lpThis)
+	if (NULL == lpThis)
+	{
+		return dwPreviousStatus;
+	}
+	lpEvent = (__EVENT*)lpThis;
+	/* Validate the event object. */
+	if (lpEvent->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
 	{
 		return dwPreviousStatus;
 	}
 
-	lpEvent = (__EVENT*)lpThis;
-
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 	dwPreviousStatus = lpEvent->dwEventStatus;
-	lpEvent->dwEventStatus = EVENT_STATUS_FREE;    //Set the current status to free.
-
-	//Wake up all kernel thread(s) waiting for this event.
+	if (EVENT_STATUS_FREE == lpEvent->dwEventStatus)
+	{
+		/* Current status is free,just return. */
+		__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
+		return dwPreviousStatus;
+	}
+	BUG_ON(EVENT_STATUS_OCCUPIED != lpEvent->dwEventStatus);
+	/*
+	 * The event status is occupied,so try to wake up all 
+	 * kernel thread(s) waiting for this event,if there are.
+	 */
 	lpKernelThread = (__KERNEL_THREAD_OBJECT*)
 		lpEvent->lpWaitingQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpEvent->lpWaitingQueue,
-		NULL);
-	while(lpKernelThread)                         //Remove all kernel thread(s) from
-		                                          //waiting queue.
+			NULL);
+	while (lpKernelThread)
 	{
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
 		//Set waiting result bit.
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
@@ -307,26 +342,83 @@ DWORD kSetEvent(__COMMON_OBJECT* lpThis)
 		KernelThreadManager.AddReadyKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			lpKernelThread);  //Add to ready queue.
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
+		lpKernelThread = (__KERNEL_THREAD_OBJECT*)
+			lpEvent->lpWaitingQueue->GetHeaderElement(
+			(__COMMON_OBJECT*)lpEvent->lpWaitingQueue,
+				NULL);
+	}
+	__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
+
+	/* Triggeer rescheduling if in process context. */
+	if (IN_KERNELTHREAD())
+	{
+		KernelThreadManager.ScheduleFromProc(NULL);
+	}
+	return dwPreviousStatus;
+}
+
+/*
+ * SetEvent,this routine do the following:
+ *  1. Saves the previous status into a local variable;
+ *  2. Sets the current status of the event to EVENT_STATUS_FREE;
+ *  3. Wakes up all kernel thread(s) in it's waiting queue.
+ *  4. Returns the previous status.
+ */
+static DWORD kSetEvent(__COMMON_OBJECT* lpThis)
+{
+	DWORD                     dwPreviousStatus     = EVENT_STATUS_OCCUPIED;
+	__EVENT*                  lpEvent              = NULL;
+	__KERNEL_THREAD_OBJECT*   lpKernelThread       = NULL;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
+
+	if(NULL == lpThis)
+	{
+		return dwPreviousStatus;
+	}
+
+	lpEvent = (__EVENT*)lpThis;
+	__ENTER_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
+	dwPreviousStatus = lpEvent->dwEventStatus;
+	/* Set the current status to free. */
+	lpEvent->dwEventStatus = EVENT_STATUS_FREE;
+	/* Wake up all kernel thread(s) waiting for this event. */
+	lpKernelThread = (__KERNEL_THREAD_OBJECT*)
+		lpEvent->lpWaitingQueue->GetHeaderElement(
+		(__COMMON_OBJECT*)lpEvent->lpWaitingQueue,
+		NULL);
+	while(lpKernelThread)
+	{
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
+		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
+		//Set waiting result bit.
+		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
+		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
+		KernelThreadManager.AddReadyKernelThread(
+			(__COMMON_OBJECT*)&KernelThreadManager,
+			lpKernelThread);  //Add to ready queue.
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread = (__KERNEL_THREAD_OBJECT*)
 			lpEvent->lpWaitingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)lpEvent->lpWaitingQueue,
 			NULL);
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 
-	if(IN_KERNELTHREAD())  //Current context is in process.
+	/* Triggeer rescheduling if in process context. */
+	if(IN_KERNELTHREAD())
 	{
-		KernelThreadManager.ScheduleFromProc(NULL);  //Re-schedule.
+		KernelThreadManager.ScheduleFromProc(NULL);
 	}
 	return dwPreviousStatus;
 }
 
-//
-//The implementation of ResetEvent.
-//
-
-static
-DWORD kResetEvent(__COMMON_OBJECT* lpThis)
+/* 
+ * ResetEvent routine.
+ * Change the event's status to occupied,and return the status
+ * before this operation.
+ */
+static DWORD kResetEvent(__COMMON_OBJECT* lpThis)
 {
 	__EVENT*          lpEvent          = (__EVENT*)lpThis;
 	DWORD             dwPreviousStatus = 0;
@@ -337,84 +429,84 @@ DWORD kResetEvent(__COMMON_OBJECT* lpThis)
 		return dwPreviousStatus;
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 	dwPreviousStatus = lpEvent->dwEventStatus;
 	lpEvent->dwEventStatus = EVENT_STATUS_OCCUPIED;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-
+	__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 	return dwPreviousStatus;
 }
 
-//
-//The implementation of WaitForEventObject.
-//
-
-//static
-DWORD kWaitForEventObject(__COMMON_OBJECT* lpThis)
+/* Wait for a event object. */
+static DWORD kWaitForEventObject(__COMMON_OBJECT* lpThis)
 {
 	__EVENT*                      lpEvent             = (__EVENT*)lpThis;
 	__KERNEL_THREAD_OBJECT*       lpKernelThread      = NULL;
-	//__KERNEL_THREAD_CONTEXT*      lpContext           = NULL;
-	DWORD                         dwFlags             = 0;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
 
 	if(NULL == lpEvent)
 	{
 		return OBJECT_WAIT_FAILED;
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 	if(EVENT_STATUS_FREE == lpEvent->dwEventStatus)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 		return OBJECT_WAIT_RESOURCE;
 	}
 	else
 	{
 		lpKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
+		lpKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_EVENT;
 		lpEvent->lpWaitingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)lpEvent->lpWaitingQueue,
 			(__COMMON_OBJECT*)lpKernelThread,
 			0);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);    //Leave critical section here is safety.
-		KernelThreadManager.ScheduleFromProc(NULL);
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 	}
+	__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
+	/* Trigger a rescheduling. */
+	KernelThreadManager.ScheduleFromProc(NULL);
+	/* 
+	 * The kernel thread is wakenup when reach here,it has obtained 
+	 * the resource succesfully.
+	 */
 	return OBJECT_WAIT_RESOURCE;
 }
 
-//
-//WaitForEventObjectEx's implementation.
-//
-//static
-DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
+/* Timeout waiting for event object. */
+static DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
 {
-	__EVENT*                      lpEvent         = (__EVENT*)lpObject;
-	__KERNEL_THREAD_OBJECT*       lpKernelThread  = NULL;
-	DWORD                         dwFlags;
-	DWORD                         dwTimeOutTick;
-	DWORD                         dwTimeSpan;
+	__EVENT* lpEvent = (__EVENT*)lpObject;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	unsigned long dwFlags, dwFlags1;
+	DWORD dwTimeOutTick;
+	DWORD dwTimeSpan;
 
 	if(NULL == lpObject)
 	{
 		return OBJECT_WAIT_FAILED;
 	}
 
+	/* Calculate the tick counter that timeout occur. */
 	dwTimeOutTick = (dwMillionSecond / SYSTEM_TIME_SLICE) ? 
 		(dwMillionSecond / SYSTEM_TIME_SLICE) : 1;
 	dwTimeOutTick += System.dwClockTickCounter;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);  //Should not be interrupted.
+	__ENTER_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 	if(EVENT_STATUS_FREE == lpEvent->dwEventStatus)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 		return OBJECT_WAIT_RESOURCE;
-	}
-	//Should waiting now.
-	if(0 == dwMillionSecond)  //Waiting zero time.
+ 	}
+	/* Wait the event object. */
+	if(0 == dwMillionSecond)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 		KernelThreadManager.ScheduleFromProc(NULL);
 		return OBJECT_WAIT_TIMEOUT;
 	}
@@ -423,11 +515,13 @@ DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
 	{
 		if(dwTimeOutTick <= System.dwClockTickCounter)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 			return OBJECT_WAIT_TIMEOUT;
 		}
 		dwTimeSpan = (dwTimeOutTick - System.dwClockTickCounter) * SYSTEM_TIME_SLICE;
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
+		lpKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_EVENT;
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		//Add to event object's waiting queue.
@@ -435,24 +529,31 @@ DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
 			(__COMMON_OBJECT*)lpEvent->lpWaitingQueue,
 			(__COMMON_OBJECT*)lpKernelThread,
 			0);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 		
+		/* Apply timeout waiting. */
 		switch(TimeOutWaiting((__COMMON_OBJECT*)lpEvent,lpEvent->lpWaitingQueue,
 			lpKernelThread,dwTimeSpan,NULL))
 		{
-			case OBJECT_WAIT_RESOURCE:  //Should loop to while again to check the status.
-				__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-				break;
+			case OBJECT_WAIT_RESOURCE:
+				/* 
+				 * No need to check again,since the event is triggered,i.e,
+				 * the event has occured,it's different from mutex or other
+				 * synchronous objects.
+				 */
+				return OBJECT_WAIT_RESOURCE;
 			case OBJECT_WAIT_TIMEOUT:
 				return OBJECT_WAIT_TIMEOUT;
 			case OBJECT_WAIT_DELETED:
 				return OBJECT_WAIT_DELETED;
 			default:
 				BUG();
-				return OBJECT_WAIT_FAILED;
+				break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	/* Should not reach here. */
+	__LEAVE_CRITICAL_SECTION_SMP(lpEvent->spin_lock, dwFlags);
 	return OBJECT_WAIT_RESOURCE;
 }
 
@@ -462,25 +563,25 @@ DWORD kWaitForEventObjectEx(__COMMON_OBJECT* lpObject,DWORD dwMillionSecond)
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-//
-//The implementation of ReleaseMutex.
-//
-static
-DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
+/*
+ * ReleaseMutex,it wake up all kernel threads that waiting for the mutex
+ * object and set the mutex's status to FREE.
+ */
+static DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 {
-	__KERNEL_THREAD_OBJECT*     lpKernelThread   = NULL;
-	__MUTEX*                    lpMutex          = NULL;
-	DWORD                       dwPreviousStatus = 0;
-	DWORD                       dwFlags          = 0;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	__MUTEX* lpMutex = NULL;
+	DWORD dwPreviousStatus = 0;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
 
-	if (NULL == lpThis)    //Parameter check.
+	/* Object's handle must be specified. */
+	if (NULL == lpThis)
 	{
 		return 0;
 	}
 
 	lpMutex = (__MUTEX*)lpThis;
-
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 	/*
 	 * Check if is recursive obtaining.
 	 */
@@ -490,26 +591,34 @@ DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 		if (lpMutex->nCurrOwnCount > 0) /* Just return. */
 		{
 			dwPreviousStatus = lpMutex->dwMutexStatus;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 			return dwPreviousStatus;
 		}
 	}
-	if(lpMutex->dwWaitingNum > 0)    //If there are other kernel threads waiting for this object.
+	if(lpMutex->dwWaitingNum > 0)
 	{
-		lpMutex->dwWaitingNum --;    //Decrement the counter.
+		/* 
+		 * If there are other kernel threads waiting for
+		 * this object,decrement the waiting number. 
+		 */
+		lpMutex->dwWaitingNum --;
 	}
-	if(0 == lpMutex->dwWaitingNum)   //There is no kernel thread waiting for the object.
+	if(0 == lpMutex->dwWaitingNum)
 	{
+		/* No kernel thread waiting for the object,set to free. */
 		dwPreviousStatus = lpMutex->dwMutexStatus;
-		lpMutex->dwMutexStatus = MUTEX_STATUS_FREE;  //Set to free.
+		lpMutex->dwMutexStatus = MUTEX_STATUS_FREE;
 		lpMutex->lpCurrentOwner = NULL;
 		lpMutex->nCurrOwnCount = 0;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 		return 0;
 	}
+	/* Wake up one kernel thread who waiting for this mutex. */
 	lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpMutex->lpWaitingQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpMutex->lpWaitingQueue,
-		0);  //Get one waiting kernel thread to run.
+		0);
+	BUG_ON(NULL == lpKernelThread);
+	__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 	lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
 	lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
@@ -517,45 +626,47 @@ DWORD kReleaseMutex(__COMMON_OBJECT* lpThis)
 	lpMutex->nCurrOwnCount = 1;
 	KernelThreadManager.AddReadyKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
-		lpKernelThread);  //Put the kernel thread to ready queue.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		lpKernelThread);
+	__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
+	__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 
-	KernelThreadManager.ScheduleFromProc(NULL);  //Re-schedule kernel thread.
+	/* Rescheduling. */
+	KernelThreadManager.ScheduleFromProc(NULL);
 	return dwPreviousStatus;
 }
 
-//
-//The implementation of WaitForMutexObject.
-//
-
+/* Wait for mutex object,infinite waiting. */
 static DWORD WaitForMutexObject(__COMMON_OBJECT* lpThis)
 {
-	__KERNEL_THREAD_OBJECT*        lpKernelThread   = NULL;
-	__MUTEX*                       lpMutex          = (__MUTEX*)lpThis;
-	DWORD                          dwFlags          = 0;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	__MUTEX* lpMutex = (__MUTEX*)lpThis;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
 
-	if(NULL == lpMutex)    //Parameter check.
+	if(NULL == lpMutex)
 	{
 		return 0;
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(MUTEX_STATUS_FREE == lpMutex->dwMutexStatus)    //If the current mutex is free.
+	__ENTER_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
+	if(MUTEX_STATUS_FREE == lpMutex->dwMutexStatus)
 	{
-		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;  //Modify the current status.
-		lpMutex->dwWaitingNum  ++;    //Increment the counter.
+		/* Mutex is free. */
+		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;
+		/* Increment the waiting number. */
+		lpMutex->dwWaitingNum  ++;
+		/* Save owner. */
 		lpMutex->lpCurrentOwner = __CURRENT_KERNEL_THREAD;
 		lpMutex->nCurrOwnCount  = 1;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-		return OBJECT_WAIT_RESOURCE;  //The current kernel thread successfully occupy
-		                              //the mutex.
+		__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
+		return OBJECT_WAIT_RESOURCE;
 	}
-	else    //The status of the mutex is occupied.
+	else
 	{
-		if (lpMutex->lpCurrentOwner == __CURRENT_KERNEL_THREAD) //Recurse obtain.
+		/* the mutex is occupied,check if recursive obtain. */
+		if (lpMutex->lpCurrentOwner == __CURRENT_KERNEL_THREAD)
 		{
 			lpMutex->nCurrOwnCount += 1;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 			return OBJECT_WAIT_RESOURCE;
 		}
 		/*
@@ -563,79 +674,96 @@ static DWORD WaitForMutexObject(__COMMON_OBJECT* lpThis)
 		 * one try to obtain it.
 		 */
 		lpKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
-		lpMutex->dwWaitingNum          ++;    //Increment the waiting number.
+		lpKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MUTEX;
+		/* Increment the waiting number. */
+		lpMutex->dwWaitingNum++;
 		lpMutex->lpWaitingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)lpMutex->lpWaitingQueue,
 			(__COMMON_OBJECT*)lpKernelThread,
 			0);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);  //Leave critical section here is safety.
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 		//Reschedule all kernel thread(s).
 		KernelThreadManager.ScheduleFromProc(NULL);
 	}
+	/* The kernel thread will waken up only when mutex is available. */
 	return OBJECT_WAIT_RESOURCE;
 }
 
-//Timeout call back for Mutex object,will be called in TimeOutWaiting routine,
-//to remove the kernel thread waiting on the mutex from pending queue in case
-//of waiting time out.
+/* 
+ * Timeout call back for Mutex object,will be called in TimeOutWaiting routine,
+ * to remove the kernel thread waiting on the mutex from pending queue in case
+ * of waiting time out.
+ * No need to obatin kernel thread's spin lock,since it already been acquired
+ * in TimeoutWaiting routine.But mutex's spin lock should be obtained.
+ */
 static VOID MutexTimeOutCallback(VOID* pData)
 {
-	__TIMER_HANDLER_PARAM*    lpHandlerParam = (__TIMER_HANDLER_PARAM*)pData;
+	__TIMER_HANDLER_PARAM* lpHandlerParam = (__TIMER_HANDLER_PARAM*)pData;
+	__MUTEX* pMutex = NULL;
 
-	if(NULL == lpHandlerParam)  //Shoud not occur.
-	{
-		BUG();
-	}
-	lpHandlerParam->lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
-	lpHandlerParam->lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_TIMEOUT;
-	//Delete the lpKernelThread from waiting queue.
-	lpHandlerParam->lpWaitingQueue->DeleteFromQueue(
+	BUG_ON(NULL == lpHandlerParam);
+	pMutex = (__MUTEX*)lpHandlerParam->lpSynObject;
+	BUG_ON(NULL == pMutex);
+
+	__ACQUIRE_SPIN_LOCK(pMutex->spin_lock);
+	/* 
+	 * Delete the lpKernelThread from waiting queue.
+	 * It may already deleted in case of race condition.
+	 */
+	if (lpHandlerParam->lpWaitingQueue->DeleteFromQueue(
 		(__COMMON_OBJECT*)lpHandlerParam->lpWaitingQueue,
-		(__COMMON_OBJECT*)lpHandlerParam->lpKernelThread);
-	//Also should decrement reference counter of the MUTEX object.
-	((__MUTEX*)lpHandlerParam->lpSynObject)->dwWaitingNum --;
-	//Add this kernel thread to ready queue.
-	lpHandlerParam->lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
-	KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
-		lpHandlerParam->lpKernelThread);
+		(__COMMON_OBJECT*)lpHandlerParam->lpKernelThread))
+	{
+		lpHandlerParam->lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
+		lpHandlerParam->lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_TIMEOUT;
+		//Also should decrement reference counter of the MUTEX object.
+		((__MUTEX*)lpHandlerParam->lpSynObject)->dwWaitingNum--;
+		//Add this kernel thread to ready queue.
+		lpHandlerParam->lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
+		KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+			lpHandlerParam->lpKernelThread);
+	}
+	__RELEASE_SPIN_LOCK(pMutex->spin_lock);
 }
 
-//
-//Implementation of WaitForThisObjectEx routine.
-//This routine is a time out waiting routine,caller can give a time value
-//to indicate how long want to wait,once exceed the time value,waiting operation
-//will return,even in case of the resource is not released.
-//If the time value is zero,then this routine will check the current status of
-//mutex object,if free,then occupy the object and return RESOURCE,else return
-//TIMEOUT,and a re-schedule is triggered.
-//
+/*
+ * WaitForThisObjectEx,timeout waiting for mutex object.
+ * This routine is a time out waiting routine,caller can give a time value
+ * to indicate how long it want to wait,once exceed the time value,waiting operation
+ * will return,even in the resource is not released.
+ * If the time value is zero,then this routine will check the current status of
+ * mutex object,if free,then occupy the object and return RESOURCE,else return
+ * TIMEOUT,and a re-schedule is triggered.
+ */
 static DWORD WaitForMutexObjectEx(__COMMON_OBJECT* lpThis,DWORD dwMillionSecond)
 {
-	__MUTEX*                      lpMutex        = (__MUTEX*)lpThis;
-	__KERNEL_THREAD_OBJECT*       lpKernelThread = NULL;
-	DWORD                         dwFlags;
-	DWORD                         dwResult       = OBJECT_WAIT_FAILED;
+	__MUTEX* lpMutex = (__MUTEX*)lpThis;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
+	DWORD dwResult = OBJECT_WAIT_FAILED;
 
 	if(NULL == lpMutex)
 	{
 		return OBJECT_WAIT_FAILED;
 	}
 	
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(MUTEX_STATUS_FREE == lpMutex->dwMutexStatus)  //Free now.
+	__ENTER_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
+	if(MUTEX_STATUS_FREE == lpMutex->dwMutexStatus)
 	{
+		/* Mutex is free,just occupy it. */
 		lpMutex->dwMutexStatus = MUTEX_STATUS_OCCUPIED;
 		lpMutex->dwWaitingNum ++;
 		lpMutex->lpCurrentOwner = __CURRENT_KERNEL_THREAD;
 		lpMutex->nCurrOwnCount = 1;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-		//KernelThreadManager.ScheduleFromProc(NULL);  //Re-schedule here.
+		__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 		return OBJECT_WAIT_RESOURCE;
 	}
-	else  //The mutex is not free now.
+	else
 	{
 		/*
 		 * Check if recursive obtaining.
@@ -643,58 +771,58 @@ static DWORD WaitForMutexObjectEx(__COMMON_OBJECT* lpThis,DWORD dwMillionSecond)
 		if (lpMutex->lpCurrentOwner == __CURRENT_KERNEL_THREAD)
 		{
 			lpMutex->nCurrOwnCount += 1;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 			return OBJECT_WAIT_RESOURCE;
 		}
 		if(0 == dwMillionSecond)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-			KernelThreadManager.ScheduleFromProc(NULL); //Re-schedule here.
+			__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
+			KernelThreadManager.ScheduleFromProc(NULL);
 			return OBJECT_WAIT_TIMEOUT;
 		}
 		lpKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		//Waiting on mutex's waiting queue.
 		lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
+		lpKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MUTEX;
 		lpMutex->dwWaitingNum ++;  //Added in 2015-04-06.
 		lpMutex->lpWaitingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)lpMutex->lpWaitingQueue,
 			(__COMMON_OBJECT*)lpKernelThread,
 			0);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(lpMutex->spin_lock, dwFlags);
 
+		/* Apply timeout waiting,use callback to manipulate mutex object when timeout. */
 		return TimeOutWaiting((__COMMON_OBJECT*)lpMutex,
 			lpMutex->lpWaitingQueue,lpKernelThread,dwMillionSecond,MutexTimeOutCallback);
 	}
 }
 
-//
-//The implementation of MutexInitialize.
-//
+/* Initializer of mutex object. */
 BOOL MutexInitialize(__COMMON_OBJECT* lpThis)
 {
-	__MUTEX*             lpMutex     = (__MUTEX*)lpThis;
-	__PRIORITY_QUEUE*    lpQueue     = NULL;
-	BOOL                 bResult     = FALSE;
+	__MUTEX* lpMutex = (__MUTEX*)lpThis;
+	__PRIORITY_QUEUE* lpQueue = NULL;
+	BOOL bResult = FALSE;
 
-	if(NULL == lpMutex) //Parameter check.
-	{
-		return bResult;
-	}
+	BUG_ON(NULL == lpMutex);
+	/* Create waiting queue of mutex object. */
 	lpQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_PRIORITY_QUEUE);
-	if(NULL == lpQueue)    //Failed to create priority queue.
+	if(NULL == lpQueue)
 	{
 		return bResult;
 	}
-
-	if(!lpQueue->Initialize((__COMMON_OBJECT*)lpQueue))  //Initialize the queue object.
+	if(!lpQueue->Initialize((__COMMON_OBJECT*)lpQueue))
 	{
 		goto __TERMINAL;
 	}
 
+	/* Initialize the newly created mutex object. */
 	lpMutex->dwMutexStatus     = MUTEX_STATUS_FREE;
 	lpMutex->lpWaitingQueue    = lpQueue;
 	lpMutex->WaitForThisObject = WaitForMutexObject;
@@ -704,12 +832,17 @@ BOOL MutexInitialize(__COMMON_OBJECT* lpThis)
 	lpMutex->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
 	lpMutex->lpCurrentOwner    = NULL;
 	lpMutex->nCurrOwnCount     = 0;
-	bResult = TRUE;    //Successful to initialize the mutex object.
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(lpMutex->spin_lock, "mutex");
+#endif
+	
+	bResult = TRUE;
 
 __TERMINAL:
 	if(!bResult)
 	{
-		if(NULL != lpQueue)    //Release the queue object.
+		/* Release all allocated resources if fail. */
+		if(NULL != lpQueue)
 		{
 			ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)lpQueue);
@@ -718,44 +851,45 @@ __TERMINAL:
 	return bResult;
 }
 
-//
-//The implementation of MutexUninitialize.
-//This object support safety deleted,so in this routine,all kernel thread(s)
-//must be waken up before this object is destroyed.
-//
+/*
+ * Uninitializer of mutex object.
+ * This object support safety deleted,so in this routine,all kernel thread(s)
+ * must be waken up before this object is destroyed.
+ */
 VOID MutexUninitialize(__COMMON_OBJECT* lpThis)
 {
-	__PRIORITY_QUEUE*       lpWaitingQueue  = NULL;
-	__KERNEL_THREAD_OBJECT* lpKernelThread  = NULL;
-	DWORD                   dwFlags;
+	__PRIORITY_QUEUE* lpWaitingQueue = NULL;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	__MUTEX* pMutex = (__MUTEX*)lpThis;
+	unsigned long dwFlags, dwFlags1;
 
-	if(NULL == lpThis) //parameter check.
-	{
-		BUG();
-		return;
-	}
+	BUG_ON(NULL == pMutex);
 
-	lpWaitingQueue = ((__MUTEX*)lpThis)->lpWaitingQueue;
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	lpWaitingQueue = pMutex->lpWaitingQueue;
+	__ENTER_CRITICAL_SECTION_SMP(pMutex->spin_lock, dwFlags);
+	/* Wakeup all kernel thread(s) waiting the mutex. */
 	lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpWaitingQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpWaitingQueue,
 		NULL);
 	while(lpKernelThread)
 	{
+		__ENTER_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 		lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_DELETED;
 		KernelThreadManager.AddReadyKernelThread(
 			(__COMMON_OBJECT*)&KernelThreadManager,
 			lpKernelThread);
+		__LEAVE_CRITICAL_SECTION_SMP(lpKernelThread->spin_lock, dwFlags1);
 		lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpWaitingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)lpWaitingQueue,
 			NULL);
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pMutex->spin_lock, dwFlags);
 
 	//Reset kernel object's signature.
-	((__MUTEX*)lpThis)->dwObjectSignature = 0;
+	pMutex->dwObjectSignature = 0;
+	/* Destroy the waiting queue. */
 	ObjectManager.DestroyObject(&ObjectManager,
 		(__COMMON_OBJECT*)lpWaitingQueue);
 	return;
@@ -764,9 +898,13 @@ VOID MutexUninitialize(__COMMON_OBJECT* lpThis)
 //------------------------------------------------------------------------
 //
 //  The implementation of WaitForMultipleObjects,which is a new system
-//  service added in version 1.80.
+//  service added in version 1.80. Now only available under non SMP
+//  environment,since spin lock mechanism is not supported in this routine.
+//  But it's easy to adapt to SMP,if true requirement exist.
 //
 //------------------------------------------------------------------------
+
+#if !defined(__CFG_SYS_SMP)
 
 //A local helper routine to check if a given object is a sychronization object.
 static BOOL IsSynObject(__COMMON_OBJECT* pObject)
@@ -1126,6 +1264,7 @@ __TRY_AGAIN:
 		}
 		//Set current kernel thread's status to BLOCKED.
 		pKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MULTIPLE;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		//Cancel wait for re-enter.
@@ -1190,10 +1329,6 @@ __TRY_AGAIN:
 			}
 		}
 	}
-
-	//Should not reach here.
-	//BUG();
-	//return OBJECT_WAIT_FAILED;
 }
 
 //A local helper routine,to process the case of waiting for any objects.
@@ -1244,3 +1379,4 @@ DWORD WaitForMultipleObjects(__COMMON_OBJECT** pObjectArray,
 __TERMINAL:
 	return dwRetVal;
 }
+#endif

@@ -15,47 +15,70 @@
 #ifndef __SYN_MECH_H__
 #define __SYN_MECH_H__
 
+/* For system level configurations. */
+#include "config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//System level critical section operations definition.
-
+/*
+ * Critical section operating macros.
+ * Just disable local interrupt since only
+ * available for UP.
+ */
 #ifdef __I386__
-
 #ifdef __GCC__
-	#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags)	\
+	#define __ENTER_CRITICAL_SECTION_UP(lpObj,dwFlags)	\
 		__asm__ __volatile__("pushfl; popl %0 ; cli" : "=g" (dwFlags): /* no input */ :"memory");
 #else
-
-	#define __ENTER_CRITICAL_SECTION(lpObj, dwFlags) \
+	#define __ENTER_CRITICAL_SECTION_UP(lpObj, dwFlags) \
 		__asm	push eax			 \
 		__asm	pushfd               \
 		__asm	pop eax              \
 		__asm	mov dwFlags,eax      \
 		__asm	pop eax              \
 		__asm	cli
-#endif
-
+#endif  //__GCC__
 #else
-#define __ENTER_CRITICAL_SECTION(lpObj,dwFlags) \
+#define __ENTER_CRITICAL_SECTION_UP(lpObj,dwFlags) \
 	(dwFlags = 0);
-#endif
+#endif //__I386__
 
 #ifdef __I386__
 #ifdef __GCC__
-#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)	\
+#define __LEAVE_CRITICAL_SECTION_UP(lpObj,dwFlags)	\
 	__asm__ __volatile__("pushl %0; popf " :	 : "g"(dwFlags): "memory")
 #else
-#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags) \
+#define __LEAVE_CRITICAL_SECTION_UP(lpObj,dwFlags) \
     __asm push dwFlags	\
 	__asm popfd
 
 #endif
 #else
-#define __LEAVE_CRITICAL_SECTION(lpObj,dwFlags)
+#define __LEAVE_CRITICAL_SECTION_UP(lpObj,dwFlags)
 	(dwFlags = 0);
 #endif
+
+/*
+ * Alias of critical section operating macros in UP
+ * environment.
+ */
+#define __DISABLE_LOCAL_INTERRUPT(dwFlags) __ENTER_CRITICAL_SECTION_UP(NULL,dwFlags)
+#define __RESTORE_LOCAL_INTERRUPT(dwFlags) __LEAVE_CRITICAL_SECTION_UP(NULL,dwFlags)
+
+/*
+ * Unified critical section operation macros,they actually refer 
+ * UP or SMP version of __ENTER_CRITICAL_SECTION/__LEAVECRITICAL_SECTION,
+ * according to the configuration.
+ */
+//#if defined(__CFG_SYS_SMP)
+//#define __ENTER_CRITICAL_SECTION(objptr,dwFlags) __ENTER_CRITICAL_SECTION_SMP((objptr)->spin_lock,dwFlags)
+//#define __LEAVE_CRITICAL_SECTION(objptr,dwFlags) __LEAVE_CRITICAL_SECTION_SMP((objptr)->spin_lock,dwFlags)
+//#else /* UP environment. */
+#define __ENTER_CRITICAL_SECTION(objptr,dwFlags) __ENTER_CRITICAL_SECTION_UP(NULL,dwFlags)
+#define __LEAVE_CRITICAL_SECTION(objptr,dwFlags) __LEAVE_CRITICAL_SECTION_UP(NULL,dwFlags)
+//#endif
 
 //Interrupt enable and disable operation.
 #ifdef __I386__
@@ -162,6 +185,80 @@ __asm invlpg mem_ptr \
 #define __BARRIER()
 #endif
 
+/* Atomic operations,the parameters must be volatile integer. */
+/* Set a atomic integer to 0. */
+__inline void __ATOMIC_INIT(__atomic_t* atomic)
+{
+	*atomic = 0;
+}
+
+/* Atomic increase. */
+__inline void __ATOMIC_INCREASE(__atomic_t* atomic)
+{
+	__asm {
+		push eax
+		mov eax,atomic
+		lock inc dword ptr [eax]
+		pop eax
+	}
+}
+
+/* Atomic decrease. */
+__inline void __ATOMIC_DECREASE(__atomic_t* atomic)
+{
+	__asm {
+		push eax
+		mov eax,atomic
+		lock dec dword ptr [eax]
+		pop eax
+	}
+}
+
+/* Add a value to atomic integer. */
+__inline void __ATOMIC_ADD(__atomic_t* atomic, unsigned int toadd)
+{
+	__asm {
+		push eax
+		push ebx
+		mov eax,toadd
+		mov ebx,atomic
+		lock add dword ptr [ebx],eax
+		pop ebx
+		pop eax
+	}
+}
+
+/* Minus from atomic. */
+__inline void __ATOMIC_MINUS(__atomic_t* atomic, unsigned int tominus)
+{
+	__asm {
+		push eax
+		push ebx
+		mov eax, tominus
+		mov ebx, atomic
+		lock sub dword ptr [ebx], eax
+		pop ebx
+		pop eax
+	}
+}
+
+/* Set the given value to atomic,and return the atomic's old value. */
+__inline __atomic_t __ATOMIC_SET(__atomic_t* atomic, unsigned int new_val)
+{
+	volatile unsigned int old_val = 0;
+	__asm {
+		push eax
+		push ebx
+		mov eax,new_val
+		mov ebx,atomic
+		lock xchg dword ptr[ebx], eax
+		mov old_val,eax
+		pop ebx
+		pop eax
+	}
+	return old_val;
+}
+
 //Atomic operations.
 #define __INIT_ATOMIC(t)        do{t = 0;}while(0);
 #define __INCREASE_ATOMIC(t)    do{t ++;}while(0);
@@ -170,5 +267,4 @@ __asm invlpg mem_ptr \
 #ifdef __cplusplus
 }
 #endif
-
-#endif    //__SYN_MECH_H__
+#endif  //__SYN_MECH_H__

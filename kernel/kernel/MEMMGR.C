@@ -13,24 +13,26 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
 
-
-//Page Frame functions only available when VMM function is enabled.
+/* Page Frame functions only available when VMM function is enabled. */
 #ifdef __CFG_SYS_VMM
 #include "types.h"
 #include "commobj.h"
 #include "kapi.h"
 #include "memmgr.h"
+
 //------------------------------------------------------------------------
 //
 //    The implementation code of Page Frame Manager.
 //
 //------------------------------------------------------------------------
-static DWORD FrameBlockSize[] = {    //This array is used to locate the page frame block's
-	                                 //size according to it's index.
+
+/* 
+ * This array is used to locate the page frame block's
+ * size according to it's index. 
+ */
+static DWORD FrameBlockSize[] = {
 	PAGE_FRAME_BLOCK_SIZE_4K,
 	PAGE_FRAME_BLOCK_SIZE_8K,
 
@@ -48,10 +50,7 @@ static DWORD FrameBlockSize[] = {    //This array is used to locate the page fra
 	PAGE_FRAME_BLOCK_SIZE_8192K
 };
 
-//
-//Align one address to page frame boundary.
-//
-
+/* Align a address value to page frame boundary. */
 #define ALIGN_DOWN_TO_PAGE(address) \
     (LPVOID)(((DWORD)(address) % PAGE_FRAME_SIZE) ? ((DWORD)(address) + \
     (PAGE_FRAME_SIZE - (DWORD)(address) % PAGE_FRAME_SIZE)) : (DWORD)(address))
@@ -60,22 +59,17 @@ static DWORD FrameBlockSize[] = {    //This array is used to locate the page fra
     (LPVOID)(((DWORD)(address) % PAGE_FRAME_SIZE) ? ((DWORD)(address) - \
 	(DWORD)(address) % PAGE_FRAME_SIZE) : (DWORD)(address))
 
-//
-//The following are some helper routines,used by the member functions of PageFrameManager.
-//
-
-//
-//Set one bit in bit map,the bit's position is determined by dwBitPos.
-//
-
+/* Set one bit in bit map,the bit's position is determined by dwBitPos. */
 static VOID SetBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 {
 	DWORD*    lpdwMap    = NULL;
 	DWORD     dwPos      = 0;
 	DWORD     dwBitZero  = 0x00000001;
 
-	if(NULL == lpdwBitmap)    //Parameter check.
+	if (NULL == lpdwBitmap)
+	{
 		return;
+	}
 
 	lpdwMap  = lpdwBitmap;
 	lpdwMap += dwBitPos / (sizeof(DWORD)*8);  //Now,lpdwMap pointes to the
@@ -86,18 +80,17 @@ static VOID SetBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 	*lpdwMap |= dwBitZero;  //Set the target bit.
 }
 
-//
-//Clear one bit in bit map,the bit's position is determined by dwBitPos.
-//
-
+/* Clear one bit in bit map,the bit's position is determined by dwBitPos. */
 static VOID ClearBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 {
 	DWORD*    lpdwMap    = NULL;
 	DWORD     dwPos      = 0;
 	DWORD     dwBitZero  = 0x00000001;
 
-	if(NULL == lpdwBitmap)    //Parameter check.
+	if (NULL == lpdwBitmap)
+	{
 		return;
+	}
 
 	lpdwMap  = lpdwBitmap;
 	lpdwMap += dwBitPos / (sizeof(DWORD)*8);  //Now,lpdwMap pointes to the
@@ -108,20 +101,20 @@ static VOID ClearBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 	*lpdwMap &= ~dwBitZero;  //Set the target bit.
 }
 
-//
-//TestBit routine.
-//The routine tests the bit whose position is indicated by dwBitPos,if the bit is one,then
-//returns TRUE,else,returns FALSE.
-//
-
+/*
+ * The routine tests the bit whose position is indicated by dwBitPos,if the bit is one,then
+ * returns TRUE,else,returns FALSE.
+ */
 static BOOL TestBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 {
 	DWORD*                 lpdwMap     = NULL;
 	DWORD                  dwBitZero   = 0x00000001;
 	DWORD                  dwPos       = 0;
 
-	if(NULL == lpdwBitmap)   //Parameter check.
+	if (NULL == lpdwBitmap)
+	{
 		return FALSE;
+	}
 
 	lpdwMap = lpdwBitmap;
 	dwPos   = dwBitPos;
@@ -131,22 +124,23 @@ static BOOL TestBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 	dwPos      %= (sizeof(DWORD) * 8);
 	dwBitZero <<= dwPos;
 
-	if(*lpdwMap & dwBitZero)  //Bit is one.
+	if (*lpdwMap & dwBitZero)  //Bit is one.
+	{
 		return TRUE;
-	
+	}
 	return FALSE;
 }
 
-//
-//Initialize routine.
-//The routine does the following:
-// 1. Calculate total page frame numbers,and initializes the members of page frame manager,
-// 2. Allocate a block of kernel memory,as page frame array,and initializes it;
-// 3. Allocate a block of kernel memory,as page frame block bit map;
-// 4. Split the physical memory into page frame blocks,and inserts them into page frame
-//    block list;
-// 5. If all above steps successfully,then return TRUE,else,return FALSE.
-//
+/*
+ * Initialization routine of memory manager object.
+ * The routine does the following:
+ *  1. Calculate total page frame numbers,and initializes the members of page frame manager,
+ *  2. Allocate a block of kernel memory,as page frame array,and initializes it;
+ *  3. Allocate a block of kernel memory,as page frame block bit map;
+ *  4. Split the physical memory into page frame blocks,and inserts them into page frame
+ *     block list;
+ *  5. If all above steps successfully,then return TRUE,else,return FALSE.
+ */
 
 //
 //The lpStartAddr is the start address of linear memory space,and the lpEndAddr is the
@@ -168,7 +162,6 @@ static BOOL TestBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 // If the lpStartAddr and the lpEndAddr's value does not align with 4K boundary,then the
 // routine will round them to 4k boundary.
 //
-
 static BOOL PageFrameMgrInit(__COMMON_OBJECT*  lpThis,
 							 LPVOID            lpStartAddr,
 							 LPVOID            lpEndAddr)
@@ -185,60 +178,68 @@ static BOOL PageFrameMgrInit(__COMMON_OBJECT*  lpThis,
 	DWORD                        dwTotalMemLen       = 0;
 	DWORD                        dwIndBase           = 0;
 
-	if(NULL == lpThis)    //Parameters check.
-		goto __TERMINAL;
+	BUG_ON(NULL == lpThis);
 
 	lpFrameManager = (__PAGE_FRAME_MANAGER*)lpThis;
 	lpStartAddress = ALIGN_DOWN_TO_PAGE(lpStartAddr);
 	lpEndAddress   = (LPVOID)((DWORD)lpEndAddr + 1);    //Adjust the end address.
 	lpEndAddress   = ALIGN_UP_TO_PAGE(lpEndAddress);
 	
-	if((DWORD)((DWORD)lpEndAddress - (DWORD)lpStartAddress) < PAGE_FRAME_SIZE)
+	if ((DWORD)((DWORD)lpEndAddress - (DWORD)lpStartAddress) < PAGE_FRAME_SIZE)
+	{
 		goto __TERMINAL;
+	}
 
 	dwPageNum = ((DWORD)lpEndAddress - (DWORD)lpStartAddress) / PAGE_FRAME_SIZE;
 	lpPageFrameArray = (__PAGE_FRAME*)KMemAlloc(dwPageNum * sizeof(__PAGE_FRAME),
 		KMEM_SIZE_TYPE_ANY);
-	if(NULL == lpPageFrameArray)    //Failed to allocate memory.
+	if (NULL == lpPageFrameArray)
+	{
 		goto __TERMINAL;
+	}
 
 	//
 	//Initializes the members of page frame manager.
 	//
-
 	lpFrameManager->lpStartAddress   = lpStartAddress;
 	lpFrameManager->dwTotalFrameNum  = dwPageNum;
 	lpFrameManager->dwFreeFrameNum   = dwPageNum;
 	lpFrameManager->lpPageFrameArray = lpPageFrameArray;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(lpFrameManager->spin_lock, "frmmgr");
+#endif
 
 	//--------------- ** debug ** --------------------------
 	//printf("Initialize: Total Page Frame number : %d\r\n",dwPageNum);
 	//printf("Initialize: Start Address at        : %d\r\n",(DWORD)lpStartAddress);
 	//printf("Initialize: Page Frame Array base   : %d\r\n",(DWORD)lpPageFrameArray);
 
-	for(i = 0;i < PAGE_FRAME_BLOCK_NUM;i ++)    //Initialize all bitmap to NULL.
+	/* Initialize all bitmap to NULL. */
+	for(i = 0;i < PAGE_FRAME_BLOCK_NUM;i ++)
 	{
 		lpFrameManager->FrameBlockArray[i].lpdwBitmap  = NULL;
 		lpFrameManager->FrameBlockArray[i].lpNextBlock = NULL;
 		lpFrameManager->FrameBlockArray[i].lpPrevBlock = NULL;
 	}
 
-	//
-	//The following code initializes the bitmap of page frame block.
-	//
-
+	/* Initializes the bitmap of page frame block. */
 	for(i = 0;i < PAGE_FRAME_BLOCK_NUM;i ++)
 	{
-		//dwPageNum /= sizeof(DWORD);
 		lpFrameManager->FrameBlockArray[i].lpdwBitmap = (DWORD*)KMemAlloc((dwPageNum / sizeof(DWORD)
 			+ 1)*sizeof(DWORD),KMEM_SIZE_TYPE_ANY);
-		if(NULL == lpFrameManager->FrameBlockArray[i].lpdwBitmap)  //Failed to allocate memory.
+		if (NULL == lpFrameManager->FrameBlockArray[i].lpdwBitmap)
+		{
 			goto __TERMINAL;
-		for(j = 0;j < (dwPageNum/sizeof(DWORD) + 1)*sizeof(DWORD);j ++)  //Clear to zero.
+		}
+		for (j = 0; j < (dwPageNum / sizeof(DWORD) + 1) * sizeof(DWORD); j++)
+		{
 			((UCHAR*)lpFrameManager->FrameBlockArray[i].lpdwBitmap)[j] = 0;
+		}
 
-		if(0 == dwPageNum)
+		if (0 == dwPageNum)
+		{
 			break;
+		}
 
 		dwPageNum /= 2;
 	}
@@ -247,7 +248,6 @@ static BOOL PageFrameMgrInit(__COMMON_OBJECT*  lpThis,
 	//The following code splits the whole physical memory into page frame blocks,and insert
 	//them into page frame block list of Page Frame Manager.
 	//
-
 	dwTotalMemLen = lpFrameManager->dwTotalFrameNum * PAGE_FRAME_SIZE;
 	dwIndBase     = 0;
 	for(i = PAGE_FRAME_BLOCK_NUM;i > 0;i --)
@@ -264,15 +264,12 @@ static BOOL PageFrameMgrInit(__COMMON_OBJECT*  lpThis,
 			}
 			lpFrameManager->lpPageFrameArray[dwIndBase + j * k].lpNextFrame = 
 				lpFrameManager->FrameBlockArray[i - 1].lpNextBlock;
-			lpFrameManager->lpPageFrameArray[dwIndBase + j * k].lpPrevFrame = 
-				NULL;
+			lpFrameManager->lpPageFrameArray[dwIndBase + j * k].lpPrevFrame = NULL;
 
 			lpFrameManager->FrameBlockArray[i - 1].lpNextBlock = 
 				&(lpFrameManager->lpPageFrameArray[dwIndBase + j * k]);
 
-			//
-			//Set the appropriate bitmap bit,to indicate the block exists.
-			//
+			/* Set the appropriate bitmap bit,to indicate the block exists. */
 			SetBitmapBit(lpFrameManager->FrameBlockArray[i - 1].lpdwBitmap,
 				dwIndBase / k + j);
 		}
@@ -312,13 +309,11 @@ __TERMINAL:
 //CAUTION: The dwSize parameter must equal to the corresponding parameter of
 //FrameFree routine of Page Frame Manager.
 //
-
 static LPVOID FrameAlloc(__COMMON_OBJECT* lpThis,
-						 DWORD            dwSize,
-						 DWORD            dwPageFrameFlag)
+	DWORD            dwSize,
+	DWORD            dwPageFrameFlag)
 {
 	__PAGE_FRAME_MANAGER*        lpFrameManager  = NULL;
-	//DWORD                        dwBlockIndex    = 0;
 	BOOL                         bFind           = TRUE;
 	LPVOID                       lpResult        = NULL;
 	DWORD                        i               = 0;
@@ -329,23 +324,27 @@ static LPVOID FrameAlloc(__COMMON_OBJECT* lpThis,
 	__PAGE_FRAME*                lpTempFrame     = NULL;
 	DWORD                        dwFlags         = 0;
 
-	if((NULL == lpThis) || (0 == dwSize))//Parameter check
+	if ((NULL == lpThis) || (0 == dwSize))
+	{
 		goto __TERMINAL;
+	}
 
-	if(dwSize > FrameBlockSize[PAGE_FRAME_BLOCK_NUM - 1]) //Request a too large block.
+	if (dwSize > FrameBlockSize[PAGE_FRAME_BLOCK_NUM - 1])
+	{
+		/* Requested block is too large. */
 		goto __TERMINAL;
+	}
 
 	lpFrameManager = (__PAGE_FRAME_MANAGER*)lpThis;
 
+	/* Find which block list satisfy the request. */
 	for(i = 0;i < PAGE_FRAME_BLOCK_NUM;i ++)
 	{
-		if(dwSize <= FrameBlockSize[i])    //Find which block list satisfy the request.
+		if(dwSize <= FrameBlockSize[i])
 			break;
 	}
 
-	//ENTER_CRITICAL_SECTION(); //The following operation is a atomic operation.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-
+	__ENTER_CRITICAL_SECTION_SMP(lpFrameManager->spin_lock, dwFlags);
 	j = i;
 	while(j < PAGE_FRAME_BLOCK_NUM)
 	{
@@ -355,13 +354,16 @@ static LPVOID FrameAlloc(__COMMON_OBJECT* lpThis,
 			continue;
 		}
 		else
-			break;    //Find the fitable block list to allocate from.
+		{
+			/* Found the fitable block list to allocate from. */
+			break;
+		}
 	}
 
-	if(PAGE_FRAME_BLOCK_NUM == j)  //There is not page frame block to fit the request.
+	if(PAGE_FRAME_BLOCK_NUM == j)
 	{
-		//LEAVE_CRITICAL_SECTION();
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* There is not page frame block to fit the request. */
+		__LEAVE_CRITICAL_SECTION_SMP(lpFrameManager->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 
@@ -372,23 +374,25 @@ static LPVOID FrameAlloc(__COMMON_OBJECT* lpThis,
 	//the caller.
 	//
 	lpPageFrame = lpFrameManager->FrameBlockArray[j].lpNextBlock;
-	if(NULL != lpPageFrame->lpNextFrame)
+	if (NULL != lpPageFrame->lpNextFrame)
+	{
 		lpPageFrame->lpPrevFrame = NULL;
+	}
 	lpFrameManager->FrameBlockArray[j].lpNextBlock = lpPageFrame->lpNextFrame; //Delete the block.
 
 	dwOffset = (DWORD)lpPageFrame - (DWORD)lpFrameManager->lpPageFrameArray;
-	k        = dwOffset / sizeof(__PAGE_FRAME);
+	k = dwOffset / sizeof(__PAGE_FRAME);
 
 	//
 	//The return value can be calculated as following:
 	//
-
 	lpResult = (LPVOID)((DWORD)lpFrameManager->lpStartAddress + k * PAGE_FRAME_SIZE);
-	k       /= (FrameBlockSize[j] / PAGE_FRAME_SIZE);
+	k /= (FrameBlockSize[j] / PAGE_FRAME_SIZE);
 	ClearBitmapBit(lpFrameManager->FrameBlockArray[j].lpdwBitmap,k);  //Clear the bit.
 
-	while(j > i)    //Split the block into more small block,and insert into block list.
+	while(j > i)
 	{
+		/* Split the block into more small block,and insert into block list. */
 		k  = FrameBlockSize[j - 1] / PAGE_FRAME_SIZE;
 		k *= sizeof(__PAGE_FRAME);
 		lpTempFrame = (__PAGE_FRAME*)((DWORD)lpPageFrame + k);
@@ -406,9 +410,7 @@ static LPVOID FrameAlloc(__COMMON_OBJECT* lpThis,
 		SetBitmapBit(lpFrameManager->FrameBlockArray[j - 1].lpdwBitmap,k);  //Set bit.
 		j --;
 	}
-
-	//LEAVE_CRITICAL_SECTION();
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpFrameManager->spin_lock, dwFlags);
 
 __TERMINAL:
 	return lpResult;
@@ -425,7 +427,6 @@ __TERMINAL:
 //CAUTION: The dwSize parameter of this routine,must equal to the dwSize
 //parameter of FrameAlloc routine of Page Frame Manager.
 //
-
 static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 					  LPVOID            lpStartAddr,
 					  DWORD             dwSize)
@@ -434,19 +435,18 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 	__PAGE_FRAME*                       lpPageFrame     = NULL;
 	__PAGE_FRAME*                       lpTempFrame     = NULL;
 	DWORD                               i               = 0;
-	//DWORD                               j               = 0;
 	DWORD                               k               = 0;
 	DWORD                               dwOffset        = 0;
 	DWORD                               dwFlags         = 0;
 
-	if((NULL == lpThis) || (NULL == lpStartAddr) ||
-	   (0 == dwSize))   //Parameter check.
+	if((NULL == lpThis) || (NULL == lpStartAddr) || (0 == dwSize))
 	{
 		goto __TERMINAL;
 	}
 
-	if((DWORD)lpStartAddr % PAGE_FRAME_SIZE)   //The address is not page frame alignable.
+	if((DWORD)lpStartAddr % PAGE_FRAME_SIZE)
 	{
+		/* The address is not page frame aligned. */
 		goto __TERMINAL;
 	}
 
@@ -456,8 +456,11 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 			break;
 	}
 
-	if(PAGE_FRAME_BLOCK_NUM == i)    //The dwSize is too large,invalid parameter.
+	if (PAGE_FRAME_BLOCK_NUM == i)
+	{
+		/* The dwSize is too large. */
 		goto __TERMINAL;
+	}
 
 	lpFrameManager = (__PAGE_FRAME_MANAGER*)lpThis;
 	dwOffset       = (DWORD)lpStartAddr - (DWORD)lpFrameManager->lpStartAddress;
@@ -476,38 +479,35 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 		k += 1;
 	}
 
-	//ENTER_CRITICAL_SECTION();
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-
-	if(TestBit(lpFrameManager->FrameBlockArray[i].lpdwBitmap,k))  //If the current block's
-		                                                          //buddy block also free,
-																  //then combine the two blocks,
-																  //and insert into up level
-																  //block list.
+	__ENTER_CRITICAL_SECTION_SMP(lpFrameManager->spin_lock, dwFlags);
+	/* 
+	 * If the current block's buddy block also free,
+	 * then combine the two blocks,and insert into up level
+	 * block list. 
+	 */
+	if(TestBit(lpFrameManager->FrameBlockArray[i].lpdwBitmap,k))
 	{
 		while(i < PAGE_FRAME_BLOCK_NUM - 1)
 		{
-			if(k % 2)    //The behind block of lpPageFrame is it's buddy block.
+			if(k % 2) /* The behind block of lpPageFrame is it's buddy block. */
 			{
 				lpTempFrame = (__PAGE_FRAME*)((DWORD)lpPageFrame + (FrameBlockSize[i] / 
 					PAGE_FRAME_SIZE) * sizeof(__PAGE_FRAME));
-				//lpLargeFrame = lpPageFrame;
 			}
-			else         //The previous block of lpPageFrame is it's buddy block.
+			else /* The previous block of lpPageFrame is it's buddy block. */
 			{
 				lpTempFrame = (__PAGE_FRAME*)((DWORD)lpPageFrame - (FrameBlockSize[i] /
 					PAGE_FRAME_SIZE) * sizeof(__PAGE_FRAME));
-				//lpLargeFrame = lpTempFrame;
 				lpPageFrame = lpTempFrame;
 			}
-
-			//The following code delete the buddy block from the current list,and insert
-			//the combined block into up level block list.
-			if(NULL == lpTempFrame->lpPrevFrame)    //This is the first block.
+			/*
+			 * Deletes the buddy block from the current list,and insert
+			 * the combined block into up level block list.
+			 */
+			if(NULL == lpTempFrame->lpPrevFrame)
 			{
-				if(NULL == lpTempFrame->lpNextFrame)  //This is the last block.
+				if(NULL == lpTempFrame->lpNextFrame)
 				{
-					//lpTempFrame->lpNextFrame->lpPrevFrame = NULL;
 					lpFrameManager->FrameBlockArray[i].lpNextBlock = lpTempFrame->lpNextFrame;
 				}
 				else
@@ -516,24 +516,25 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 					lpFrameManager->FrameBlockArray[i].lpNextBlock = lpTempFrame->lpNextFrame;
 				}
 			}
-			else  //This is not the first block.
+			else  /* This is not the first block. */
 			{
-				if(NULL == lpTempFrame->lpNextFrame) //This is the last block.
+				if(NULL == lpTempFrame->lpNextFrame)
 				{
 					lpTempFrame->lpPrevFrame->lpNextFrame = NULL;
 				}
-				else  //This is not the last block.
+				else
 				{
 					lpTempFrame->lpPrevFrame->lpNextFrame = lpTempFrame->lpNextFrame;
 					lpTempFrame->lpNextFrame->lpPrevFrame = lpTempFrame->lpPrevFrame;
 				}
 			}
 
-			ClearBitmapBit(lpFrameManager->FrameBlockArray[i].lpdwBitmap,k);  //Clear bit.
+			/* Clear corresponding bits. */
+			ClearBitmapBit(lpFrameManager->FrameBlockArray[i].lpdwBitmap,k);
+			/* check up level block link. */
+			i ++;
 
-			i ++;  //To check up level block link.
-
-			k  = (DWORD)lpPageFrame - (DWORD)lpFrameManager->lpPageFrameArray;
+			k = (DWORD)lpPageFrame - (DWORD)lpFrameManager->lpPageFrameArray;
 			k /= sizeof(__PAGE_FRAME);
 			k /= (FrameBlockSize[i] / PAGE_FRAME_SIZE);
 
@@ -546,10 +547,7 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 				break;
 		}
 
-		//
-		//The following code inserts the combined block into up level block list.
-		//
-
+		/* Inserts the combined block into up level block list. */
 		if(NULL != lpFrameManager->FrameBlockArray[i].lpNextBlock)
 		{
 			lpFrameManager->FrameBlockArray[i].lpNextBlock->lpPrevFrame = 
@@ -567,10 +565,12 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 
 		SetBitmapBit(lpFrameManager->FrameBlockArray[i].lpdwBitmap,k); //Set bit.
 	}
-	else      //The buddy of the current block is occupied.
-		      //So,only insert the current block into the block
-			  //list.
+	else
 	{
+		/* 
+		 * The buddy of the current block is occupied.
+		 * So,only insert the current block into the block list.
+		 */
 		if(NULL != lpFrameManager->FrameBlockArray[i].lpNextBlock)
 		{
 			lpFrameManager->FrameBlockArray[i].lpNextBlock->lpPrevFrame = 
@@ -588,9 +588,7 @@ static VOID FrameFree(__COMMON_OBJECT*  lpThis,
 
 		SetBitmapBit(lpFrameManager->FrameBlockArray[i].lpdwBitmap,k);  //Set bit.
 	}
-
-	//LEAVE_CRITICAL_SECTION();
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpFrameManager->spin_lock, dwFlags);
 
 __TERMINAL:
 	return;
@@ -601,17 +599,19 @@ __TERMINAL:
 **************************************************************************
 **************************************************************************
 *************************************************************************/
-
-//
-//The definition of object PageFrameManager.
-//
-
+/*
+ * PageFrameManager object,the global object to manage all physical memory 
+ * frames.
+ */
 __PAGE_FRAME_MANAGER PageFrameManager = {
 	NULL,                                  //lpPageFrameArray.
 	{0},                                   //FrameBlockArray.
-	0,                                    //dwTotalFrameNum.
-	0,                                    //dwFreeFrameNum.
+	0,                                     //dwTotalFrameNum.
+	0,                                     //dwFreeFrameNum.
 	NULL,                                  //lpStartAddress.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,                  //spin_lock.
+#endif
 	PageFrameMgrInit,                      //Initialize routine.
 	FrameAlloc,                            //FrameAlloc routine.
 	FrameFree                              //FrameFree routine.

@@ -16,9 +16,9 @@
 #ifndef __DIM_H__
 #define __DIM_H__
 
-
+#include "config.h"
+#include "TYPES.H"
 #include "ktmgr.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,28 +38,42 @@ END_DEFINE_OBJECT(__DEVICE_MESSAGE)
 //The pro-type's definition of Device Input Manager.
 //
 BEGIN_DEFINE_OBJECT(__DEVICE_INPUT_MANAGER)
-    __KERNEL_THREAD_OBJECT*    lpFocusKernelThread;
-    __KERNEL_THREAD_OBJECT*    lpShellKernelThread;
+    __KERNEL_THREAD_OBJECT* lpFocusKernelThread;
+    __KERNEL_THREAD_OBJECT* lpShellKernelThread;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 
-	DWORD            (*SendDeviceMessage)(__COMMON_OBJECT*    lpThis,
-		                                  __DEVICE_MESSAGE*   lpDevMsg,
-							              __COMMON_OBJECT*    lpTarget);
+	/* Send device input message to target kernel thread. */
+	DWORD (*SendDeviceMessage)(__COMMON_OBJECT* lpThis,
+		__DEVICE_MESSAGE* lpDevMsg,
+		__COMMON_OBJECT* lpTarget);
 	
+	/* 
+	 * Set current focus thread, all input will be direct to 
+	 * the focus thread.
+	 * The old one will be returned back.
+	 */
 	__COMMON_OBJECT* (*SetFocusThread)(__COMMON_OBJECT* lpThis,
-		                               __COMMON_OBJECT* lpFocusThread);
+		__COMMON_OBJECT* lpFocusThread);
 
+	/* 
+	 * Set one kernel thread as shell thread. 
+	 * Input will be directed to shell thread if current
+	 * focus thread is not specified(NULL).
+	 */
 	__COMMON_OBJECT* (*SetShellThread)(__COMMON_OBJECT* lpThis,
-		                               __COMMON_OBJECT* lpShellThread);
+		__COMMON_OBJECT* lpShellThread);
 
-	BOOL             (*Initialize)(__COMMON_OBJECT*    lpThis,
-		                           __COMMON_OBJECT*    lpFocusThread,
-								   __COMMON_OBJECT*    lpShellThread);
+	/* Initializer of the DIM object. */
+	BOOL (*Initialize)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFocusThread,
+		__COMMON_OBJECT* lpShellThread);
 END_DEFINE_OBJECT(__DEVICE_INPUT_MANAGER)
 
 //
 //The definition of return values for above routine.
 //
-
 #define DEVICE_MANAGER_SUCCESS                0x00000001
 #define DEVICE_MANAGER_FAILED                 0x00000000
 #define DEVICE_MANAGER_NO_FOCUS_THREAD        0x00000002
@@ -74,12 +88,10 @@ END_DEFINE_OBJECT(__DEVICE_INPUT_MANAGER)
 //
 //The pre-definition of Global Object: Device Input Manager.
 //
-
 extern __DEVICE_INPUT_MANAGER DeviceInputManager;
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif
+#endif //__DIM_H__

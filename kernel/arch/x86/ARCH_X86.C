@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <sys/utsname.h>
 
+#include "pic.h"
 #if defined(__CFG_SYS_SMP)
 #include "acpi.h"
 #include "smpx86.h"
@@ -50,7 +51,12 @@
 //Latch of 8253 timer's first slot,for system clock tick.
 #define __LATCH ((TIMER_FREQ + __HZ / 2) / __HZ)
 
-//CPU frequency.
+#if defined(__CFG_SYS_SMP)
+/* Spin lock to protect the initialization of all CPU. */
+static __SPIN_LOCK init_spinlock = SPIN_LOCK_INIT_VALUE;
+#endif
+
+/* CPU frequency. */
 static uint64_t cpuFrequency = 0;
 
 //A helper routine to convert __U64 to uint64_t.
@@ -70,7 +76,14 @@ static void Frequency_Init(void)
 {
 	uint64_t xticks = 0x000000000000FFFF;
 	uint64_t tsc = 0, s = 0, e = 0;
+#if defined(__CFG_SYS_SMP)
+	unsigned long ulFlags;
+#endif
 
+	/* Serialize the following code in case of SMP. */
+#if defined(__CFG_SYS_SMP)
+	__ENTER_CRITICAL_SECTION_SMP(init_spinlock, ulFlags);
+#endif
 	__outb(TIMER_SEL0 | TIMER_TCOUNT | TIMER_16BIT, TIMER_MODE);
 	__outb((UCHAR)(xticks % 256), IO_TIMER1);
 	__outb((UCHAR)(xticks / 256), IO_TIMER1);
@@ -80,15 +93,21 @@ static void Frequency_Init(void)
 		__outb(TIMER_STAT0, TIMER_MODE);
 		if (__local_rdtsc() - s >= 1ULL << 32)
 		{
-			_hx_printf("Warning: 8253 timer may unavailable,assume the CUP hz as 2G.\r\n");
+			_hx_printk("Warning: 8253 timer may unavailable,assume the CUP hz as 2G.\r\n");
 			cpuFrequency = 2 * 1000 * 1000 * 1000;
+#if defined(__CFG_SYS_SMP)
+			__LEAVE_CRITICAL_SECTION_SMP(init_spinlock, ulFlags);
+#endif
 			return;
 		}
 	} while (!(__inb(TIMER_CNTR) & 0x80));
+#if defined(__CFG_SYS_SMP)
+	__LEAVE_CRITICAL_SECTION_SMP(init_spinlock, ulFlags);
+#endif
 
 	e = __local_rdtsc();
 	cpuFrequency = ((e - s) * 10000000) / ((xticks * 10000000) / TIMER_FREQ);
-	_hx_printf("CPU frequency is %u Hz.\r\n", (DWORD)cpuFrequency);
+	_hx_printk("CPU frequency: %u Hz.\r\n", (DWORD)cpuFrequency);
 }
 
 //Initialization of 8253 timer for system clock.
@@ -106,6 +125,9 @@ BOOL __HardwareInitialize()
 {
 	BOOL bResult = FALSE;
 
+	/* Mask all maskable interrupts. */
+	__Mask_All();
+
 	/* Obtain CPU frequency and initialize system clock. */
 	Frequency_Init();
 	Init_Sys_Clock();
@@ -120,9 +142,34 @@ BOOL __HardwareInitialize()
 #endif //__CFG_SYS_SMP
 
 	bResult = TRUE;
+#if defined(__CFG_SYS_SMP)
+__TERMINAL:
+#endif
+	return bResult;
+}
+
+#if defined(__CFG_SYS_SMP)
+/* 
+ * Called by application processor in SMP to start the AP's initialization. 
+ * It's wrapped by BeginAPInitialize of system object.
+ */
+BOOL __BeginAPInitialize()
+{
+	BOOL bResult = FALSE;
+
+	/* Initialize local APIC. */
+	if (!Init_LocalAPIC())
+	{
+		goto __TERMINAL;
+	}
+
+	/* Initialization process is OK. */
+	bResult = TRUE;
+
 __TERMINAL:
 	return bResult;
 }
+#endif
 
 /* 
  * Called after the OS kernel is finish the initialization phase. 
@@ -266,9 +313,6 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 	"popl	%%edx	\n\t"
 	"popl	%%ecx	\n\t"
 	"popl	%%ebx	\n\t"
-	"movb	$0x20,	%%al	\n\t"
-	"outb	%%al,	$0x20	\n\t"
-	"outb	%%al,	$0xa0	\n\t"
 	"popl	%%eax			\n\t"
 	"iret					\n\t"
 	:	:
@@ -284,64 +328,110 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 		pop edx
 		pop ecx
 		pop ebx
-
-		mov al,0x20  //Dismiss interrupt controller.
-		out 0x20,al
-		out 0xa0,al
-
 		pop eax
 		iretd
 	}
 #endif
 }
 
-/* 
- * Switch to the specified kernel thread directly,without acknowledging the interrupt
- * controller.
- */
- /*
- * This routine switches the current executing path to the new one identified
- * by lpContext,and acknowledge the interrupt controller before switch to target
- * kernel thread.
- */
-#ifndef __GCC__
-__declspec(naked)
-#endif
-VOID __SwitchTo_Directly(__KERNEL_THREAD_CONTEXT* lpContext)
+/* Acknowledge the default interrupt controller,which is PIC 8259. */
+void __AckDefaultInterrupt()
 {
-#ifdef __GCC__
-	__asm__(
-		".code32						\n\t "
-		"pushl 	%%ebp					\n\t"
-		"movl	%%esp,	%%ebp			\n\t"
-		"movl	0x08(%%ebp),	%%esp	\n\t"
-		"popl	%%ebp	\n\t"
-		"popl	%%edi	\n\t"
-		"popl	%%esi	\n\t"
-		"popl	%%edx	\n\t"
-		"popl	%%ecx	\n\t"
-		"popl	%%ebx	\n\t"
-		"popl	%%eax	\n\t"
-		"iret			\n\t"
-		: :
-	);
-#else
 	__asm {
-		push ebp
-		mov ebp, esp
-		mov esp, dword ptr[ebp + 0x08]  //Restore ESP.
-		pop ebp
-		pop edi
-		pop esi
-		pop edx
-		pop ecx
-		pop ebx
+		push eax
+		mov al, 0x20  //Dismiss interrupt controller.
+		out 0x20, al
+		out 0xa0, al
 		pop eax
-		iretd
 	}
-#endif
 }
 
+/*
+ * Context switching routine for x86 architecture.
+ * Saves the current kernel thread's stack top pointer into context pointer,
+ * and switchs to the new kernel thread by restoring it's context.
+ * The three variables,are used as temporary space to store registers of
+ * current kernel thread in process of saving context.
+ */
+static __declspec(naked) VOID __cdecl __local_SaveAndSwitch(
+	__KERNEL_THREAD_CONTEXT** lppOldContext,
+	__KERNEL_THREAD_CONTEXT** lppNewContext,
+	unsigned long _t_ebp,
+	unsigned long _t_eip,
+	unsigned long _t_eax)
+{
+	__asm {
+		/* Save current EBP into _t_ebp. */
+		mov dword ptr [esp + 12], ebp
+		/* Establish the stack frame. */
+		mov ebp, esp
+		/* Save current EAX register into _t_eax. */
+		mov dword ptr [ebp + 20], eax
+		/* Save the return address(EIP) into _t_eip. */
+		pop dword ptr [ebp + 16]
+		/* Save flags register. */
+		pushfd
+		/* Save CS. */
+		xor eax, eax
+		mov ax, cs
+		push eax
+		/* Store return address into stack. */
+		push dword ptr [ebp + 16]
+		/* Store EAX into stack. */
+		push dword ptr [ebp + 20]
+		/* Save all other registers except EBP. */
+		push ebx
+		push ecx
+		push edx
+		push esi
+		push edi
+		/* Save the original EBP register. */
+		push dword ptr [ebp + 12]
+
+		/*
+		 * Current kernel thread's stack frame built over,then
+		 * save the stack top pointer into kernel thread's context
+		 * pointer.
+		 * We can use any registers since all of them are saved.
+		 */
+		 mov ebx, dword ptr [ebp + 0x04]
+		 mov dword ptr [ebx], esp
+
+		 /* Restore the new thread's context and switch to it. */
+		 mov ebx, dword ptr[ebp + 0x08]
+		 mov esp, dword ptr[ebx]  //Restore new stack.
+		 pop ebp
+		 pop edi
+		 pop esi
+		 pop edx
+		 pop ecx
+		 pop ebx
+		 pop eax
+		 iretd
+	}
+}
+
+/* Context switching in process context. */
+void __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext, __KERNEL_THREAD_CONTEXT** lppNewContext)
+{
+	/* 
+	 * Make room in local stack to be used by local SaveAndSwitch routine
+	 * as temporary space to store current kernel thread's registers.
+	 */
+	unsigned long _t_ebp = 0;
+	unsigned long _t_eax = 0;
+	unsigned long _t_eip = 0;
+
+	/* Commit context switching by invoke arch specific routine. */
+	__local_SaveAndSwitch(lppOldContext, lppNewContext, _t_ebp, _t_eip, _t_eax);
+}
+
+/*
+ * Old version of context switching routine in process context,it was
+ * replaced by the above one since it can not support SMP.
+ * Just for reference.
+ */
+#if 0
 //
 //These three global variables are used as temp variables
 //by __SaveAndSwitch routine.
@@ -432,6 +522,7 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,__KERNEL_THREAD_CON
 	}
 #endif
 }
+#endif
 
 //
 //Enable Virtual Memory Management mechanism.This routine will be called in
@@ -654,7 +745,7 @@ static void __udelay(unsigned long usec)
 
 	while (__local_rdtsc() - base < delay)
 	{
-		//Do nothing but wait...
+		//Do nothing but busy waiting...
 	}
 }
 

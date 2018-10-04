@@ -60,12 +60,14 @@ typedef struct tag__THREAD_STAT_OBJECT{
 }__THREAD_STAT_OBJECT;
 
 typedef struct tag__STAT_CPU_OBJECT{
-	//__KERNEL_THREAD_OBJECT*   lpStatKernelThread;
 	__U64                     PreviousTsc;       //Previous time stamp counter.
 	__U64                     CurrPeriodCycle;   //CPU cycle conter in this stat period.
 	__U64                     TotalCpuCycle;     //Total CPU cycle counter since
 	                                             //system startup.
 	__THREAD_STAT_OBJECT      IdleThreadStatObj;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 
 	BOOL                     (*Initialize)(struct tag__STAT_CPU_OBJECT*);    //Initialize routine.
 	__THREAD_STAT_OBJECT*    (*GetFirstThreadStatObj)(void);

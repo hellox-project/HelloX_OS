@@ -108,7 +108,6 @@ BOOL DrcbInitialize(__COMMON_OBJECT*  lpThis)
 {
 	__EVENT*          lpSynObject     = NULL;
 	__DRCB*           lpDrcb          = NULL;
-	DWORD             dwFlags         = 0;
 
 	if(NULL == lpThis)
 	{
@@ -133,11 +132,7 @@ BOOL DrcbInitialize(__COMMON_OBJECT*  lpThis)
 	}
 
 	lpDrcb->lpSynObject        = lpSynObject;
-
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	lpDrcb->lpKernelThread = __CURRENT_KERNEL_THREAD;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-
 	lpDrcb->dwStatus           = DRCB_STATUS_INITIALIZED;
 	lpDrcb->dwRequestMode      = 0;
 	lpDrcb->dwCtrlCommand      = 0;
@@ -303,7 +298,7 @@ BOOL CreateNewFile(__COMMON_OBJECT* lpThis,
 	}
 
 	/* Locate the file system object. */
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(FsIdentifier == pIoManager->FsArray[i].FileSystemIdentifier)
@@ -311,7 +306,7 @@ BOOL CreateNewFile(__COMMON_OBJECT* lpThis,
 			pFsObject = (__DEVICE_OBJECT*)pIoManager->FsArray[i].pFileSystemObject;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 
 	/* Can not locate the desired file system. */
 	if(NULL == pFsObject)
@@ -750,7 +745,7 @@ BOOL _DeleteFile(__COMMON_OBJECT* lpThis,
 	//Get file system identifier.
 	FsIdentifier = FileName[0];
 	//Get the file system object.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -759,7 +754,7 @@ BOOL _DeleteFile(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock,dwFlags);
 	if(NULL == pFsObject)  //Can not allocate the specified file system object.
 	{
 		return FALSE;
@@ -824,7 +819,7 @@ BOOL _RemoveDirectory(__COMMON_OBJECT* lpThis,
 	//Get file system identifier.
 	FsIdentifier = FileName[0];
 	//Get the file system driver object.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -833,7 +828,7 @@ BOOL _RemoveDirectory(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	if(NULL == pFsObject)
 	{
 		return FALSE;

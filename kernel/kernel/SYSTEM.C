@@ -36,9 +36,10 @@
 
 #ifdef __I386__
 #include "../arch/x86/bios.h"
+#include "../arch/x86/pic.h"
 #endif
 
-//Performance recorder object used to mesure the performance of timer interrupt.
+/* Performance recorder object used to mesure the performance of timer interrupt. */
 __PERF_RECORDER  TimerIntPr = {
 	U64_ZERO,
 	U64_ZERO,
@@ -46,30 +47,58 @@ __PERF_RECORDER  TimerIntPr = {
 	U64_ZERO
 };
 
-//
-//TimerInterruptHandler routine.
-//The following routine is the most CRITICAL routine of kernel of Hello China.
-//The routine does the following:
-// 1. Schedule timer object;
-// 2. Update the system level variables,such as dwClockTickCounter;
-// 3. Schedule kernel thread(s).
-//
+/* Local helper routine to process a timer object accordingly. */
+static void __ProcessTimerObject(__TIMER_OBJECT* lpTimerObject)
+{
+	__KERNEL_THREAD_MESSAGE Msg;
+
+	/* Just send a message to the kernel thread if no direct handler specified. */
+	if (NULL == lpTimerObject->DirectTimerHandler)
+	{
+		Msg.wCommand = KERNEL_MESSAGE_TIMER;
+		Msg.dwParam = lpTimerObject->dwTimerID;
+		KernelThreadManager.SendMessage(
+			(__COMMON_OBJECT*)lpTimerObject->lpKernelThread,
+			&Msg);
+	}
+	else
+	{
+		/*
+		* Call the associated handler,the handler must be small enough
+		* and can not block or trigger kernel thread switching.It should
+		* be used as less as possible.
+		*/
+		lpTimerObject->DirectTimerHandler(lpTimerObject->lpHandlerParam);
+	}
+}
+
+/*
+ * TimerInterruptHandler routine.
+ * The following routine is the most CRITICAL routine of kernel of Hello China.
+ * The routine does the following:
+ *  1. Schedule timer object;
+ *  2. Update the system level variables,such as dwClockTickCounter;
+ *  3. Schedule kernel thread(s).
+ */
 static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 {
 	DWORD                     dwPriority        = 0;
 	__TIMER_OBJECT*           lpTimerObject     = 0;
-	__KERNEL_THREAD_MESSAGE   Msg                   ;
+	//__KERNEL_THREAD_MESSAGE   Msg                   ;
 	__PRIORITY_QUEUE*         lpTimerQueue      = NULL;
 	__PRIORITY_QUEUE*         lpSleepingQueue   = NULL;
 	__KERNEL_THREAD_OBJECT*   lpKernelThread    = NULL;
 	DWORD                     dwFlags           = 0;
 	
-	if(NULL == lpEsp)    //Parameter check.
-	{
-		return TRUE;
-	}
+	BUG_ON(NULL == lpEsp);
 
-	if(System.dwClockTickCounter == System.dwNextTimerTick)     //Should schedule timer.
+	/* 
+	 * Schedule timers.
+	 * Use system object's lock to protect this process since
+	 * the timer list is shared by all CPUs in SMP environment.
+	 */
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+	if(System.dwClockTickCounter == System.dwNextTimerTick)
 	{
 		lpTimerQueue = System.lpTimerQueue;
 		lpTimerObject = (__TIMER_OBJECT*)lpTimerQueue->GetHeaderElement(
@@ -77,18 +106,20 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 			&dwPriority);
 		if(NULL == lpTimerObject)
 		{
-			goto __CONTINUE_1;
+			__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+			goto __WAKEUP_KERNEL_THREAD;
 		}
 		dwPriority = MAX_DWORD_VALUE - dwPriority;
-		while(dwPriority <= System.dwNextTimerTick)    //Strictly speaking,the dwPriority
-			                                           //variable must EQUAL System.dw-
-													   //NextTimerTick,but in the implement-
-													   //ing of the current version,there
-													   //may be some error exists,so we assume
-													   //dwPriority equal or less than dwNext-
-													   //TimerTic.
+		/* 
+		 * Strictly speaking,the dwPriority variable must EQUAL System.dwNextTimerTick,
+		 * but in the implementing of the current version,there may be some error exists,
+		 * so we assume dwPriority equal or less than dwNextTimerTic.
+		 */
+		while(dwPriority <= System.dwNextTimerTick)
 		{
-			if(NULL == lpTimerObject->DirectTimerHandler)  //Send a message to the kernel thread.
+#if 0
+			/* Just send a message to the kernel thread if no direct handler specified. */
+			if(NULL == lpTimerObject->DirectTimerHandler)
 			{
 				Msg.wCommand = KERNEL_MESSAGE_TIMER;
 				Msg.dwParam  = lpTimerObject->dwTimerID;
@@ -98,31 +129,60 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 			}
 			else
 			{
-				lpTimerObject->DirectTimerHandler(lpTimerObject->lpHandlerParam); //Call the associated handler.
+				/* 
+				 * Call the associated handler,the handler must be small enough
+				 * and can not block or trigger kernel thread switching.It should
+				 * be used as less as possible.
+				 */
+				lpTimerObject->DirectTimerHandler(lpTimerObject->lpHandlerParam);
 			}
+#endif
 
-			switch(lpTimerObject->dwTimerFlags)
+			if (lpTimerObject->dwTimerFlags & TIMER_FLAGS_ONCE)
 			{
-			case TIMER_FLAGS_ONCE:        //Delete the timer object processed just now.
-				ObjectManager.DestroyObject(&ObjectManager,
-					(__COMMON_OBJECT*)lpTimerObject);
-				break;
-			case TIMER_FLAGS_ALWAYS:    //Re-insert the timer object into timer queue.
-				dwPriority  = lpTimerObject->dwTimeSpan;
+				/* One shot and always mode are exclusive. */
+				BUG_ON(lpTimerObject->dwTimerFlags & TIMER_FLAGS_ALWAYS);
+				if (lpTimerObject->dwTimerFlags & TIMER_FLAGS_NOAUTODEL)
+				{
+					if (0 == (lpTimerObject->dwTimerFlags & TIMER_FLAGS_FIRED))
+					{
+						__ProcessTimerObject(lpTimerObject);
+						/* Set the already processed flag. */
+						lpTimerObject->dwTimerFlags |= TIMER_FLAGS_FIRED;
+					}
+					/* 
+					 * Save it into queue so as CancelTimer can delete it,use 0 as 
+					 * priority so as the object is inserted in end of queue.
+					 */
+					lpTimerQueue->InsertIntoQueue((__COMMON_OBJECT*)lpTimerQueue,
+						(__COMMON_OBJECT*)lpTimerObject,
+						0);
+				}
+				else
+				{
+					__ProcessTimerObject(lpTimerObject);
+					/* Delete the timer object processed if no auto delete flag is set. */
+					ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)lpTimerObject);
+				}
+			}
+			else if (lpTimerObject->dwTimerFlags & TIMER_FLAGS_ALWAYS)
+			{
+				/* Process the timer object. */
+				__ProcessTimerObject(lpTimerObject);
+				/* Re-insert the timer object into timer queue. */
+				dwPriority = lpTimerObject->dwTimeSpan;
 				dwPriority /= SYSTEM_TIME_SLICE;
 				dwPriority += System.dwClockTickCounter;
-				dwPriority  = MAX_DWORD_VALUE - dwPriority;
+				dwPriority = MAX_DWORD_VALUE - dwPriority;
 				lpTimerQueue->InsertIntoQueue((__COMMON_OBJECT*)lpTimerQueue,
 					(__COMMON_OBJECT*)lpTimerObject,
 					dwPriority);
-				break;
-			default:
-				break;
 			}
 
+			/* Check another timer object. */
 			lpTimerObject = (__TIMER_OBJECT*)lpTimerQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)lpTimerQueue,
-				&dwPriority);    //Check another timer object.
+				&dwPriority);
 			if(NULL == lpTimerObject)
 			{
 				break;
@@ -130,33 +190,31 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 			dwPriority = MAX_DWORD_VALUE - dwPriority;
 		}
 
-		if(NULL == lpTimerObject)  //There is no timer object in queue.
+		/* There is no timer object in queue. */
+		if(NULL == lpTimerObject)
 		{
-			__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 			System.dwNextTimerTick = 0;
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		}
 		else
 		{
-			__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-			System.dwNextTimerTick = dwPriority;    //Update the next timer tick counter.
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			/* Update the next timer tick counter. */
+			System.dwNextTimerTick = dwPriority;
 			dwPriority = MAX_DWORD_VALUE - dwPriority;
 			lpTimerQueue->InsertIntoQueue((__COMMON_OBJECT*)lpTimerQueue,
 				(__COMMON_OBJECT*)lpTimerObject,
 				dwPriority);
 		}
 	}
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 
-__CONTINUE_1:
+__WAKEUP_KERNEL_THREAD:
 
-	//
-	//The following code wakes up all kernel thread(s) whose status is SLEEPING and
-	//the time it(then) set is out.
-	//
-	if(System.dwClockTickCounter == KernelThreadManager.dwNextWakeupTick)  //There must existes
-		                                                                   //kernel thread(s) to
-																		   //be wake up.
+	/*
+	 * Wakes up all kernel thread(s) whose status is SLEEPING and
+	 * the time it(then) set is out.
+	 */
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+	if(System.dwClockTickCounter == KernelThreadManager.dwNextWakeupTick)
 	{
 		lpSleepingQueue = KernelThreadManager.lpSleepingQueue;
 		lpKernelThread  = (__KERNEL_THREAD_OBJECT*)lpSleepingQueue->GetHeaderElement(
@@ -164,32 +222,31 @@ __CONTINUE_1:
 			&dwPriority);
 		while(lpKernelThread)
 		{
-			dwPriority = MAX_DWORD_VALUE - dwPriority;  //Now,dwPriority countains the tick
-			                                            //counter value.
+			/* Calculate the desired wake up tick counter. */
+			dwPriority = MAX_DWORD_VALUE - dwPriority;
 			if(dwPriority > System.dwClockTickCounter)
 			{
-				break;    //This kernel thread should not be wake up.
+				/* No kernel thread need to wake up. */
+				break;
 			}
+			/* Insert the waked up kernel thread into ready queue. */
 			lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
 			KernelThreadManager.AddReadyKernelThread(
 				(__COMMON_OBJECT*)&KernelThreadManager,
-				lpKernelThread);  //Insert the waked up kernel thread into ready queue.
+				lpKernelThread);
 
+			/* Check next kernel thread in sleeping queue. */
 			lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpSleepingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)lpSleepingQueue,
-				&dwPriority);  //Check next kernel thread in sleeping queue.
+				&dwPriority);
 		}
 		if(NULL == lpKernelThread)
 		{
-			__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 			KernelThreadManager.dwNextWakeupTick = 0;
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		}
 		else
 		{
-			__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 			KernelThreadManager.dwNextWakeupTick = dwPriority;
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 			dwPriority = MAX_DWORD_VALUE - dwPriority;
 			lpSleepingQueue->InsertIntoQueue((__COMMON_OBJECT*)lpSleepingQueue,
 				(__COMMON_OBJECT*)lpKernelThread,
@@ -197,115 +254,117 @@ __CONTINUE_1:
 		}
 	}
 
-	goto __TERMINAL;
-
-__TERMINAL:
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	System.dwClockTickCounter ++;    //Update the system clock interrupt counter.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	/* Update the system clock interrupt counter. */
+	System.dwClockTickCounter++;
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 
 	return TRUE;
 }
 
-//
-//The implementation of kConnectInterrupt routine of Interrupt Object.
-//The routine do the following:
-// 1. Insert the current object into interrupt object array(maintenanced by system object);
-// 2. Set the object's data members correctly.
-//
-static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT*     lpThis,
-							 __INTERRUPT_HANDLER  lpInterruptHandler,
-							 LPVOID               lpHandlerParam,
-							 UCHAR                ucVector,
-							 UCHAR                ucReserved1,
-							 UCHAR                ucReserved2,
-							 UCHAR                ucInterruptMode,
-							 BOOL                 bIfShared,
-							 DWORD                dwCPUMask)
+/*
+ * ConnectInterrupt routine of Interrupt Object.
+ * The routine do the following:
+ *  1. Insert the current object into interrupt object array(maintenanced by system object);
+ *  2. Set the object's data members correctly.
+ */
+static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT* lpThis,
+	__INTERRUPT_HANDLER lpInterruptHandler,
+	LPVOID lpHandlerParam,
+	UCHAR ucVector,
+	UCHAR ucReserved1,
+	UCHAR ucReserved2,
+	UCHAR ucInterruptMode,
+	BOOL bIfShared,
+	DWORD dwCPUMask)
 {
 	__INTERRUPT_OBJECT*      lpInterrupt          = NULL;
 	__INTERRUPT_OBJECT*      lpObjectRoot         = NULL;
-	__SYSTEM*                lpSystem             = &System;  //Had as a BUG here!!!
+	__SYSTEM*                lpSystem             = &System;
 	DWORD                    dwFlags              = 0;
 
-	if((NULL == lpThis) || (NULL == lpInterruptHandler))    //Parameters valid check.
+	/* Validate mandatory parameters. */
+	if((NULL == lpThis) || (NULL == lpInterruptHandler))
 	{
 		return NULL;
 	}
 
-	if(ucVector >= MAX_INTERRUPT_VECTOR)                    //Impossible!!!
+	/* Interrupt vector should not out of bound. */
+	if(ucVector >= MAX_INTERRUPT_VECTOR)
 	{
 		return NULL;
 	}
 
-	lpInterrupt = (__INTERRUPT_OBJECT*)
-		ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_INTERRUPT);
-	if(NULL == lpInterrupt)    //Failed to create interrupt object.
+	/* Create and initialize an interrupt object. */
+	lpInterrupt = (__INTERRUPT_OBJECT*)ObjectManager.CreateObject(
+		&ObjectManager,
+		NULL,
+		OBJECT_TYPE_INTERRUPT);
+	if(NULL == lpInterrupt)
 	{
 		return FALSE;
 	}
-	if(!lpInterrupt->Initialize((__COMMON_OBJECT*)lpInterrupt))  //Failed to initialize.
+	if(!lpInterrupt->Initialize((__COMMON_OBJECT*)lpInterrupt))
 	{
 		return FALSE;
 	}
 
+	/* Set the mandatory member of interrupt object. */
 	lpInterrupt->lpPrevInterruptObject = NULL;
 	lpInterrupt->lpNextInterruptObject = NULL;
-	lpInterrupt->InterruptHandler      = lpInterruptHandler;
-	lpInterrupt->lpHandlerParam        = lpHandlerParam;
-	lpInterrupt->ucVector              = ucVector;
+	lpInterrupt->ucVector = ucVector;
+	lpInterrupt->InterruptHandler = lpInterruptHandler;
+	lpInterrupt->lpHandlerParam = lpHandlerParam;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	//lpObjectRoot = lpSystem->lpInterruptVector[ucVector];
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 	lpObjectRoot = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
-	if(NULL == lpObjectRoot)    //If this is the first interrupt object of the vector.
+	if(NULL == lpObjectRoot)
 	{
-		//System.lpInterruptVector[ucVector]  = lpInterrupt;
+		/* this is the first interrupt object of the vector. */
 		System.InterruptSlotArray[ucVector].lpFirstIntObject = lpInterrupt;
 	}
 	else
 	{
 		lpInterrupt->lpNextInterruptObject  = lpObjectRoot;
 		lpObjectRoot->lpPrevInterruptObject = lpInterrupt;
-		//System.lpInterruptVector[ucVector]  = lpInterrupt;
 		System.InterruptSlotArray[ucVector].lpFirstIntObject = lpInterrupt;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+
+	/* Clear the corresponding mask bit. */
+	__Clear_Interrupt_Mask(ucVector);
 
 	return (__COMMON_OBJECT*)lpInterrupt;
 }
 
-//
-//The implementation of kDiskConnectInterrupt.
-//
+/* DisconnectInterrupt,detach a specified interrupt from system and destroy it. */
 static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpInterrupt)
 {
-	__INTERRUPT_OBJECT*   lpIntObject    = NULL;
-	__SYSTEM*             lpSystem       = NULL;
-	UCHAR                 ucVector       = 0;
-	DWORD                 dwFlags        = 0;
+	__INTERRUPT_OBJECT* lpIntObject = NULL;
+	__SYSTEM* lpSystem = NULL;
+	UCHAR ucVector = 0;
+	DWORD dwFlags = 0;
 
-	if((NULL == lpThis) || (NULL == lpInterrupt)) //Parameters check.
+	/* Parameters checking. */
+	if((NULL == lpThis) || (NULL == lpInterrupt))
 	{
 		return;
 	}
 
 	lpSystem = (__SYSTEM*)lpThis;
 	lpIntObject = (__INTERRUPT_OBJECT*)lpInterrupt;
-	ucVector    = lpIntObject->ucVector;
+	ucVector  = lpIntObject->ucVector;
 
-	//ENTER_CRITICAL_SECTION();
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(NULL == lpIntObject->lpPrevInterruptObject)  //This is the first interrupt object.
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+	if(NULL == lpIntObject->lpPrevInterruptObject)
 	{
-		//lpSystem->lpInterruptVector[ucVector] = lpIntObject->lpNextInterruptObject;
+		/* This is the first interrupt object on the vector list. */
 		lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject = lpIntObject->lpNextInterruptObject;
-		if(NULL != lpIntObject->lpNextInterruptObject) //Is not the last object.
+		if(NULL != lpIntObject->lpNextInterruptObject)
 		{
 			lpIntObject->lpNextInterruptObject->lpPrevInterruptObject = NULL;
 		}
 	}
-	else    //This is not the first object.
+	else
 	{
 		lpIntObject->lpPrevInterruptObject->lpNextInterruptObject = lpIntObject->lpNextInterruptObject;
 		if(NULL != lpIntObject->lpNextInterruptObject)
@@ -313,17 +372,14 @@ static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpInt
 			lpIntObject->lpNextInterruptObject->lpPrevInterruptObject = lpIntObject->lpPrevInterruptObject;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-	//Should release interrupt object here???
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 	return;
 }
 
-//
-//The implementation of Initialize routine of interrupt object.
-//
+/* Initializer of interrupt object. */
 BOOL InterruptInitialize(__COMMON_OBJECT* lpThis)
 {
-	__INTERRUPT_OBJECT*    lpInterrupt = NULL;
+	__INTERRUPT_OBJECT* lpInterrupt = NULL;
 
 	if(NULL == lpThis)
 	{
@@ -339,21 +395,14 @@ BOOL InterruptInitialize(__COMMON_OBJECT* lpThis)
 	return TRUE;
 }
 
-//
-//The implementation of Uninitialize of interrupt object.
-//This routine does nothing.
-//
-
+/* Destructor of interrupt object. */
 VOID InterruptUninitialize(__COMMON_OBJECT* lpThis)
 {
 	return;
 }
 
-
-//
-//The implementation of timer object.
-//
-BOOL TimerInitialize(__COMMON_OBJECT* lpThis)    //Initializing routine of timer object.
+/* Initializer of timer object. */
+BOOL TimerInitialize(__COMMON_OBJECT* lpThis)
 {
 	__TIMER_OBJECT*     lpTimer  = NULL;
 	
@@ -368,16 +417,19 @@ BOOL TimerInitialize(__COMMON_OBJECT* lpThis)    //Initializing routine of timer
 	lpTimer->lpKernelThread      = NULL;
 	lpTimer->lpHandlerParam      = NULL;
 	lpTimer->DirectTimerHandler  = NULL;
+	/* Set object signature. */
+	lpTimer->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
 
 	return TRUE;
 }
 
-//
-//Uninitializing routine of timer object.
-//
-
+/* Destructor of timer object. */
 VOID TimerUninitialize(__COMMON_OBJECT* lpThis)
 {
+	__TIMER_OBJECT* pTimer = (__TIMER_OBJECT*)lpThis;
+	BUG_ON(NULL == pTimer);
+	/* Reset object signature. */
+	pTimer->dwObjectSignature = 0;
 	return;
 }
 
@@ -387,14 +439,13 @@ VOID TimerUninitialize(__COMMON_OBJECT* lpThis)
 //
 //------------------------------------------------------------------------------------
 
-//
-//Initializing routine of system object.
-//The routine do the following:
-// 1. Create a priority queue,to be used as lpTimerQueue,countains the timer object;
-// 2. Create an interrupt object,as TIMER interrupt object;
-// 3. Initialize system level variables,such as dwPhysicalMemorySize,etc.
-//
-
+/*
+ * Initializing routine of system object.
+ * The routine do the following:
+ *  1. Create a priority queue,to be used as lpTimerQueue,countains the timer object;
+ *  2. Create an interrupt object,as TIMER interrupt object;
+ *  3. Initialize system level variables,such as dwPhysicalMemorySize,etc.
+ */
 static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 {
 	__SYSTEM*            lpSystem         = (__SYSTEM*)lpThis;
@@ -411,16 +462,14 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 		return FALSE;
 	}
 
+	/* Create timer list(queue) and initialize it. */
 	lpPriorityQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_PRIORITY_QUEUE);
-
-	if(NULL == lpPriorityQueue)  //Failed to create priority queue.
+	if(NULL == lpPriorityQueue)
 	{
 		return FALSE;
 	}
-
-	//Failed to initialize the priority queue.
 	if(!lpPriorityQueue->Initialize((__COMMON_OBJECT*)lpPriorityQueue))
 	{
 		goto __TERMINAL;
@@ -468,12 +517,15 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	RegisterSysCallEntry();
 #endif
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock,dwFlags);
 	lpSystem->InterruptSlotArray[INTERRUPT_VECTOR_TIMER].lpFirstIntObject = lpIntObject;
 #ifdef __CFG_SYS_SYSCALL
 	lpSystem->InterruptSlotArray[EXCEPTION_VECTOR_SYSCALL].lpFirstIntObject = lpExpObject;
 #endif
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+
+	/* Clear timer interrupt's mask. */
+	__Clear_Interrupt_Mask(INTERRUPT_VECTOR_TIMER);
 	bResult = TRUE;
 
 __TERMINAL:
@@ -500,9 +552,7 @@ __TERMINAL:
 	return bResult;
 }
 
-//
-//GetClockTickCounter routine.
-//
+/* Return current tick counter. */
 static DWORD _GetClockTickCounter(__COMMON_OBJECT* lpThis)
 {
 	__SYSTEM*    lpSystem = (__SYSTEM*)lpThis;
@@ -521,9 +571,7 @@ static DWORD GetSysTick(DWORD* pdwHigh32)
 	return System.dwClockTickCounter;
 }
 
-//
-//GetPhysicalMemorySize.
-//
+/* Get the physical memory's size. */
 static DWORD GetPhysicalMemorySize(__COMMON_OBJECT* lpThis)
 {
 	if(NULL == lpThis)
@@ -533,48 +581,77 @@ static DWORD GetPhysicalMemorySize(__COMMON_OBJECT* lpThis)
 	return ((__SYSTEM*)lpThis)->dwPhysicalMemorySize;
 }
 
-//
-//This routine is the default interrupt handler.
-//If no entity(such as device driver) install an interrupt handler,this handler
-//will be called to handle the appropriate interrupt.
-//It will only print out a message indicating the interrupt's number and return.
-//
+/*
+ * This routine is the default interrupt handler.
+ * If no entity(such as device driver) install an interrupt handler,this handler
+ * will be called to handle the appropriate interrupt.
+ * It will only print out a message indicating the interrupt's number and return.
+ */
 static VOID DefaultIntHandler(LPVOID lpEsp,UCHAR ucVector)
 {
 	CHAR          strBuffer[64];
 	static DWORD  dwTotalNum    = 0;
 
-	dwTotalNum ++;    //Record this unhandled exception or interrupt.
+	/* Record this unhandled exception or interrupt. */
+	dwTotalNum ++;
 
-	PrintLine("  Unhandled interrupt.");  //Print out this message.
+	_hx_printk("  Unhandled interrupt.");
 	_hx_sprintf(strBuffer,"  Interrupt number = %d.",ucVector);
-	PrintLine(strBuffer);
+	_hx_printk(strBuffer);
 	_hx_sprintf(strBuffer,"  Total unhandled interrupt times = %d.",dwTotalNum);
-	PrintLine(strBuffer);
+	_hx_printk(strBuffer);
 
 	return;
 }
 
+/* 
+ * Dispatch interrupt to it's handler,according to the 
+ * interrupt's vector value.
+ * lpEsp points to the stack top of current kernel thread.
+ */
 static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
-							  LPVOID           lpEsp,
-							  UCHAR ucVector)
+	LPVOID lpEsp,
+	UCHAR ucVector)
 {
-	__INTERRUPT_OBJECT*    lpIntObject  = NULL;
-	__SYSTEM*              lpSystem = (__SYSTEM*)lpThis;
-	CHAR                   strError[64];    //To print out the BUG information.
+	__INTERRUPT_OBJECT* lpIntObject  = NULL;
+	__SYSTEM* lpSystem = (__SYSTEM*)lpThis;
+#if defined(__CFG_SYS_SMP)
+	__INTERRUPT_CONTROLLER* pIntCtrl = NULL;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+#endif
+	unsigned int processor_id = __CURRENT_PROCESSOR_ID;
 
-	if((NULL == lpThis) || (NULL == lpEsp))
+	BUG_ON((NULL == lpThis) || (NULL == lpEsp));
+
+#if defined(__CFG_SYS_SMP)
+	/* 
+	 * Get the corresponding interrupt controller object from current 
+	 * processor's specific information.
+	 */
+	pSpec = ProcessorManager.GetCurrentProcessorSpecific();
+	BUG_ON(NULL == pSpec);
+	pIntCtrl = pSpec->pIntCtrl;
+	BUG_ON(NULL == pIntCtrl);
+#endif
+
+#if 0
+	/* Just for debugging. */
+	if (!__CURRENT_PROCESSOR_IS_BSP())
 	{
+		pIntCtrl->AckInterrupt(pIntCtrl, ucVector);
 		return;
 	}
+#endif
 
-	lpSystem->ucIntNestLevel += 1;    //Increment nesting level.
-	if(lpSystem->ucIntNestLevel <= 1)
+	lpSystem->ucIntNestLevel[processor_id] += 1;    //Increment nesting level.
+	if(lpSystem->ucIntNestLevel[processor_id] <= 1)
 	{
-		//Call thread hook here,because current kernel thread is
-		//interrupted.
-		//If interrupt occurs before any kernel thread is scheduled,
-		//CurrentKernelThread is NULL.
+		/* 
+		 * Call the corresponding thread hook here,since current kernel thread is
+		 * interrupted.
+		 * If interrupt occurs before any kernel thread is scheduled,
+		 * CurrentKernelThread is NULL.
+		 */
 		if(__CURRENT_KERNEL_THREAD)
 		{
 			KernelThreadManager.CallThreadHook(
@@ -583,22 +660,25 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 				NULL);
 		}
 	}
-	//For debugging.
 	else
 	{
 #ifdef __CFG_SYS_INTNEST  //Interupt nest is enabled.
 		//Do nothing.
 #else
-		_hx_printf("Fatal error,interrupt nested(enter-int,vector = %d,nestlevel = %d)\r\n",
+		/* It's a BUG if interrupt nest is disabled. */
+		_hx_printk("Fatal error,interrupt nested(enter-int,vector = %d,nestlevel = %d)\r\n",
 			ucVector,
-			lpSystem->ucIntNestLevel);
+			lpSystem->ucIntNestLevel[processor_id]);
 		BUG();
 #endif
 	}
 
-	//lpIntObject = lpSystem->lpInterruptVector[ucVector];
+	/* 
+	 * Get the corresponding interrupt object to handle current interrupt. 
+	 * Just call default interrupt handler if no interrupt object installed.
+	 */
 	lpIntObject = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
-	if(NULL == lpIntObject)  //The current interrupt vector has not handler object.
+	if(NULL == lpIntObject)
 	{
 		DefaultIntHandler(lpEsp,ucVector);
 		//Increment the total interrupt counter.
@@ -606,7 +686,7 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 		goto __RETFROMINT;
 	}
 
-	//Travel the whole interrupt list of this vector.
+	/* Travel the whole interrupt list of this vector. */
 	while(lpIntObject)
 	{
 		//If an interrupt object handles the interrupt,then returns.
@@ -625,19 +705,36 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 	lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
 
 __RETFROMINT:
-	lpSystem->ucIntNestLevel -= 1;    //Decrement interrupt nesting level.
-	if(0 == lpSystem->ucIntNestLevel)  //The outmost interrupt.
+	lpSystem->ucIntNestLevel[processor_id] -= 1;
+	/* Acknowledge the interrupt. */
+#if defined(__CFG_SYS_SMP)
+	if (!pIntCtrl->AckInterrupt(pIntCtrl, ucVector))
 	{
-		if (IN_SYSINITIALIZATION())  //It's a abnormal case.
+		/* Interrupt raise from default controller. */
+		__AckDefaultInterrupt();
+	}
+#else
+	/* Just use the default acknowledge routine. */
+	__AckDefaultInterrupt();
+#endif
+	if(0 == lpSystem->ucIntNestLevel[processor_id])
+	{
+		if (IN_SYSINITIALIZATION())
 		{
-
-			_hx_sprintf(strError, "Warning: Interrupt[%d] raised in sys initialization.", ucVector);
-			PrintLine(strError);
+			/* 
+			 * Just show out a warning message when interrupts raise in 
+			 * procedure of system initialization. 
+			 */
+			_hx_printk("Warning: Interrupt[%d] raised in sys initialization.", ucVector);
 		}
 		else
 		{
-			KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
-				lpEsp);  //Re-schedule kernel thread.
+			if (NULL != __CURRENT_KERNEL_THREAD)
+			{
+				/* Reschedule kernel thread. */
+				KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
+					lpEsp);
+			}
 		}
 	}
 	else
@@ -647,58 +744,76 @@ __RETFROMINT:
 #else
 		_hx_printf("Fatal error,interrupt nested(leave-int,vector = %d,nestlevel = %d)\r\n",
 			ucVector,
-			lpSystem->ucIntNestLevel);
+			lpSystem->ucIntNestLevel[processor_id]);
 		BUG();
 #endif  //__CFG_SYS_INTNEST
 	}
 	return;
 }
 
-//Default handler of Exception.
+/*
+ * Default exception handler.
+ * Show out some debugging information and dive to dead loop,since
+ * the unknown exception will lead system crash in most case.
+ */
 static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 {
          __KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
          DWORD dwFlags;
          static DWORD totalExcepNum = 0;
+		 unsigned int processor_id = __CURRENT_PROCESSOR_ID;
 
-         //Switch to text mode,because the exception maybe caused in GUI mode.
+         /* Switch to text mode,because the exception maybe caused in GUI mode. */
 #ifdef __I386__
          SwitchToText();
 #endif
-         _hx_printf("Exception occured: #%d.\r\n",ucVector);
+         _hx_printf("Exception occured: #%d,processor_id: %d\r\n",ucVector, processor_id);
          totalExcepNum ++;  //Increase total exception number.
 
-         //Show kernel thread information which lead the exception.
+         /* 
+		  * Show kernel thread information which lead the exception,if
+		  * the context when exception raise is in kernel thread.
+		  */
          if(pKernelThread)
          {
 			 _hx_printf("\tCurrent kthread ID: %d.\r\n",pKernelThread->dwThreadID);
 			 _hx_printf("\tCurrent kthread name: %s.\r\n",pKernelThread->KernelThreadName);
          }
-         else //In process of system initialization.
+         else
          {
-			 _hx_printf("\tException occured in process of initialization.\r\n");
+			 /* In process of system initialization. */
+			 if (IN_SYSINITIALIZATION())
+			 {
+				 _hx_printf("\tException occured in process of initialization.\r\n");
+			 }
+			 else
+			 {
+				 _hx_printf("Current kernel thread is NULL.\r\n");
+			 }
          }
 
-         //Call processor specific exception handler.
+         /* Call processor specific exception handler. */
          PSExcepHandler(pESP,ucVector);
 
-         if(totalExcepNum >= 1)  //Too many exception,maybe in deadlock,so halt the system.
+		 /* Halt system. */
+         if(totalExcepNum >= 1)
          {
 			 _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
 			 _hx_printf("Please power off the system and reboot it.\r\n");
-			 __ENTER_CRITICAL_SECTION(NULL,dwFlags);
+			 __DISABLE_LOCAL_INTERRUPT(dwFlags);
 			 while (1)
 			 {
-				 HaltSystem(); /* Enter halt state to avoid CPU busy looping. */
+				 HaltSystem();
 			 }
-			 __LEAVE_CRITICAL_SECTION(NULL,dwFlags);
          }
          return;
 }
 
 
-//DispatchException,called by GeneralIntHandler to handle exception,include
-//system call.
+/* 
+ * DispatchException,called by GeneralIntHandler to handle exception,include
+ * system calls.
+ */
 static VOID DispatchException(__COMMON_OBJECT* lpThis,
 							  LPVOID           lpEsp,
 							  UCHAR            ucVector)
@@ -710,69 +825,90 @@ static VOID DispatchException(__COMMON_OBJECT* lpThis,
 	{
 		return;
 	}
-	if(!IS_EXCEPTION(ucVector))  //Not a exception.
+	/* Not an exception. */
+	if(!IS_EXCEPTION(ucVector))
 	{
 		return;
 	}
-	//lpIntObj = lpSystem->lpInterruptVector[ucVector];
+	/* Locate the handler to handle the exception. */
 	lpIntObj = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
-	if(NULL == lpIntObj)  //Null exception,call default exception handler.
+	if(NULL == lpIntObj)
 	{
+		/* Call default exception handler if no one installed. */
 		DefaultExcepHandler(lpEsp,ucVector);
 		//Update exception counter.
 		lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
 		return;
 	}
-	//Call the exception handler now.For each exception,only one handler present.
+	/* Call the exception handler now.
+	 * For each exception,only one handler present,
+	 * it's different from interrupt since there maybe
+	 * many interrupt handlers exist for one interrupt vector.
+	 */
 	lpIntObj->InterruptHandler(lpEsp,lpIntObj->lpHandlerParam);
 	lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
 	lpSystem->InterruptSlotArray[ucVector].dwSuccHandledInt ++;
 	return;
 }
 
-//
-//kSetTimer.
-//The routine do the following:
-// 1. Create a timer object;
-// 2. Initialize the timer object;
-// 3. Insert into the timer object into timer queue of system object;
-// 4. Return the timer object's base address if all successfully.
-//
+/*
+ * Setup a timer.
+ * The routine do the following:
+ *  1. Create a timer object;
+ *  2. Initialize the timer object;
+ *  3. Insert into the timer object into timer queue of system object;
+ *  4. Return the timer object's base address if all successfully.
+ */
 static __COMMON_OBJECT* kSetTimer(__COMMON_OBJECT* lpThis,
-								 __KERNEL_THREAD_OBJECT* lpKernelThread,
-					             DWORD  dwTimerID,
-								 DWORD  dwTimeSpan,
-								 __DIRECT_TIMER_HANDLER lpHandler,
-					             LPVOID lpHandlerParam,
-								 DWORD  dwTimerFlags)
+	__KERNEL_THREAD_OBJECT* lpKernelThread,
+	DWORD dwTimerID,
+	DWORD dwTimeSpan,
+	__DIRECT_TIMER_HANDLER lpHandler,
+	LPVOID lpHandlerParam,
+	DWORD dwTimerFlags)
 {
-	//__PRIORITY_QUEUE*            lpPriorityQueue    = NULL;
 	__SYSTEM*                    lpSystem           = NULL;
 	__TIMER_OBJECT*              lpTimerObject      = NULL;
 	BOOL                         bResult            = FALSE;
 	DWORD                        dwPriority         = 0;
 	DWORD                        dwFlags            = 0;
 
-	if((NULL == lpThis) || (NULL == lpKernelThread))    //Parameters check.
+	/* Check mandatory parameters. */
+	if((NULL == lpThis) || (NULL == lpKernelThread))
 	{
 		return NULL;
 	}
 
-	//At least one time slice is required for timer object.
+	/* Check flags value. */
+	if (!((dwTimerFlags & TIMER_FLAGS_ONCE) || (dwTimerFlags & TIMER_FLAGS_ALWAYS)))
+	{
+		return NULL;
+	}
+	if ((dwTimerFlags & TIMER_FLAGS_ONCE) && (dwTimerFlags & TIMER_FLAGS_ALWAYS))
+	{
+		return NULL;
+	}
+
+	/* At least one time slice is required for timer object. */
+	if (dwTimeSpan == 0)
+	{
+		return NULL;
+	}
 	if(dwTimeSpan <= SYSTEM_TIME_SLICE)
 	{
 		dwTimeSpan = SYSTEM_TIME_SLICE;
 	}
 
+	/* Create and initialize a timer object. */
 	lpSystem    = (__SYSTEM*)lpThis;
 	lpTimerObject = (__TIMER_OBJECT*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_TIMER);
-	if(NULL == lpTimerObject)    //Can not create timer object.
+	if(NULL == lpTimerObject)
 	{
 		goto __TERMINAL;
 	}
-	bResult = lpTimerObject->Initialize((__COMMON_OBJECT*)lpTimerObject);  //Initialize.
+	bResult = lpTimerObject->Initialize((__COMMON_OBJECT*)lpTimerObject);
 	if(!bResult)
 	{
 		goto __TERMINAL;
@@ -784,33 +920,36 @@ static __COMMON_OBJECT* kSetTimer(__COMMON_OBJECT* lpThis,
 	lpTimerObject->lpHandlerParam      = lpHandlerParam;
 	lpTimerObject->dwTimerFlags        = dwTimerFlags;
 
-	//
-	//The following code calculates the priority value of the timer object.
-	//
-	dwPriority     = dwTimeSpan;
-	dwPriority    /= SYSTEM_TIME_SLICE;
-	dwPriority    += lpSystem->dwClockTickCounter;    //Now,the dwPriority countains the
-	                                                  //tick counter this timer must be
-	                                                  //processed.
-	dwPriority     = MAX_DWORD_VALUE - dwPriority;    //Final priority value.
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+	/* Calculates the priority value of the timer object in timer queue(list). */
+	dwPriority = dwTimeSpan;
+	dwPriority /= SYSTEM_TIME_SLICE;
+	dwPriority += lpSystem->dwClockTickCounter;
+	/* 
+	 * Now dwPriority countains the tick counter on which this
+	 * timer must be processed. 
+	 * But the object queue's sort is descending,so we use the 
+	 * complement value of dwPriority as priority when put into queue.
+	 */
+	dwPriority = MAX_DWORD_VALUE - dwPriority;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/* Insert into timer list(queue). */
 	bResult = lpSystem->lpTimerQueue->InsertIntoQueue((__COMMON_OBJECT*)lpSystem->lpTimerQueue,
 		(__COMMON_OBJECT*)lpTimerObject,
 		dwPriority);
 	if(!bResult)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 
-	dwPriority = MAX_DWORD_VALUE - dwPriority;    //Now,dwPriority countains the next timer
-	                                              //tick value.
+	/* Update the next timer tick counter,if necessary. */
+	dwPriority = MAX_DWORD_VALUE - dwPriority;
 	if((System.dwNextTimerTick > dwPriority) || (System.dwNextTimerTick == 0))
 	{
-		System.dwNextTimerTick = dwPriority;    //Update the next timer tick counter.
+		System.dwNextTimerTick = dwPriority;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 
 __TERMINAL:
 	if(!bResult)
@@ -839,9 +978,14 @@ static BOOL kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 	BOOL                       bDestroyed = FALSE;
 
 	BUG_ON((NULL == lpThis) || (NULL == lpTimer));
+	/* Validate the timer object. */
+	if (KERNEL_OBJECT_SIGNATURE != ((__TIMER_OBJECT*)lpTimer)->dwObjectSignature)
+	{
+		return FALSE;
+	}
 	
 	lpSystem = (__SYSTEM*)lpThis;
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 	if (!lpSystem->lpTimerQueue->DeleteFromQueue(
 		(__COMMON_OBJECT*)lpSystem->lpTimerQueue,
 		lpTimer))
@@ -857,17 +1001,15 @@ static BOOL kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 		lpSystem->lpTimerQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)lpSystem->lpTimerQueue,
 		&dwPriority);
-	if(NULL == lpTimerObject)    //No timer object pending to be processed yet.
+	if(NULL == lpTimerObject)
 	{
-		/* Reset next timer tick counter. */
+		/* Reset next timer tick counter since no timer in queue. */
 		lpSystem->dwNextTimerTick = 0;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 		goto __DESTROY_TIMER;
 	}
 
-	//
-	//The following code updates the tick counter that timer object should be processed.
-	//
+	/* Updates the tick counter that timer object should be processed. */
 	dwPriority = MAX_DWORD_VALUE - dwPriority;
 	if(dwPriority > lpSystem->dwNextTimerTick)
 		lpSystem->dwNextTimerTick = dwPriority;
@@ -875,10 +1017,11 @@ static BOOL kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 	lpSystem->lpTimerQueue->InsertIntoQueue(
 		(__COMMON_OBJECT*)lpSystem->lpTimerQueue,
 		(__COMMON_OBJECT*)lpTimerObject,
-		dwPriority);    //Insert into timer object queue.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		dwPriority);
+	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 
-__DESTROY_TIMER:  //Destroy the timer object.
+	/* Destroy the timer object. */
+__DESTROY_TIMER:
 	if (!bDestroyed)
 	{
 		ObjectManager.DestroyObject(&ObjectManager, lpTimer);
@@ -951,7 +1094,7 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 	{
 		return FALSE;
 	}
-	System.bSysInitialized = TRUE;
+	//System.bSysInitialized = TRUE;
 
 #if 0
 	__ENABLE_INTERRUPT();
@@ -1014,14 +1157,14 @@ static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis, UCHAR ucVector, __INTERRU
 __SYSTEM System = {
 	NULL,                     //lpTimerQueue.
 	{0},                      //InterruptSlotArray[MAX_INTERRUPT_VECTOR].
-	0,                        //ucCurrInt.
+	{0},                      //ucCurrInt[] array.
 #if defined(__CFG_SYS_SMP)
 	SPIN_LOCK_INIT_VALUE,     //spin_lock.
 	0,                        //bspInitialized.
 #endif 
 	0,                        //dwClockTickCounter,
 	0,                        //dwNextTimerTick,
-	0,                        //ucIntNestLeve;
+	{0},                      //ucIntNestLeve[] array;
 	0,                        //bSysInitialized;
 	0,                        //ucReserved1;
 	0,                        //ucReserved2;
@@ -1056,10 +1199,11 @@ __SYSTEM System = {
 //
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp)
 {
-	UCHAR    ucVector = (BYTE)(dwVector);
+	UCHAR ucVector = (BYTE)(dwVector);
+	unsigned int processor_id = __CURRENT_PROCESSOR_ID;
 
 	/* Save current interrupt or exception vector value. */
-	System.ucCurrInt = ucVector;
+	System.ucCurrInt[processor_id] = ucVector;
 
 	if(IS_EXCEPTION(ucVector))  //Exception.
 	{

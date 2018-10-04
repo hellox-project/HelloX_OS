@@ -106,13 +106,23 @@ typedef __u32 dma_addr_t;
 #define HIBYTE(wr)          BYTE(wr >> 16)
 
 //Atomic integer and it's operations.
-typedef unsigned long __ATOMIC_T;
+typedef volatile unsigned int __ATOMIC_T;
+typedef volatile unsigned int __atomic_t;
 
 #define INIT_ATOMIC(t)          __INIT_ATOMIC(t)       //t = 0;
 #define INCREASE_ATOMIC(t)      __INCREASE_ATOMIC(t)   //t ++;
 #define DECREASE_ATOMIC(t)      __DECREASE_ATOMIC(t)   //t --;
 #define ADD_ATOMIC(t,a)         __ADD_ATOMIC(t,a)      //t ++ a;
 #define MINUS_ATOMIC(t,a)       __MINUS_ATOMIC(t,a)    //t -= a;
+
+/* spin lock and it's operations. */
+typedef volatile unsigned int __SPIN_LOCK;
+
+#define SPIN_LOCK_VALUE_UNLOCK 0
+#define SPIN_LOCK_VALUE_LOCK 1
+
+/* Initial value is unlocked. */
+#define SPIN_LOCK_INIT_VALUE SPIN_LOCK_VALUE_UNLOCK
 
 //
 //The definition of unsigned 64 bit integer.

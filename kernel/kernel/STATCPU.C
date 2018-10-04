@@ -13,10 +13,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "statcpu.h"
 #include "stdio.h"
 #include "hellocn.h"
@@ -39,21 +36,19 @@ static DWORD CreateHook(__KERNEL_THREAD_OBJECT*  lpKernelThread,DWORD* lpdwUserD
 	{
 		return 0;
 	}
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
 	if(NULL == lpStatObj->lpKernelThread)  //This stat object was not used yet.
 	{
 		lpStatObj->lpKernelThread = lpKernelThread;
 		*lpdwUserData             = (DWORD)lpStatObj;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
 		return 1;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-	//
-	//Should create a kernel stat object.
-	//
+	/* Should create a kernel stat object. */
 	lpStatObj = (__THREAD_STAT_OBJECT*)GET_KERNEL_MEMORY(sizeof(__THREAD_STAT_OBJECT));
 	if(NULL == lpStatObj)  //Can not allocate memory.
 	{
+		__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock, dwFlags);
 		return 0;
 	}
 	//Initialize this object.
@@ -73,16 +68,16 @@ static DWORD CreateHook(__KERNEL_THREAD_OBJECT*  lpKernelThread,DWORD* lpdwUserD
 	lpStatObj->wOneMinuteRatio  = 0;
 	memzero((LPVOID)lpStatObj->RatioQueue,sizeof(lpStatObj->RatioQueue));  //Clear memory.
 
-	*lpdwUserData             = (DWORD)lpStatObj;  //Save this object.
+	/* Save this object. */
+	*lpdwUserData             = (DWORD)lpStatObj;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	//Insert this object into stat list.
+	/* Insert this object into stat list. */
 	lpStatObj->lpNext  = StatCpuObject.IdleThreadStatObj.lpNext;
 	lpStatObj->lpPrev  = &StatCpuObject.IdleThreadStatObj;
 	
 	StatCpuObject.IdleThreadStatObj.lpNext->lpPrev = lpStatObj;
 	StatCpuObject.IdleThreadStatObj.lpNext         = lpStatObj;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
 	return 1L;
 }
 
@@ -107,8 +102,7 @@ static DWORD BeginScheduleHook(__KERNEL_THREAD_OBJECT* lpKernelThread,
 	memcpy(&lpStatObj->KernelThreadContext, lpStatObj->lpKernelThread->lpKernelThreadContext,
 		sizeof(__KERNEL_THREAD_CONTEXT));
 #endif
-
-	return 1L;
+	return 1;
 }
 
 //
@@ -144,18 +138,18 @@ static DWORD TerminalHook(__KERNEL_THREAD_OBJECT*      lpKernelThread,
 						  DWORD*                       lpdwUserData)
 {
 	__THREAD_STAT_OBJECT* lpStatObj = (__THREAD_STAT_OBJECT*)(*lpdwUserData);
-	DWORD                 dwFlags;
+	DWORD dwFlags;
 
-	if((NULL == lpKernelThread) || (NULL == lpdwUserData)) //Invalid parameters.
+	if((NULL == lpKernelThread) || (NULL == lpdwUserData))
 	{
 		return 0;
 	}
 
 	//Delete this statistics object from stat object list.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
 	lpStatObj->lpNext->lpPrev = lpStatObj->lpPrev;
 	lpStatObj->lpPrev->lpNext = lpStatObj->lpNext;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
 
 	//Free this object.
 	FREE_KERNEL_MEMORY(lpStatObj);
@@ -178,6 +172,11 @@ static BOOL Initialize(__STAT_CPU_OBJECT*  lpStatObj)
 	//Initialize the StatCpuObject.
 	StatCpuObject.IdleThreadStatObj.lpNext = &StatCpuObject.IdleThreadStatObj;
 	StatCpuObject.IdleThreadStatObj.lpPrev = &StatCpuObject.IdleThreadStatObj;
+
+#if defined(__CFG_SYS_SMP)
+	/* Init spin lock. */
+	StatCpuObject.spin_lock = SPIN_LOCK_INIT_VALUE;
+#endif
 
 	//Save current CPU cycle counter.
 	__GetTsc(&lpStatObj->PreviousTsc);
@@ -298,6 +297,9 @@ __STAT_CPU_OBJECT StatCpuObject = {
 	{0},                         //CurrPeriodCycle.
 	{0},                         //TotalCpuCycle.
 	{0},                         //IdelThreadStatObj.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,        //spin_lock.
+#endif
 
 	Initialize,                  //Initialize.
 	GetFirstThreadStat,          //GetFirstThreadStatObj.

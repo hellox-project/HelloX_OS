@@ -16,9 +16,8 @@
 #ifndef __PAGEIDX_H__
 #define __PAGEIDX_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* For __CFG_SYS_SMP macro. */
+#include "config.h"
 
 //
 //Page control flags for Intel IA32 CPU.
@@ -118,14 +117,16 @@ extern "C" {
 #define PT_SIZE            1024  //How many page table entries in one page table,for IA32.
 #define PAGE_SIZE          4096  //One page memory's size,4K.
 
-//
-//The definition of page index object manager.
-//This object is used to manage page index objects.Generally,different hardware platform
-//implements different page mechanism,this object also be used to islote this difference.
-//
-
+/*
+ * The definition of page index object manager.
+ * This object is used to manage page index objects.Generally,different hardware platform
+ * implements different page mechanism,this object also be used to islote this difference.
+ */
 BEGIN_DEFINE_OBJECT(__PAGE_INDEX_MANAGER)
-    INHERIT_FROM_COMMON_OBJECT
+	INHERIT_FROM_COMMON_OBJECT
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 	__PDE*                         lpPdAddress;    //Physical address of page directory.
 	LPVOID                         (*GetPhysicalAddress)(__COMMON_OBJECT*,LPVOID);
 	BOOL                           (*ReservePage)(__COMMON_OBJECT*,LPVOID,LPVOID,DWORD);
@@ -134,19 +135,13 @@ BEGIN_DEFINE_OBJECT(__PAGE_INDEX_MANAGER)
 END_DEFINE_OBJECT(__PAGE_INDEX_MANAGER)
 
 //
-//Declare initialize routine for page index manager object.
+//Initialize routine for page index manager object.
 //
-
 BOOL PageInitialize(__COMMON_OBJECT*);
 
 //
-//Declare uninitialize routine for page index manager object.
+//Uninitialize routine for page index manager object.
 //
-
 VOID PageUninitialize(__COMMON_OBJECT*);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif  //PAGEIDX.H
+#endif  //__PAGEIDX_H__

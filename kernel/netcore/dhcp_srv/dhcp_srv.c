@@ -65,7 +65,7 @@
 static __DHCP_ALLOCATION AllocList = { 0 };
 
 /* Handle of DHCP server thread. */
-static HANDLE hThread = NULL;
+static __KERNEL_THREAD_OBJECT* pDhcpThread = NULL;
 
 /* Check if an IP address is used. */
 static BOOL IpAddrIsUsed(struct ip_addr* pAddr)
@@ -224,7 +224,7 @@ void ShowDhcpAlloc()
 {
 	__DHCP_ALLOCATION* pAlloc = AllocList.pNext;
 
-	if (NULL == hThread)
+	if (NULL == pDhcpThread)
 	{
 		_hx_printf("Please start DHCP server first.\r\n");
 		return;
@@ -712,13 +712,29 @@ static void dhcp_server_start(char* netif_name)
 	netif_set_up(netif);
 
 	/* Start the DHCP server thread now. */
-	hThread = CreateKernelThread(0,
-		KERNEL_THREAD_STATUS_READY,
+	unsigned int nAffinity = 0;
+	pDhcpThread = KernelThreadManager.CreateKernelThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		0,
+		KERNEL_THREAD_STATUS_SUSPENDED,
 		PRIORITY_LEVEL_NORMAL,
 		dhcpd_thread_entry,
 		netif,
 		NULL,
 		DHCP_SERVER_NAME);
+	if (NULL == pDhcpThread)
+	{
+		_hx_printk("Failed to start DHCP task.\r\n");
+		goto __TERMINAL;
+	}
+#if defined(__CFG_SYS_SMP)
+	/* Get a CPU to schedule DHCP server thread to. */
+	nAffinity = ProcessorManager.GetScheduleCPU();
+#endif
+	KernelThreadManager.ChangeAffinity((__COMMON_OBJECT*)pDhcpThread, nAffinity);
+	/* Resume the kernel thread to ready to run. */
+	KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+		(__COMMON_OBJECT*)pDhcpThread);
 
 __TERMINAL:
 	return;

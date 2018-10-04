@@ -64,6 +64,9 @@ BOOL lwipInitialize(struct tag__NETWORK_PROTOCOL* pProtocol)
 	}
 	pExt->nIncomePktSize = 0;
 	pExt->pIncomePktFirst = pExt->pIncomePktLast = NULL;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pExt->spin_lock, "lwIP");
+#endif
 
 	/* Save the extension object to global lwIP protocol object. */
 	pProtocol->pProtoExtension = pExt;

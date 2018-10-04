@@ -484,6 +484,3 @@ HANDLE SetFocusThread(HANDLE hNewThread);
 BOOL SwitchToGraphic(void);
 VOID SwitchToText(void);
 
-//Critical section operations.
-#define __ENTER_CRITICAL_SECTION(obj,flag) {flag = 0;}
-#define __LEAVE_CRITICAL_SECTION(obj,flag)

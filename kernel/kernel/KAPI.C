@@ -191,6 +191,11 @@ DWORD SetEvent(HANDLE hEvent)
 	return ((__EVENT*)hEvent)->SetEvent(hEvent);
 }
 
+DWORD PulseEvent(HANDLE hEvent)
+{
+	return ((__EVENT*)hEvent)->PulseEvent(hEvent);
+}
+
 DWORD ResetEvent(HANDLE hEvent)
 {
 	return ((__EVENT*)hEvent)->ResetEvent(hEvent);

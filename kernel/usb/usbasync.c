@@ -103,13 +103,13 @@ static BOOL AddQueueHead(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	* Use critical section to prevent this operation,since it maybe
 	* invoked in interrupt context.
 	*/
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 	pCurrQH = &ctrl->qh_list;
 	pQueueHead->qh_link = cpu_to_hc32((unsigned long)pCurrQH->qh_link | QH_LINK_TYPE_QH);
 	pCurrQH->qh_link = cpu_to_hc32((unsigned long)pQueueHead | QH_LINK_TYPE_QH);
 	flush_dcache_range((unsigned long)pQueueHead, ALIGN_END_ADDR(struct QH, pQueueHead, 1));
 	flush_dcache_range((unsigned long)pCurrQH, ALIGN_END_ADDR(struct QH, pCurrQH, 1));
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 
 	//Start asynchronous schedule if not yet.
 	WaitForThisObject(ctrl->hMutex);
@@ -222,7 +222,7 @@ static BOOL RemoveQueueHead(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	* Critical section protect the operation since it maybe invoked in
 	* interrupt context.
 	*/
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 	while (((unsigned long)pPrevQH->qh_link & ~QH_LINK_TYPEMASK) != ((unsigned long)pCurrQH & ~QH_LINK_TYPEMASK))
 	{
 		pPrevQH = (struct QH*)((unsigned long)pPrevQH->qh_link & ~QH_LINK_TYPEMASK);
@@ -241,7 +241,7 @@ static BOOL RemoveQueueHead(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 		pPrevQH->qh_link = pCurrQH->qh_link;
 		flush_dcache_range((unsigned long)pPrevQH, ALIGN_END_ADDR(struct QH, pPrevQH, 1));
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ctrl->spin_lock, dwFlags);
 
 	if (!bNoFind)
 	{
@@ -733,7 +733,7 @@ __USB_ASYNC_DESCRIPTOR* usbCreateAsyncDescriptor(struct usb_device* pUsbDev, uns
 	/*
 	* Link the async descriptor into global list.
 	*/
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 	if (NULL == pEhciCtrl->pAsyncDescFirst)  //First element.
 	{
 		pEhciCtrl->pAsyncDescFirst = pAsyncDesc;
@@ -750,7 +750,7 @@ __USB_ASYNC_DESCRIPTOR* usbCreateAsyncDescriptor(struct usb_device* pUsbDev, uns
 		pEhciCtrl->pAsyncDescLast = pAsyncDesc;
 		pAsyncDesc->pNext = NULL;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 
 	/* Mark the creation success. */
 	bResult = TRUE;
@@ -916,11 +916,11 @@ BOOL usbStartAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 	* qh active.
 	* Should be in atomic.
 	*/
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 	pAsyncDesc->status = USB_ASYNCDESC_STATUS_INPROCESS;
 	MarkDescriptorInactive(pAsyncDesc, FALSE);
 	pEhciCtrl->nXferReqNum++;
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 
 #ifdef __DEBUG_USB_ASYNC
 	_hx_printf("%s: start async_xfer...\r\n", __func__);
@@ -1130,7 +1130,7 @@ BOOL usbDestroyAsyncDescriptor(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 	RemoveQueueHead(pAsyncDesc);
 
 	//Detach the descriptor from global list.
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 	pDescNext = pEhciCtrl->pAsyncDescFirst;
 	if (pAsyncDesc == pDescNext)  //First one is the delete target.
 	{
@@ -1156,7 +1156,7 @@ BOOL usbDestroyAsyncDescriptor(__USB_ASYNC_DESCRIPTOR* pAsyncDesc)
 			pEhciCtrl->pAsyncDescLast = pDescNext;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 
 	/*
 	* Release all resources that allocated for the descriptor.

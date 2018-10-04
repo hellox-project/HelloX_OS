@@ -50,6 +50,9 @@ static BOOL CreateBuffer2(__BUFFER_CONTROL_BLOCK* pControlBlock,
 
 	dwSize = dwPoolSize;
 
+#if defined(__CFG_SYS_SMP)
+	pControlBlock->spin_lock = SPIN_LOCK_INIT_VALUE;
+#endif
 	pControlBlock->dwPoolSize         = dwSize;  //Initialize the buffer control block.
 	pControlBlock->dwFlags           |= CREATED_BY_CLIENT;
 	pControlBlock->dwFlags           |= POOL_INITIALIZED;  //Set the pool initialized bit.
@@ -98,7 +101,7 @@ static LPVOID Allocate(__BUFFER_CONTROL_BLOCK* pControlBlock,DWORD dwSize)
 	dwBoundrySize = dwSize + MIN_BUFFER_SIZE + sizeof(__FREE_BUFFER_HEADER);
 
 	//The following operation must not be interrupted since it can run in any context.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 
 	lpFreeHeader = pControlBlock->lpFreeBufferHeader;
 	while(lpFreeHeader)
@@ -202,11 +205,8 @@ static LPVOID Allocate(__BUFFER_CONTROL_BLOCK* pControlBlock,DWORD dwSize)
 		}
 	}
 
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-
 __TERMINAL:
 	//Update successful allocation times number.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	pControlBlock->dwAllocTimesL += 1;
 	if(0 == pControlBlock->dwAllocTimesL)  //Overflow.
 	{
@@ -229,7 +229,7 @@ __TERMINAL:
 			lpUsedHeader->pOwnerThread->dwTotalMemSize += lpUsedHeader->dwBlockSize;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 
 	//For debugging.
 	if(pControlBlock->dwAllocTimesSuccL > pControlBlock->dwAllocTimesL)
@@ -310,7 +310,7 @@ static void ReleaseAndCombine(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuf
 	pFreeHeader->dwFlags |= BUFFER_STATUS_FREE;
 
 	//To find the proper position to insert the block into free block list.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 	if(NULL == pControlBlock->lpFreeBufferHeader)  //Free block list is empty.
 	{
 		pControlBlock->lpFreeBufferHeader = pFreeHeader;
@@ -318,7 +318,7 @@ static void ReleaseAndCombine(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuf
 		pFreeHeader->lpPrevBlock = NULL;
 		pControlBlock->dwFreeSize   += pFreeHeader->dwBlockSize;  //Update free memory size.
 		pControlBlock->dwFreeBlocks += 1;  //Update free block number.
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 		return;
 	}
 	//Not the first free block,try to locate the position to insert.
@@ -342,7 +342,7 @@ static void ReleaseAndCombine(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuf
 		pControlBlock->dwFreeBlocks += 1;
 		//Call combine routine try to combine the neighbor block.
 		CombineNeighbor(pControlBlock,pFreeHeader);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 		return;
 	}
 	if(pInsertNext == pControlBlock->lpFreeBufferHeader)  //Should put into list as header.
@@ -355,7 +355,7 @@ static void ReleaseAndCombine(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuf
 		pControlBlock->dwFreeBlocks += 1;
 		//Combine neighbor blocks.
 		CombineNeighbor(pControlBlock,pFreeHeader);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 		return;
 	}
 	//Shoud put into the middle of free block list.
@@ -367,7 +367,7 @@ static void ReleaseAndCombine(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuf
 	pControlBlock->dwFreeBlocks += 1;
 	//Combine neighbor blocks.
 	CombineNeighbor(pControlBlock,pFreeHeader);
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pControlBlock->spin_lock,dwFlags);
 	return;
 }
 
@@ -399,7 +399,7 @@ static VOID Free(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuffer)
 	/*
 	 * Decrement the memory block from the owner's usage counter.
 	 */
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pControlBlock->spin_lock, dwFlags);
 	if (lpUsedHeader->pOwnerThread)
 	{
 		/*
@@ -419,13 +419,22 @@ static VOID Free(__BUFFER_CONTROL_BLOCK* pControlBlock,LPVOID lpBuffer)
 			}
 		else
 		{
+			/*
+			 * The original owner kernel thread may destroyed,it's a normal case,
+			 * since some kernel objects or data structures are created by one
+			 * kernel thread and will be used by other thread,such as a kernel thread
+			 * message.
+			 * Just show out a message in early version,but it's no need anymore.
+			 */
+#if 0
 			__LOG("Memory owner destroyed[block_sz = %d,curr:%s,int:%d]\r\n",
 				lpUsedHeader->dwBlockSize,
 				__CURRENT_KERNEL_THREAD->KernelThreadName,
 				System.ucCurrInt);
+#endif 
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pControlBlock->spin_lock, dwFlags);
 
 	ReleaseAndCombine(pControlBlock,lpBuffer);
 	//Update free routine's calling number.
@@ -616,6 +625,9 @@ static BOOL Initialize(__BUFFER_CONTROL_BLOCK* pControlBlock)
 //Any size memory allocation buffers,this object is mainly used by KMemAlloc routine,
 //free memory block list algorithm is used in this object.
 __BUFFER_CONTROL_BLOCK AnySizeBuffer = {
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,         //spin_lock.
+#endif
 	OPERATIONS_INITIALIZED,       //dwFlags;
 	NULL,                         //lpPoolStartAddress;
 

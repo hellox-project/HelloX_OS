@@ -13,11 +13,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "pci_drv.h"
 #include "kapi.h"
 
@@ -36,28 +32,26 @@ static VOID ReleasePortRegion(__DEVICE_MANAGER*,__RESOURCE*);
 static VOID DeleteDevice(__DEVICE_MANAGER*,__PHYSICAL_DEVICE*);
 static BOOL AppendDevice(__DEVICE_MANAGER*,__PHYSICAL_DEVICE*);
 static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER*,
-									DWORD,
-									__IDENTIFIER*,
-									__PHYSICAL_DEVICE*);
+	DWORD,
+	__IDENTIFIER*,
+	__PHYSICAL_DEVICE*);
 
-//
-//The implementation of DeviceManager's initialize routine.
-//
+/* Initializer of device manager. */
 static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 {
-	//BOOL                     bResult           = FALSE;
-	__RESOURCE*              lpRes             = NULL;
-	DWORD                    dwLoop            = 0;
+	__RESOURCE* lpRes = NULL;
+	int dwLoop = 0;
 
-	if(NULL == lpDevMgr)     //Invalid parameter.
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpDevMgr);
+	/* Only be called in process of system initialization. */
+	BUG_ON(!IN_SYSINITIALIZATION());
 
-	//lpRes = (__RESOURCE*)malloc(sizeof(__RESOURCE));
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(lpDevMgr->spin_lock,"devmgr");
+#endif
+
 	lpRes = (__RESOURCE*)KMemAlloc(sizeof(__RESOURCE),KMEM_SIZE_TYPE_ANY);
-
-	if(NULL == lpRes)    //Can not allocate memory.
+	if(NULL == lpRes)
 	{
 		return FALSE;
 	}
@@ -76,7 +70,7 @@ static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 	lpDevMgr->UsedPortResource.lpNext    = &lpDevMgr->UsedPortResource;
 	lpDevMgr->UsedPortResource.lpPrev    = &lpDevMgr->UsedPortResource;
 
-	for(dwLoop = 0;dwLoop < MAX_BUS_NUM;dwLoop ++)  //Initialize bus array.
+	for(dwLoop = 0;dwLoop < MAX_BUS_NUM;dwLoop ++)
 	{
 		lpDevMgr->SystemBus[dwLoop].dwBusType    = BUS_TYPE_NULL;
 		lpDevMgr->SystemBus[dwLoop].lpDevListHdr = NULL;
@@ -84,21 +78,12 @@ static BOOL DevMgrInitialize(__DEVICE_MANAGER* lpDevMgr)
 		lpDevMgr->SystemBus[dwLoop].lpParentBus  = NULL;
 	}
 
-	//lpDevMgr->AppendDevice             = AppendDevice;
-	//lpDevMgr->CheckPortRegion          = CheckPortRegion;
-	//lpDevMgr->DeleteDevice             = DeleteDevice;
-	//lpDevMgr->GetDevice                = GetDevice;
-	//lpDevMgr->ReleasePortRegion        = ReleasePortRegion;
-	//lpDevMgr->ReservePortRegion        = ReservePortRegion;
-
 	//
 	//Load system bus drivers here.
 	//
-
 	#ifdef __CFG_SYS_BM
 		PciBusDriver(lpDevMgr);
 	#endif
-
 	return TRUE;
 }
 
@@ -110,12 +95,17 @@ static VOID InsertIntoList(__RESOURCE* lpListHdr,__RESOURCE* lpRes)
 {
 	__RESOURCE*            lpBefore              = NULL;
 
-	if((NULL == lpListHdr) || (NULL == lpRes)) //Invalid parameters.
-		return;
-	lpBefore = lpListHdr->lpNext;
-	while(lpBefore != lpListHdr)    //Travel the whole list to find a statisfying position.
+	/* Validate parameters. */
+	if ((NULL == lpListHdr) || (NULL == lpRes))
 	{
-		if(lpBefore->Dev_Res.IOPort.wStartPort >= lpRes->Dev_Res.IOPort.wEndPort)  //Find it.
+		return;
+	}
+
+	/* Travel the whole list to find a statisfying position. */
+	lpBefore = lpListHdr->lpNext;
+	while(lpBefore != lpListHdr)
+	{
+		if(lpBefore->Dev_Res.IOPort.wStartPort >= lpRes->Dev_Res.IOPort.wEndPort)
 		{
 			break;
 		}
@@ -142,20 +132,19 @@ static VOID InsertIntoList(__RESOURCE* lpListHdr,__RESOURCE* lpRes)
 	(node)->lpNext->lpPrev = (node)->lpPrev;  \
 	(node)->lpPrev->lpNext = (node)->lpNext;
 
-//
-//The following routine is used to merge continues IO port region into one region.
-//This is a helper routine,used by ReleasePortRegion to merge continues port region
-//into one region.
-//This routine searches the whole list,once find two continues region(wEndPort of the
-//first region equals to wStartPort - 1 of the second region),then modify the first
-//region's wEndPort to the second region's wEndPort,and delete the second region from
-//list.
-//
+/*
+ * The following routine is used to merge continues IO port region into one region.
+ * This is a helper routine,used by ReleasePortRegion to merge continues port region
+ * into one region.
+ * This routine searches the whole list,once find two continues region(wEndPort of the
+ * first region equals to wStartPort - 1 of the second region),then modify the first
+ * region's wEndPort to the second region's wEndPort,and delete the second region from
+ * list.
+ */
 static VOID MergeRegion(__RESOURCE* lpListHdr)
 {
 	__RESOURCE*         lpFirst     = NULL;
 	__RESOURCE*         lpSecond    = NULL;
-	//__RESOURCE*         lpTmp       = NULL;
 
 	if(NULL == lpListHdr)
 	{
@@ -183,7 +172,7 @@ static VOID MergeRegion(__RESOURCE* lpListHdr)
 }
 
 //
-//The implementation of ReservePortRegion routine.
+//ReservePortRegion routine.
 //The second parameter,lpRes,indicates desired start address of port region,
 //and port region's length can be calculated by minus start value from end value
 //of the desired port region.
@@ -200,31 +189,41 @@ static BOOL ReservePortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 	__RESOURCE*               lpSecondRegion             = NULL;
 	__RESOURCE*               lpRes1                     = NULL;
 
-	if((NULL == lpDevMgr) || (NULL == lpRes))  //Invalid parameters.
+	/* Parameter validation and basic checking. */
+	if ((NULL == lpDevMgr) || (NULL == lpRes))
+	{
 		return bResult;
-	if(lpRes->dwResType != RESOURCE_TYPE_IO)   //Invalid parameter.
+	}
+	if (lpRes->dwResType != RESOURCE_TYPE_IO)
+	{
 		return bResult;
-	if(lpRes->Dev_Res.IOPort.wEndPort - lpRes->Dev_Res.IOPort.wStartPort >= MAX_IO_PORT)
+	}
+	if (lpRes->Dev_Res.IOPort.wEndPort - lpRes->Dev_Res.IOPort.wStartPort >= MAX_IO_PORT)
+	{
 		return bResult;
+	}
 
-	//lpRes1 = (__RESOURCE*)malloc(sizeof(__RESOURCE));
+	/* Create resource descriptor object. */
 	lpRes1 = (__RESOURCE*)KMemAlloc(sizeof(__RESOURCE),KMEM_SIZE_TYPE_ANY);
-	if(NULL == lpRes1)  //Can not allocate resource.
+	if (NULL == lpRes1)
+	{
 		return bResult;
+	}
 
 	//
 	//First,we look for free port list of DeviceManager object,to find
 	//a block of port region statisify the original desired(lpRes).
 	//
-	wSize      = lpRes->Dev_Res.IOPort.wEndPort - lpRes->Dev_Res.IOPort.wStartPort + 1;
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	wSize = lpRes->Dev_Res.IOPort.wEndPort - lpRes->Dev_Res.IOPort.wStartPort + 1;
+	__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 	lpStatisfy = lpDevMgr->FreePortResource.lpNext;
-
-	while(lpStatisfy != &lpDevMgr->FreePortResource)    //Trave all the free port list.
+	/* Trave the whole free port list. */
+	while(lpStatisfy != &lpDevMgr->FreePortResource)
 	{
-		if((lpStatisfy->Dev_Res.IOPort.wStartPort <= lpRes->Dev_Res.IOPort.wStartPort) &&
-		   (lpStatisfy->Dev_Res.IOPort.wEndPort   >= lpRes->Dev_Res.IOPort.wEndPort))     //Find one.
+		if((lpStatisfy->Dev_Res.IOPort.wStartPort <= lpRes->Dev_Res.IOPort.wStartPort) && 
+			(lpStatisfy->Dev_Res.IOPort.wEndPort   >= lpRes->Dev_Res.IOPort.wEndPort))
 		{
+			/* Find one. */
 			bFind = TRUE;
 			break;
 		}
@@ -254,7 +253,6 @@ static BOOL ReservePortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 		}
 		if(lpStatisfy->Dev_Res.IOPort.wEndPort > lpRes->Dev_Res.IOPort.wEndPort) //Exceed the request.
 		{
-			//lpSecondRegion = (__RESOURCE*)malloc(sizeof(__RESOURCE));
 			lpSecondRegion = (__RESOURCE*)KMemAlloc(sizeof(__RESOURCE),KMEM_SIZE_TYPE_ANY);
 			if(NULL != lpSecondRegion)  //Allocate successfully.
 			{
@@ -267,22 +265,24 @@ static BOOL ReservePortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 		lpRes1->dwResType = RESOURCE_TYPE_IO;
 		lpRes1->Dev_Res.IOPort.wStartPort = lpRes->Dev_Res.IOPort.wStartPort;
 		lpRes1->Dev_Res.IOPort.wEndPort   = lpRes->Dev_Res.IOPort.wEndPort;
-		INSERT_INTO_LIST(&lpDevMgr->UsedPortResource,lpRes1);  //Insert it into used port list.
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* Insert it into used port list. */
+		INSERT_INTO_LIST(&lpDevMgr->UsedPortResource,lpRes1);
+		__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		bResult = TRUE;
 		KMemFree((LPVOID)lpStatisfy,KMEM_SIZE_TYPE_ANY,0);
-		//free((LPVOID)lpStatisfy);
 		goto __TERMINAL;
 	}
 
-	if(lpPotential)    //Though can not find a IO port region statisfy the original request,
-		               //but there is at least one region statisfy requesting size,so reserve
-					   //this region.
+	/* 
+	 * Though we can not find a IO port region statisfy the original request,
+	 * but there is at least one region statisfy requesting size,so reserve
+	 * this region.
+	 */
+	if(lpPotential)    
 	{
 		DELETE_FROM_LIST(lpPotential);    //Delete from free list.
 		if((WORD)(lpPotential->Dev_Res.IOPort.wEndPort - lpPotential->Dev_Res.IOPort.wStartPort) > wSize)
 		{
-			//lpFirstRegion = (__RESOURCE*)malloc(sizeof(__RESOURCE));
 			lpFirstRegion = (__RESOURCE*)KMemAlloc(sizeof(__RESOURCE),KMEM_SIZE_TYPE_ANY);
 			if(lpFirstRegion)  //Allocate memory successfully.
 			{
@@ -298,20 +298,18 @@ static BOOL ReservePortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 		INSERT_INTO_LIST(&lpDevMgr->UsedPortResource,lpRes1);
 		lpRes->Dev_Res.IOPort.wStartPort  = lpRes1->Dev_Res.IOPort.wStartPort;
 		lpRes->Dev_Res.IOPort.wEndPort    = lpRes1->Dev_Res.IOPort.wEndPort;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		bResult = TRUE;
 		KMemFree((LPVOID)lpPotential,KMEM_SIZE_TYPE_ANY,0);
-		//free((LPVOID)lpPotential);
 		goto __TERMINAL;
 	}
-
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 
 __TERMINAL:
-	if(!bResult)  //Failed to reserve port.
+	if(!bResult)
 	{
-		KMemFree((LPVOID)lpRes1,KMEM_SIZE_TYPE_ANY,0);  //Free memory used by lpRes1.
-		//free((LPVOID)lpRes1);
+		/* Failed to reserve port,release allocated resources. */
+		KMemFree((LPVOID)lpRes1,KMEM_SIZE_TYPE_ANY,0);
 		return bResult;
 	}
 	return bResult;
@@ -322,41 +320,49 @@ __TERMINAL:
 //
 static VOID ReleasePortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 {
-	//BOOL                      bResult                    = FALSE;
-	__RESOURCE*               lpUsed                     = NULL;
-	DWORD                     dwFlags                    = 0;
+	__RESOURCE* lpUsed = NULL;
+	unsigned long dwFlags;
 
-	if((NULL == lpDevMgr) || (NULL == lpRes)) //Invalid parameters.
+	/* Basic checking. */
+	if ((NULL == lpDevMgr) || (NULL == lpRes))
+	{
 		return;
-	if(RESOURCE_TYPE_IO != lpRes->dwResType)  //Invalid resource descriptor.
+	}
+	if (RESOURCE_TYPE_IO != lpRes->dwResType)
+	{
 		return;
+	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 	lpUsed = lpDevMgr->UsedPortResource.lpNext;
-
-	while(lpUsed != &lpDevMgr->UsedPortResource)  //Travel whole list.
+	/* Travel whole list. */
+	while(lpUsed != &lpDevMgr->UsedPortResource)
 	{
 		if((lpUsed->Dev_Res.IOPort.wStartPort == lpRes->Dev_Res.IOPort.wStartPort) &&
-		   (lpUsed->Dev_Res.IOPort.wEndPort   == lpRes->Dev_Res.IOPort.wEndPort))  //Find the same region.
+		   (lpUsed->Dev_Res.IOPort.wEndPort   == lpRes->Dev_Res.IOPort.wEndPort))
 		{
+			/* Find the same region. */
 			break;
 		}
 		lpUsed = lpUsed->lpNext;
 	}
-	if(lpUsed == &lpDevMgr->UsedPortResource)    //Can not find the original request one.
+	if(lpUsed == &lpDevMgr->UsedPortResource)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* Can not find the original request one. */
+		__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		return;
 	}
-	//
-	//Now,we have found the IO port region that equals to lpRes,so delete it from the
-	//used list,and insert it into free list.
-	//
-	DELETE_FROM_LIST(lpUsed);                               //Delete from used list.
-	INSERT_INTO_LIST(&lpDevMgr->FreePortResource,lpUsed);   //Insert into free list.
-	MergeRegion(&lpDevMgr->FreePortResource);        //Do a merge operation,to combine continues
-	                                                 //port region into one region.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	/*
+	 * Now,we have found the IO port region that equals to lpRes,so delete it from the
+	 * used list,and insert it into free list.
+	 */
+	/* Delete from used list. */
+	DELETE_FROM_LIST(lpUsed);
+	/* Insert into free list. */
+	INSERT_INTO_LIST(&lpDevMgr->FreePortResource,lpUsed);
+	/* Do a merge operation */
+	MergeRegion(&lpDevMgr->FreePortResource);
+	__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 	return;
 }
 
@@ -367,28 +373,33 @@ static VOID ReleasePortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 //
 static BOOL CheckPortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 {
-	__RESOURCE*             lpTmp             = NULL;
-	DWORD                   dwFlags           = 0;
+	__RESOURCE* lpTmp = NULL;
+	unsigned long dwFlags;
 	
-	if((NULL == lpDevMgr) || (NULL == lpRes))  //Invalid parameters.
+	/* Basic validation. */
+	if ((NULL == lpDevMgr) || (NULL == lpRes))
+	{
 		return FALSE;
-	if(RESOURCE_TYPE_IO != lpRes->dwResType)   //Also invalid parameter.
+	}
+	if (RESOURCE_TYPE_IO != lpRes->dwResType)
+	{
 		return FALSE;
+	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 	lpTmp = lpDevMgr->FreePortResource.lpNext;
-
-	while(lpTmp != &lpDevMgr->FreePortResource)  //Travel the whole free list.
+	/* Travel the whole free list. */
+	while(lpTmp != &lpDevMgr->FreePortResource)
 	{
 		if((lpTmp->Dev_Res.IOPort.wStartPort <= lpRes->Dev_Res.IOPort.wStartPort) && 
-		   (lpTmp->Dev_Res.IOPort.wEndPort   >= lpRes->Dev_Res.IOPort.wEndPort))  //Not used.
+		   (lpTmp->Dev_Res.IOPort.wEndPort   >= lpRes->Dev_Res.IOPort.wEndPort))
 		{
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 			return TRUE;
 		}
 		lpTmp = lpTmp->lpNext;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 	return FALSE;
 }
 
@@ -399,17 +410,18 @@ static BOOL CheckPortRegion(__DEVICE_MANAGER* lpDevMgr,__RESOURCE* lpRes)
 //
 BOOL DeviceIdMatch(__IDENTIFIER* lpFirst,__IDENTIFIER* lpSecond)
 {
-	UCHAR                 ucMask                = 0;
+	UCHAR ucMask = 0;
 
-	if ((NULL == lpFirst) || (NULL == lpSecond)) //Parameters check.
+	/* Basic checking. */
+	if ((NULL == lpFirst) || (NULL == lpSecond))
 	{
 		return FALSE;
 	}
-	if (lpFirst->dwBusType != lpSecond->dwBusType)  //Bus type does not match.
+	if (lpFirst->dwBusType != lpSecond->dwBusType)
 	{
 		return FALSE;
 	}
-	if (lpFirst->dwBusType == BUS_TYPE_NULL)  //Invalid bus type.
+	if (lpFirst->dwBusType == BUS_TYPE_NULL)
 	{
 		return FALSE;
 	}
@@ -460,96 +472,118 @@ BOOL DeviceIdMatch(__IDENTIFIER* lpFirst,__IDENTIFIER* lpSecond)
 	return FALSE;
 }
 
-//
-//The implementation of GetDevice routine.
-//This routine returns the appropriate physical device object according to identifier.
-//
-static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER*   lpDevMgr,
-									DWORD               dwBusType,
-									__IDENTIFIER*       lpId,
-									__PHYSICAL_DEVICE*  lpStart)
+/*
+ * GetDevice routine.
+ * This routine returns the appropriate physical device object according to identifier.
+ */
+static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER* lpDevMgr,
+	DWORD dwBusType,
+	__IDENTIFIER* lpId,
+	__PHYSICAL_DEVICE* lpStart)
 {
-	DWORD                           dwIndex             = 0;
-	DWORD                           dwFlags             = 0;
-	__PHYSICAL_DEVICE*              lpPhyDev            = NULL;
+	DWORD dwIndex = 0;
+	unsigned long dwFlags = 0;
+	__PHYSICAL_DEVICE* lpPhyDev = NULL;
 
-	if((NULL == lpDevMgr) || (NULL == lpId))  //Invalid parameters.
+	if((NULL == lpDevMgr) || (NULL == lpId))
 	{
 		return NULL;
 	}
 
-	if(NULL == lpStart)    //Call this routine for the first time.
+	/* Call this routine for the first time. */
+	if(NULL == lpStart)
 	{
-		__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-
+		__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		for(dwIndex = 0;dwIndex < MAX_BUS_NUM;dwIndex ++)
 		{
-			if(lpDevMgr->SystemBus[dwIndex].dwBusType != dwBusType)  //Bus type not match.
+			if (lpDevMgr->SystemBus[dwIndex].dwBusType != dwBusType)
+			{
 				continue;
+			}
 			lpPhyDev = lpDevMgr->SystemBus[dwIndex].lpDevListHdr;
 			while(lpPhyDev)
 			{
 #define DEVICE_ID_MATCH(id1,id2) (DeviceIdMatch((id1),(id2)))
 				if(DEVICE_ID_MATCH(lpId,&lpPhyDev->DevId))  //ID match.
 				{
-					__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 					return lpPhyDev;    //Find a device object statisfying the request.
 				}
 				lpPhyDev = lpPhyDev->lpNext;
 			}
 		}
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		return lpPhyDev;    //If reach here,the requested device must have not been found.
 	}
-	else                    //This routine is called for the second time.
+	else
 	{
+		/* This routine isn't called for the first time. */
+		BUG_ON(NULL == lpStart);
 		dwIndex = 
 			(DWORD)((DWORD)(lpStart->lpHomeBus) - 
 			(DWORD)(&lpDevMgr->SystemBus[0])) / sizeof(__SYSTEM_BUS);
 		lpPhyDev = lpStart->lpNext;
 
-		__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+		__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		while((dwIndex < MAX_BUS_NUM) || lpPhyDev)
 		{
 			while(lpPhyDev)
 			{
-				if(DEVICE_ID_MATCH(lpId,&lpPhyDev->DevId))  //Find one.
+				if(DEVICE_ID_MATCH(lpId,&lpPhyDev->DevId))
 				{
-					__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 					return lpPhyDev;
 				}
-				lpPhyDev = lpPhyDev->lpNext;  //Try to match the next one.
+				lpPhyDev = lpPhyDev->lpNext;
 			}
 			dwIndex += 1;
-			while(dwIndex < MAX_BUS_NUM)    //Try to search next BUS.
+			while(dwIndex < MAX_BUS_NUM)
 			{
+				/* Try to search next BUS. */
 				if(lpDevMgr->SystemBus[dwIndex].dwBusType != dwBusType)
 				{
 					dwIndex += 1;
 					continue;
 				}
 				lpPhyDev = lpDevMgr->SystemBus[dwIndex].lpDevListHdr;
-				break;    //Break form the loop.
+				break;
 			}
 		}
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-		return lpPhyDev;  //If reach here,the routine returns NULL.
+		__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
+		/* No device found if reach here. */
+		return lpPhyDev;
 	}
 }
 
-//
-//The implementation of AppendDevice routine.
-//This routine append a physical device object into a BUS.
-//
+/* Append a physical device object into a BUS. */
 static BOOL AppendDevice(__DEVICE_MANAGER* lpDevMgr,__PHYSICAL_DEVICE* lpDev)
 {
-	return FALSE;
+	__SYSTEM_BUS* pBus = NULL;
+	unsigned long ulFlags = 0;
+	BOOL bResult = FALSE;
+
+	/* Basic checking of parameters. */
+	if ((NULL == lpDevMgr) || (NULL == lpDev))
+	{
+		goto __TERMINAL;
+	}
+	if (NULL == lpDev->lpHomeBus)
+	{
+		goto __TERMINAL;
+	}
+	pBus = lpDev->lpHomeBus;
+	/* Just add the physical device into device list. */
+	__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, ulFlags);
+	lpDev->lpNext = pBus->lpDevListHdr;
+	pBus->lpDevListHdr = lpDev;
+	__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, ulFlags);
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
 }
 
-//
-//The implementation of DeleteDevice routine.
-//This routine deletes one physical device from system bus.
-//
+/* This routine deletes one physical device from system bus. */
 static VOID DeleteDevice(__DEVICE_MANAGER* lpDevMgr,__PHYSICAL_DEVICE* lpDev)
 {
 	return;
@@ -560,11 +594,14 @@ static VOID DeleteDevice(__DEVICE_MANAGER* lpDevMgr,__PHYSICAL_DEVICE* lpDev)
 *****************************************************************************************
 *****************************************************************************************
 ****************************************************************************************/
-
-//
-//The declaration of DeviceManager object.
-//
+/*
+ * DeviceManager object,all physical devices in system are
+ * managed by this object.
+ */
 __DEVICE_MANAGER DeviceManager = {
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,              //spin_lock.
+#endif
 	{0},                               //SystemBus array.
 	{0},                               //FreePortResource.
 	{0},                               //UsedPortResource.

@@ -255,8 +255,7 @@ VOID __BUG(LPSTR lpszFileName,DWORD dwLineNum)
 	PrintStr(strBuff);
 
 	//Enter infinite loop.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__DISABLE_LOCAL_INTERRUPT(dwFlags);
 	while(TRUE);
-	//__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 }
 

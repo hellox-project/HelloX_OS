@@ -38,7 +38,7 @@
                                        ;;oaded into memory,it resides at
                                        ;;con_org_start_addr,but we must re-
                                        ;;serve the uper 1M memory,so when
-                                       ;;the control of CPU transparent to
+                                       ;;the control of CPU transfer to
                                        ;;the mini-kernal,it first moves i-
                                        ;;tself to con_start_addr(see bellow)
                                        ;;from con_org_start_addr,and then
@@ -48,8 +48,17 @@
     con_mini_start equ 0x00100000      ;;Start linear address of the mini-kernal.
     con_mast_start equ 0x00110000      ;;The master's start address when running.
 
-    con_mini_size  equ 0x00004000      ;;Mini-kernal's size,fixed as 16k.
+    ;con_mini_size  equ 0x00004000      ;;Mini-kernal's size,fixed as 16k.
+	con_mini_size  equ 0x00010000      ;;Mini-kernal's size,fixed as 64k.
     con_mast_size  equ 0x0008c000      ;;The master's length,can not acceed 560k.
+
+	;;The end address of AP processor's stack pool.
+	;;Each AP processor has one 16K bytes stack in this pool,
+	;;use processor's ID as index.Processor with ID as N's stack
+	;;top pointer is calculated as:
+	;;stk_ptr = con_ap_stack_top - 16K * N
+	con_ap_stack_top equ 0xA0000
+	con_ap_stack_size equ 0x4000
 
 ;;--------------------------- ** Module header ** ------------------------
 ;;  The following section is the module's header.
@@ -277,7 +286,6 @@ align 8
 
         dd    gl_syscall
         
-
     gl_idtr_ldr:
         dw 8*128 - 1             ;;The IDT table's limit
         dd gl_sysidt             ;;The IDT table's linear address.
@@ -1590,11 +1598,11 @@ np_int2e:
     pop ecx
     pop ebx
 .ll_end:
-    mov al,0x20                  ;;Indicate the interrupt chip we have fin-
+    ;mov al,0x20                  ;;Indicate the interrupt chip we have fin-
                                  ;;ished handle the interrupt.
                                  ;;:-)
-    out 0x20,al
-    out 0xa0,al
+    ;out 0x20,al
+    ;out 0xa0,al
     pop eax
     iret
 
@@ -1714,20 +1722,91 @@ gl_import_procedures:
 ;;    environment.
 ;;    It's start address is realinit.bin plus 8K of miniker.bin,the fixed
 ;;    address makes it simple to jump here.
+;;    It's the master that lead the AP jump here in process of initializsation,
+;;    please refer the master's implementation code for detail.
 ;;------------------------------------------------------------------------
 
     ;;Code is 16 bits since the AP runs in real mode when start
 	;;very first.
+	;;Just load gdtr and switch to protected mode.
     bits 16
+gl_trampoline_16:
+	cli
+	;;Can not reach gl_gdtr_ldr since it's location
+	;;is above 1M memory,beyond the scope of real
+	;;mode CPU's memory accessing,so we calculate the
+	;;corresponding address after it is loaded into
+	;;memory very first,where is 8K from start of
+	;;physical memory.
+	;;It's original content keep unchange before and
+	;;after it's relocation.
+	mov eax,gl_gdtr_ldr
+	sub eax,con_mini_start
+	add eax,con_org_start_addr
+	lgdt [eax]
+	
+	;;Initializes all segment registers.
+	mov ax,0x010
+    mov ds,ax
+    mov ax,0x018
+	mov ss,ax
+	mov esp,DEF_INIT_ESP
+    mov ax,0x020
+    mov es,ax
+    mov fs,ax
+    mov gs,ax
 
-	;;Get the processor ID of the current AP.
-	push ax
-	push cx
-	mov cx,0x01
+	;;Switch to protected mode.
+	mov eax,cr0
+	or eax,0x01
+	mov cr0,eax
+	jmp dword 0x08 : gl_trampoline_32
+
+	;;Start of trampoline's 32 bit code.
+	;;Initializes the stack pointer register,
+	;;and jump to master.
+	align 16
+	bits 32
+gl_trampoline_32:
+	;;Initializes all segment registers.
+	mov ax,0x010
+    mov ds,ax
+    mov ax,0x018
+	mov ss,ax
+	mov esp,DEF_INIT_ESP
+    mov ax,0x020
+    mov es,ax
+    mov fs,ax
+    mov gs,ax
+	;;Initialize IDT.
+	lidt [gl_idtr_ldr]
+	;;Get current processor's ID.
+	xor ecx,ecx
+	mov eax,0x01
 	cpuid
-	pop cx
-	pop ax
-	;;Then calculate the ESP of current AP.
+	shr ebx,24
+	and ebx,0xff
+	;;Now ebx contains the processor's ID,
+	;;it's same as initial APIC ID.
+	;;Calculate the current processor's stack
+	;;top pointer.
+	mov ecx,ebx
+	xor eax,eax
+.ll_add_16k:
+    add eax,con_ap_stack_size
+	loop .ll_add_16k
+	mov ebx,con_ap_stack_top
+	sub ebx,eax
+	;;Now ebx is the stack top pointer,initializes
+	;;the stack pointer.
+	mov ax,0x018
+	mov ss,ax
+	mov esp,ebx
+	;;Jump to the start of master.
+	mov eax,con_mast_start
+	jmp eax
 
 	;;Make the miniker.bin's size is exactly 16K.
-    times 16*1024 - ($ - $$) db 0x00
+    ;times 16*1024 - ($ - $$) db 0x00
+	;;Make the miniker.bin's size is exactly 48K.
+    times 48*1024 - ($ - $$) db 0x00

@@ -15,7 +15,6 @@
 //    Lines number              :
 //***********************************************************************/
 
-
 #include <StdAfx.h>
 #include <stdio.h>
 #include <stdlib.h>

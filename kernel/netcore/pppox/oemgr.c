@@ -471,7 +471,7 @@ static BOOL pppSendPacket(struct netif* out_if, struct pbuf* pb, ip_addr_t* ipad
 	 * Use critical section to protect the list operation since it maybe accessed
 	 * in interrupt context.
 	 */
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 	if (0 == pppoeManager.nOutgSize) /* List is empty. */
 	{
 		BUG_ON(pppoeManager.pOutgFirst != NULL);
@@ -484,18 +484,18 @@ static BOOL pppSendPacket(struct netif* out_if, struct pbuf* pb, ip_addr_t* ipad
 		 * critical section since the SendMessage routine may lead
 		 * kernel thread re-scheduling.
 		 */
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 		msg.wCommand = PPPOE_MSG_SENDPACKET;
 		msg.wParam = 0;
 		msg.dwParam = 0;
 		bResult = SendMessage(pppoeManager.hMainThread, &msg);
 		if (!bResult) /* Msg queue is full? */
 		{
-			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 			/* Unlink from list. */
 			pppoeManager.pOutgFirst = pppoeManager.pOutgLast = NULL;
 			pppoeManager.nOutgSize = 0;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 			goto __TERMINAL;
 		}
 	}
@@ -505,7 +505,7 @@ static BOOL pppSendPacket(struct netif* out_if, struct pbuf* pb, ip_addr_t* ipad
 		BUG_ON(NULL == pppoeManager.pOutgLast);
 		if (pppoeManager.nOutgSize > PPPOE_MAX_PENDINGLIST_SIZE)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 			bResult = FALSE;
 			goto __TERMINAL;
 		}
@@ -514,7 +514,7 @@ static BOOL pppSendPacket(struct netif* out_if, struct pbuf* pb, ip_addr_t* ipad
 		pppoeManager.pOutgLast->pNext = pBlock;
 		pppoeManager.pOutgLast = pBlock;
 		pppoeManager.nOutgSize++;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 		bResult = TRUE;
 	}
 
@@ -583,7 +583,7 @@ static BOOL _PostFrame(__PPPOE_POSTFRAME_BLOCK* pBlock)
 	 * Hook the post frame block into incoming list, and send a message to
 	 * PPPoE main thread if the list is empty.
 	 */
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 	if (pppoeManager.nIncomSize == 0) /* List is empty. */
 	{
 		BUG_ON(pppoeManager.pIncomFirst);
@@ -591,7 +591,7 @@ static BOOL _PostFrame(__PPPOE_POSTFRAME_BLOCK* pBlock)
 		pBlock->pNext = NULL; /* Set as last. */
 		pppoeManager.pIncomFirst = pppoeManager.pIncomLast = pBlock;
 		pppoeManager.nIncomSize++;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 		/* Send POST_FRAME message to PPPoE main thread. */
 		msg.wCommand = PPPOE_MSG_POSTFRAME;
 		msg.wParam = 0;
@@ -599,10 +599,10 @@ static BOOL _PostFrame(__PPPOE_POSTFRAME_BLOCK* pBlock)
 		bResult = SendMessage(pppoeManager.hMainThread, &msg);
 		if (!bResult)
 		{
-			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 			pppoeManager.pIncomFirst = pppoeManager.pIncomLast = NULL;
 			pppoeManager.nIncomSize = 0;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 			goto __TERMINAL;
 		}
 	}
@@ -612,7 +612,7 @@ static BOOL _PostFrame(__PPPOE_POSTFRAME_BLOCK* pBlock)
 		BUG_ON(NULL == pppoeManager.pIncomLast);
 		if (pppoeManager.nIncomSize > PPPOE_MAX_PENDINGLIST_SIZE) /* List is full. */
 		{
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 			bResult = FALSE;
 			goto __TERMINAL;
 		}
@@ -620,7 +620,7 @@ static BOOL _PostFrame(__PPPOE_POSTFRAME_BLOCK* pBlock)
 		pppoeManager.pIncomLast->pNext = pBlock;
 		pppoeManager.pIncomLast = pBlock;
 		pppoeManager.nIncomSize++;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 		bResult = TRUE;
 	}
 
@@ -719,12 +719,12 @@ static DWORD pppoeMainThread(LPVOID* arg)
 				/* Fetch all pending out going block from list and process it. */
 				while (TRUE)
 				{
-					__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+					__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 					if (0 == pppoeManager.nOutgSize)
 					{
 						BUG_ON(pppoeManager.pOutgFirst);
 						BUG_ON(pppoeManager.pOutgLast);
-						__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+						__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 						break;
 					}
 					BUG_ON(NULL == pppoeManager.pOutgFirst);
@@ -737,7 +737,7 @@ static DWORD pppoeMainThread(LPVOID* arg)
 						BUG_ON(pppoeManager.pOutgFirst);
 						pppoeManager.pOutgLast = NULL;
 					}
-					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 					/* Commit to send. */
 					_SendPacketHandler(pSendBlock);
 				}
@@ -746,12 +746,12 @@ static DWORD pppoeMainThread(LPVOID* arg)
 				/* Process all pending incoming frame(s). */
 				while (TRUE)
 				{
-					__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+					__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 					if (0 == pppoeManager.nIncomSize) /* List is empty. */
 					{
 						BUG_ON(pppoeManager.pIncomFirst);
 						BUG_ON(pppoeManager.pIncomLast);
-						__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+						__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 						break;
 					}
 					/* Fetch one pending block and process it. */
@@ -765,7 +765,7 @@ static DWORD pppoeMainThread(LPVOID* arg)
 						BUG_ON(pppoeManager.pIncomFirst);
 						pppoeManager.pIncomLast = NULL;
 					}
-					__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+					__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 					pppoePostFrameHandler(&pppoeManager, pPostBlock);
 				}
 				break;
@@ -783,6 +783,9 @@ static BOOL PPPoEInitialize(__PPPOE_MANAGER* pMgr)
 	BOOL bResult = FALSE;
 
 	BUG_ON(NULL == pMgr);
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pMgr->spin_lock, "pppoe");
+#endif
 	pMgr->hMainThread = CreateKernelThread(
 		0,
 		KERNEL_THREAD_STATUS_READY,
@@ -810,6 +813,9 @@ __PPPOE_MANAGER pppoeManager = {
 	NULL,                               //pIncomFirst.
 	NULL,                               //pIncomLast.
 	0,                                  //nIncomSize.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,               //spin_lock.
+#endif
 	NULL,                               //hMainThread.
 
 	PPPoEInitialize,                    //Initialize.

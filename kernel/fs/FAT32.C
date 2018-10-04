@@ -25,13 +25,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef __FSSTR_H__
 #include "fsstr.h"
-#endif
-
-#ifndef __FAT32_H__
 #include "fat32.h"
-#endif
 
 //This module will be available if and only if DDF is enabled.
 #ifdef __CFG_SYS_DDF
@@ -376,7 +371,7 @@ static __COMMON_OBJECT* FatDeviceOpen(__COMMON_OBJECT* lpDrv,
 	pFat32File->pNext          = NULL;
 	pFat32File->pPrev          = NULL;
 	//Now insert the file object to file system object's file list.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	if(pFat32Fs->pFileList == NULL)  //Not any file object in list yet.
 	{
 		pFat32Fs->pFileList = pFat32File;
@@ -391,7 +386,7 @@ static __COMMON_OBJECT* FatDeviceOpen(__COMMON_OBJECT* lpDrv,
 		pFat32File->pPrev = NULL;
 		pFat32Fs->pFileList = pFat32File;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	//Now create file device object.
 	//strcpy(FileDevName,FAT32_FILE_NAME_BASE);
 	StrCpy(FAT32_FILE_NAME_BASE,FileDevName);
@@ -435,7 +430,7 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 	__DEVICE_OBJECT*        pDeviceObject    = (__DEVICE_OBJECT*)lpDev;
 	__FAT32_FS*             pFat32Fs         = NULL;
 	__FAT32_FILE*           pFileObject      = NULL;
-	DWORD                   _dwFlags;
+	unsigned long ulFlags;
 
 	if((NULL == pDeviceObject) || (NULL == lpDrcb))
 	{
@@ -444,7 +439,7 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 	pFileObject = (__FAT32_FILE*)pDeviceObject->lpDevExtension;
 	pFat32Fs    = pFileObject->pFileSystem;
 	//Delete the fat32 file object from file system.
-	__ENTER_CRITICAL_SECTION(NULL, _dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, ulFlags);
 	if((pFileObject->pPrev == NULL) && (pFileObject->pNext == NULL))
 	{
 		pFat32Fs->pFileList = NULL;
@@ -469,7 +464,7 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 			}
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, _dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, ulFlags);
 	//Release the file object.
 	RELEASE_OBJECT(pFileObject);
 

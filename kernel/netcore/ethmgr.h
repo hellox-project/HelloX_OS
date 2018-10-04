@@ -224,7 +224,7 @@ typedef BOOL                (*__ETHOPS_INITIALIZE)(__ETHERNET_INTERFACE*);
 #define MAX_ETH_INTERFACE_NUM 4
 
 //Maximal ethernet buffer element in receiving list,i.e,the queue size.
-#define MAX_ETH_RXBUFFLISTSZ  64
+#define MAX_ETH_RXBUFFLISTSZ  256
 
 //Maximal bridging queue list,ethernet frame cause the bridging queue
 //exceed this value will be droped and recorded.
@@ -235,7 +235,7 @@ typedef BOOL                (*__ETHOPS_INITIALIZE)(__ETHERNET_INTERFACE*);
 * Ethernet frame will be droped when the sending queue size exceed
 * this value.
 */
-#define MAX_ETH_SENDINGQUEUESZ 128
+#define MAX_ETH_SENDINGQUEUESZ 256
 
 //Ethernet Manager object,the core object of HelloX's ethernet framework.
 struct __ETHERNET_MANAGER{
@@ -246,7 +246,11 @@ struct __ETHERNET_MANAGER{
 	__ETHERNET_BUFFER*      pBufferFirst;       //Received buffer list header.
 	__ETHERNET_BUFFER*      pBufferLast;        //Received buffer list tail.
 	volatile size_t         nBuffListSize;      //How many buffers in queue.
-	
+	/* Lock of ethernet manager. */
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+
 	/*
 	 * Ethernet frame list to broadcast out.
 	 */

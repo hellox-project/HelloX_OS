@@ -37,7 +37,7 @@ static VOID ShowMemInfo()
 	DWORD  dwFreeTimesL;
 	DWORD  dwFreeTimesH;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(AnySizeBuffer.spin_lock, dwFlags);
 	dwPoolSize      = AnySizeBuffer.dwPoolSize;
 	dwFreeSize      = AnySizeBuffer.dwFreeSize;
 	dwFreeBlocks    = AnySizeBuffer.dwFreeBlocks;
@@ -47,7 +47,7 @@ static VOID ShowMemInfo()
 	dwAllocTimesH      = AnySizeBuffer.dwAllocTimesH;
 	dwFreeTimesL       = AnySizeBuffer.dwFreeTimesL;
 	dwFreeTimesH       = AnySizeBuffer.dwFreeTimesH;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(AnySizeBuffer.spin_lock, dwFlags);
 
 	PrintLine("    Free block list algorithm is adopted:");
 	//Get and dump out memory usage status.
@@ -98,14 +98,30 @@ static VOID ShowStatInfo()
 	__THREAD_STAT_OBJECT* lpStatObj = &StatCpuObject.IdleThreadStatObj;
 	CHAR Buff[256];
 
-	//Print table header.
-	PrintLine("      Thread Name  Mem used   1s usage  60s usage  5m usage  Message recv/drop");
-	PrintLine("    -------------  ---------  --------  ---------  --------  -----------------");
-	//For each kernel thread,print out statistics information.
+	/* Show out table header. */
+#if defined(__CFG_SYS_SMP)
+	ChangeLine();
+	GotoHome();
+	PrintLine("  Thread Name  cpu/st/tag  Mem used   1s usage  60s usage  5m usage  Msg r/d");
+	PrintLine("-------------  ----------  ---------  --------  ---------  --------  -------");
+#else
+	ChangeLine();
+	GotoHome();
+	PrintLine("  Thread Name  st/tag  Mem used   1s usage  60s usage  5m usage  Msg r/d");
+	PrintLine("-------------  ------  ---------  --------  ---------  --------  -------");
+#endif
+	/* Print out statistics information for each kernel thread. */
 	do{
-		_hx_sprintf(Buff,"    %13s  %9d  %6d.%d  %7d.%d  %6d.%d  %d/%d",
+#if defined(__CFG_SYS_SMP)
+		_hx_sprintf(Buff,"%13s       %d/%d/%X  %9d  %6d.%d  %7d.%d  %6d.%d  %d/%d",
 			lpStatObj->lpKernelThread->KernelThreadName,
-			//lpStatObj->lpKernelThread->dwThreadID,
+			lpStatObj->lpKernelThread->cpuAffinity,
+#else
+		_hx_sprintf(Buff,"%13s       %d/%X  %9d  %6d.%d  %7d.%d  %6d.%d  %d/%d",
+			lpStatObj->lpKernelThread->KernelThreadName,
+#endif
+			lpStatObj->lpKernelThread->dwThreadStatus,
+			lpStatObj->lpKernelThread->ucAligment,
 			lpStatObj->lpKernelThread->dwTotalMemSize,
 			lpStatObj->wCurrPeriodRatio / 10,
 			lpStatObj->wCurrPeriodRatio % 10,

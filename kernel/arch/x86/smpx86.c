@@ -20,9 +20,10 @@
 #include <stdint.h>
 
 #include "smpx86.h"
+#include "apic.h"
 
 /* Only available under x86 architecture. */
-#ifdef __I386__
+#if (defined(__I386__) && defined(__CFG_SYS_SMP))
 
 /* Get CPU supported feature flags. */
 uint32_t GetCPUFeature()
@@ -51,11 +52,13 @@ unsigned int __GetProcessorID()
 {
 	uint32_t __ebx = 0;
 
+#if 0
 	/* Check if HTT feature is supported by current CPU. */
 	if (0 == (GetCPUFeature() & CPU_FEATURE_MASK_HTT))
 	{
 		goto __TERMINAL;
 	}
+#endif
 
 	/* 
 	 * Fetch Initial local APIC ID from EBX,which will be filled 
@@ -83,26 +86,73 @@ unsigned int __GetProcessorID()
 	__ebx >>= 24;
 	__ebx &= 0xFF;
 
-__TERMINAL:
+//__TERMINAL:
 	return __ebx;
 }
 
-/* Spin lock operations. */
-void __raw_spin_lock(__SPIN_LOCK* sl)
+/* 
+ * Spin lock operations,wait on a spin lock by spinning. 
+ * FALSE will be returned if wait time exceed the threshold,
+ * this may lead by deadlock.
+ */
+BOOL __raw_spin_lock(__SPIN_LOCK* sl)
 {
+	unsigned long ulTimeout = SPIN_LOCK_DEBUG_MAX_SPINTIMES;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+	unsigned int apicID = 0;
+
 	/* Use xchg instruction to guarantee the atomic operation. */
 	__asm {
 		push eax
 		push ebx
 		mov ebx,sl
 	__TRY_AGAIN:
+		dec ulTimeout;
+		jz __FAIL_OUT;
 		mov eax,SPIN_LOCK_VALUE_LOCK
 		lock xchg eax,dword ptr [ebx]
 		test eax,eax
 		jnz __TRY_AGAIN
 		pop ebx
 		pop eax
+	__FAIL_OUT:
 	}
+	if (0 == ulTimeout)
+	{
+		if (IN_SYSINITIALIZATION())
+		{
+			/* In process of system initialization. */
+			_hx_printk("Spin lock time out,may lead by deadlock,curr CPU:[%d].\r\n",
+				__CURRENT_PROCESSOR_ID);
+		}
+		else
+		{
+			_hx_printk("Spin lock time out,may lead by deadlock,curr thread:[%s],curr CPU:[%d].\r\n",
+				__CURRENT_KERNEL_THREAD->KernelThreadName,
+				__CURRENT_PROCESSOR_ID);
+			if (IN_INTERRUPT())
+			{
+				/* Show interrupt information. */
+				_hx_printk("Current interrupt vector:[%d]\r\n",	System.ucCurrInt[__CURRENT_PROCESSOR_ID]);
+			}
+		}
+		/* Set CPU status as halted. */
+		apicID = __CURRENT_PROCESSOR_ID;
+		pSpec = ProcessorManager.GetLogicalCPUSpecific(
+			0,
+			__GetChipID(apicID),
+			__GetCoreID(apicID),
+			__GetLogicalCPUID(apicID));
+		BUG_ON(NULL == pSpec);
+		pSpec->cpuStatus = CPU_STATUS_HALTED;
+		/* Halt the CPU. */
+		while (TRUE)
+		{
+			HaltSystem();
+		}
+		return FALSE;
+	}
+	return TRUE;
 }
 
 void __raw_spin_unlock(__SPIN_LOCK* sl)
@@ -185,24 +235,55 @@ BOOL Init_IOAPIC()
 		"IOAPIC");
 	if (NULL == pBase)
 	{
-		_hx_printf("%s:failed to remap IOAPIC base.\r\n", __func__);
+		_hx_printk("%s:failed to remap IOAPIC base.\r\n", __func__);
 		return FALSE;
 	}
 	if (pBase != (LPVOID)pSpec->ioapic_base)
 	{
-		_hx_printf("%s:IO APIC base addr is occupied.\r\n", __func__);
+		_hx_printk("%s:IO APIC base addr is occupied.\r\n", __func__);
 		return FALSE;
 	}
 	/* Initialize the IOAPIC now. */
-	_hx_printf("IOAPIC base:0x%X,value = 0x%X\r\n", pBase, __readl(pBase));
+	_hx_printk("IOAPIC base:0x%X,value = 0x%X\r\n", pBase, __readl(pBase));
 	return TRUE;
 }
 
-/* Initialize the local APIC controller,it will be invoked by each AP. */
+/* Check if 2xAPIC is present in current CPU. */
+static BOOL Isx2APIC()
+{
+	uint32_t features = 0;
+	__asm {
+		push eax
+		push ebx
+		push ecx
+		push edx
+		xor ecx,ecx
+		mov eax,0x01
+		cpuid
+		mov features,ecx
+		pop edx
+		pop ecx
+		pop ebx
+		pop eax
+	}
+	return (features & (1 << 21));
+}
+
+/* Just for debugging. */
+//static __INTERRUPT_CONTROLLER* pAPICIntCtrl = NULL;
+
+/* 
+ * Initialize the local APIC controller,it will be invoked by BSP and each AP. 
+ * IO mapped memory will be allocated by BSP and AP just use it.
+ */
 BOOL Init_LocalAPIC()
 {
 	__X86_CHIP_SPECIFIC* pSpec = NULL;
-	uint32_t* pBase = NULL;
+	uint8_t* pBase = NULL;
+	__LOGICALCPU_SPECIFIC* plcpuSpec = NULL;
+	unsigned int apicID = 0;
+	__INTERRUPT_CONTROLLER* pIntCtrl = NULL;
+	BOOL bResult = FALSE;
 
 	/*
 	* Obtain the chip specific information from ProcessorManager, then
@@ -211,30 +292,170 @@ BOOL Init_LocalAPIC()
 	*/
 	pSpec = ProcessorManager.GetChipSpecific(0, 0);
 	BUG_ON(NULL == pSpec);
-	pBase = (uint32_t*)VirtualAlloc(
-		(LPVOID)pSpec->lapic_base,
-		0x100000, /* 1M memory space. */
-		VIRTUAL_AREA_ALLOCATE_IO,
-		VIRTUAL_AREA_ACCESS_RW,
-		"IOAPIC");
-	if (NULL == pBase)
+	if (__CURRENT_PROCESSOR_IS_BSP())
 	{
-		_hx_printf("%s:failed to remap local APIC base.\r\n", __func__);
-		return FALSE;
+		/* Allocate IO mapped memory if invoked by BSP(and also is the first time). */
+		pBase = (uint8_t*)VirtualAlloc(
+			(LPVOID)pSpec->lapic_base,
+			0x100000, /* 1M memory space. */
+			VIRTUAL_AREA_ALLOCATE_IO,
+			VIRTUAL_AREA_ACCESS_RW,
+			"IOAPIC");
+		if (NULL == pBase)
+		{
+			_hx_printk("%s:failed to remap local APIC base.\r\n", __func__);
+			goto __TERMINAL;
+		}
+		if (pBase != (LPVOID)pSpec->lapic_base)
+		{
+			_hx_printk("%s:local APIC base addr is occupied.\r\n", __func__);
+			goto __TERMINAL;
+		}
 	}
-	if (pBase != (LPVOID)pSpec->lapic_base)
+	else
 	{
-		_hx_printf("%s:local APIC base addr is occupied.\r\n", __func__);
-		return FALSE;
+		/* Invoked by AP,just use the address. */
+		pBase = (uint8_t*)pSpec->lapic_base;
 	}
-	/* Initialize the IOAPIC now. */
-	_hx_printf("Local APIC base:0x%X,value = 0x%X\r\n", pBase, __readl(pBase));
-	return TRUE;
+
+	/* Determine the APIC's type. */
+	uint32_t apicType = APIC_TYPE_XAPIC;
+	uint32_t apicVersion = 0;
+	if (Isx2APIC())
+	{
+		apicType = APIC_TYPE_2XAPIC;
+	}
+	else
+	{
+		/* Check according to version number. */
+		apicVersion = __readl(pBase + LAPIC_REGISTER_VERSION);
+		apicVersion &= 0xFF;
+		if (apicVersion < 0x10)
+		{
+			_hx_printk("Local APIC is too old[ver = %d]\r\n", apicVersion);
+			goto __TERMINAL;
+		}
+		else
+		{
+			apicType = APIC_TYPE_XAPIC;
+		}
+	}
+
+	/* Get APIC's ID,processor ID is same as APIC ID. */
+	apicID = __CURRENT_PROCESSOR_ID;
+
+	/* Create the corresponding interrupt controller object. */
+	pIntCtrl = CreateInterruptController(pBase, apicID,
+		APIC_TYPE_XAPIC,
+		APIC_INT_VECTOR_START,
+		APIC_INT_VECTOR_END);
+	if (NULL == pIntCtrl)
+	{
+		goto __TERMINAL;
+	}
+
+#if 0
+	/* 
+	 * Just for debugging,will create one controller object for each 
+	 * AP in the future.
+	 */
+	if (__CURRENT_PROCESSOR_IS_BSP())
+	{
+		pIntCtrl = CreateInterruptController(pBase, apicID,
+			APIC_TYPE_XAPIC,
+			APIC_INT_VECTOR_START,
+			APIC_INT_VECTOR_END);
+		if (NULL == pIntCtrl)
+		{
+			goto __TERMINAL;
+		}
+		pAPICIntCtrl = pIntCtrl;
+	}
+	else
+	{
+		BUG_ON(NULL == pAPICIntCtrl);
+		pIntCtrl = pAPICIntCtrl;
+	}
+#endif
+
+	/* Initialize the interrupt controller. */
+	if (!pIntCtrl->Initialize(pIntCtrl))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Save the controller object into logical CPU's specific information. */
+	plcpuSpec = ProcessorManager.GetLogicalCPUSpecific(
+		0,
+		__GetChipID(apicID),
+		__GetCoreID(apicID),
+		__GetLogicalCPUID(apicID));
+	if (NULL == plcpuSpec)
+	{
+		goto __TERMINAL;
+	}
+	plcpuSpec->pIntCtrl = pIntCtrl;
+
+	/* Everything is OK. */
+	bResult = TRUE;
+
+__TERMINAL:
+	if (!bResult)
+	{
+		/* Should release all resources. */
+		if (pIntCtrl)
+		{
+			DestroyInterruptController(pIntCtrl);
+		}
+		if (plcpuSpec)
+		{
+			/*Reset interrupt controller pointer. */
+			plcpuSpec->pIntCtrl = NULL;
+		}
+		if (pBase)
+		{
+			VirtualFree(pBase);
+		}
+	}
+	return bResult;
 }
 
 /* Start all application processors. */
 BOOL Start_AP()
 {
+	__LOGICALCPU_SPECIFIC* plcpuSpec = NULL;
+	unsigned int processorID = __CURRENT_PROCESSOR_ID;
+	__INTERRUPT_CONTROLLER* pIntCtrl = NULL;
+
+	/* Get current CPU(BSP)'s specific information. */
+	plcpuSpec = ProcessorManager.GetLogicalCPUSpecific(
+		0,
+		__GetChipID(processorID),
+		__GetCoreID(processorID),
+		__GetLogicalCPUID(processorID));
+	BUG_ON(NULL == plcpuSpec);
+	/* Get the corresponding interrupt controller object. */
+	pIntCtrl = plcpuSpec->pIntCtrl;
+	BUG_ON(NULL == pIntCtrl);
+
+	/* 
+	 * Start all AP processor(s) in system,according to the procedure
+	 * specified in MP specification.
+	 * Show a message first.
+	 */
+	//_hx_printk("Start all [%d] APs in system...\r\n", ProcessorManager.GetProcessorNum());
+	/* Send Init IPI. */
+	pIntCtrl->Send_Init_IPI(pIntCtrl, INTERRUPT_DESTINATION_ALL);
+	/* Wait for 10ms. */
+	__MicroDelay(10000);
+	/* Send Startup IPI. */
+	pIntCtrl->Send_Start_IPI(pIntCtrl, INTERRUPT_DESTINATION_ALL);
+	/* Wait for 200us. */
+	__MicroDelay(200);
+	/* Send another Startup IPI. */
+	pIntCtrl->Send_Start_IPI(pIntCtrl, INTERRUPT_DESTINATION_ALL);
+	/* Wait for a short time. */
+	__MicroDelay(100);
 	return TRUE;
 }
 
@@ -244,4 +465,4 @@ BOOL Stop_AP()
 	return TRUE;
 }
 
-#endif //__I386__
+#endif //__I386__ && __CFG_SYS_SMP

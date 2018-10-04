@@ -22,60 +22,68 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include <StdAfx.h>
-#endif
-#include "system.h"
-#include "types.h"
-#include "ktmgr2.h"
-#include "commobj.h"
+#include <system.h>
+#include <types.h>
+#include <ktmgr2.h>
+#include <commobj.h>
 #include <heap.h>
-#include "hellocn.h"
-#include "kapi.h"
+#include <hellocn.h>
+#include <kapi.h>
 
 
-//Change semaphore's default counter value.
-//static
- BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD dwCurrSem)
+/* Change semaphore's default counter value. */
+static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD dwCurrSem)
 {
-	__SEMAPHORE*  pSem = (__SEMAPHORE*)pSemaphore;
+	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
+	unsigned long ulFlags;
 
 	if(NULL == pSem)
 	{
 		return FALSE;
 	}
-	if(0 == dwMaxSem)  //Maximal count can not be zero.
+	/* Maximal count can not be zero. */
+	if(0 == dwMaxSem)
 	{
 		return FALSE;
 	}
 
-	if(dwMaxSem < dwCurrSem)  //Invalid value.
+	/* Invalid value. */
+	if(dwMaxSem < dwCurrSem)
 	{
 		return FALSE;
 	}
 	//Change the default value.
+	__ENTER_CRITICAL_SECTION_SMP(pSem->spin_lock, ulFlags);
 	pSem->dwMaxSem  = dwMaxSem;
 	pSem->dwCurrSem = dwCurrSem;
+	__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, ulFlags);
 	return TRUE;
 }
 
-//ReleaseSemaphore's implementation.It increase the dwCurrSem's value,and wake up one 
-//kernel thread if exist.The previous current counter will be returned in pdwPrevCount.
-//static
- BOOL ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
+/* 
+ * ReleaseSemaphore.It increase the dwCurrSem's value,and 
+ * wake up one kernel thread if exist.
+ * The previous current counter will be returned in pdwPrevCount.
+ */
+static BOOL ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
 {
-	__SEMAPHORE*             pSem          = (__SEMAPHORE*)pSemaphore;
-	__KERNEL_THREAD_OBJECT*  pKernelThread = NULL;
-	DWORD                    dwFlags       = 0;
+	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	DWORD dwFlags = 0;
 
 	if(NULL == pSem)
 	{
 		return FALSE;
 	}
+	if (KERNEL_OBJECT_SIGNATURE != pSem->dwObjectSignature)
+	{
+		return FALSE;
+	}
 
-	//The following operation must not be interruptted.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(pdwPrevCount)  //Return the previous counter value.
+	__ENTER_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
+	/* Return the previous counter value. */
+	if(pdwPrevCount)
 	{
 		*pdwPrevCount = pSem->dwCurrSem;
 	}
@@ -83,74 +91,99 @@
 	{
 		pSem->dwCurrSem ++;
 	}
-	else  //Reach the maximal value,invalid operation.
+	else
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* Reach the maximal value,invalid operation. */
+		__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
 		return FALSE;
 	}
-	//Try to wake up one kernel thread.
+	/* Wake up one kernel thread. */
 	pKernelThread = (__KERNEL_THREAD_OBJECT*)pSem->lpWaitingQueue->GetHeaderElement(
 		(__COMMON_OBJECT*)pSem->lpWaitingQueue,NULL);
-	if(pKernelThread)  //Wakeup the kernel thread.
+	if(pKernelThread)
 	{
+		__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 		KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 			pKernelThread);
+		__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
 
-	KernelThreadManager.ScheduleFromProc(NULL);  //Reschedule all kernel threads.
+	/* Trigger a rescheduling. */
+	/* 
+	 * Disable the rescheduling operations,since the routine will be 
+	 * invoked in lwIP and in protected section.
+	 */
+	//KernelThreadManager.ScheduleFromProc(NULL);
 	return TRUE;
 }
 
-//WaitForThisObject's implementation,it only calls the WaitForThisObjectEx routine by setting 
-//the wait time to infinite.
-//static
- DWORD WaitForSemObject(__COMMON_OBJECT* pSemaphore)
+/* Wait for semaphore object,infinite wait. */
+static DWORD WaitForSemObject(__COMMON_OBJECT* pSemaphore)
 {
-	__SEMAPHORE*            pSem          = (__SEMAPHORE*)pSemaphore;
+	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
-	DWORD                   dwRetValue    = OBJECT_WAIT_FAILED;
-	DWORD                   dwFlags;
+	DWORD dwRetValue    = OBJECT_WAIT_FAILED;
+	DWORD dwFlags;
 
 	if(NULL == pSem)
 	{
 		goto __TERMINAL;
 	}
-
-	//The following operation should not be interruptted.
-__TRY_AGAIN:
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(pSem->dwCurrSem > 0)  //Resource available.
+	if (KERNEL_OBJECT_SIGNATURE != pSem->dwObjectSignature)
 	{
+		goto __TERMINAL;
+	}
+
+__TRY_AGAIN:
+	__ENTER_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
+	if(pSem->dwCurrSem > 0)
+	{
+		/* Resource available,got it. */
 		pSem->dwCurrSem --;
 		dwRetValue = OBJECT_WAIT_RESOURCE;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 	//Resource unavailable,wait it.
 	pKernelThread = __CURRENT_KERNEL_THREAD;
+	__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 	pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
-	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
+	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 	pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
-	//Add into semaphore's waiting queue.
+	pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_SEMAPHORE;
+	/* 
+	 * Add into semaphore's waiting queue.
+	 * Priority value specified,so as will be waken up
+	 * earlier if has higher priority.
+	 */
 	pSem->lpWaitingQueue->InsertIntoQueue((__COMMON_OBJECT*)pSem->lpWaitingQueue,
 		(__COMMON_OBJECT*)pKernelThread,
-		pKernelThread->dwThreadPriority);  //Will be waken up earlier if has higher priority.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-	//Reschedule all kernel thread(s).
+		pKernelThread->dwThreadPriority);
+	__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
+	__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
+	/* Reschedule all kernel thread(s). */
 	KernelThreadManager.ScheduleFromProc(NULL);
 
-	//The kernel thread is waken up when reach here.
-	if(pKernelThread->dwWaitingStatus & OBJECT_WAIT_DELETED)  //Semaphore object is destroyed.
+	/* The kernel thread is waken up when reach here. */
+	__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags);
+	if(pKernelThread->dwWaitingStatus & OBJECT_WAIT_DELETED)
 	{
+		/* Semaphore object is destroyed. */
+		__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags);
 		dwRetValue = OBJECT_WAIT_DELETED;
 		goto __TERMINAL;
 	}
-	else  //Try again otherwise.
+	else
 	{
+		__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags);
+		/* 
+		 * Try to obtain resource again,since the resource maybe 
+		 * acquired by other kernel thread(s).
+		 */
 		goto __TRY_AGAIN;
 	}
 
@@ -158,26 +191,32 @@ __TERMINAL:
 	return dwRetValue;
 }
 
-//The following routine resides in synobj.c file,it's a common used routine by all synchronizing
-//objects.
-extern DWORD TimeOutWaiting(__COMMON_OBJECT* pSynObject,__PRIORITY_QUEUE* pWaitingQueue,
-							__KERNEL_THREAD_OBJECT* lpKernelThread,DWORD dwMillionSecond,
-							VOID (*TimeOutCallback)(VOID*));
+/* 
+ * The following routine resides in synobj.c file,it's a 
+ * common used routine by all synchronizing objects,to apply
+ * timeout waiting.
+ */
+extern DWORD TimeOutWaiting(__COMMON_OBJECT* pSynObject,
+	__PRIORITY_QUEUE* pWaitingQueue,
+	__KERNEL_THREAD_OBJECT* lpKernelThread,
+	DWORD dwMillionSecond,
+	VOID (*TimeOutCallback)(VOID*));
 
-//Implementation of WaitForThisObjectEx routine,it decrement the dwCurrSem value,and block
-//the current kernel thread when the current counter is zero.
-//static
- DWORD WaitForSemObjectEx(__COMMON_OBJECT* pSemaphore,DWORD dwMillionSecond,DWORD* pdwWait)
+/* WaitForThisObjectEx routine,timeout waiting for semaphore. */
+static DWORD WaitForSemObjectEx(__COMMON_OBJECT* pSemaphore,DWORD dwMillionSecond,DWORD* pdwWait)
 {
-	__SEMAPHORE*                pSem             = (__SEMAPHORE*)pSemaphore;
-	__KERNEL_THREAD_OBJECT*     pKernelThread    = NULL;
-	DWORD                       dwCalledTick     = System.dwClockTickCounter;  //Record the tick.
-	DWORD                       dwTimeOutTick    = 0;
-	//DWORD                       dwTimeSpan       = 0;
-	DWORD                       dwRetValue       = OBJECT_WAIT_FAILED;
-	DWORD                       dwFlags;
+	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	DWORD dwCalledTick  = System.dwClockTickCounter;
+	DWORD dwTimeOutTick = 0;
+	DWORD dwRetValue = OBJECT_WAIT_FAILED;
+	DWORD dwFlags;
 
 	if(NULL == pSem)
+	{
+		goto __TERMINAL;
+	}
+	if (KERNEL_OBJECT_SIGNATURE != pSem->dwObjectSignature)
 	{
 		goto __TERMINAL;
 	}
@@ -187,43 +226,47 @@ extern DWORD TimeOutWaiting(__COMMON_OBJECT* pSynObject,__PRIORITY_QUEUE* pWaiti
 	dwTimeOutTick += System.dwClockTickCounter;
 
 __TRY_AGAIN:
-	//The following operation should not be interruptted.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(pSem->dwCurrSem)  //Resource available.
+	__ENTER_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
+	if(pSem->dwCurrSem)
 	{
 		pSem->dwCurrSem --;
 		dwRetValue = OBJECT_WAIT_RESOURCE;
-		//Return the spent time.
 		if(pdwWait)
 		{
 			*pdwWait = (System.dwClockTickCounter - dwCalledTick) * SYSTEM_TIME_SLICE;
 		}
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
-	//Resource unavailable.
-	if(0 == dwMillionSecond)  //Return immediately.
+	/* Resource unavailable,return immediately if no timeout value specified. */
+	if(0 == dwMillionSecond)
 	{
 		dwRetValue = OBJECT_WAIT_TIMEOUT;
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 	//Block the current kernel thread to wait.
 	pKernelThread = __CURRENT_KERNEL_THREAD;
+	__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 	pKernelThread->dwThreadStatus      = KERNEL_THREAD_STATUS_BLOCKED;
+	pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_SEMAPHORE;
 	pKernelThread->dwWaitingStatus    &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus    |= OBJECT_WAIT_WAITING;
 	//Add to semaphore's waiting queue.
 	pSem->lpWaitingQueue->InsertIntoQueue((__COMMON_OBJECT*)pSem->lpWaitingQueue,
 		(__COMMON_OBJECT*)pKernelThread,
 		pKernelThread->dwThreadPriority);
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
+	__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock, dwFlags);
 
-	//Call TimeOutWaiting routine.
-	switch(TimeOutWaiting((__COMMON_OBJECT*)pSem,pSem->lpWaitingQueue,pKernelThread,dwMillionSecond,NULL))
+	/* Apply timeout waiting. */
+	switch(TimeOutWaiting((__COMMON_OBJECT*)pSem,pSem->lpWaitingQueue,
+		pKernelThread,
+		dwMillionSecond,NULL))
 	{
 	case OBJECT_WAIT_RESOURCE:
-		goto __TRY_AGAIN;     //Try to acquire resource again.
+		/* Try to acquire resource again. */
+		goto __TRY_AGAIN;
 	case OBJECT_WAIT_TIMEOUT:
 		dwRetValue = OBJECT_WAIT_TIMEOUT;
 		goto __TERMINAL;
@@ -232,8 +275,6 @@ __TRY_AGAIN:
 		goto __TERMINAL;
 	default:
 		BUG();
-		dwRetValue = OBJECT_WAIT_FAILED;
-		goto __TERMINAL;
 	}
 
 __TERMINAL:
@@ -243,16 +284,13 @@ __TERMINAL:
 //Semaphore's initializer.
 BOOL SemInitialize(__COMMON_OBJECT* pSemaphore)
 {
-	__SEMAPHORE*      pSem            = (__SEMAPHORE*)pSemaphore;
+	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
 	__PRIORITY_QUEUE* lpPriorityQueue = NULL;
-	BOOL              bResult         = FALSE;
+	BOOL bResult = FALSE;
 
-	if(NULL == pSem)
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON(NULL == pSem);
 
-	//Create waiting queue for kernel thread(s) want to wait for this object.
+	/* Create waiting queue. */
 	lpPriorityQueue = (__PRIORITY_QUEUE*)
 		ObjectManager.CreateObject(&ObjectManager,NULL,
 		OBJECT_TYPE_PRIORITY_QUEUE);
@@ -260,7 +298,6 @@ BOOL SemInitialize(__COMMON_OBJECT* pSemaphore)
 	{
 		goto __TERMINAL;
 	}
-
 	bResult = lpPriorityQueue->Initialize((__COMMON_OBJECT*)lpPriorityQueue);
 	if(!bResult)
 	{
@@ -268,10 +305,13 @@ BOOL SemInitialize(__COMMON_OBJECT* pSemaphore)
 	}
 
 	//Set default semaphore's counter.
-	pSem->dwMaxSem       = 1;
-	pSem->dwCurrSem      = 1;
+	pSem->dwMaxSem  = 1;
+	pSem->dwCurrSem = 1;
 	pSem->lpWaitingQueue = lpPriorityQueue;
 	pSem->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pSem->spin_lock, "semaphore");
+#endif
 
 	//Set operation functions accordingly.
 	pSem->WaitForThisObject   = WaitForSemObject;
@@ -282,8 +322,9 @@ BOOL SemInitialize(__COMMON_OBJECT* pSemaphore)
 __TERMINAL:
 	if(!bResult)
 	{
-		if(NULL != lpPriorityQueue)    //Release the priority queue.
+		if(NULL != lpPriorityQueue)
 		{
+			/* Release the priority queue. */
 			ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpPriorityQueue);
 		}
 	}
@@ -293,38 +334,40 @@ __TERMINAL:
 //Unitializer of semaphore object.
 VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
 {
-	__SEMAPHORE*             pSem             = (__SEMAPHORE*)pSemaphore;
-	__PRIORITY_QUEUE*        lpPriorityQueue  = NULL;
-	__KERNEL_THREAD_OBJECT*  lpKernelThread   = NULL;
-	DWORD                    dwFlags;
+	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
+	__PRIORITY_QUEUE* lpPriorityQueue = NULL;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	DWORD dwFlags;
 
-	if(NULL == pSem)
+	BUG_ON(NULL == pSem);
+	if (pSem->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
 	{
-		BUG();
 		return;
 	}
 
-	//The following operation must not be interruptted.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pSem->spin_lock,dwFlags);
 	lpPriorityQueue = pSem->lpWaitingQueue;
 	if(0 == pSem->dwCurrSem)
 	{
 		//Should wake up all kernel thread(s) who waiting for this object.
-		lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpPriorityQueue->GetHeaderElement((__COMMON_OBJECT*)lpPriorityQueue,NULL);
+		lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpPriorityQueue->GetHeaderElement(
+			(__COMMON_OBJECT*)lpPriorityQueue,NULL);
 		while(lpKernelThread)
 		{
+			__ACQUIRE_SPIN_LOCK(lpKernelThread->spin_lock);
 			lpKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_DELETED;
 			KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 				lpKernelThread);
+			__RELEASE_SPIN_LOCK(lpKernelThread->spin_lock);
 			lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpPriorityQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)lpPriorityQueue,NULL);
 		}
 	}
 	//Clear the kernel object's signature.
 	pSem->dwObjectSignature = 0;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pSem->spin_lock,dwFlags);
 
 	//Destroy prirority queue of the semaphore.
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpPriorityQueue);
@@ -345,51 +388,61 @@ VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
 	return OBJECT_WAIT_FAILED;
 }
 
-//Implementation of SetMailboxSize,it release the previous allocated message array memory
-//and allocates a new one accordingly.
-//This routine must be called before any mailbox's sending or getting operation.
-//static
+/* 
+ * SetMailboxSize,it release the previous allocated message array memory
+ * and allocates a new one accordingly.
+ * This routine must be called before any mailbox's sending or getting operation.
+ */
  BOOL SetMailboxSize(__COMMON_OBJECT* pMailboxObj,DWORD dwNewSize)
 {
 	__MAIL_BOX*    pMailbox         = (__MAIL_BOX*)pMailboxObj;
 	BOOL           bResult          = FALSE;
 	__MB_MESSAGE*  pNewMessageArray = NULL;
 	__MB_MESSAGE*  pOldMessageArray = NULL;
-	DWORD          dwFlags;
+	unsigned long  dwFlags;
 	
-	if((NULL == pMailbox) || (0 == dwNewSize))  //Invalid parameters.
+	/* Validate parameters. */
+	if((NULL == pMailbox) || (0 == dwNewSize))
+	{
+		goto __TERMINAL;
+	}
+	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
 	{
 		goto __TERMINAL;
 	}
 
-	//Check if there is mail in mailbox.
+	__ENTER_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+	/* The mailbox must be empty. */
 	if(pMailbox->dwCurrMessageNum)
 	{
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
-
 	//Check if there is pending kernel thread in getting queue.
 	if(pMailbox->lpGettingQueue->dwCurrElementNum)
 	{
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 
-	//Allocate memory first.
-	pNewMessageArray = (__MB_MESSAGE*)KMemAlloc(dwNewSize * sizeof(__MB_MESSAGE),KMEM_SIZE_TYPE_ANY);
+	/* Allocate a new array to hold message. */
+	pNewMessageArray = 
+		(__MB_MESSAGE*)KMemAlloc(dwNewSize * sizeof(__MB_MESSAGE),KMEM_SIZE_TYPE_ANY);
 	if(NULL == pNewMessageArray)
 	{
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 	memset(pNewMessageArray,0,dwNewSize * sizeof(__MB_MESSAGE));
 	pOldMessageArray = pMailbox->pMessageArray;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/* Update mailbox's members accordingly. */
 	pMailbox->pMessageArray    = pNewMessageArray;
 	pMailbox->dwMaxMessageNum  = dwNewSize;
 	pMailbox->dwCurrMessageNum = 0;
 	pMailbox->dwMessageHeader  = 0;
 	pMailbox->dwMessageTail    = 0;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 
 	//Release the old message queue.
 	KMemFree(pOldMessageArray,KMEM_SIZE_TYPE_ANY,0);
@@ -398,7 +451,8 @@ VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
 __TERMINAL:
 	if(!bResult)
 	{
-		if(pNewMessageArray)  //Should release it.
+		/* Release allocated resources. */
+		if(pNewMessageArray)
 		{
 			KMemFree(pNewMessageArray,KMEM_SIZE_TYPE_ANY,0);
 		}
@@ -406,16 +460,20 @@ __TERMINAL:
 	return bResult;
 }
 
-//Get a message from mailbox.
-//static
+/*
+ * Get a message from mailbox.
+ * The kernel thread will be blocked if no message in box,tiemout will be returned
+ * if dwMillionSecond is set and no message available after this period of time.
+ * The processing time from the call emit to successful return will be set if pdwWait
+ * is not NULL.
+ */
  DWORD GetMail(__COMMON_OBJECT* pMailboxObj,LPVOID* ppMessage,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__MAIL_BOX*               pMailbox      = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
-	DWORD                     dwFlags;
+	unsigned long             dwFlags, dwFlags1;
 	DWORD                     dwCalledTick  = System.dwClockTickCounter;
 	DWORD                     dwTimeOutTick = 0;
-	//DWORD                     dwTimeSpan    = 0;
 	DWORD                     dwTimeoutWait = 0;
 	DWORD                     dwRetValue    = OBJECT_WAIT_FAILED;
 
@@ -424,18 +482,27 @@ __TERMINAL:
 	{
 		goto __TERMINAL;
 	}
+	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
+	{
+		goto __TERMINAL;
+	}
 
 	//Calculate the timeout tick counter.
 	if(WAIT_TIME_INFINITE != dwMillionSecond)
 	{
+		/* Wait time must not less than one system tick. */
+		if (dwMillionSecond < SYSTEM_TIME_SLICE)
+		{
+			dwMillionSecond = SYSTEM_TIME_SLICE;
+		}
 		dwTimeOutTick = (dwMillionSecond / SYSTEM_TIME_SLICE) ? (dwMillionSecond / SYSTEM_TIME_SLICE) : 1;
 		dwTimeOutTick += System.dwClockTickCounter;
 	}
 
-	//Try to get mail
+	//Try to get mail.
 __TRY_AGAIN:
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(pMailbox->dwCurrMessageNum)  //Mailbox contains message,just return it.
+	__ENTER_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+	if(pMailbox->dwCurrMessageNum)
 	{
 		//There maybe blocked kernel thread waiting to send mail to box,so wake up one
 		//if there exist.
@@ -443,13 +510,19 @@ __TRY_AGAIN:
 		{
 			pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpSendingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)pMailbox->lpSendingQueue,NULL);
-			if(pKernelThread)  //Wakeup the kernel thread.
+			while(pKernelThread)
 			{
+				/* Wakeup the kernel thread. */
+				__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 				pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 				pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 				pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 				KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 					pKernelThread);
+				__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
+				/* Check if there are more kernel threads. */
+				pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpSendingQueue->GetHeaderElement(
+					(__COMMON_OBJECT*)pMailbox->lpSendingQueue, NULL);
 			}
 		}
 		//Return the first message and update status variables.
@@ -462,46 +535,58 @@ __TRY_AGAIN:
 		{
 			*pdwWait = (System.dwClockTickCounter - dwCalledTick) * SYSTEM_TIME_SLICE;
 		}
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		dwRetValue = OBJECT_WAIT_RESOURCE;
 		goto __TERMINAL;
 	}
 
-	//Resource is unavailable,handle this scenario according to dwMillionSecond's value.
-	if(0 == dwMillionSecond)  //Return immediately.
+	/* 
+	 * Resource is unavailable,handle this scenario according 
+	 * to dwMillionSecond's value.
+	 */
+	if(0 == dwMillionSecond)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* Should return immediately.*/
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		dwRetValue = OBJECT_WAIT_TIMEOUT;
 		goto __TERMINAL;
 	}
 
-	if(WAIT_TIME_INFINITE == dwMillionSecond)  //Wait until mail available.
+	if(WAIT_TIME_INFINITE == dwMillionSecond)
 	{
+		/* Wait until mail available. */
 		pKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
 		//Add into Mailbox's getting queue.
 		pMailbox->lpGettingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpGettingQueue,
 			(__COMMON_OBJECT*)pKernelThread,
 			pKernelThread->dwThreadPriority);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-		KernelThreadManager.ScheduleFromProc(NULL);  //Reschedule,current thread will be wakeup when
-		                                             //mail is available.
+		__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+		/* Reschedule,current thread will be wakeup when mail is available. */
+		KernelThreadManager.ScheduleFromProc(NULL);
 	}
-	else  //Wait a specific time.
+	else
 	{
+		/* Wait the specified period of time. */
 		pKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
 		//Add current kernel thread into mailbox's getting queue.
 		pMailbox->lpGettingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpGettingQueue,
 			(__COMMON_OBJECT*)pKernelThread,
 			pKernelThread->dwThreadPriority);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		dwTimeoutWait = TimeOutWaiting((__COMMON_OBJECT*)pMailbox,
 			pMailbox->lpGettingQueue,
 			pKernelThread,
@@ -529,12 +614,13 @@ __TRY_AGAIN:
 	}
 	else  //Wait INFINITE.
 	{
-		if(pKernelThread->dwWaitingStatus & OBJECT_WAIT_DELETED)  //Semaphore object is destroyed.
+		if(pKernelThread->dwWaitingStatus & OBJECT_WAIT_DELETED)
 		{
+			/* The mailbox is destroyed. */
 			dwRetValue = OBJECT_WAIT_DELETED;
 			goto __TERMINAL;
 		}
-		else  //Try again otherwise.
+		else
 		{
 			goto __TRY_AGAIN;
 		}
@@ -548,12 +634,12 @@ __TERMINAL:
 //****NOTE****:The current implementation is not consider the priority sort of messages,
 //since it no explicit requirement of this function,and the implementation of this function
 //is complicated.:-)
-//static
- VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
+static VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
 {
-	__MB_MESSAGE*           pMessageArray = pMailbox->pMessageArray;
-	DWORD                   dwIndex       = pMailbox->dwMessageTail;
+	__MB_MESSAGE* pMessageArray = pMailbox->pMessageArray;
+	DWORD dwIndex = pMailbox->dwMessageTail;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned long ulFlags;
 
 	//Check if there is waiting kernel thread pending in getting queue.
 	//Wake up one if there exist.
@@ -561,13 +647,16 @@ __TERMINAL:
 	{
 		pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpGettingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)pMailbox->lpGettingQueue,NULL);
-		if(pKernelThread)  //Wakeup the kernel thread.
+		if(pKernelThread)
 		{
+			//Wakeup the kernel thread.
+			__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, ulFlags);
 			pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 			KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 				pKernelThread);
+			__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, ulFlags);
 		}
 	}
 
@@ -579,16 +668,19 @@ __TERMINAL:
 	return;
 }
 
-//Send a message to mailbox.
-//static
+/*
+ * Send a message to mailbox.
+ * The kernel thread will be blocked in case of mail box is full,caller can
+ * specify a wait period by setting dwMillionSecond.
+ * The waited time will be returned if pdwWait is set(not NULL).
+ */
  DWORD SendMail(__COMMON_OBJECT* pMailboxObj,LPVOID pMessage,DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__MAIL_BOX*               pMailbox      = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
-	DWORD                     dwFlags;
+	unsigned long             dwFlags, dwFlags1;
 	DWORD                     dwCalledTick  = System.dwClockTickCounter;
 	DWORD                     dwTimeOutTick = 0;
-	//DWORD                     dwTimeSpan    = 0;
 	DWORD                     dwTimeoutWait = 0;
 	DWORD                     dwRetValue    = OBJECT_WAIT_FAILED;
 
@@ -597,65 +689,84 @@ __TERMINAL:
 	{
 		goto __TERMINAL;
 	}
+	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
+	{
+		goto __TERMINAL;
+	}
 
 	//Calculate the timeout tick counter.
 	if(WAIT_TIME_INFINITE != dwMillionSecond)
 	{
+		/* Wait time must not less than one time slice. */
+		if (dwMillionSecond < SYSTEM_TIME_SLICE)
+		{
+			dwMillionSecond = SYSTEM_TIME_SLICE;
+		}
 		dwTimeOutTick = (dwMillionSecond / SYSTEM_TIME_SLICE) ? (dwMillionSecond / SYSTEM_TIME_SLICE) : 1;
 		dwTimeOutTick += System.dwClockTickCounter;
 	}
 
 	//Try to put message into mailbox.
 __TRY_AGAIN:
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(pMailbox->dwCurrMessageNum < pMailbox->dwMaxMessageNum)  //Mailbox has space to put.
+	__ENTER_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+	if(pMailbox->dwCurrMessageNum < pMailbox->dwMaxMessageNum)
 	{
+		/* Mailbox is not full,just put the message. */
 		__SendMail(pMailbox,pMessage,dwPriority);
 		//Return wait time if necessary.
 		if(pdwWait)
 		{
 			*pdwWait = (System.dwClockTickCounter - dwCalledTick) * SYSTEM_TIME_SLICE;
 		}
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		dwRetValue = OBJECT_WAIT_RESOURCE;
 		goto __TERMINAL;
 	}
 
-	//It means there is no space in mailbox to contain new message when reach here.
-	if(0 == dwMillionSecond)  //Return immediately.
+	/* No space in mailbox to contain new message when reach here. */
+	if(0 == dwMillionSecond)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		/* Return immediately if no timeout specified. */
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		dwRetValue = OBJECT_WAIT_TIMEOUT;
 		goto __TERMINAL;
 	}
 
-	if(WAIT_TIME_INFINITE == dwMillionSecond)  //Wait until mailbox has empty slot to contain mail.
+	if(WAIT_TIME_INFINITE == dwMillionSecond)
 	{
+		/* Wait until mailbox has empty slot to contain mail. */
 		pKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
-		//Add into Mailbox's getting queue.
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
+		/* Add into Mailbox's sending queue. */
 		pMailbox->lpSendingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpSendingQueue,
 			(__COMMON_OBJECT*)pKernelThread,
 			pKernelThread->dwThreadPriority);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-		KernelThreadManager.ScheduleFromProc(NULL);  //Reschedule,current thread will be wakeup when
-		                                             //mail is available.
+		__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+		/* Reschedule,current thread will be wakeup when mailbox is not full.*/
+		KernelThreadManager.ScheduleFromProc(NULL);
 	}
-	else  //Wait a specific time.
+	else
 	{
+		/* Wait the specified period of time. */
 		pKernelThread = __CURRENT_KERNEL_THREAD;
+		__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
 		//Add current kernel thread into mailbox's getting queue.
 		pMailbox->lpSendingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpSendingQueue,
 			(__COMMON_OBJECT*)pKernelThread,
 			pKernelThread->dwThreadPriority);
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 		dwTimeoutWait = TimeOutWaiting((__COMMON_OBJECT*)pMailbox,
 			pMailbox->lpSendingQueue,
 			pKernelThread,
@@ -681,14 +792,15 @@ __TRY_AGAIN:
 			goto __TERMINAL;
 		}
 	}
-	else  //Wait INFINITE.
+	else
 	{
-		if(pKernelThread->dwWaitingStatus & OBJECT_WAIT_DELETED)  //Semaphore object is destroyed.
+		if(pKernelThread->dwWaitingStatus & OBJECT_WAIT_DELETED)
 		{
+			/* Mailbox is destroyed. */
 			dwRetValue = OBJECT_WAIT_DELETED;
 			goto __TERMINAL;
 		}
-		else  //Try again otherwise.
+		else
 		{
 			goto __TRY_AGAIN;
 		}
@@ -755,8 +867,11 @@ BOOL MailboxInitialize(__COMMON_OBJECT* pMailboxObj)
 	pMailbox->SetMailboxSize      = SetMailboxSize;
 	pMailbox->SendMail            = SendMail;
 	pMailbox->GetMail             = GetMail;
-
 	pMailbox->dwObjectSignature   = KERNEL_OBJECT_SIGNATURE;
+#if defined(__CFG_SYS_SMP)
+	/* Initialize spin lock. */
+	pMailbox->spin_lock = SPIN_LOCK_INIT_VALUE;
+#endif
 
 	bResult = TRUE;
 
@@ -784,47 +899,59 @@ VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 {
 	__MAIL_BOX*              pMailbox       = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*  pKernelThread  = NULL;
-	DWORD                    dwFlags        = 0;
+	unsigned long dwFlags = 0, dwFlags1 = 0;
 
 	if(NULL == pMailbox)
 	{
 		return;
 	}
+	/* Verify object signature. */
+	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
+	{
+		return;
+	}
 
 	//Wake up all kernel thread(s) pending on the mail box.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(0 == pMailbox->dwCurrMessageNum)  //Getting queue may contains pending kernel thread(s).
+	__ENTER_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+	if(0 == pMailbox->dwCurrMessageNum)
 	{
+		/* Wake up all pending kernel thread(s) who waiting for getting message. */
 		pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpGettingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)pMailbox->lpGettingQueue,NULL);
 		while(pKernelThread)
 		{
+			/* Should be protected by spin lock in SMP. */
+			__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 			pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			pKernelThread->dwWaitingStatus |= OBJECT_WAIT_DELETED;
 			KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 				pKernelThread);
+			__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 			pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpGettingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)pMailbox->lpGettingQueue,NULL);
 		}
 	}
-	if(pMailbox->dwCurrMessageNum == pMailbox->dwMaxMessageNum)  //Sending queue may contains pending kernel thread(s).
+	if(pMailbox->dwCurrMessageNum == pMailbox->dwMaxMessageNum)
 	{
+		/* Wakeup all pending kernel thread(s) who waiting for sending message. */
 		pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpSendingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)pMailbox->lpSendingQueue,NULL);
 		while(pKernelThread)
 		{
+			__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 			pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			pKernelThread->dwWaitingStatus |= OBJECT_WAIT_DELETED;
 			KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 				pKernelThread);
+			__LEAVE_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 			pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpSendingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)pMailbox->lpSendingQueue,NULL);
 		}
 	}
 	pMailbox->dwObjectSignature = 0;  //Clear signature of the object.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 
 	//Release all resources of mailbox object.
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pMailbox->lpGettingQueue);
@@ -843,44 +970,52 @@ VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 /*
 /***************************************************************************************/
 
-//WaitForConditionObject's implementation,this is a empty implementation since it does not
-//conforms the operations offered by POSIX standard condition object.
-//static
- DWORD WaitForConditionObject(__COMMON_OBJECT* pCondObj)
+/*
+ * WaitForConditionObject's implementation,this is a empty implementation since it does not
+ * conforms the operations offered by POSIX standard condition object.
+ */
+static DWORD WaitForConditionObject(__COMMON_OBJECT* pCondObj)
 {
 	return OBJECT_WAIT_FAILED;
 }
 
-//Wait a specified condition object.
-//static
- DWORD CondWait(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj)
+/* Wait a specified condition object. */
+static DWORD CondWait(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj)
 {
-	__CONDITION*               pCond         = (__CONDITION*)pCondObj;
-	__MUTEX*                   pMutex        = (__MUTEX*)pMutexObj;
-	__KERNEL_THREAD_OBJECT*    pKernelThread = NULL;
-	DWORD                      dwFlags;
-	DWORD                      dwResult      = OBJECT_WAIT_FAILED;
+	__CONDITION* pCond = (__CONDITION*)pCondObj;
+	__MUTEX* pMutex = (__MUTEX*)pMutexObj;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned long dwFlags;
+	DWORD dwResult = OBJECT_WAIT_FAILED;
 
 	if((NULL == pCond) || (NULL == pMutex))
 	{
 		goto __TERMINAL;
 	}
 	//Validate the kernel objects.
-	if((KERNEL_OBJECT_SIGNATURE != pCond->dwObjectSignature) || (KERNEL_OBJECT_SIGNATURE != pMutex->dwObjectSignature))
+	if((KERNEL_OBJECT_SIGNATURE != pCond->dwObjectSignature) || 
+		(KERNEL_OBJECT_SIGNATURE != pMutex->dwObjectSignature))
 	{
 		goto __TERMINAL;
 	}
 
-	//Put the current kernel thread into pending queue,and release mutex,in
-	//one atomic operation.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/*
+	 * Put the current kernel thread into pending queue,and release mutex,in
+	 * one atomic operation.
+	 */
+	__ENTER_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
+	/* Obtain mutex's spin lock at the same time. */
+	__ACQUIRE_SPIN_LOCK(pMutex->spin_lock);
 	pKernelThread = __CURRENT_KERNEL_THREAD;
+	__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 	pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
+	pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_COND;
 	pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 	//Put the kernel thread into condition object's pending queue.
 	pCond->lpPendingQueue->InsertIntoQueue((__COMMON_OBJECT*)pCond->lpPendingQueue,
 		(__COMMON_OBJECT*)pKernelThread,pKernelThread->dwThreadPriority);
+	__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 	pCond->nThreadNum ++;
 
 	//Release the mutex object.
@@ -891,94 +1026,121 @@ VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 		{
 			pMutex->dwMutexStatus = MUTEX_STATUS_FREE;
 		}
-		else  //Wakeup one kernel thread.
+		else
 		{
+			/* Wakeup one kernel thread. */
 			pKernelThread = (__KERNEL_THREAD_OBJECT*)pCond->lpPendingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)pCond->lpPendingQueue,
 				NULL);
-			if(NULL == pKernelThread)
-			{
-				BUG();
-			}
+			BUG_ON(NULL == pKernelThread);
+			__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 			pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 			pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			KernelThreadManager.AddReadyKernelThread(
 				(__COMMON_OBJECT*)&KernelThreadManager,
 				pKernelThread);
+			__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 		}
 	}
-	else  //This scenario should not exist,since at least current kernel thread is occupying it.
+	else
 	{
+		/* 
+		 * This scenario should not exist,since at least 
+		 * current kernel thread is occupying it. 
+		 */
 		BUG();
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__RELEASE_SPIN_LOCK(pMutex->spin_lock);
+	__LEAVE_CRITICAL_SECTION_SMP(pCond->spin_lock,dwFlags);
 	KernelThreadManager.ScheduleFromProc(NULL);
 
-	//Now the kernel thread must be waken up,then try to occupy the mutex object again
-	//before return.
+	/* 
+	 * Now the kernel thread must be waken up,
+	 * try to occupy the mutex object again before return.
+	 */
 	dwResult = pMutex->WaitForThisObject((__COMMON_OBJECT*)pMutex);
 
 __TERMINAL:
 	return dwResult;
 }
 
-//Timeout call back for Condition object,will be called in TimeOutWaiting routine,
-//to remove the kernel thread waiting on the condition from pending queue in case
-//of waiting time out.
-//static
- VOID CondTimeOutCallback(VOID* pData)
+/* 
+ * Timeout call back for Condition object,will be used in TimeOutWaiting routine,
+ * and will be invoked in the timer object set by TimeOutWaiting routine.
+ * to remove the kernel thread waiting on the condition from pending queue in case
+ * of waiting time out.
+ */
+static VOID CondTimeOutCallback(VOID* pData)
 {
-	__TIMER_HANDLER_PARAM*    lpHandlerParam = (__TIMER_HANDLER_PARAM*)pData;
+	__TIMER_HANDLER_PARAM* lpHandlerParam = (__TIMER_HANDLER_PARAM*)pData;
+	__CONDITION* pCond = NULL;
+	unsigned long ulFlags = 0;
 
-	if(NULL == lpHandlerParam)  //Shoud not occur.
-	{
-		BUG();
-	}
-	lpHandlerParam->lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
-	lpHandlerParam->lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_TIMEOUT;
+	BUG_ON(NULL == lpHandlerParam);
+
+	/* 
+	 * No need to acquire kernel thread's spin lock, since 
+	 * time out timer's handler already acquired it before call
+	 * this routine.
+	 * But condition object's spin lock should be obtained since
+	 * we will modify it's variables.
+	 */
+	pCond = (__CONDITION*)lpHandlerParam->lpSynObject;
+	BUG_ON(NULL == pCond);
+	__ENTER_CRITICAL_SECTION_SMP(pCond->spin_lock, ulFlags);
 	//Delete the lpKernelThread from waiting queue.
 	lpHandlerParam->lpWaitingQueue->DeleteFromQueue(
 		(__COMMON_OBJECT*)lpHandlerParam->lpWaitingQueue,
 		(__COMMON_OBJECT*)lpHandlerParam->lpKernelThread);
 	//Also should decrement reference counter of the MUTEX object.
 	((__CONDITION*)lpHandlerParam->lpSynObject)->nThreadNum --;
-	//Add this kernel thread to ready queue.
+	__LEAVE_CRITICAL_SECTION_SMP(pCond->spin_lock, ulFlags);
+	//Add the just deleted kernel thread into ready queue.
+	lpHandlerParam->lpKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
+	lpHandlerParam->lpKernelThread->dwWaitingStatus |= OBJECT_WAIT_TIMEOUT;
 	lpHandlerParam->lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
 	KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 		lpHandlerParam->lpKernelThread);
 }
 
-//Wait a condition object until the condition satisfied or time out.
-//static
- DWORD CondWaitTimeout(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj,DWORD dwMillionSecond)
+/* Wait a condition object until the condition satisfied or time out. */
+static DWORD CondWaitTimeout(__COMMON_OBJECT* pCondObj,__COMMON_OBJECT* pMutexObj,DWORD dwMillionSecond)
 {
-	__CONDITION*               pCond         = (__CONDITION*)pCondObj;
-	__MUTEX*                   pMutex        = (__MUTEX*)pMutexObj;
-	__KERNEL_THREAD_OBJECT*    pKernelThread = NULL;
-	DWORD                      dwFlags;
-	DWORD                      dwResult      = OBJECT_WAIT_FAILED;
+	__CONDITION* pCond = (__CONDITION*)pCondObj;
+	__MUTEX* pMutex = (__MUTEX*)pMutexObj;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned long dwFlags;
+	DWORD dwResult = OBJECT_WAIT_FAILED;
 
 	if((NULL == pCond) || (NULL == pMutex))
 	{
 		goto __TERMINAL;
 	}
 	//Validate the kernel objects.
-	if((KERNEL_OBJECT_SIGNATURE != pCond->dwObjectSignature) || (KERNEL_OBJECT_SIGNATURE != pMutex->dwObjectSignature))
+	if((KERNEL_OBJECT_SIGNATURE != pCond->dwObjectSignature) || 
+		(KERNEL_OBJECT_SIGNATURE != pMutex->dwObjectSignature))
 	{
 		goto __TERMINAL;
 	}
 
-	//Put the current kernel thread into pending queue,and release mutex,in
-	//one atomic operation.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/* 
+	 * Put the current kernel thread into pending queue,and release mutex,in
+	 * one atomic operation.
+	 */
+	__ENTER_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
+	/* Obatin mutex's spin lock simultaneously. */
+	__ACQUIRE_SPIN_LOCK(pMutex->spin_lock);
 	pKernelThread = __CURRENT_KERNEL_THREAD;
+	__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 	pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_BLOCKED;
+	pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_COND;
 	pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 	pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 	//Put the kernel thread into condition object's pending queue.
 	pCond->lpPendingQueue->InsertIntoQueue((__COMMON_OBJECT*)pCond->lpPendingQueue,
 		(__COMMON_OBJECT*)pKernelThread,pKernelThread->dwThreadPriority);
+	__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 	pCond->nThreadNum ++;
 
 	//Release the mutex object.
@@ -989,49 +1151,52 @@ __TERMINAL:
 		{
 			pMutex->dwMutexStatus = MUTEX_STATUS_FREE;
 		}
-		else  //Wakeup one kernel thread.
+		else
 		{
+			/* Wakeup one kernel thread. */
 			pKernelThread = (__KERNEL_THREAD_OBJECT*)pCond->lpPendingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)pCond->lpPendingQueue,
 				NULL);
-			if(NULL == pKernelThread)
-			{
-				BUG();
-			}
+			BUG_ON(NULL == pKernelThread);
+			__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 			pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 			pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 			pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 			KernelThreadManager.AddReadyKernelThread(
 				(__COMMON_OBJECT*)&KernelThreadManager,
 				pKernelThread);
+			__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 		}
 	}
-	else  //This scenario should not exist,since at least current kernel thread is occupying it.
+	else
 	{
+		/* This scenario should not exist,since at least current kernel thread is occupying it. */
 		BUG();
 	}
 	//Record the current kernel thread.
 	pKernelThread = __CURRENT_KERNEL_THREAD;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__RELEASE_SPIN_LOCK(pMutex->spin_lock);
+	__LEAVE_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
 	
 	dwResult = TimeOutWaiting((__COMMON_OBJECT*)pCond,pCond->lpPendingQueue,pKernelThread,
 		dwMillionSecond,CondTimeOutCallback);
 
-	//Now the kernel thread must be waken up,then try to occupy the mutex object again
-	//before return.
+	/* 
+	 * Now the kernel thread must be waken up,then try to 
+	 * occupy the mutex object again before return.
+	 */
 	pMutex->WaitForThisObject((__COMMON_OBJECT*)pMutex);
 
 __TERMINAL:
 	return dwResult;
 }
 
-//Signal a condition object.
-//static
- DWORD CondSignal(__COMMON_OBJECT* pCondObj)
+/* Signal a condition object. */
+static DWORD CondSignal(__COMMON_OBJECT* pCondObj)
 {
-	__CONDITION*            pCond         = (__CONDITION*)pCondObj;
+	__CONDITION* pCond = (__CONDITION*)pCondObj;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
-	DWORD                   dwFlags;
+	unsigned long dwFlags;
 
 	if(NULL == pCond)
 	{
@@ -1043,37 +1208,37 @@ __TERMINAL:
 		return 0;
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	if(pCond->nThreadNum)  //There is(are) pending kernel thread(s).
+	__ENTER_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
+	/* Wakeup one kernel thread if there is. */
+	if(pCond->nThreadNum)
 	{
 		pKernelThread = (__KERNEL_THREAD_OBJECT*)pCond->lpPendingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)pCond->lpPendingQueue,NULL);
-		if(NULL == pKernelThread)  //Should not occur.
-		{
-			BUG();
-		}
+		BUG_ON(NULL == pKernelThread);
 		//Put the kernel thread object into ready queue.
+		__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 		KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 			pKernelThread);
+		__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 		//Update the pending kernel thread counter.
 		pCond->nThreadNum --;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
+	
 	//Reschedule.
 	KernelThreadManager.ScheduleFromProc(NULL);
 	return 1;
 }
 
-//Broadcast a condition object.
-//static
- DWORD CondBroadcast(__COMMON_OBJECT* pCondObj)
+/* Broadcast a condition object. */
+static DWORD CondBroadcast(__COMMON_OBJECT* pCondObj)
 {
-	__CONDITION*            pCond         = (__CONDITION*)pCondObj;
+	__CONDITION* pCond = (__CONDITION*)pCondObj;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
-	DWORD                   dwFlags;
+	unsigned long dwFlags;
 
 	if(NULL == pCond)
 	{
@@ -1085,44 +1250,44 @@ __TERMINAL:
 		return 0;
 	}
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	while(pCond->nThreadNum)  //There is(are) pending kernel thread(s).
+	__ENTER_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
+	/* Wakeup all kernel thread(s) waiting for condition object. */
+	while(pCond->nThreadNum)
 	{
 		pKernelThread = (__KERNEL_THREAD_OBJECT*)pCond->lpPendingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)pCond->lpPendingQueue,NULL);
-		if(NULL == pKernelThread)  //Should not occur.
-		{
-			BUG();
-		}
+		BUG_ON(NULL == pKernelThread);
+		__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 		//Put the kernel thread object into ready queue.
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_RESOURCE;
 		KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 			pKernelThread);
+		__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 		//Update the pending kernel thread counter.
 		pCond->nThreadNum --;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
+	
 	//Reschedule.
 	KernelThreadManager.ScheduleFromProc(NULL);
 	return 1;
 }
 
-//Initialization of Condition object.
+/* Initializer of Condition object. */
 BOOL ConditionInitialize(__COMMON_OBJECT* pCondObj)
 {
-	__CONDITION*         pCond          = (__CONDITION*)pCondObj;
-	__PRIORITY_QUEUE*    pPendingQueue  = NULL;
-	BOOL                 bResult        = FALSE;
+	__CONDITION* pCond = (__CONDITION*)pCondObj;
+	__PRIORITY_QUEUE* pPendingQueue = NULL;
+	BOOL bResult = FALSE;
 
-	if(NULL == pCond)
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON(NULL == pCond);
 
-	//Create the pending queue object of condition,which is used to contain
-	//kernel thread(s) waiting on the CONDITION object.
+	/*
+	 * Create the pending queue object of condition,which is used to contain
+	 * kernel thread(s) waiting on the CONDITION object.
+	 */
 	pPendingQueue = (__PRIORITY_QUEUE*)
 		ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_PRIORITY_QUEUE);
 	if(NULL == pPendingQueue)
@@ -1141,6 +1306,9 @@ BOOL ConditionInitialize(__COMMON_OBJECT* pCondObj)
 	pCond->CondWaitTimeout  = CondWaitTimeout;
 	pCond->CondSignal       = CondSignal;
 	pCond->CondBroadcast    = CondBroadcast;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pCond->spin_lock, "condition");
+#endif
 
 	//Set the signature of kernel object,to identify this object is a valid
 	//kernel object.
@@ -1158,17 +1326,15 @@ __TERMINAL:
 	return bResult;
 }
 
-//Uninitialization of Condition object.
+/* Uninitializer of Condition object. */
 VOID ConditionUninitialize(__COMMON_OBJECT* pCondObj)
 {
-	__CONDITION*             pCond          = (__CONDITION*)pCondObj;
-	__KERNEL_THREAD_OBJECT*  pKernelThread  = NULL;
-	DWORD                    dwFlags;
+	__CONDITION* pCond = (__CONDITION*)pCondObj;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned long dwFlags;
 
-	if(NULL == pCond)
-	{
-		return;
-	}
+	BUG_ON(NULL == pCond);
+
 	//Check if the specified condition object is a valid kernel thread.
 	if(KERNEL_OBJECT_SIGNATURE != pCond->dwObjectSignature)
 	{
@@ -1176,25 +1342,24 @@ VOID ConditionUninitialize(__COMMON_OBJECT* pCondObj)
 	}
 
 	//Wakeup all pending kernel thread(s) if there is(are).
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
 	while(pCond->nThreadNum)
 	{
 		pKernelThread = (__KERNEL_THREAD_OBJECT*)pCond->lpPendingQueue->GetHeaderElement(
 			(__COMMON_OBJECT*)pCond->lpPendingQueue,NULL);
-		if(NULL == pKernelThread)  //Should not occur.
-		{
-			BUG();
-		}
+		BUG_ON(NULL == pKernelThread);
 		//Set the waiting flags of the kernel thread and insert it into ready queue.
+		__ACQUIRE_SPIN_LOCK(pKernelThread->spin_lock);
 		pKernelThread->dwThreadStatus   = KERNEL_THREAD_STATUS_READY;
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_DELETED;
 		KernelThreadManager.AddReadyKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 			pKernelThread);
+		__RELEASE_SPIN_LOCK(pKernelThread->spin_lock);
 		pCond->nThreadNum --;
 	}
 	pCond->dwObjectSignature = 0;  //Clear the kernel object signature.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pCond->spin_lock, dwFlags);
 
 	//Destroy the pending queue object.
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pCond->lpPendingQueue);

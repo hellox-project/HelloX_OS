@@ -85,11 +85,11 @@ static BOOL RegisterFileSystem(__COMMON_OBJECT* lpThis,
 	DWORD               dwFlags;
 	int                 i = 0;
 
-	if((NULL == pFileSystem) || (NULL == lpThis)) //Invalid parameters.
+	if((NULL == pFileSystem) || (NULL == lpThis))
 	{
 		return FALSE;
 	}
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pManager->spin_lock,dwFlags);
 	for(i = 0;i < FS_CTRL_NUM;i ++)
 	{
 		if(NULL == pManager->FsCtrlArray[i]) //Find a empty slot.
@@ -99,31 +99,27 @@ static BOOL RegisterFileSystem(__COMMON_OBJECT* lpThis,
 	}
 	if(FS_CTRL_NUM == i)  //Can not find a empty slot.
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pManager->spin_lock, dwFlags);
 		return FALSE;
 	}
 	//Insert the file system object into this slot.
 	pManager->FsCtrlArray[i] = pFileSystem;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pManager->spin_lock, dwFlags);
 	return TRUE;
 }
 
-//
-//The initialize routine of IOManager.
-//This routine does the following:
-// 1. 
-//
-
+/* The initialize routine of IOManager. */
 static BOOL IOManagerInitialize(__COMMON_OBJECT* lpThis)
 {
-	BOOL                       bResult         = FALSE;
-	//__IO_MANAGER*              lpIoManager     = NULL;
+	BOOL  bResult = FALSE;
 
-	if(NULL == lpThis)    //Parameter check.
+	if(NULL == lpThis)
 	{
 		return bResult;
 	}
-
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(IOManager.spin_lock, "iomgr");
+#endif
 	bResult = TRUE;
 
 	return bResult;
@@ -155,7 +151,7 @@ static __COMMON_OBJECT* __OpenFile(__COMMON_OBJECT* lpThis,  //IOManager object.
 	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
 		goto __TERMINAL;
 
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(FsIdentifier == pIoManager->FsArray[i].FileSystemIdentifier)  //Located the file system.
@@ -163,7 +159,7 @@ static __COMMON_OBJECT* __OpenFile(__COMMON_OBJECT* lpThis,  //IOManager object.
 			pFsObject = (__DEVICE_OBJECT*)pIoManager->FsArray[i].pFileSystemObject; //Get the file system object.
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 
 	if(NULL == pFsObject)  //Can not locate the desired file system.
 	{
@@ -204,8 +200,9 @@ static __COMMON_OBJECT* __OpenDevice(__COMMON_OBJECT* lpThis,
 {
 	__DEVICE_OBJECT* pDevice = NULL;
 	DWORD dwFlags;
+
 	//Travel the whole device list to find the desired one.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	pDevice = ((__IO_MANAGER*)lpThis)->lpDeviceRoot;
 	while(pDevice)
 	{
@@ -216,7 +213,7 @@ static __COMMON_OBJECT* __OpenDevice(__COMMON_OBJECT* lpThis,
 		}
 		pDevice = pDevice->lpNext;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	return (__COMMON_OBJECT*)pDevice;
 }
 
@@ -352,7 +349,6 @@ static BOOL kIOControl(__COMMON_OBJECT* lpThis,          //IOManager itself.
 	__DRIVER_OBJECT*  pDriver          = NULL;
 	__DRCB*           pDrcb            = NULL;
 	DWORD             dwRetValue       = 0;
-	DWORD             dwFlags;
  
 	if((NULL == lpThis) || (NULL == lpFileObject))  //Invalid parameters.
 	{
@@ -376,14 +372,12 @@ static BOOL kIOControl(__COMMON_OBJECT* lpThis,          //IOManager itself.
 	pDrcb->dwOutputLen     = dwOutputLen;
 	pDrcb->lpOutputBuffer  = lpOutputBuffer;
 	//Now issue the IOControl command to device.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 	if(pDevice->dwSignature != DEVICE_OBJECT_SIGNATURE)  //Validation failed.
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 		goto __TERMINAL;
 	}
 	pDriver = pDevice->lpDriverObject;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+
 	dwRetValue = pDriver->DeviceCtrl((__COMMON_OBJECT*)pDriver,
 		(__COMMON_OBJECT*)pDevice,
 		pDrcb);
@@ -432,7 +426,7 @@ static BOOL _CreateDirectory(__COMMON_OBJECT* lpThis,
 	//Get file system identifier.
 	FsIdentifier = FileName[0];
 	//Get the file system driver object.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -441,7 +435,7 @@ static BOOL _CreateDirectory(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	if(NULL == pFsObject)  //Can not allocate the specified file system object.
 	{
 		return FALSE;
@@ -515,7 +509,7 @@ static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
 
 	//Find the appropriate file system object.
 	FsIdentifier = TO_CAPITAL(lpszFileName[0]);
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -524,7 +518,7 @@ static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	if(NULL == pFileDriver)  //Can not find the appropriate file system.
 	{
 		goto __TERMINAL;
@@ -592,7 +586,7 @@ static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
 
 	//Find the appropriate file system object.
 	FsIdentifier = TO_CAPITAL(lpszFileName[0]);
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -601,7 +595,7 @@ static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	if(NULL == pFileDriver)  //Can not find the appropriate file system.
 	{
 		goto __TERMINAL;
@@ -664,7 +658,7 @@ static BOOL _FindClose(__COMMON_OBJECT* lpThis,
 
 	//Find the appropriate file system object.
 	FsIdentifier = TO_CAPITAL(lpszFileName[0]);
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -673,7 +667,7 @@ static BOOL _FindClose(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	if(NULL == pFileDriver)  //Can not find the appropriate file system.
 	{
 		goto __TERMINAL;
@@ -738,7 +732,7 @@ static DWORD _GetFileAttributes(__COMMON_OBJECT* lpThis,
 
 	//Find the appropriate file system object.
 	FsIdentifier = TO_CAPITAL(lpszFileName[0]);
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(pIoManager->FsArray[i].FileSystemIdentifier == FsIdentifier)
@@ -747,7 +741,7 @@ static DWORD _GetFileAttributes(__COMMON_OBJECT* lpThis,
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 	if(NULL == pFileDriver)  //Can not find the appropriate file system.
 	{
 		goto __TERMINAL;
@@ -991,7 +985,7 @@ __CONTINUE:
 	 * Add the device object into device object's global list,
 	 * can not be interrupted.
 	 */
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
 	if(NULL == lpIoManager->lpDeviceRoot)  //This is the first object.
 	{
 		lpIoManager->lpDeviceRoot = lpDevObject;
@@ -1003,7 +997,7 @@ __CONTINUE:
 		lpIoManager->lpDeviceRoot->lpPrev = lpDevObject;
 		lpIoManager->lpDeviceRoot         = lpDevObject;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
 
 	return lpDevObject;
 }
@@ -1027,7 +1021,7 @@ static VOID kDestroyDevice(__COMMON_OBJECT* lpThis,
 	//
 	//The following code deletes the device object from system list.
 	//
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
 	if(NULL == lpDeviceObject->lpPrev)    //This is the first object.
 	{
 		if(NULL == lpDeviceObject->lpNext)  //This is the last object.
@@ -1052,7 +1046,7 @@ static VOID kDestroyDevice(__COMMON_OBJECT* lpThis,
 			lpDeviceObject->lpNext->lpPrev = lpDeviceObject->lpPrev;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
 
 	//Clear the signature of this device object.
 	lpDeviceObject->dwSignature = 0;
@@ -1148,7 +1142,7 @@ static BOOL AddFileSystem(__COMMON_OBJECT* lpThis,
 		goto __TERMINAL;
 	}
 	//Seek the empty slot of file system array,if there is.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pMgr->spin_lock, dwFlags);
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
 		if(0 == pMgr->FsArray[i].FileSystemIdentifier)  //Empty slot.
@@ -1158,7 +1152,7 @@ static BOOL AddFileSystem(__COMMON_OBJECT* lpThis,
 	}
 	if(FILE_SYSTEM_NUM == i)  //No slot is free.
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pMgr->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 	//Calculate the file system identifier,if the maximal file system identifier
@@ -1185,7 +1179,7 @@ static BOOL AddFileSystem(__COMMON_OBJECT* lpThis,
 		k += 1;
 	}
 	pMgr->FsArray[i].VolumeLbl[k] = 0;   //Set terminator.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pMgr->spin_lock, dwFlags);
 	bResult = TRUE;
 
 __TERMINAL:
@@ -1223,6 +1217,9 @@ static BOOL ReserveResource(__COMMON_OBJECT*    lpThis,
  * any kernel level IO operations,are delegated by this object.
  */
 __IO_MANAGER IOManager = {
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,                   //spin_lock.
+#endif
 	NULL,                                   //lpDeviceRoot.
 	NULL,                                   //lpDriverRoot.
 	{0},                                    //FsArray.

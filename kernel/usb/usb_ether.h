@@ -31,6 +31,10 @@ struct ueth_data {
 	/* mii phy id */
 	int phy_id;
 
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+
 	/* Kernel thread for frame receiving and transmition. */
 	__KERNEL_THREAD_OBJECT* pRxThread;
 	__KERNEL_THREAD_OBJECT* pTxThread;

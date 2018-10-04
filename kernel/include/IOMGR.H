@@ -375,119 +375,151 @@ typedef struct{             //NEWLY ADDED.
 
 #define FS_CTRL_NUM 4       //How many file system controller,such as NTFS,FAT,etc.
 
-//BEGIN_DEFINE_OBJECT(__IO_MANAGER)
+/* 
+ * IO Manager object,all IO functions are offered by 
+ * this global object. 
+ */
 typedef struct tag__IO_MANAGER{
-    __DEVICE_OBJECT*               lpDeviceRoot;      //Pointes to device object's list.
-    __DRIVER_OBJECT*               lpDriverRoot;      //Pointes to driver object's list.
+	/* Lock to protect this object. */
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	/* Device object list. */
+    __DEVICE_OBJECT*               lpDeviceRoot;
+	/* Device driver object list. */
+    __DRIVER_OBJECT*               lpDriverRoot;
+	/* File system object. */
 	__FS_ARRAY_ELEMENT             FsArray[FILE_SYSTEM_NUM];
 	__COMMON_OBJECT*               FsCtrlArray[FS_CTRL_NUM];
-	volatile DWORD                 dwPartitionNumber; //Partition sequence number.
-	__RESOURCE_DESCRIPTOR*         lpResDescriptor;   //Pointes to resource descriptor's list.
+	/* Partition sequence number. */
+	volatile DWORD                 dwPartitionNumber;
+	/* Resource descriptor list. */
+	__RESOURCE_DESCRIPTOR*         lpResDescriptor;
 
-	BOOL                 (*Initialize)(__COMMON_OBJECT*    lpThis);  //Initialize routine.
+	/* Initialization routine. */
+	BOOL (*Initialize)(__COMMON_OBJECT* lpThis);
 
-	//
-	//Routines to manipulate file systems.
-	//
-	__COMMON_OBJECT*     (*CreateFile)(__COMMON_OBJECT*    lpThis,
-		                               LPSTR               lpszFileName,
-									   DWORD               dwAccessMode,
-									   DWORD               dwShareMode,
-									   LPVOID              lpReserved);  //CreateFile routine.
+	/* Routines to manipulate file systems. */
+	/* Create a new file,or open a existed file or device. */
+	__COMMON_OBJECT* (*CreateFile)(__COMMON_OBJECT* lpThis,
+		LPSTR lpszFileName,
+		DWORD dwAccessMode,
+		DWORD dwShareMode,
+		LPVOID lpReserved);
 
-	BOOL                 (*ReadFile)(__COMMON_OBJECT*   lpThis,
-		                             __COMMON_OBJECT*   lpFileObject,
-									 DWORD              dwByteSize,
-									 LPVOID             lpBuffer,
-									 DWORD*             lpReadSize);
+	/* Read data from file or device. */
+	BOOL (*ReadFile)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileObject,
+		DWORD dwByteSize,
+		LPVOID lpBuffer,
+		DWORD* lpReadSize);
 
-	BOOL                 (*WriteFile)(__COMMON_OBJECT*  lpThis,
-		                              __COMMON_OBJECT*  lpFileObject,
-									  DWORD             dwWriteSize,
-									  LPVOID            lpBuffer,
-									  DWORD*            lpWrittenSize);
+	/* Write data into file or device. */
+	BOOL (*WriteFile)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileObject,
+		DWORD dwWriteSize,
+		LPVOID lpBuffer,
+		DWORD* lpWrittenSize);
 
-	VOID                 (*CloseFile)(__COMMON_OBJECT*  lpThis,
-		                              __COMMON_OBJECT*  lpFileObject);
+	/* Close an opened file or device. */
+	VOID (*CloseFile)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileObject);
 
-	BOOL                 (*CreateDirectory)(__COMMON_OBJECT* lpThis,
-		                                    LPCTSTR lpszFileName,
-											LPVOID  lpReserved);
+	/* Create a directory under a file system. */
+	BOOL (*CreateDirectory)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName,
+		LPVOID  lpReserved);
 
-	BOOL                 (*DeleteFile)(__COMMON_OBJECT* lpThis,
-		                               LPCTSTR lpszFileName);
+	/* Delete a specified file. */
+	BOOL (*DeleteFile)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName);
 
-	BOOL                 (*FindClose)(__COMMON_OBJECT* lpThis,
-		                              LPCTSTR lpszFileName,
-		                              __COMMON_OBJECT* FindHandle);
+	/* Close a find transaction. */
+	BOOL (*FindClose)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName,
+		__COMMON_OBJECT* FindHandle);
 
-	__COMMON_OBJECT*     (*FindFirstFile)(__COMMON_OBJECT* lpThis,
-		                                  LPCTSTR lpszFileName,
-										  FS_FIND_DATA* pFindData);
+	/* Return the first file of a finding transaction. */
+	__COMMON_OBJECT* (*FindFirstFile)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName,
+		FS_FIND_DATA* pFindData);
 
-	BOOL                 (*FindNextFile)(__COMMON_OBJECT* lpThis,
-		                                 LPCTSTR lpszFileName,
-		                                 __COMMON_OBJECT* FindHandle,
-										 FS_FIND_DATA* pFindData);
+	/* Return the next file from current position in a finding transaction. */
+	BOOL (*FindNextFile)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName,
+		__COMMON_OBJECT* FindHandle,
+		FS_FIND_DATA* pFindData);
 
-	DWORD                (*GetFileAttributes)(__COMMON_OBJECT* lpThis,
-		                                      LPCTSTR lpszFileName);
+	/* Get a specified file's attributes. */
+	DWORD (*GetFileAttributes)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName);
 
-	DWORD                (*GetFileSize)(__COMMON_OBJECT* lpThis,
-		                                __COMMON_OBJECT* FileHandle,
-										DWORD* lpdwSizeHigh);
+	/* Return a specified file's size. */
+	DWORD (*GetFileSize)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* FileHandle,
+		DWORD* lpdwSizeHigh);
 
-	BOOL                 (*RemoveDirectory)(__COMMON_OBJECT* lpThis,
-		                                    LPCTSTR lpszFileName);
+	/* Remove a specified directory. */
+	BOOL (*RemoveDirectory)(__COMMON_OBJECT* lpThis,
+		LPCTSTR lpszFileName);
 
-	BOOL                 (*SetEndOfFile)(__COMMON_OBJECT* lpThis,
-		                                 __COMMON_OBJECT* FileHandle);
+	/* Set current position as file's end. */
+	BOOL (*SetEndOfFile)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* FileHandle);
 
-	BOOL                 (*IOControl)(__COMMON_OBJECT*  lpThis,
-		                              __COMMON_OBJECT*  lpFileObject,
-									  DWORD             dwCommand,
-									  DWORD             dwInputLen,
-									  LPVOID            lpInputBuffer,
-									  DWORD             dwOutputLen,
-									  LPVOID            lpOutputBuffer,
-									  DWORD*            lpdwOutFilled);
+	/* Device specific control routine. */
+	BOOL (*IOControl)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileObject,
+		DWORD dwCommand,
+		DWORD dwInputLen,
+		LPVOID lpInputBuffer,
+		DWORD dwOutputLen,
+		LPVOID lpOutputBuffer,
+		DWORD* lpdwOutFilled);
 
-	DWORD                 (*SetFilePointer)(__COMMON_OBJECT*  lpThis,
-		                                   __COMMON_OBJECT*  lpFileObject,
-										   DWORD*            pdwDistLow,
-										   DWORD*            pdwDistHigh,
-										   DWORD             dwWhereBegin);
+	/* Set current pointer's location in a specified file. */
+	DWORD (*SetFilePointer)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileObject,
+		DWORD* pdwDistLow,
+		DWORD* pdwDistHigh,
+		DWORD dwWhereBegin);
 
-	BOOL                 (*FlushFileBuffers)(__COMMON_OBJECT*  lpThis,
-		                                     __COMMON_OBJECT*  lpFileObject);
+	/* Flush file content into storage. */
+	BOOL (*FlushFileBuffers)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileObject);
 
-	//The following routines are used to manipulate device.
-	__DEVICE_OBJECT*     (*CreateDevice)(__COMMON_OBJECT*  lpThis,
-		                                 LPSTR             lpszDevName,
-										 DWORD             dwAttribute,
-										 DWORD             dwBlockSize,
-										 DWORD             dwMaxReadSize,
-										 DWORD             dwMaxWriteSize,
-										 LPVOID            lpDevExtension,
-										 __DRIVER_OBJECT*  lpDrvObject);
+	/* The following routines are used to manipulate device. */
+	/* Create a new device object. */
+	__DEVICE_OBJECT* (*CreateDevice)(__COMMON_OBJECT* lpThis,
+		LPSTR lpszDevName,
+		DWORD dwAttribute,
+		DWORD dwBlockSize,
+		DWORD dwMaxReadSize,
+		DWORD dwMaxWriteSize,
+		LPVOID lpDevExtension,
+		__DRIVER_OBJECT* lpDrvObject);
 
-	VOID                 (*DestroyDevice)(__COMMON_OBJECT* lpThis,
-		                                  __DEVICE_OBJECT* lpDevObj);
+	/* Destroy a device object. */
+	VOID (*DestroyDevice)(__COMMON_OBJECT* lpThis,
+		__DEVICE_OBJECT* lpDevObj);
 
-	BOOL                 (*ReserveResource)(__COMMON_OBJECT*  lpThis,
-		                                    __RESOURCE_DESCRIPTOR* lpResDesc);
+	/* Reserve resource for a device. */
+	BOOL (*ReserveResource)(__COMMON_OBJECT* lpThis,
+		__RESOURCE_DESCRIPTOR* lpResDesc);
 
-	BOOL                 (*LoadDriver)(__DRIVER_ENTRY DrvEntry);
+	/* Load a device driver by specifying it's entry point. */
+	BOOL (*LoadDriver)(__DRIVER_ENTRY DrvEntry);
 
-	//The following routines are used by file system driver.
-	BOOL                 (*AddFileSystem)(__COMMON_OBJECT* lpThis,
-		                                  __COMMON_OBJECT* lpFileSystem,
-										  DWORD            dwAttribute,
-										  CHAR*            pVolumeLbl);
-	BOOL                 (*RegisterFileSystem)(__COMMON_OBJECT* lpThis,
-		                                       __COMMON_OBJECT* lpFileSystem);
+	/* The following routines are used by file system driver. */
+	/* Add a new file system into IO Manager. */
+	BOOL (*AddFileSystem)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileSystem,
+		DWORD dwAttribute,
+		CHAR* pVolumeLbl);
+	/* Register a new file system object. */
+	BOOL (*RegisterFileSystem)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* lpFileSystem);
 }__IO_MANAGER;
-//END_DEFINE_OBJECT(__IO_MANAGER)    //End of __IO_MANAGER.
 
 //
 //The following macros are used by CreateFile.

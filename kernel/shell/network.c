@@ -917,11 +917,11 @@ static void testPPPoE(int times)
 }
 
 /* Default password and user name,to simplify testing. */
-//#define PPPOE_DEFAULT_USERNAME "053202039989"
-//#define PPPOE_DEFAULT_PASSWORD "60767168"
+#define PPPOE_DEFAULT_USERNAME "053202039989"
+#define PPPOE_DEFAULT_PASSWORD "60767168"
 
-#define PPPOE_DEFAULT_USERNAME "dl3111504b"
-#define PPPOE_DEFAULT_PASSWORD "123"
+//#define PPPOE_DEFAULT_USERNAME "dl3111504b"
+//#define PPPOE_DEFAULT_PASSWORD "123"
 
 static DWORD pppoe(__CMD_PARA_OBJ* lpCmdObj)
 {

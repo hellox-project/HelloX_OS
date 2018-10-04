@@ -385,7 +385,7 @@ __USB_ISO_DESCRIPTOR* usbCreateISODescriptor(__PHYSICAL_DEVICE* pPhyDev, int dir
 	//Insert the iTD to periodic list,and insert the ISOXfer descriptor into EHCI controller's
 	//list.
 	i = 0;
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 	while (slot_num)
 	{
 		pitd->lp_next = pEhciCtrl->periodic_list[i];
@@ -420,7 +420,7 @@ __USB_ISO_DESCRIPTOR* usbCreateISODescriptor(__PHYSICAL_DEVICE* pPhyDev, int dir
 		pEhciCtrl->pIsoDescLast->pNext = pIsoDesc;
 		pEhciCtrl->pIsoDescLast = pIsoDesc;
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 
 	//Restart the periodic schedule if already enabled.
 	if (pEhciCtrl->periodic_schedules > 0)
@@ -702,7 +702,7 @@ BOOL usbDestroyISODescriptor(__USB_ISO_DESCRIPTOR* pIsoDesc)
 	}
 	i = 0;
 
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 	while (slot_num)
 	{
 		pEhciCtrl->periodic_list[i] = pitd->lp_next;
@@ -745,7 +745,7 @@ BOOL usbDestroyISODescriptor(__USB_ISO_DESCRIPTOR* pIsoDesc)
 			pEhciCtrl->pIsoDescLast = NULL;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pEhciCtrl->spin_lock, dwFlags);
 
 	//Restart the periodic schedule if already enabled.
 	if (pEhciCtrl->periodic_schedules > 0)

@@ -484,6 +484,10 @@ struct ehci_ctrl {
 	struct ehci_ops ops;
 	void *priv;	/* client's private data */
 
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+
 	//Mutex object to guarantee the exclusively accessing.
 	HANDLE hMutex;
 

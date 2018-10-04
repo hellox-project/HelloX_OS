@@ -20,24 +20,59 @@
 #include "lwip/tcpip.h"
 #include "arch/cc.h"
 #include "arch/sys_arch.h"
+#include "lwipext.h"
 
-//Light protection mechanism used by lwIP,it's critical section actually
-//in HelloX.
+/* 
+ * Light protection mechanism used by lwIP,it's critical section actually
+ * in HelloX,use a global spin lock to synchronizes all critical sections
+ * in lwIP.
+ */
 sys_prot_t sys_arch_protect(void)
 {
-	DWORD  dwFlags;
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	return dwFlags;
+	unsigned long ulFlags;
+	__LWIP_EXTENSION* pExt = plwipProto->pProtoExtension;
+	BUG_ON(NULL == pExt);
+	__ENTER_CRITICAL_SECTION_SMP(pExt->spin_lock, ulFlags);
+	return ulFlags;
 }
 
 void sys_arch_unprotect(sys_prot_t val)
 {
-	__LEAVE_CRITICAL_SECTION(NULL,val);
+	__LWIP_EXTENSION* pExt = plwipProto->pProtoExtension;
+	BUG_ON(NULL == pExt);
+	__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, val);
 }
 
 //Create a new thread.
 sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg,int stacksize,int prio)
 {
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned int nAffinity = 0;
+
+	/* Create the new kernel thread and set it's status as SUSPENDED. */
+	pKernelThread = KernelThreadManager.CreateKernelThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		0,
+		KERNEL_THREAD_STATUS_SUSPENDED,
+		prio,
+		(__KERNEL_THREAD_ROUTINE)thread,  //Force convert to HelloX defined thread routine.
+		arg,
+		NULL,
+		(char*)name);
+	if (NULL == pKernelThread)
+	{
+		return NULL;
+	}
+#if defined(__CFG_SYS_SMP)
+	/* Get a CPU to schedule this new created thread to. */
+	nAffinity = ProcessorManager.GetScheduleCPU();
+#endif
+	KernelThreadManager.ChangeAffinity((__COMMON_OBJECT*)pKernelThread, nAffinity);
+	/* Resume the kernel thread to ready to run. */
+	KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+		(__COMMON_OBJECT*)pKernelThread);
+	return pKernelThread;
+#if 0
 	return KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -47,6 +82,7 @@ sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg
 		arg,
 		NULL,
 		(char*)name);
+#endif
 }
 
 //Check if mailbox is valid.

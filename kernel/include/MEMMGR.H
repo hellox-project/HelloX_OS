@@ -21,21 +21,13 @@
 #ifndef __MEMMGR_H__
 #define __MEMMGR_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//------------------------------------------------------------------------
-//
-//    The definition of Page Frame Manager.
-//
-//------------------------------------------------------------------------
+/* For __CFG_SYS_SMP. */
+#include "config.h"
 
 //
 //The definition of __PAGE_FRAME object.
 //This object is used to describe a page frame.
 //
-
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME)
     struct tag__PAGE_FRAME*         lpNextFrame;
     struct tag__PAGE_FRAME*         lpPrevFrame;
@@ -45,9 +37,8 @@ BEGIN_DEFINE_OBJECT(__PAGE_FRAME)
 END_DEFINE_OBJECT(__PAGE_FRAME)
 
 //
-//Constant definition.
+//Constants definition.
 //
-
 #define PAGE_FRAME_SIZE     4096              //One page frame's size,in current version,
                                               //this value is 4K.
 
@@ -56,35 +47,28 @@ END_DEFINE_OBJECT(__PAGE_FRAME)
 #define PAGE_FRAME_READWRITE      0x00000003
 #define PAGE_FRAME_EXECUTABLE     0x00000004
 
-
 #define PAGE_FRAME_BLOCK_SIZE_4K    1024*4
 #define PAGE_FRAME_BLOCK_SIZE_8K    1024*8
-
 #define PAGE_FRAME_BLOCK_SIZE_16K   1024*16
 #define PAGE_FRAME_BLOCK_SIZE_32K   1024*32
 #define PAGE_FRAME_BLOCK_SIZE_64K   1024*64
-
 #define PAGE_FRAME_BLOCK_SIZE_128K  1024*128
 #define PAGE_FRAME_BLOCK_SIZE_256K  1024*256
 #define PAGE_FRAME_BLOCK_SIZE_512K  1024*512
-
 #define PAGE_FRAME_BLOCK_SIZE_1024K 1024*1024
 #define PAGE_FRAME_BLOCK_SIZE_2048K 1024*2048
 #define PAGE_FRAME_BLOCK_SIZE_4096K 1024*4096
 #define PAGE_FRAME_BLOCK_SIZE_8192K 1024*8192
 
-
 #define PAGE_FRAME_BLOCK_NUM  12
 
-#define DEFAULT_PAGE_ALIGMENT 4096    //Aligment at 4k boundary.
-
-
+/* Aligment at 4k boundary. */
+#define DEFAULT_PAGE_ALIGMENT 4096
 
 //
 //The definition of Page Frame Block object.
 //This object is used to describe one page frame block.
 //
-
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME_BLOCK)
     __PAGE_FRAME*         lpNextBlock;
     __PAGE_FRAME*         lpPrevBlock;
@@ -100,6 +84,9 @@ BEGIN_DEFINE_OBJECT(__PAGE_FRAME_MANAGER)
 	DWORD                  dwTotalFrameNum;
 	DWORD                  dwFreeFrameNum;
 	LPVOID                 lpStartAddress;
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 
 	BOOL                   (*Initialize)(__COMMON_OBJECT*    lpThis,
 		                                 LPVOID              lpStartAddr,
@@ -125,10 +112,6 @@ END_DEFINE_OBJECT(__PAGE_FRAME_MANAGER)
 //
 #ifdef __CFG_SYS_VMM
 extern __PAGE_FRAME_MANAGER PageFrameManager;
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif  //__MEMMGR_H__

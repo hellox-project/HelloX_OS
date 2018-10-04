@@ -304,19 +304,15 @@ static BOOL ComSendByte2(UCHAR bt,WORD port,HANDLE hEvent)  //Send bt to port,
 {
 	DWORD nCount = 16;
 	DWORD dwResult = 0;
-	DWORD dwFlags;
 
 	ResetEvent(hEvent);  //Reset the event object.
 
-	//The following code is critical section code.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 __REPEAT:
 	while((nCount --) > 0)  //Try nCount times.
 	{
 		if(__inb(port + 5) & 32)  //Sending hold register is empty.
 		{
 			__outb(bt,port);  //Send out.
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 			return TRUE;
 		}
 	}
@@ -330,7 +326,6 @@ __REPEAT:
 		goto __REPEAT;  //Try again.
 	}
 	//Wait time out or other errors,give up.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	return FALSE;
 }
 
@@ -338,17 +333,14 @@ static BOOL ComRecvByte2(UCHAR* pbt,WORD port,HANDLE hEvent)
 {
 	DWORD nCount = 16;
 	DWORD dwResult = 0;
-	DWORD dwFlags;
 
 	ResetEvent(hEvent);
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
 __REPEAT:
 	while((nCount --) > 0)
 	{
 		if(__inb(port + 5) & 1)  //Receive register full.
 		{
 			*pbt = __inb(port);  //Read the byte.
-			__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 			return TRUE;
 		}
 	}
@@ -361,7 +353,6 @@ __REPEAT:
 		goto __REPEAT;  //Try to read again.
 	}
 	//If failed to wait,then give up.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
 	return FALSE;
 }
 

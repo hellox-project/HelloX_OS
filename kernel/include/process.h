@@ -89,6 +89,10 @@ VOID ProcessUninitialize(__COMMON_OBJECT* lpThis);
 BEGIN_DEFINE_OBJECT(__PROCESS_MANAGER)
     //Process object list,contains all process(es) in system.
 	__KOBJ_LIST_NODE ProcessList;
+#if defined(__CFG_SYS_SMP)
+	/* Spin lock to protect the process manager object. */
+	__SPIN_LOCK spin_lock;
+#endif
     
     //Create or destroy a process.
 	__PROCESS_OBJECT*                  (*CreateProcess)(

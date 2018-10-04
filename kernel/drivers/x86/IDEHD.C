@@ -100,10 +100,10 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 	pPe->dwStartSector += dwStartSector;  //Adjust the start sector to physical one.
 	//Partiton information is OK,now create the device object.
 	StrCpy(PARTITION_NAME_BASE,strDevName); //Form device name.
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (CHAR)IOManager.dwPartitionNumber;
 	IOManager.dwPartitionNumber += 1;
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	pDevObject = IOManager.CreateDevice(
 		(__COMMON_OBJECT*)&IOManager,
 		strDevName,
@@ -228,10 +228,10 @@ static int InitPartitions(int nHdNum,
 		//Create device object for this partition.
 		//strcpy(strDevName,PARTITION_NAME_BASE);  // -------- CAUTION !!! ---------
 		StrCpy(PARTITION_NAME_BASE,strDevName);
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (BYTE)IOManager.dwPartitionNumber;
 		IOManager.dwPartitionNumber += 1;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		nPartNum ++;  //Increment the partition number.
 		pDevObject = IOManager.CreateDevice(
 			(__COMMON_OBJECT*)&IOManager,
@@ -288,11 +288,11 @@ static DWORD DeviceRead(__COMMON_OBJECT* lpDrv,
 	{
 		goto __TERMINAL;
 	}
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	//Check if current position is in device end.
 	if(pPe->dwCurrPos == pPe->dwSectorNum)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
 	dwResult = lpDrcb->dwOutputLen / pDevice->dwBlockSize;
@@ -304,7 +304,7 @@ static DWORD DeviceRead(__COMMON_OBJECT* lpDrv,
 	}
 	dwStart = pPe->dwCurrPos + pPe->dwStartSector;     //Read start this position,in sector number.
 	pPe->dwCurrPos += dwResult;  //Adjust current pointer.
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	//Now issue read command to read data from device.
 	if(!ReadSector(0,dwStart,dwResult,(BYTE*)lpDrcb->lpOutputBuffer))  //Can not read data.
 	{
@@ -350,24 +350,24 @@ static DWORD __CtrlSectorRead(__COMMON_OBJECT* lpDrv,
 	 * Get the start sector number of the HD,and how many 
 	 * sector(s) is(are) requested.
 	 */
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	pPe = (__PARTITION_EXTENSION*)pDevice->lpDevExtension;
 	dwStartSector = *(DWORD*)(lpDrcb->lpInputBuffer);  //Input buffer stores the start pos.
 	if(lpDrcb->dwOutputLen % pDevice->dwBlockSize)     //Always integral block size times is valid.
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		return 0;
 	}
 	dwSectorNum = lpDrcb->dwOutputLen / pDevice->dwBlockSize;
 	/* Check if the requested data exceed the device boundry. */
 	if((dwStartSector + dwSectorNum) > pPe->dwSectorNum)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		return 0;
 	}
 	dwStartSector += pPe->dwStartSector;
 	nDiskNum       = pPe->nDiskNum;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	/* Issue reading command in batch. */
 #if 0
 	for(i = 0;i < dwSectorNum;i ++)
@@ -403,24 +403,24 @@ static DWORD __CtrlSectorWrite(__COMMON_OBJECT* lpDrv,
 	psii = (__SECTOR_INPUT_INFO*)lpDrcb->lpInputBuffer;
 
 	//Get start sector and sector number to write.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	pPe = (__PARTITION_EXTENSION*)pDevice->lpDevExtension;
 	/* Required data size must be aligned with block size. */
 	if(psii->dwBufferLen % pDevice->dwBlockSize)
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		return 0;
 	}
 	dwSectorNum = psii->dwBufferLen / pDevice->dwBlockSize;
 	/* Check if the writing data exceed the device boundry. */
 	if((psii->dwStartSector + dwSectorNum) > (pPe->dwStartSector + pPe->dwSectorNum))
 	{
-		__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		return 0;
 	}
 	dwStartSector = psii->dwStartSector + pPe->dwStartSector;
 	nDiskNum = pPe->nDiskNum;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 
 	/* 
 	 * Issue the writting command to device. The WriteSector is 

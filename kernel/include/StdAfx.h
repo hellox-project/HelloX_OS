@@ -28,7 +28,7 @@
 
 //Include configuration headers in advance any of other headers.
 #ifndef __CONFIG_H__
-#include "../config/config.h"
+#include "config.h"
 #endif
 
 
@@ -45,7 +45,7 @@
 #endif
 
 #ifndef __STRING__
-#include "../lib/string.h"    //Different folder.
+#include "string.h"
 #endif
 
 #ifndef __PERF_H__

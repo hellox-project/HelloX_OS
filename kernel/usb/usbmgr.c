@@ -99,10 +99,7 @@ static BOOL UsbMgrInit(__USB_MANAGER* pUsbMgr)
 {
 	int i = 0;
 
-	if (NULL == pUsbMgr)
-	{
-		BUG();
-	}
+	BUG_ON(NULL == pUsbMgr);
 
 	//Assign global arrays to USB Manager.
 	for (i = 0; i < USB_MAX_DEVICE; i++)
@@ -110,6 +107,9 @@ static BOOL UsbMgrInit(__USB_MANAGER* pUsbMgr)
 		pUsbMgr->UsbDevArray[i] = &usb_dev[i];
 	}
 	pUsbMgr->dev_index = 0;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pUsbMgr->spin_lock, "usbmgr");
+#endif
 
 	//Create the background service kernel thread.
 	pUsbMgr->UsbCoreThread = KernelThreadManager.CreateKernelThread(
@@ -493,11 +493,11 @@ static BOOL _ParseInterfaceAssoc(struct usb_device* pDevice)
 		pPhysicalDevice->strName[j] = 0;
 
 		//Now add the physical device into USB Manager's global list.
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		__ENTER_CRITICAL_SECTION_SMP(USBManager.spin_lock, dwFlags);
 		pPhysicalDevice->lpNext = USBManager.pUsbDeviceRoot;
 		USBManager.pUsbDeviceRoot = pPhysicalDevice;
 		USBManager.nPhysicalDevNum++;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(USBManager.spin_lock, dwFlags);
 		debug("%s: Add one USB physical device [name = %s] into system.\r\n", __func__,
 			pPhysicalDevice->strName);
 	}
@@ -632,11 +632,11 @@ static BOOL _ParseInterface(struct usb_device* pDevice)
 		}
 
 		//Now add the physical device into USB Manager's global list.
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		__ENTER_CRITICAL_SECTION_SMP(USBManager.spin_lock, dwFlags);
 		pPhysicalDevice->lpNext = USBManager.pUsbDeviceRoot;
 		USBManager.pUsbDeviceRoot = pPhysicalDevice;
 		USBManager.nPhysicalDevNum++;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(USBManager.spin_lock, dwFlags);
 		debug("%s: Add one USB physical device [name = %s] into system.\r\n", __func__,
 			pPhysicalDevice->strName);
 		bResult = TRUE;
@@ -883,6 +883,9 @@ __USB_MANAGER USBManager = {
 	{ 0 },    //UsbDevArray.
 	0,        //dev_index.
 	0,        //nPhysicalDevNum.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE, //spin_lock.
+#endif
 	NULL,     //pUsbDeviceRoot.
 	NULL,     //UsbCoreThread.
 

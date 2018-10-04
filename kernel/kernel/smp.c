@@ -28,7 +28,8 @@ static BOOL Initialize(__PROCESSOR_MANAGER* pMgr)
 {
 	BUG_ON(NULL == pMgr);
 	pMgr->pDomainList = NULL;
-	__INIT_SPIN_LOCK(pMgr->spin_lock);
+	__INIT_SPIN_LOCK(pMgr->spin_lock,NULL);
+	pMgr->bspProcessorID = __CURRENT_PROCESSOR_ID;
 	return TRUE;
 }
 
@@ -437,6 +438,38 @@ static int GetProcessorNum()
 	return ProcessorManager.nProcessorNum;
 }
 
+/* Get a CPU id that new created kernel thread will be put on. */
+static unsigned int GetScheduleCPU()
+{
+	static unsigned int cpuRound = 0;
+	unsigned int processorID = 0;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+	__PROCESSOR_NODE* pLogicalCPU = NULL;
+	unsigned long ulFlags;
+
+	__ENTER_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+	while (TRUE)
+	{
+		cpuRound++;
+		processorID = cpuRound % ProcessorManager.nProcessorNum;
+		/* Skip all halted CPU,by checking processor speicific data. */
+		pLogicalCPU = __GetProcessorNode_LogicalCPU(0,
+			__GetChipID(processorID),
+			__GetCoreID(processorID),
+			__GetLogicalCPUID(processorID));
+		BUG_ON(NULL == pLogicalCPU);
+		pSpec = pLogicalCPU->pLevelSpecificPtr;
+		BUG_ON(NULL == pSpec);
+		if (CPU_STATUS_NORMAL == pSpec->cpuStatus)
+		{
+			break;
+		}
+	}
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, ulFlags);
+
+	return processorID;
+}
+
 /* Show out all CPU informatin. */
 static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 {
@@ -444,11 +477,14 @@ static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 	__PROCESSOR_NODE* pChipNode = NULL;
 	__PROCESSOR_NODE* pCoreNode = NULL;
 	__PROCESSOR_NODE* pLogicalCPUNode = NULL;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
 
 	BUG_ON(NULL == pMgr);
 	__READ_BARRIER();
 	pDomainNode = pMgr->pDomainList;
-	_hx_printf("  %d processor(s) in system.\r\n", ProcessorManager.GetProcessorNum());
+	_hx_printf("  %d processors in system,run at [%u] Hz.\r\n", 
+		ProcessorManager.GetProcessorNum(),
+		(uint32_t)__GetCPUFrequency());
 	_hx_printf("  Processor topology as:\r\n");
 	while (pDomainNode)
 	{
@@ -464,7 +500,10 @@ static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 				pLogicalCPUNode = pCoreNode->pChildHead;
 				while (pLogicalCPUNode)
 				{
-					_hx_printf("          logical CPU:%d\r\n", pLogicalCPUNode->nodeID);
+					pSpec = pLogicalCPUNode->pLevelSpecificPtr;
+					_hx_printf("          logical CPU:%d,status:%d\r\n", 
+						pLogicalCPUNode->nodeID,
+						pSpec->cpuStatus);
 					pLogicalCPUNode = pLogicalCPUNode->pNext;
 				}
 				pCoreNode = pCoreNode->pNext;
@@ -475,11 +514,24 @@ static VOID ShowCPU(__PROCESSOR_MANAGER* pMgr)
 	}
 }
 
+/* Return current processor's specific information. */
+static void* GetCurrentProcessorSpecific()
+{
+	unsigned int processorID = __CURRENT_PROCESSOR_ID;
+	return GetLogicalCPUSpecific(
+		0,
+		__GetChipID(processorID),
+		__GetCoreID(processorID),
+		__GetLogicalCPUID(processorID)
+	);
+}
+
 /* The global Processor Manager object. */
 __PROCESSOR_MANAGER ProcessorManager = {
 	NULL, /* Domain list header. */
 	SPIN_LOCK_INIT_VALUE, /* spin_lock. */
 	0, /* nProcessorNum. */
+	0, /* bspProcessorID. */
 
 	Initialize, /* Initializer. */
 	AddProcessor, /* AddProcessor routine. */
@@ -488,7 +540,9 @@ __PROCESSOR_MANAGER ProcessorManager = {
 	SetLogicalCPUSpecific, /* SetLogicalCPUSpecific routine. */
 	GetLogicalCPUSpecific, /* GetLogicalCPUSpecific routine. */
 	GetCurrentProcessorID, /* GetCurrentProcessorID routine. */
+	GetCurrentProcessorSpecific, /* GetCurrentProcessorSpecific routine. */
 	GetProcessorNum, /* GetProcessorNum routine. */
+	GetScheduleCPU, /* GetScheduleCPU routine. */
 	ShowCPU /* ShowCPU routine. */
 };
 

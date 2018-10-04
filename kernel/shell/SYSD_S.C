@@ -31,10 +31,8 @@
 //
 static DWORD CommandParser(LPSTR);
 static DWORD memcheck(__CMD_PARA_OBJ*);
-static DWORD cintperf(__CMD_PARA_OBJ*);
 static DWORD _exit(__CMD_PARA_OBJ*);
 static DWORD help(__CMD_PARA_OBJ*);
-static DWORD beep(__CMD_PARA_OBJ*);
 static DWORD overload(__CMD_PARA_OBJ*);
 static DWORD pcilist(__CMD_PARA_OBJ*);
 static DWORD devinfo(__CMD_PARA_OBJ*);
@@ -60,9 +58,7 @@ static struct __SHELL_CMD_MAP{
 	LPSTR                lpszHelpInfo;
 }SysDiagCmdMap[] = {
 	{"memcheck",          memcheck,         "  memcheck             : Check the consistant of the physical memory."},
-	{"beep",              beep,             "  beep                 : Beep a while to test the sound system."},
 	{"overload",          overload,         "  overload             : Set a overload event to test the cint performance."},
-	{"cintperf",          cintperf,         "  cintperf             : Print out the last system clock interrupt's CPU clock."},
 	{"pcilist",           pcilist,          "  pcilist              : List all PCI device(s) of the system."},
 	{"devinfo",           devinfo,          "  devinfo              : Print out information about a PCI device."},
 	{"cpuload",           cpuload,          "  cpuload              : Display CPU statistics information."},
@@ -200,29 +196,6 @@ static DWORD help(__CMD_PARA_OBJ* lpCmdObj)
 }
 
 //
-//The cintperf command's handler.
-//
-static DWORD cintperf(__CMD_PARA_OBJ* lpCmdObj)
-{
-	CHAR              strBuffer[18];
-	DWORD             dwFlags;
-	__PERF_RECORDER   Pr;
-
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
-	Pr = TimerIntPr;
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
-
-	u64Hex2Str(&Pr.u64Result,strBuffer);
-	PrintLine("Last clock circle counter : ");
-	PrintLine(strBuffer);
-	u64Hex2Str(&Pr.u64Max,strBuffer);
-	PrintLine("Max clock circle counter : ");
-	PrintLine(strBuffer);
-
-	return SHELL_CMD_PARSER_SUCCESS;
-}
-
-//
 //The overload command's handler.
 //
 static DWORD overload(__CMD_PARA_OBJ* lpCmdObj)
@@ -261,74 +234,6 @@ static DWORD overload(__CMD_PARA_OBJ* lpCmdObj)
 		dwTimerNum --;
 	}
 
-	return SHELL_CMD_PARSER_SUCCESS;
-}
-
-//
-//The beep command's handler.
-//
-static DWORD beep(__CMD_PARA_OBJ* lpCmdObj)
-{
-	__KERNEL_THREAD_MESSAGE       Msg;
-	DWORD                         dwTimerID      = 00100000;
-	DWORD                         dwTimeSpan     = 0;
-	__COMMON_OBJECT*              lpTimerObject  = NULL;
-	UCHAR                         ucCtrlByte;
-
-	if((NULL == lpCmdObj) || (lpCmdObj->byParameterNum < 2))  //Parameter check.
-	{
-		PrintLine("  Please input the beep time,in millionsecond.");
-		return SHELL_CMD_PARSER_INVALID;
-	}
-
-	if(!Str2Hex(lpCmdObj->Parameter[1],&dwTimeSpan))  //Get the time span to beep.
-	{
-		PrintLine("  Invalid time parameter.");
-		return SHELL_CMD_PARSER_INVALID;
-	}
-
-	//
-	//Now,the variable dwTimeSpan countains the time to beep.
-	//
-	lpTimerObject = System.SetTimer((__COMMON_OBJECT*)&System,
-		__CURRENT_KERNEL_THREAD,
-		dwTimerID,
-		dwTimeSpan,
-		NULL,
-		NULL,
-		TIMER_FLAGS_ONCE);
-	if(NULL == lpTimerObject)    //Failed to set timer.
-	{
-		PrintLine("  Can not set timer,please try again.");
-		return SHELL_CMD_PARSER_FAILED;
-	}
-
-	//
-	//Begin to beep.
-	//
-	//ReadByteFromPort(&ucCtrlByte,0x61);
-	ucCtrlByte = __inb(0x61);
-	ucCtrlByte |= 0x03;
-	//WriteByteToPort(ucCtrlByte,0x61);
-	__outb(ucCtrlByte,0x61);
-	
-	while(TRUE)
-	{
-		if(KernelThreadManager.GetMessage((__COMMON_OBJECT*)__CURRENT_KERNEL_THREAD,&Msg))
-		{
-			if((Msg.wCommand == KERNEL_MESSAGE_TIMER) &&   //Beep time is over.
-			   (Msg.dwParam  == dwTimerID))
-			{
-				ucCtrlByte &= ~0x03;
-				//WriteByteToPort(ucCtrlByte,0x61);  //Stop the beep.
-				__outb(ucCtrlByte,0x61);
-				PrintLine("  Beep over");
-				goto __TERMINAL;
-			}
-		}
-	}
-
-__TERMINAL:
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

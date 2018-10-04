@@ -33,13 +33,13 @@ INT_HANDLER SetGeneralIntHandler(__GENERAL_INTERRUPT_HANDLER TimerHandler)
 	"popl	%%ecx							\n\t"
 	"popl	%%ebx							\n\t"
 	:
-	:"i"(__TIMERHANDLER_BASE), "r"(TimerHandler)
+	:"i"(__GENERAL_INT_HANDLER_BASE), "r"(TimerHandler)
 	);
 #else
 	__asm{
 		push ebx
 		push ecx
-		mov ebx,__TIMERHANDLER_BASE
+		mov ebx,__GENERAL_INT_HANDLER_BASE
 		mov eax,TimerHandler
 		mov ecx,dword ptr [ebx]
 		mov dword ptr [ebx],eax
@@ -414,34 +414,46 @@ VOID ErrorHandler(DWORD dwLevel,DWORD dwReason,LPSTR lpszMsg)
 	}
 }
 
-//
-//The following routine prints out bug's information.
-//
+/* Show out bug information. */
 VOID __BUG(LPSTR lpszFileName,DWORD dwLineNum)
 {
 	DWORD   dwFlags;
+	unsigned int processor_id = __CURRENT_PROCESSOR_ID;
+	__KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
 	
-	//Print out fatal error information.
-	_hx_printf("\r\nBUG oencountered.\r\n");
-	_hx_printf("File name : %s\r\nCode Lines : %d\r\n",lpszFileName,dwLineNum);
-	if (IN_INTERRUPT())  //In interrupt context.
+	/* Show general bug info. */
+	_hx_printk("\r\nBUG encountered[curr_processor = %d].\r\n",processor_id);
+	_hx_printk("File name : %s\r\nCode Lines : %d\r\n",lpszFileName,dwLineNum);
+	/* Show out specific information according current execution context. */
+	if (IN_INTERRUPT())
 	{
+		/* Show interrupt related information. */
+		_hx_printk("In interrupt context,vector:%d.\r\n", System.ucCurrInt[processor_id]);
+		/* Show out interrupted kernel thread information. */
+		if (pKernelThread)
+		{
+			_hx_printk("Interrupted kernel thread:%s\r\n", pKernelThread->KernelThreadName);
+		}
 	}
-	else if (IN_SYSINITIALIZATION())  //In process of system initialization.
+	else if (IN_SYSINITIALIZATION())
 	{
+		/* In process of system initialization. */
+		_hx_printf("In process of system initialization.\r\n");
 	}
-	else  //In thread context.
+	else
 	{
+		/* In normal thread context. */
 		_hx_printf("Current kthread: %s\r\n",
 			__CURRENT_KERNEL_THREAD->KernelThreadName);
 	}
-	//Enter infinite loop.
-	__ENTER_CRITICAL_SECTION(NULL,dwFlags);
+	/* Current CPU dive into a halt state. */
+	__DISABLE_LOCAL_INTERRUPT(dwFlags);
 	while (TRUE)
 	{
-		HaltSystem(); /* Enter halt state to save energy. */
+		/* Enter halt state to save energy. */
+		HaltSystem();
 	}
-	__LEAVE_CRITICAL_SECTION(NULL,dwFlags);
+	__RESTORE_LOCAL_INTERRUPT(dwFlags);
 }
 
 /* Print logging header information,such as date,time,level... */

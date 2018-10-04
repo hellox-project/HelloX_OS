@@ -734,16 +734,13 @@ int _hx_printk(const char* fmt, ...)
 	WORD wr = 0x0700;
 	unsigned long ulFlags = 0;
 
+	__ENTER_CRITICAL_SECTION_SMP(sl_printk, ulFlags);
+
 	va_start(args, fmt);
 	n = _hx_vsprintf(buff, fmt, args);
 	va_end(args);
 
 	/* Show out the formated string buffer. */
-#if defined(__CFG_SYS_SMP)
-	__ENTER_CRITICAL_SECTION_SMP(sl_printk, ulFlags);
-#else
-	__ENTER_CRITICAL_SECTION(NULL, ulFlags);
-#endif
 	while (buff[i])
 	{
 		if ('\n' == buff[i])
@@ -772,11 +769,8 @@ int _hx_printk(const char* fmt, ...)
 		wr -= buff[i];
 		i++;
 	}
-#if defined(__CFG_SYS_SMP)
+
 	__LEAVE_CRITICAL_SECTION_SMP(sl_printk, ulFlags);
-#else
-	__LEAVE_CRITICAL_SECTION(NULL, ulFlags);
-#endif
 
 	return 0;
 }

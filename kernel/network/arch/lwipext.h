@@ -16,6 +16,8 @@
 #ifndef __LWIPEXT_H__
 #define __LWIPEXT_H__
 
+#include <config.h>
+#include <TYPES.H>
 #include "proto.h"  /* for __NETWORK_PROTOCOL object. */
 
 /* 
@@ -33,6 +35,10 @@ typedef struct tag__LWIP_EXTENSION{
 	__INCOME_IP_PACKET* pIncomePktFirst;
 	__INCOME_IP_PACKET* pIncomePktLast;
 	volatile int nIncomePktSize;
+	/* Global lock to protect the whole protocal intance. */
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 }__LWIP_EXTENSION;
 
 /* Global lwIP protocol object. */

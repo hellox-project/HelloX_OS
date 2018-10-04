@@ -35,7 +35,6 @@ static void __Log(__DEBUG_MANAGER *pThis, char *tag, char *msg)
 	__DEBUG_MANAGER			*pDebugManager		= pThis;
 	__LOG_MESSAGE			*pMsg				= NULL;
 	__KERNEL_THREAD_OBJECT	*lpCurrentThread	= NULL;
-	int						dwFlags				= 0;
 	int						Result				= -1;
 
 	pMsg = (__LOG_MESSAGE *)KMemAlloc(sizeof(__LOG_MESSAGE),KMEM_SIZE_TYPE_ANY);
@@ -53,12 +52,9 @@ static void __Log(__DEBUG_MANAGER *pThis, char *tag, char *msg)
 	//*****XXX*******
 	// FIXME
 	//
-
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 	lpCurrentThread = __CURRENT_KERNEL_THREAD;
 	StrCpy(lpCurrentThread->KernelThreadName,pMsg->name);
 	pMsg->tid = lpCurrentThread->dwThreadID;
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 
 	StrCpy(msg, pMsg->msg);
 	StrCpy(tag, pMsg->tag);
@@ -136,9 +132,7 @@ static void __Logk(__DEBUG_MANAGER *pThis, char *tag, char *msg)
 	__DEBUG_MANAGER			*pDebugManager		= pThis;
 	__LOG_MESSAGE			*pMsg				= NULL;
 	__KERNEL_THREAD_OBJECT	*lpCurrentThread	= NULL;
-
 	int						Result				= -1;
-	int						dwFlags				= 0;
 
 	pMsg = (__LOG_MESSAGE *)KMemAlloc(sizeof(__LOG_MESSAGE),KMEM_SIZE_TYPE_ANY);
 
@@ -155,11 +149,9 @@ static void __Logk(__DEBUG_MANAGER *pThis, char *tag, char *msg)
 	//*****XXX*******
 	// FIXME
 	//
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
 	lpCurrentThread = __CURRENT_KERNEL_THREAD;
 	StrCpy(lpCurrentThread->KernelThreadName,pMsg->name);
 	pMsg->tid = lpCurrentThread->dwThreadID;
-	__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
 
 	StrCpy(msg, pMsg->msg);
 	StrCpy(tag, pMsg->tag);

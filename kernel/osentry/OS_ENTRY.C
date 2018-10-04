@@ -541,22 +541,97 @@ __TERMINAL:
  * the essential kernel threads such as idle,then start scheduling.
  * It's function is much less than the BSP's corresponding one.
  */
+extern BOOL __BeginAPInitialize();
 static void __OS_Entry_AP()
 {
 	int cpuID = __CURRENT_PROCESSOR_ID;
+	unsigned long ulFlags = 0;
+	unsigned long counter = 0;
+	__KERNEL_THREAD_OBJECT* lpIdleThread = NULL;
+	void* ptr = NULL;
 
 	/* Show a banner. */
-	_hx_printk("Start processor[%d] now...\r\n", cpuID);
+	_hx_printk("Start processor[%d] and intialize it...\r\n", cpuID);
 
-	/* Initialize page table registers if necessary. */
+#if defined(__CFG_SYS_VMM)
+	/* Enable paging mechanism. */
+	EnableVMM();
+#endif
+
+	/* Initialize AP related hardware. */
+	if (!__BeginAPInitialize())
+	{
+		_hx_printk("Failed to initialize AP[%d]'s hardware.\r\n",
+			__CURRENT_PROCESSOR_ID);
+		goto __TERMINAL;
+	}
 
 	/* Create idle thread for the current CPU. */
+	char idleName[16];
+	_hx_sprintf(idleName, "idle[%d]", __CURRENT_PROCESSOR_ID);
+	lpIdleThread = KernelThreadManager.CreateKernelThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		0,
+		KERNEL_THREAD_STATUS_READY,
+		PRIORITY_LEVEL_LOWEST,
+		SystemIdle,
+		NULL,
+		NULL,
+		&idleName[0]);
+	if (NULL == lpIdleThread)
+	{
+		_hx_printk("Can not create SystemIdle kernel thread on CPU[%d].",
+			__CURRENT_PROCESSOR_ID);
+		goto __TERMINAL;
+	}
+	/* Disable suspend on this kernel thread,since it may lead system crash. */
+	KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
+		(__COMMON_OBJECT*)lpIdleThread,
+		FALSE);
 
-	/* Start to schedule kernel thread. */
+#if 0
+	/* Just stop for debugging. */
+	__asm {
+		sti
+	}
+	while (TRUE)
+	{
+		if (0 == counter % 500)
+		{
+			_hx_printk("Current processor[%d] is running,loop_counter = [%d]\r\n",
+				cpuID, counter);
+		}
+		__asm {
+			hlt
+		}
+		counter++;
+		/* Test memory functions. */
+		ptr = _hx_aligned_malloc(4096, 64);
+		if (ptr)
+		{
+			_hx_free(ptr);
+			ptr = NULL;
+		}
+	}
+#endif
+
+	/* 
+	 * Start to schedule kernel thread,in normal case it should not 
+	 * return from StartScheduling since the execution context will
+	 * switch to kernel threads.
+	 * It means fatal error if return from it,just goto __TERMINAL
+	 * to enter halt state.
+	 */
 	KernelThreadManager.StartScheduling();
 
-	/* Should never reach here. */
-	BUG();
+	/* Any falt or error will jump here to halt. */
+__TERMINAL:
+	__DISABLE_LOCAL_INTERRUPT(ulFlags);
+	_hx_printk("Failed to initialize AP[%d].\r\n", __CURRENT_PROCESSOR_ID);
+	while (TRUE)
+	{
+		HaltSystem();
+	}
 }
 #endif
 
@@ -580,7 +655,7 @@ void __OS_Entry()
 		__OS_Entry_AP();
 	}
 #else
-	/* Just call the BSP's entry routine if there is no more CPU. */
+	/* Just call the BSP's entry routine if SMP is not enabled. */
 	__OS_Entry_BSP();
 #endif //__CFG_SYS_SMP.
 }

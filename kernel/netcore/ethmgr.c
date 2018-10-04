@@ -402,19 +402,19 @@ static BOOL _PostFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pBuffer
 
 	//Link the ethernet buffer object to list,and send a message to ethernet core
 	//thread if is the fist buffer object.
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 	if (NULL == EthernetManager.pBufferFirst)
 	{
 		if (NULL != EthernetManager.pBufferLast)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			BUG();
 		}
 		//Link the buffer object to list before send POSTFRAME message.
 		EthernetManager.pBufferFirst = pBuffer;
 		EthernetManager.pBufferLast = pBuffer;
 		EthernetManager.nBuffListSize += 1;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 
 		//Then send the post frame message to ethernet core thread,make it noticed to
 		//process the incoming packet.
@@ -424,11 +424,11 @@ static BOOL _PostFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pBuffer
 		msg.dwParam = (DWORD)pBuffer;
 		if (!SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg))
 		{
-			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			__ENTER_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			EthernetManager.pBufferFirst = NULL;
 			EthernetManager.pBufferLast = NULL;
 			EthernetManager.nBuffListSize -= 1;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			return FALSE;
 		}
 	}
@@ -436,19 +436,19 @@ static BOOL _PostFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pBuffer
 	{
 		if (NULL == EthernetManager.pBufferLast)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			BUG();
 		}
 		//Exceed the maximal buffer list size.
 		if (EthernetManager.nBuffListSize > MAX_ETH_RXBUFFLISTSZ)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			return FALSE;
 		}
 		EthernetManager.pBufferLast->pNext = pBuffer;
 		EthernetManager.pBufferLast = pBuffer;
 		EthernetManager.nBuffListSize += 1;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 	}
 	return TRUE;
 }
@@ -515,16 +515,16 @@ static BOOL _PostFrameHandler()
 	while (TRUE)
 	{
 		//Get one ethernet buffer from list.
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		__ENTER_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 		if (NULL == EthernetManager.pBufferFirst)  //No frame pending.
 		{
 			if (EthernetManager.pBufferLast)  //Double check.
 			{
-				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+				__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 				BUG();
 				return FALSE;
 			}
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			return FALSE;
 		}
 		bShouldReturn = FALSE;
@@ -548,7 +548,7 @@ static BOOL _PostFrameHandler()
 		{
 			BUG();
 		}
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 
 		//Update interface statistics.
 		//pEthInt = pBuffer->pEthernetInterface;
@@ -621,16 +621,16 @@ static BOOL __BroadcastHandler()
 
 	while (TRUE)
 	{
-		__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+		__ENTER_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 		if (NULL == EthernetManager.pBroadcastFirst)  //No frame pending.
 		{
 			if (EthernetManager.pBroadcastLast)  //Check again.
 			{
-				__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+				__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 				BUG();
 				return FALSE;
 			}
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			return FALSE;
 		}
 		/*
@@ -644,7 +644,7 @@ static BOOL __BroadcastHandler()
 		}
 		EthernetManager.nBroadcastSize -= 1;
 		BUG_ON(EthernetManager.nBroadcastSize < 0);
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 
 		//pRecvInt = pBuffer->pEthernetInterface;
 		pRecvInt = pBuffer->pInInterface;
@@ -859,6 +859,11 @@ static BOOL Initialize(struct __ETHERNET_MANAGER* pManager)
 	{
 		return FALSE;
 	}
+
+	/* Init spin lock. */
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pManager->spin_lock,"ethmgr");
+#endif
 
 	//Create the ethernet core thread.
 	EthernetManager.EthernetCoreThread = KernelThreadManager.CreateKernelThread(
@@ -1581,19 +1586,19 @@ static BOOL __BroadcastEthernetFrame(__ETHERNET_BUFFER* pBuffer)
 	*/
 	pBuffer->pNext = NULL;
 
-	__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 	if (NULL == EthernetManager.pBroadcastFirst) /* No thread frame in list yet. */
 	{
 		if (NULL != EthernetManager.pBroadcastLast)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			BUG();
 		}
 		//Link the buffer object to list before send POSTFRAME message.
 		EthernetManager.pBroadcastFirst = pBuffer;
 		EthernetManager.pBroadcastLast = pBuffer;
 		EthernetManager.nBroadcastSize += 1;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 
 		//Then send the post frame message to ethernet core thread,make it noticed to
 		//process the incoming packet.
@@ -1603,12 +1608,12 @@ static BOOL __BroadcastEthernetFrame(__ETHERNET_BUFFER* pBuffer)
 		msg.dwParam = (DWORD)pBuffer;
 		if (!SendMessage((HANDLE)EthernetManager.EthernetCoreThread, &msg))
 		{
-			__ENTER_CRITICAL_SECTION(NULL, dwFlags);
+			__ENTER_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			EthernetManager.pBroadcastFirst = NULL;
 			EthernetManager.pBroadcastLast = NULL;
 			EthernetManager.nBroadcastSize -= 1;
 			EthernetManager.nDropedBcastSize += 1;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			return FALSE;
 		}
 	}
@@ -1616,20 +1621,20 @@ static BOOL __BroadcastEthernetFrame(__ETHERNET_BUFFER* pBuffer)
 	{
 		if (NULL == EthernetManager.pBroadcastLast)
 		{
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			BUG();
 		}
 		//Exceed the maximal buffer list size.
 		if (EthernetManager.nBroadcastSize > MAX_ETH_BCASTQUEUESZ)
 		{
 			EthernetManager.nDropedBcastSize += 1;
-			__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 			return FALSE;
 		}
 		EthernetManager.pBroadcastLast->pNext = pBuffer;
 		EthernetManager.pBroadcastLast = pBuffer;
 		EthernetManager.nBroadcastSize += 1;
-		__LEAVE_CRITICAL_SECTION(NULL, dwFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 	}
 	return TRUE;
 }
@@ -1674,6 +1679,9 @@ struct __ETHERNET_MANAGER EthernetManager = {
 	NULL,                   //Buffer list header.
 	NULL,                   //Buffer list tail.
 	0,                      //nBuffListSize.
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,   //spin_lock.
+#endif
 
 	NULL,                   //Broadcast list header.
 	NULL,                   //Broadcast list tail.

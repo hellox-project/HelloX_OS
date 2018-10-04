@@ -20,20 +20,22 @@
 /* For common SMP constants and structures. */
 #include <smp.h>
 
+/* For APIC and interrupt controller object. */
+#include "apic.h"
+
+/*
+ * Debugging feature of HelloX's spin lock in SMP.
+ * If a kernel thread spins for a spin lock for so many
+ * times,it may lead by deadlock,so we will give up and
+ * show useful information,then halt.
+ */
+#define SPIN_LOCK_DEBUG_MAX_SPINTIMES (65536 * 256)
+
 /* CPU feature flags. */
 #define CPU_FEATURE_MASK_HTT (1 << 28)
 
 /* Get CPU supported feature flags. */
 uint32_t GetCPUFeature();
-
-/* Get chip id giving the processor ID. */
-uint8_t __GetChipID(unsigned int processor_id);
-
-/* Get the core ID giving the processor ID. */
-uint8_t __GetCoreID(unsigned int processor_id);
-
-/* Get the logical CPU ID giving the processor ID. */
-uint8_t __GetLogicalCPUID(unsigned int processor_id);
 
 /* x86 chip specific information. */
 typedef struct tag__X86_CHIP_SPECIFIC {
@@ -45,7 +47,10 @@ typedef struct tag__X86_CHIP_SPECIFIC {
 /* Initialize the IOAPIC controller. */
 BOOL Init_IOAPIC();
 
-/* Initialize the local APIC controller,it will be invoked by each AP. */
+/* 
+ * Initialize the local APIC controller,it will be invoked by
+ * BSP and each AP processors.
+ */
 BOOL Init_LocalAPIC();
 
 /* Start all application processors. */
