@@ -870,7 +870,7 @@ BOOL MailboxInitialize(__COMMON_OBJECT* pMailboxObj)
 	pMailbox->dwObjectSignature   = KERNEL_OBJECT_SIGNATURE;
 #if defined(__CFG_SYS_SMP)
 	/* Initialize spin lock. */
-	pMailbox->spin_lock = SPIN_LOCK_INIT_VALUE;
+	__INIT_SPIN_LOCK(pMailbox->spin_lock, "mbox");
 #endif
 
 	bResult = TRUE;

@@ -118,7 +118,7 @@ BOOL KernelThreadInitialize(__COMMON_OBJECT* lpThis)
 	//lpKernelThread->cpuAffinity = __CURRENT_PROCESSOR_ID;
 	__ATOMIC_SET(&lpKernelThread->cpuAffinity, __CURRENT_PROCESSOR_ID);
 	/* Initialize spin lock. */
-	lpKernelThread->spin_lock = SPIN_LOCK_INIT_VALUE;
+	__INIT_SPIN_LOCK(lpKernelThread->spin_lock, "kthread");
 #endif
 
 	/* OK. */
@@ -192,7 +192,7 @@ static BOOL InitReadyQueue(__COMMON_OBJECT* lpThis)
 		}
 #if defined(__CFG_SYS_SMP)
 		/* Initialize spin lock. */
-		pReadyQueue->spin_lock = SPIN_LOCK_INIT_VALUE;
+		__INIT_SPIN_LOCK(pReadyQueue->spin_lock, "rdyq");
 #endif
 		/* Create priority queue for each priority level. */
 		for (int i = 0; i < MAX_KERNEL_THREAD_PRIORITY + 1; i++)

@@ -51,7 +51,7 @@ static BOOL CreateBuffer2(__BUFFER_CONTROL_BLOCK* pControlBlock,
 	dwSize = dwPoolSize;
 
 #if defined(__CFG_SYS_SMP)
-	pControlBlock->spin_lock = SPIN_LOCK_INIT_VALUE;
+	__INIT_SPIN_LOCK(pControlBlock->spin_lock, "ctrlb");
 #endif
 	pControlBlock->dwPoolSize         = dwSize;  //Initialize the buffer control block.
 	pControlBlock->dwFlags           |= CREATED_BY_CLIENT;

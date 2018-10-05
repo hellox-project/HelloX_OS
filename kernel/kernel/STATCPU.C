@@ -175,7 +175,7 @@ static BOOL Initialize(__STAT_CPU_OBJECT*  lpStatObj)
 
 #if defined(__CFG_SYS_SMP)
 	/* Init spin lock. */
-	StatCpuObject.spin_lock = SPIN_LOCK_INIT_VALUE;
+	__INIT_SPIN_LOCK(StatCpuObject.spin_lock, "statcpu");
 #endif
 
 	//Save current CPU cycle counter.
