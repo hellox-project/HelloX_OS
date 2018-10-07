@@ -146,10 +146,10 @@ BOOL __raw_spin_lock(__SPIN_LOCK* sl)
 		BUG_ON(NULL == pSpec);
 		pSpec->cpuStatus = CPU_STATUS_HALTED;
 		/* Halt the CPU. */
-		while (TRUE)
-		{
-			HaltSystem();
-		}
+		//while (TRUE)
+		//{
+		//	HaltSystem();
+		//}
 		return FALSE;
 	}
 	return TRUE;
@@ -187,7 +187,10 @@ unsigned long __smp_enter_critical_section(__SPIN_LOCK* sl)
 		cli
 	}
 	/* Acquire the spin lock. */
-	__raw_spin_lock(sl);
+	if (!__raw_spin_lock(sl))
+	{
+		dwFlags = 0xFFFFFFFF;
+	}
 	return dwFlags;
 }
 

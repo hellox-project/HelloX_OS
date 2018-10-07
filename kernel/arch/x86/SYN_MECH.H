@@ -18,10 +18,6 @@
 /* For system level configurations. */
 #include "config.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
  * Critical section operating macros.
  * Just disable local interrupt since only
@@ -264,7 +260,4 @@ __inline __atomic_t __ATOMIC_SET(__atomic_t* atomic, unsigned int new_val)
 #define __INCREASE_ATOMIC(t)    do{t ++;}while(0);
 #define __DECREASE_ATOMIC(t)    do{t --;}while(0);
 
-#ifdef __cplusplus
-}
-#endif
 #endif  //__SYN_MECH_H__

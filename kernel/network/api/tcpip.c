@@ -114,9 +114,9 @@ tcpip_thread(void *arg)
 				__ENTER_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 				if (0 == pExt->nIncomePktSize) /* No pending packet. */
 				{
-					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 					BUG_ON(NULL != pExt->pIncomePktFirst);
 					BUG_ON(NULL != pExt->pIncomePktLast);
+					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 					break;
 				}
 				else /* Incoming list is not empty. */

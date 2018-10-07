@@ -29,7 +29,7 @@
  * times,it may lead by deadlock,so we will give up and
  * show useful information,then halt.
  */
-#define SPIN_LOCK_DEBUG_MAX_SPINTIMES (65536 * 256)
+#define SPIN_LOCK_DEBUG_MAX_SPINTIMES (65536 * 4096)
 
 /* CPU feature flags. */
 #define CPU_FEATURE_MASK_HTT (1 << 28)

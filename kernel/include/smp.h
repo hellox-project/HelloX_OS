@@ -43,7 +43,8 @@ unsigned long __smp_leave_critical_section(__SPIN_LOCK* sl, unsigned long dwFlag
 /* User should use these macros to manipulate the critical section. */
 #if defined(__CFG_SYS_SMP)
 #define __ENTER_CRITICAL_SECTION_SMP(spin_lock,dwFlags) \
-    dwFlags = __smp_enter_critical_section(&(spin_lock))
+    dwFlags = __smp_enter_critical_section(&(spin_lock)); \
+	BUG_ON(0xFFFFFFFF == dwFlags)
 #define __LEAVE_CRITICAL_SECTION_SMP(spin_lock,dwFlags) \
     dwFlags = __smp_leave_critical_section(&(spin_lock),dwFlags)
 #else /
@@ -185,6 +186,10 @@ typedef struct tag__INTERRUPT_CONTROLLER {
 
 /* Broadcast to all interrupt controllers if destination is set to this value. */
 #define INTERRUPT_DESTINATION_ALL 0xFFFFFFFF
+
+/* Inter-Processor-Interrupt types. */
+#define IPI_TYPE_NEWTHREAD 0x01
+#define IPI_TYPE_TLBFLUSH  0x02
 
 /*
 * Creates and initializes an interrupt controller object,

@@ -46,6 +46,7 @@ void sys_arch_unprotect(sys_prot_t val)
 //Create a new thread.
 sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg,int stacksize,int prio)
 {
+#if 1
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
 	unsigned int nAffinity = 0;
 
@@ -72,6 +73,7 @@ sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg
 	KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)pKernelThread);
 	return pKernelThread;
+#endif
 #if 0
 	return KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,

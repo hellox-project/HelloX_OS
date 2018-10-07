@@ -57,13 +57,17 @@
 #define LAPIC_TIMER_MODE_PERIODIC     0x20000
 
 /* APIC timer's interrupt vector value. */
-#define INTERRUPT_VECTOR_APICTMR 0x2E
+#define INTERRUPT_VECTOR_APICTMR  0x2E
+/* IPI interrupt vector,for instant scheduling. */
+#define INTERRUPT_VECTOR_IPI_IS   0x2F
+/* IPI interrupt vector,for TLB flushing. */
+#define INTERRUPT_VECTOR_IPI_TLBF 0x30
 
 /* How many times of SYSTEM_SLICE_TIME for every APIC timer interrupt. */
 #define LAPIC_TIMER_INT_MULTIPLIXER 4
 
 /* APIC supported vector range. */
 #define APIC_INT_VECTOR_START 0x2E
-#define APIC_INT_VECTOR_END   0x2E
+#define APIC_INT_VECTOR_END   0x30
 
 #endif //__APIC_H__

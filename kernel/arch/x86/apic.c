@@ -149,6 +149,8 @@ __TERMINAL:
 static BOOL lapicSend_IPI(__INTERRUPT_CONTROLLER* pThis, int destination, unsigned int ipiType)
 {
 	BOOL bResult = FALSE;
+	uint32_t icr = 0;
+	uint8_t* pBase = NULL;
 
 	/* Check parameters. */
 	if (NULL == pThis)
@@ -160,7 +162,17 @@ static BOOL lapicSend_IPI(__INTERRUPT_CONTROLLER* pThis, int destination, unsign
 	{
 		goto __TERMINAL;
 	}
-	/* OK,send general IPI. */
+	pBase = pThis->pBase;
+	BUG_ON(NULL == pBase);
+	/* OK,send general IPI now,construct high word of ICR. */
+	icr = destination;
+	icr <<= 24;
+	__writel(icr, (pBase + LAPIC_REGISTER_ICR_HIGH));
+	/* Low word of ICR. */
+	icr = INTERRUPT_VECTOR_IPI_IS;
+	__writel(icr, (pBase + LAPIC_REGISTER_ICR_LOW));
+	
+	bResult = TRUE;
 
 __TERMINAL:
 	return bResult;
@@ -175,6 +187,40 @@ __TERMINAL:
 static BOOL APICTimerIntHandler(LPVOID lpEsp, LPVOID lpParam)
 {
 	return TRUE;
+}
+
+/* 
+ * Handler for IPI,instant scheduling.
+ * This routine just do nothing,the scheduling will be
+ * triggered when interrupt is processed over.
+ */
+static BOOL IPI_Handler_IS(LPVOID lpEsp, LPVOID lpParam)
+{
+	return TRUE;
+}
+
+/* Setup IPI mechanism. */
+static BOOL SetupIPI()
+{
+	static __COMMON_OBJECT* pIpiInt = NULL;
+	BOOL bResult = FALSE;
+
+	/* Setup interrupt handler for IPI. */
+	if (NULL == pIpiInt)
+	{
+		pIpiInt = (__COMMON_OBJECT*)ConnectInterrupt(IPI_Handler_IS, 
+			NULL, 
+			INTERRUPT_VECTOR_IPI_IS);
+		if (NULL == pIpiInt)
+		{
+			_hx_printf("%s:failed to setup IPI.\r\n", __func__);
+			goto __TERMINAL;
+		}
+	}
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
 }
 
 /* Setup local APIC's timer. */
@@ -293,6 +339,11 @@ static BOOL lapicInitialize(__INTERRUPT_CONTROLLER* pIntCtrl)
 	__MicroDelay(10000);
 	/* Setup APIC's local timer. */
 	if (!SetupAPICTimer(pIntCtrl))
+	{
+		goto __TERMINAL;
+	}
+	/* Setup IPI mechanism. */
+	if (!SetupIPI())
 	{
 		goto __TERMINAL;
 	}

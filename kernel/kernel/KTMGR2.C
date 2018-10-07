@@ -182,20 +182,23 @@ VOID AddReadyKernelThread(__COMMON_OBJECT* lpThis, __KERNEL_THREAD_OBJECT* lpKer
 {
 	__PRIORITY_QUEUE* lpQueue = NULL;
 	__KERNEL_THREAD_MANAGER* pManager = (__KERNEL_THREAD_MANAGER*)lpThis;
-	int processorID = 0;
+	unsigned int processorID = 0;
 	unsigned long ulFlags = 0;
 	__KERNEL_THREAD_READY_QUEUE* pReadyQueue = NULL;
+#if defined(__CFG_SYS_SMP)
+	__INTERRUPT_CONTROLLER* pIntCtrl = NULL;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+#endif
 
 	BUG_ON((NULL == lpThis) || (NULL == lpKernelThread));
 	/* Get the target processor's ready queue. */
 #if defined(__CFG_SYS_SMP)
 	processorID = lpKernelThread->cpuAffinity;
+	BUG_ON(processorID >= MAX_CPU_NUM);
 #else
 	processorID = __CURRENT_PROCESSOR_ID;
 #endif
-#if defined(__CFG_SYS_SMP)
-	BUG_ON(processorID >= MAX_CPU_NUM);
-#endif
+
 	pReadyQueue = pManager->KernelThreadReadyQueue[processorID];
 	BUG_ON(NULL == pReadyQueue);
 
@@ -217,13 +220,34 @@ VOID AddReadyKernelThread(__COMMON_OBJECT* lpThis, __KERNEL_THREAD_OBJECT* lpKer
 	lpQueue->InsertIntoQueue((__COMMON_OBJECT*)lpQueue, 
 		(__COMMON_OBJECT*)lpKernelThread, 0);
 	__LEAVE_CRITICAL_SECTION_SMP(pReadyQueue->spin_lock, ulFlags);
+#if defined(__CFG_SYS_SMP)
+	/*
+	* Trigger an IPI interrupt to target CPU,
+	* to tell it that a new kernel thread is added
+	* into it's ready queue,so it can do a scheduling
+	* immediately.
+	*/
+	if ((processorID != __CURRENT_PROCESSOR_ID) && (!IN_SYSINITIALIZATION()))
+	{
+		/*
+		* Get the interrupt controller object from current
+		* processor's specific information.
+		*/
+		pSpec = ProcessorManager.GetCurrentProcessorSpecific();
+		BUG_ON(NULL == pSpec);
+		pIntCtrl = pSpec->pIntCtrl;
+		BUG_ON(NULL == pIntCtrl);
+		BUG_ON(NULL == pIntCtrl->Send_IPI);
+		pIntCtrl->Send_IPI(pIntCtrl, processorID, IPI_TYPE_NEWTHREAD);
+	}
+#endif
 	return;
 }
 
-//
-//SetThreadHook routine,this routine sets appropriate hook routine
-//according to dwHookType, and returns the old one.
-//
+/*
+ * SetThreadHook routine,this routine sets appropriate hook routine
+ * according to dwHookType, and returns the old one.
+ */
 __THREAD_HOOK_ROUTINE SetThreadHook(DWORD dwHookType,
 	__THREAD_HOOK_ROUTINE lpRoutine)
 {
