@@ -480,15 +480,16 @@ static BOOL pppSendPacket(struct netif* out_if, struct pbuf* pb, ip_addr_t* ipad
 		pBlock->pNext = NULL; /* Very important. */
 		pppoeManager.nOutgSize++;
 		/* 
-		 * Send sending message to PPPoE main thread,exit the
-		 * critical section since the SendMessage routine may lead
-		 * kernel thread re-scheduling.
+		 * Send sending message to PPPoE main thread.
+		 * Disable kernel thread's scheduling since in critical
+		 * section.
 		 */
 		__LEAVE_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);
 		msg.wCommand = PPPOE_MSG_SENDPACKET;
 		msg.wParam = 0;
 		msg.dwParam = 0;
 		bResult = SendMessage(pppoeManager.hMainThread, &msg);
+
 		if (!bResult) /* Msg queue is full? */
 		{
 			__ENTER_CRITICAL_SECTION_SMP(pppoeManager.spin_lock, dwFlags);

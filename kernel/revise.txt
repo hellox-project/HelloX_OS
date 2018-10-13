@@ -27,3 +27,8 @@ it may not enable the periodic scheduling according current code; -- usbStartISO
 1. The interrupt handler of USB interrupt xfer should be revised,since it only process one interrupt
    queue currently(if clause is used,should use while clause in OnXferCompletion routine in ehciint.c file);
 2. 
+
+20181009:
+1. Applied should break mechanism in tcpip thread(tcpip.c), incoming packet process loop;
+2. Global kernel thread scheduling flag and it's operations are added;
+3. The case of dwMillion = 0 is handled in SendMail routine of mailbox;

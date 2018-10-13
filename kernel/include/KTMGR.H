@@ -363,13 +363,14 @@ typedef struct tag__KERNEL_THREAD_READY_QUEUE {
 
 //Kernel Thread Manager's definition.
 BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
-    DWORD                                    dwCurrentIRQL;
-
-	/* Current kernel thread's handle,each CPU has has one. */
+    DWORD dwCurrentIRQL;
+	/* Flags to control the enabling or disabling of kernel thread scheduling. */
+	__atomic_t scheduling_enabled;
+	/* Current kernel thread's handle,each CPU has one. */
 #if defined(__CFG_SYS_SMP)
-	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[MAX_CPU_NUM];
+	__KERNEL_THREAD_OBJECT* CurrentKernelThread[MAX_CPU_NUM];
 #else /* UP. */
-	__KERNEL_THREAD_OBJECT*                  CurrentKernelThread[1];
+	__KERNEL_THREAD_OBJECT* CurrentKernelThread[1];
 #endif
 
 	/* 
@@ -559,21 +560,23 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 	__COMMON_OBJECT*                         (*GetCurrentKernelThread)();
 #if defined(__CFG_SYS_SMP)
 	/* Change the specified kernel thread's cpu affinity value. */
-	int                                      (*ChangeAffinity)(__COMMON_OBJECT* lpTargetThread, unsigned int newAffinity);
+	int (*ChangeAffinity)(__COMMON_OBJECT* lpTargetThread, unsigned int newAffinity);
 #endif
 	/* Start the scheduling process,it will be called after the initialization of OS. */
-	BOOL                                     (*StartScheduling)();
-END_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)   //End of the kernel thread manager's definition.
+	BOOL (*StartScheduling)();
+	/* Disable or enable the scheduling of kernel thread. */
+	BOOL (*EnableScheduling)(BOOL bEnable);
+END_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER) /* End of the kernel thread manager's definition. */
 
-//
-//Global functions declare.
-//The following routines are used to operate the kernel thread's message queue.
-//
-typedef DWORD (*__KERNEL_THREAD_MESSAGE_HANDLER)(WORD,WORD,DWORD);  //The protype of event handler.
+/* Flags to enable or disable kernel thread's scheduling. */
+#define KERNEL_THREAD_SCHEDULING_ENABLE  0
+#define KERNEL_THREAD_SCHEDULING_DISABLE 1
 
+/* The protype of event handler. */
+typedef DWORD (*__KERNEL_THREAD_MESSAGE_HANDLER)(WORD,WORD,DWORD);
+
+/* Dispatch a message to it's handler. */
 DWORD DispatchMessage(__KERNEL_THREAD_MESSAGE*,__KERNEL_THREAD_MESSAGE_HANDLER);
-                                                                  //The routine dispatch a
-                                                                  //message to it's handler.
 
 /***************************************************************************************
 ****************************************************************************************

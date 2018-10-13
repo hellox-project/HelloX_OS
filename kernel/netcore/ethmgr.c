@@ -510,7 +510,19 @@ static BOOL _PostFrameHandler()
 	__ETHERNET_INTERFACE* pEthInt = NULL;
 	BOOL bDeliveryResult = FALSE;
 	DWORD dwFlags;
-	BOOL bShouldReturn = FALSE;
+	BOOL bShouldReturn = FALSE, bResult = FALSE;
+
+	/* 
+	 * Disable scheduling first,to improve the efficiency. 
+	 * There maybe several frames in list,each frame will be posted
+	 * to upper layer protocol.If scheduling is enabled,then
+	 * each frame may lead thread rescheduling.
+	 * Disable scheduling may make sure all frames are posted to
+	 * upper layer protocol at same time,like a trunk carriering
+	 * goods,batch all goods together is more effective than
+	 * carriering one by one.
+	 */
+	//bScheduling = KernelThreadManager.EnableScheduling(FALSE);
 
 	while (TRUE)
 	{
@@ -522,10 +534,10 @@ static BOOL _PostFrameHandler()
 			{
 				__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 				BUG();
-				return FALSE;
+				goto __TERMINAL;
 			}
 			__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
-			return FALSE;
+			goto __TERMINAL;
 		}
 		bShouldReturn = FALSE;
 		pBuffer = EthernetManager.pBufferFirst;
@@ -544,19 +556,13 @@ static BOOL _PostFrameHandler()
 			bShouldReturn = TRUE;
 		}
 		EthernetManager.nBuffListSize -= 1;
-		if (EthernetManager.nBuffListSize < 0)
-		{
-			BUG();
-		}
+		BUG_ON(EthernetManager.nBuffListSize < 0);
 		__LEAVE_CRITICAL_SECTION_SMP(EthernetManager.spin_lock, dwFlags);
 
 		//Update interface statistics.
 		//pEthInt = pBuffer->pEthernetInterface;
 		pEthInt = pBuffer->pInInterface;
-		if (NULL == pEthInt)  //Should not occur.
-		{
-			BUG();
-		}
+		BUG_ON(NULL == pEthInt);
 		pEthInt->ifState.dwFrameRecv++;
 		pEthInt->ifState.dwTotalRecvSize += pBuffer->act_length;
 
@@ -598,12 +604,13 @@ static BOOL _PostFrameHandler()
 		}
 		if (bShouldReturn)
 		{
+			bResult = TRUE;
 			goto __TERMINAL;
 		}
 	}
 
 __TERMINAL:
-	return TRUE;
+	return bResult;
 }
 
 /*

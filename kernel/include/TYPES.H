@@ -109,6 +109,9 @@ typedef __u32 dma_addr_t;
 typedef volatile unsigned int __ATOMIC_T;
 typedef volatile unsigned int __atomic_t;
 
+/* Initial value of atomic integer. */
+#define ATOMIC_INIT_VALUE 0
+
 #define INIT_ATOMIC(t)          __INIT_ATOMIC(t)       //t = 0;
 #define INCREASE_ATOMIC(t)      __INCREASE_ATOMIC(t)   //t ++;
 #define DECREASE_ATOMIC(t)      __DECREASE_ATOMIC(t)   //t --;

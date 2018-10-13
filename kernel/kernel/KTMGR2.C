@@ -226,19 +226,23 @@ VOID AddReadyKernelThread(__COMMON_OBJECT* lpThis, __KERNEL_THREAD_OBJECT* lpKer
 	* to tell it that a new kernel thread is added
 	* into it's ready queue,so it can do a scheduling
 	* immediately.
+	* Skip this step if scheduling is disabled.
 	*/
-	if ((processorID != __CURRENT_PROCESSOR_ID) && (!IN_SYSINITIALIZATION()))
+	if (KernelThreadManager.scheduling_enabled == KERNEL_THREAD_SCHEDULING_ENABLE)
 	{
-		/*
-		* Get the interrupt controller object from current
-		* processor's specific information.
-		*/
-		pSpec = ProcessorManager.GetCurrentProcessorSpecific();
-		BUG_ON(NULL == pSpec);
-		pIntCtrl = pSpec->pIntCtrl;
-		BUG_ON(NULL == pIntCtrl);
-		BUG_ON(NULL == pIntCtrl->Send_IPI);
-		pIntCtrl->Send_IPI(pIntCtrl, processorID, IPI_TYPE_NEWTHREAD);
+		if ((processorID != __CURRENT_PROCESSOR_ID) && (!IN_SYSINITIALIZATION()))
+		{
+			/*
+			* Get the interrupt controller object from current
+			* processor's specific information.
+			*/
+			pSpec = ProcessorManager.GetCurrentProcessorSpecific();
+			BUG_ON(NULL == pSpec);
+			pIntCtrl = pSpec->pIntCtrl;
+			BUG_ON(NULL == pIntCtrl);
+			BUG_ON(NULL == pIntCtrl->Send_IPI);
+			pIntCtrl->Send_IPI(pIntCtrl, processorID, IPI_TYPE_NEWTHREAD);
+		}
 	}
 #endif
 	return;

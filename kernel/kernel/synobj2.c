@@ -672,6 +672,8 @@ static VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
  * Send a message to mailbox.
  * The kernel thread will be blocked in case of mail box is full,caller can
  * specify a wait period by setting dwMillionSecond.
+ * A 0 value of dwMillionSecond will make the routine return immediately,
+ * even in case of failure(queue full,timeout flag will be returned).
  * The waited time will be returned if pdwWait is set(not NULL).
  */
  DWORD SendMail(__COMMON_OBJECT* pMailboxObj,LPVOID pMessage,DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait)
@@ -694,8 +696,11 @@ static VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
 		goto __TERMINAL;
 	}
 
-	//Calculate the timeout tick counter.
-	if(WAIT_TIME_INFINITE != dwMillionSecond)
+	/* 
+	 * Calculate the timeout tick counter,when the operation 
+	 * timeout value is not infinite and 0.
+	 */
+	if((WAIT_TIME_INFINITE != dwMillionSecond) && (0 != dwMillionSecond))
 	{
 		/* Wait time must not less than one time slice. */
 		if (dwMillionSecond < SYSTEM_TIME_SLICE)

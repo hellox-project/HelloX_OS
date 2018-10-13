@@ -80,6 +80,7 @@ tcpip_thread(void *arg)
 	__LWIP_EXTENSION* pExt = NULL;
 	__INCOME_IP_PACKET* pIncomPkt = NULL;
 	DWORD dwFlags;
+	BOOL bShouldBreak = FALSE;
 
 	LWIP_UNUSED_ARG(arg);
 
@@ -108,6 +109,13 @@ tcpip_thread(void *arg)
 			BUG_ON(NULL == plwipProto);
 			pExt = plwipProto->pProtoExtension;
 			BUG_ON(NULL == pExt);
+			/* 
+			 * The packet(s) associated with this message is processed over, 
+			 * so should break the while loop,otherwise may lead message queue
+			 * full,even in rare case.
+			 */
+			bShouldBreak = FALSE;
+
 			/* Fetch incoming packet(s) and process it from incoming list. */
 			while (TRUE)
 			{
@@ -130,6 +138,8 @@ tcpip_thread(void *arg)
 						/* Incoming pkt size must be 0. */
 						BUG_ON(pExt->nIncomePktSize != 0);
 						pExt->pIncomePktLast = NULL;
+						/* Should break the loop. */
+						bShouldBreak = TRUE;
 					}
 					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
 				}
@@ -147,6 +157,10 @@ tcpip_thread(void *arg)
 				}
 				/* Release the structure. */
 				_hx_free(pIncomPkt);
+				if (bShouldBreak)
+				{
+					break;
+				}
 			}
 			memp_free(MEMP_TCPIP_MSG_INPKT, msg);
 			break;

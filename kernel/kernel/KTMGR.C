@@ -316,6 +316,9 @@ static BOOL KernelThreadMgrInit(__COMMON_OBJECT* lpThis)
 	lpMgr->CurrentKernelThread[0] = NULL;
 #endif
 
+	/* Set scheduling flag as enable. */
+	__ATOMIC_SET(&lpMgr->scheduling_enabled, KERNEL_THREAD_SCHEDULING_ENABLE);
+
 	bResult = TRUE;
 
 __TERMINAL:
@@ -1442,7 +1445,10 @@ static BOOL MgrSendMessage(__COMMON_OBJECT* lpThread,__KERNEL_THREAD_MESSAGE* lp
 	/* If in kernel thread context,then re-schedule kernel thread. */
 	if(IN_KERNELTHREAD())
 	{
-		KernelThreadManager.ScheduleFromProc(NULL);
+		if (KERNEL_THREAD_SCHEDULING_ENABLE == KernelThreadManager.scheduling_enabled)
+		{
+			KernelThreadManager.ScheduleFromProc(NULL);
+		}
 	}
 
 	bResult = TRUE;
@@ -1740,6 +1746,52 @@ static BOOL StartScheduling()
 	return FALSE;
 }
 
+/* 
+ * Enable or disable kernel thread scheduling function. 
+ * It just change the scheduling_enable flag in kernel thread manager according
+ * bEnabled,and the old flag will be returned.
+ * A IPI will be sent to all processor(s) in system but current one,to trigger
+ * a new schedule,if bEnabled is TRUE.
+ * Kernel code or applications may disable the scheduling before
+ * apply any kernel API call,and restore it's old value after that.
+ */
+static BOOL EnableScheduling(BOOL bEnable)
+{
+	__atomic_t schedule_flag = ATOMIC_INIT_VALUE;
+#if defined(__CFG_SYS_SMP)
+	__INTERRUPT_CONTROLLER* pIntCtrl = NULL;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+#endif
+
+	/* Set scheduling enable flags according bEnable. */
+	schedule_flag = bEnable ? KERNEL_THREAD_SCHEDULING_ENABLE : KERNEL_THREAD_SCHEDULING_DISABLE;
+	schedule_flag = __ATOMIC_SET(&KernelThreadManager.scheduling_enabled, schedule_flag);
+
+	/* Trigger a new scheduling for all processors if scheduling is enabled. */
+	if (bEnable)
+	{
+#if defined(__CFG_SYS_SMP)
+		/* Send IPI to all processor(s) but current one. */
+		pSpec = ProcessorManager.GetCurrentProcessorSpecific();
+		BUG_ON(NULL == pSpec);
+		pIntCtrl = pSpec->pIntCtrl;
+		BUG_ON(NULL == pIntCtrl);
+		BUG_ON(NULL == pIntCtrl->Send_IPI);
+		for (int processor = 0; processor < ProcessorManager.nProcessorNum; processor++)
+		{
+			/* Skip current processor. */
+			if (__CURRENT_PROCESSOR_ID != processor)
+			{
+				pIntCtrl->Send_IPI(pIntCtrl, processor, IPI_TYPE_NEWTHREAD);
+			}
+		}
+#endif
+		/* Trigger a schedule on current processor. */
+		KernelThreadManager.ScheduleFromProc(NULL);
+	}
+	return (KERNEL_THREAD_SCHEDULING_ENABLE == schedule_flag ? TRUE : FALSE);
+}
+
 /**************************************************************
 ***************************************************************
 ***************************************************************
@@ -1749,6 +1801,7 @@ static BOOL StartScheduling()
 //
 __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	0,                                               //dwCurrentIRQL.
+	ATOMIC_INIT_VALUE,                               //scheduling_enabled.
 	{0},                                             //CurrentKernelThread.
 #if defined(__CFG_SYS_SMP)
 	0,                                               //cpuStartFlags.
@@ -1811,6 +1864,7 @@ __KERNEL_THREAD_MANAGER KernelThreadManager = {
 	ChangeAffinity,                                  //ChangeAffinity.
 #endif
 	StartScheduling,                                 //StartScheduling.
+	EnableScheduling,                                //EnableScheduling.
 };
 
 //
