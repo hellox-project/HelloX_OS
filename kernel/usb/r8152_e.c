@@ -326,7 +326,7 @@ static DWORD __R8152_Send(LPVOID pData)
 					/*
 					* Decrease the general sending queue size of system.
 					*/
-					EthernetManager.nDrvSendingQueueSz--;
+					__ATOMIC_DECREASE(&EthernetManager.nDrvSendingQueueSz);
 					/* Update the sending queue(list) size. */
 					pEthInt->nSendingQueueSz--;
 

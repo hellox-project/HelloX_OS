@@ -872,12 +872,24 @@ static BOOL Initialize(struct __ETHERNET_MANAGER* pManager)
 	__INIT_SPIN_LOCK(pManager->spin_lock,"ethmgr");
 #endif
 
-	//Create the ethernet core thread.
+	/* 
+	 * Main thread of ethernet functions. 
+	 * All ethernet related functions are bounced to this kernel thread
+	 * to process.
+	 * It's priority is higher than normal priority level,but lower than
+	 * the main thread of tcp/ip.
+	 * The priority level of kernel threads in network subsystem in HelloX,
+	 * is arranged as following rule:
+	 *   Kernel thread's priority level in device driver <=
+	 *   Kernel thread's priority level in datalink layer <=
+	 *   Kernel thread's priority level in network layer <=
+	 *   Kernel thread's priority level in transportation layer.
+	 */
 	EthernetManager.EthernetCoreThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
-		0,                           //Use default stack size.
+		0,
 		KERNEL_THREAD_STATUS_READY,
-		PRIORITY_LEVEL_NORMAL,       //Normal priority.
+		PRIORITY_LEVEL_HIGH_3,       //High priority,but lower than TCP/IP thread.
 		EthCoreThreadEntry,
 		NULL,
 		NULL,
@@ -1223,17 +1235,17 @@ static VOID ShowInt(char* ethName)
 			ShowBinding(&EthernetManager.EthInterfaces[index]);
 			_hx_printf("  Statistics information for interface '%s':\r\n",
 				EthernetManager.EthInterfaces[index].ethName);
-			_hx_printf("    Send frame #       : %d\r\n", pState->dwFrameSend);
-			_hx_printf("    Success send #     : %d\r\n", pState->dwFrameSendSuccess);
-			_hx_printf("    Send bytes size    : %d\r\n", pState->dwTotalSendSize);
-			_hx_printf("    Receive frame #    : %d\r\n", pState->dwFrameRecv);
-			_hx_printf("    Success recv #     : %d\r\n", pState->dwFrameRecvSuccess);
-			_hx_printf("    Receive bytes size : %d\r\n", pState->dwTotalRecvSize);
-			_hx_printf("    Bridged frame #    : %d\r\n", pState->dwFrameBridged);
-			_hx_printf("    Tx error number    : %d\r\n", pState->dwTxErrorNum);
-			_hx_printf("    Recv mcast frame # : %d\r\n", pState->dwRxMcastNum);
-			_hx_printf("    Send mcast frame # : %d\r\n", pState->dwTxMcastNum);
-			_hx_printf("    Sending Queue Sz   : %d\r\n",
+			_hx_printf("    Send frame #       : %u\r\n", pState->dwFrameSend);
+			_hx_printf("    Success send #     : %u\r\n", pState->dwFrameSendSuccess);
+			_hx_printf("    Send bytes size    : %u\r\n", pState->dwTotalSendSize);
+			_hx_printf("    Receive frame #    : %u\r\n", pState->dwFrameRecv);
+			_hx_printf("    Success recv #     : %u\r\n", pState->dwFrameRecvSuccess);
+			_hx_printf("    Receive bytes size : %u\r\n", pState->dwTotalRecvSize);
+			_hx_printf("    Bridged frame #    : %u\r\n", pState->dwFrameBridged);
+			_hx_printf("    Tx error number    : %u\r\n", pState->dwTxErrorNum);
+			_hx_printf("    Recv mcast frame # : %u\r\n", pState->dwRxMcastNum);
+			_hx_printf("    Send mcast frame # : %u\r\n", pState->dwTxMcastNum);
+			_hx_printf("    Sending Queue Sz   : %u\r\n",
 				EthernetManager.EthInterfaces[index].nSendingQueueSz);
 		}
 	}
@@ -1499,7 +1511,7 @@ static __ETHERNET_BUFFER* _CreateEthernetBuffer(int buff_length)
 	pEthBuff->pOutInterface = NULL;
 	memset(pEthBuff->srcMAC, 0, sizeof(pEthBuff->srcMAC));
 	memset(pEthBuff->dstMAC, 0, sizeof(pEthBuff->dstMAC));
-	EthernetManager.nTotalEthernetBuffs += 1;
+	__ATOMIC_INCREASE(&EthernetManager.nTotalEthernetBuffs);
 
 __TERMINAL:
 	return pEthBuff;
@@ -1538,7 +1550,7 @@ static __ETHERNET_BUFFER* _CloneEthernetBuffer(__ETHERNET_BUFFER* pEthBuff)
 	/*
 	* Update total ethernet buffer counter.
 	*/
-	EthernetManager.nTotalEthernetBuffs += 1;
+	__ATOMIC_INCREASE(&EthernetManager.nTotalEthernetBuffs);
 
 __TERMINAL:
 	return pNewEthBuff;
@@ -1571,7 +1583,7 @@ static VOID _DestroyEthernetBuffer(__ETHERNET_BUFFER* pEthBuff)
 	/*
 	* Decrease total ethernet buffer number in system.
 	*/
-	EthernetManager.nTotalEthernetBuffs--;
+	__ATOMIC_DECREASE(&EthernetManager.nTotalEthernetBuffs);
 }
 
 static BOOL __BroadcastEthernetFrame(__ETHERNET_BUFFER* pBuffer)
@@ -1695,8 +1707,8 @@ struct __ETHERNET_MANAGER EthernetManager = {
 	0,                      //nBroadcastSize.
 	0,                      //nDropedBcastSize.
 
-	0,                      //nTotalEthernetBuffs.
-	0,                      //nDrvSendingQueueSz.
+	ATOMIC_INIT_VALUE,      //nTotalEthernetBuffs.
+	ATOMIC_INIT_VALUE,      //nDrvSendingQueueSz.
 
 	Initialize,               //Initialize.
 	AddEthernetInterface,     //AddEthernetInterface.

@@ -48,12 +48,12 @@
 //Pre-declare routines.
 //
 static DWORD CommandParser(LPCSTR);
-static DWORD help(__CMD_PARA_OBJ*);        //help sub-command's handler.
-static DWORD _exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
+static DWORD help(__CMD_PARA_OBJ*);       //help sub-command's handler.
+static DWORD _exit(__CMD_PARA_OBJ*);      //exit sub-command's handler.
 static DWORD iflist(__CMD_PARA_OBJ*);
 static DWORD ping(__CMD_PARA_OBJ*);
 static DWORD route(__CMD_PARA_OBJ*);
-static DWORD netstat(__CMD_PARA_OBJ*);     //Show out IP layer statistics counter.
+static DWORD netstat(__CMD_PARA_OBJ*);    //Show out IP layer statistics counter.
 static DWORD showint(__CMD_PARA_OBJ*);    //Display ethernet interface's statistics information.
 static DWORD showdbg(__CMD_PARA_OBJ*);    //Display ethernet related debugging information.
 static DWORD assoc(__CMD_PARA_OBJ*);      //Associate to a specified WiFi SSID.

@@ -1425,7 +1425,8 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 		ss->pSndListLast = pNewBuff;
 		ss->pSndListFirst = pNewBuff;
 		pEthInt->nSendingQueueSz += 1;
-		EthernetManager.nDrvSendingQueueSz += 1;
+		/* Increment the total sending queue size. */
+		__ATOMIC_INCREASE(&EthernetManager.nDrvSendingQueueSz);
 		__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 
 		/*
@@ -1445,7 +1446,7 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 			__ENTER_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			ss->pSndListLast = ss->pSndListFirst = NULL;
 			pEthInt->nSendingQueueSz--;
-			EthernetManager.nDrvSendingQueueSz--;
+			__ATOMIC_DECREASE(&EthernetManager.nDrvSendingQueueSz);
 			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			EthernetManager.DestroyEthernetBuffer(pNewBuff);
 			return bResult;
@@ -1461,13 +1462,11 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 		}
 		else
 		{
-			//pNewBuff->pNext = ss->pSndList;
-			//ss->pSndList = pNewBuff;
 			pNewBuff->pNext = NULL;
 			ss->pSndListLast->pNext = pNewBuff;
 			ss->pSndListLast = pNewBuff;
 			pEthInt->nSendingQueueSz++;
-			EthernetManager.nDrvSendingQueueSz++;
+			__ATOMIC_INCREASE(&EthernetManager.nDrvSendingQueueSz);
 			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
 			bResult = TRUE;
 		}

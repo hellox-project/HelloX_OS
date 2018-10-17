@@ -787,10 +787,23 @@ static BOOL PPPoEInitialize(__PPPOE_MANAGER* pMgr)
 #if defined(__CFG_SYS_SMP)
 	__INIT_SPIN_LOCK(pMgr->spin_lock, "pppoe");
 #endif
+	/*
+	* Main thread of PPP over Ethernet functions.
+	* All PPPoE related functions are bounced to this kernel thread
+	* to process.
+	* It's priority is higher than normal priority level,but lower than
+	* the main thread of tcp/ip.
+	* The priority level of kernel threads in network subsystem in HelloX,
+	* is arranged as following rule:
+	*   Kernel thread's priority level in device driver <=
+	*   Kernel thread's priority level in datalink layer <=
+	*   Kernel thread's priority level in network layer <=
+	*   Kernel thread's priority level in transportation layer.
+	*/
 	pMgr->hMainThread = CreateKernelThread(
 		0,
 		KERNEL_THREAD_STATUS_READY,
-		PRIORITY_LEVEL_NORMAL,
+		PRIORITY_LEVEL_HIGH_3,
 		pppoeMainThread,
 		NULL,
 		NULL,

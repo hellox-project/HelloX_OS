@@ -56,7 +56,8 @@ sys_thread_t sys_thread_new(const char* name,void (*thread)(void* arg),void* arg
 		0,
 		KERNEL_THREAD_STATUS_SUSPENDED,
 		prio,
-		(__KERNEL_THREAD_ROUTINE)thread,  //Force convert to HelloX defined thread routine.
+		/* Force convert to HelloX defined thread routine. */
+		(__KERNEL_THREAD_ROUTINE)thread,
 		arg,
 		NULL,
 		(char*)name);

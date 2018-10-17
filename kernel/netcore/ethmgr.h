@@ -20,6 +20,7 @@
 #define __ETHMGR_H__
 
 #include <StdAfx.h> /* For HelloX common data types and APIs. */
+#include <TYPES.H>  /* For __atomic_t or other types. */
 
 //Flags to enable or disable ethernet debugging.
 //#define __ETH_DEBUG
@@ -268,7 +269,7 @@ struct __ETHERNET_MANAGER{
 	 * Tracking the ethernet buffer object's counter,
 	 * and record all ethernet buffer(s) in system.
 	 */
-	volatile size_t         nTotalEthernetBuffs;
+	__atomic_t nTotalEthernetBuffs;
 	/*
 	 * Record the total sending queue size of all kind of
 	 * ethernet drivers.
@@ -276,7 +277,7 @@ struct __ETHERNET_MANAGER{
 	 * enqueue,and decrease it when a frame was sent out.
 	 * This value is just for internal debugging.
 	 */
-	volatile size_t         nDrvSendingQueueSz;
+	__atomic_t nDrvSendingQueueSz;
 
 	//Initializer of Ethernet Manager,should be called in process of system initialize.
 	BOOL(*Initialize)       (struct __ETHERNET_MANAGER*);
