@@ -12,19 +12,21 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "StdAfx.h"
-#include "kapi.h"
-#include "shell.h"
+#include <StdAfx.h>
+#include <kapi.h>
+#include <process.h>
+#include <stdio.h>
+#include <string.h>
+#include <console.h>
+#include <modmgr.h>
+#include <buffmgr.h>
+#include <mlayout.h>
+
+#include "SHELL.H"
 #include "ioctrl_s.h"
 #include "sysd_s.h"
 #include "extcmd.h"
 #include "debug.h"
-#include "modmgr.h"
-#include "console.h"
-#include "stdio.h"
-#include "string.h"
-#include <buffmgr.h>
-
 
 #if defined(__I386__)
 #ifndef __BIOS_H__
@@ -36,7 +38,7 @@
 #define  ERROR_STR        "  Incorrect command."
 
 //shell input pos
-#define  SHELL_INPUT_START_X       (strlen(s_szPrompt))   // 
+#define  SHELL_INPUT_START_X       (strlen(s_szPrompt))
 #define  SHELL_INPUT_START_Y       1 
 #define  SHELL_INPUT_START_Y_FIRST 4 
 
@@ -46,8 +48,6 @@ CHAR    s_szPrompt[64]             = {0};
 
 //Shell thread's handle.
 __KERNEL_THREAD_OBJECT*  g_lpShellThread   = NULL;
-//static HISOBJ            s_hHiscmdInoObj   = NULL;
-
 
 //The following handlers are moved to shell1.cpp.
 extern DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handles the version command.
@@ -55,7 +55,7 @@ extern DWORD MemHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handles the mem
 extern DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj);
 extern DWORD TelnetHandler(__CMD_PARA_OBJ* lpCmdObj);
-extern DWORD Ssh2Handler(__CMD_PARA_OBJ* lpCmdObj);
+//extern DWORD Ssh2Handler(__CMD_PARA_OBJ* lpCmdObj);
 extern DWORD GUIHandler(__CMD_PARA_OBJ* pCmdParaObj);          //Handler for GUI command,resides in
 extern DWORD BatHandler(__CMD_PARA_OBJ* pCmdParaObj);
 //extern DWORD FileWriteTest(__CMD_PARA_OBJ* pCmdParaObj); 
@@ -93,7 +93,6 @@ __CMD_OBJ  CmdObj[] = {
 	{"sysdiag"  ,    SysDiagApp},
 	{"sysinfo"  ,    SysInfoHandler},
 	{"loadapp"  ,    LoadappHandler},
-	{"la"       ,    LoadappHandler},
 #ifdef __CFG_APP_TELNET
 	{"telnet"   ,    TelnetHandler},
 #endif
@@ -645,12 +644,20 @@ DWORD SptHandler(__CMD_PARA_OBJ* pCmdParaObj)
 //********************************
 static DWORD Process1(LPVOID pData)
 {
+	char* pUserStack = (char*)KMEM_USERSTACK_START;
+
 	int i = 0;
-	for(i = 0;i < 5;i ++)
+	for(i = 0;i < 1;i ++)
 	{
 		_hx_printf("  I'm process 1.\r\n");
 		DumpProcess();
 		Sleep(10);
+	}
+	/* Travel the whole stack space. */
+	for (i = 0; i < DEFAULT_USER_STACK_SIZE; i++)
+	{
+		*pUserStack = 'C';
+		pUserStack++;
 	}
 	return 0;
 }
@@ -658,7 +665,7 @@ static DWORD Process1(LPVOID pData)
 static DWORD Process2(LPVOID pData)
 {
 	int i = 0;
-	for(i = 0;i < 5;i ++)
+	for(i = 0;i < 1;i ++)
 	{
 		_hx_printf("  I'm process 2.\r\n");
 		DumpProcess();
@@ -669,52 +676,90 @@ static DWORD Process2(LPVOID pData)
 
 DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	BUG_ON(TRUE); /* Test BUG macro. */
-
 #if 0
-	__PROCESS_OBJECT* pProcess1  = NULL;
-	__PROCESS_OBJECT* pProcess2  = NULL;
-	int round = 1000;
-
-	for(round = 0;round < 20480;round ++)
+	if (NULL == pVmmMgr)
 	{
-		pProcess1 = ProcessManager.CreateProcess(
-			(__COMMON_OBJECT*)&ProcessManager,
-			0,
-			PRIORITY_LEVEL_NORMAL,
-			Process1,
+		/* Test the virtual memory manager's construction and operation. */
+		pVmmMgr = (__VIRTUAL_MEMORY_MANAGER*)ObjectManager.CreateObject(&ObjectManager,
 			NULL,
-			NULL,
-			"Process1");
-		if(NULL == pProcess1)
+			OBJECT_TYPE_VIRTUAL_MEMORY_MANAGER);
+		if (NULL == pVmmMgr)
 		{
-			_hx_printf("  Create Process1 failed.\r\n");
-			return SHELL_CMD_PARSER_SUCCESS;
+			_hx_printf("Failed to create virtual memory mgr.\r\n");
 		}
-		_hx_printf("  Create Process1 successfully.\r\n");
+		if (!pVmmMgr->Initialize((__COMMON_OBJECT*)pVmmMgr))
+		{
+			_hx_printf("Failed to initialize virtual memory mgr.\r\n");
+		}
+		/* Allocate user space memories. */
+		LPVOID pUser = pVmmMgr->VirtualAlloc((__COMMON_OBJECT*)pVmmMgr,
+			(LPVOID)KMEM_USERAPP_START,
+			8 * 1024 * 1024,
+			VIRTUAL_AREA_ALLOCATE_ALL,
+			VIRTUAL_AREA_ACCESS_RW,
+			"userapp",
+			NULL);
+		BUG_ON((unsigned long)pUser != KMEM_USERAPP_START);
 
-		pProcess2 = ProcessManager.CreateProcess(
-			(__COMMON_OBJECT*)&ProcessManager,
-			0,
-			PRIORITY_LEVEL_NORMAL,
-			Process2,
-			NULL,
-			NULL,
-			"Process2");
-		if(NULL == pProcess2)
-		{
-			_hx_printf("  Create Process2 failed.\r\n");
-			return SHELL_CMD_PARSER_SUCCESS;
-		}
-		_hx_printf("  Create Process2 successfully.\r\n");
-		
-		pProcess1->WaitForThisObject((__COMMON_OBJECT*)pProcess1);
-		pProcess2->WaitForThisObject((__COMMON_OBJECT*)pProcess2);
-		ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager,(__COMMON_OBJECT*)pProcess1);
-		ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager,(__COMMON_OBJECT*)pProcess2);
-		_hx_printf("  Debug round [ %d ]run over.\r\n",round);
+		pUser = pVmmMgr->VirtualAlloc((__COMMON_OBJECT*)pVmmMgr,
+			(LPVOID)KMEM_USERHEAP_START,
+			8 * 1024 * 1024,
+			VIRTUAL_AREA_ALLOCATE_ALL,
+			VIRTUAL_AREA_ACCESS_RW,
+			"userheap",
+			NULL);
+		BUG_ON((unsigned long)pUser != KMEM_USERHEAP_START);
+
+		pUser = pVmmMgr->VirtualAlloc((__COMMON_OBJECT*)pVmmMgr,
+			(LPVOID)KMEM_USERSTACK_START,
+			4 * 1024 * 1024,
+			VIRTUAL_AREA_ALLOCATE_ALL,
+			VIRTUAL_AREA_ACCESS_RW,
+			"userstk",
+			NULL);
+		BUG_ON((unsigned long)pUser != KMEM_USERSTACK_START);
+		PrintVirtualArea(pVmmMgr);
+	}
+	else
+	{
+		/* Release all virtual areas allocated. */
+		pVmmMgr->VirtualFree((__COMMON_OBJECT*)pVmmMgr, (LPVOID)KMEM_USERAPP_START);
+		pVmmMgr->VirtualFree((__COMMON_OBJECT*)pVmmMgr, (LPVOID)KMEM_USERHEAP_START);
+		pVmmMgr->VirtualFree((__COMMON_OBJECT*)pVmmMgr, (LPVOID)KMEM_USERSTACK_START);
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pVmmMgr);
+		pVmmMgr = NULL;
+		/* Test the destruction of virtual memory manager. */
 	}
 #endif
+
+	__PROCESS_OBJECT* pProcess = NULL;
+
+	pProcess = ProcessManager.CreateProcess(
+		(__COMMON_OBJECT*)&ProcessManager,
+		0,
+		PRIORITY_LEVEL_NORMAL,
+		NULL,
+		pCmdParaObj,
+		NULL,
+		"Process");
+	if (NULL == pProcess)
+	{
+		_hx_printf("  Create Process failed.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+	_hx_printf("  Create Process successfully.\r\n");
+
+	/*
+	 * Set the main thread as focus thread so as
+	 * user input could be directed to this process.
+	 */
+	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
+		(__COMMON_OBJECT*)pProcess->lpMainThread);
+	pProcess->WaitForThisObject((__COMMON_OBJECT*)pProcess);
+	/* Reset focus thread as default. */
+	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
+		NULL);
+	ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager, (__COMMON_OBJECT*)pProcess);
 
 	return SHELL_CMD_PARSER_SUCCESS;
 }
@@ -752,28 +797,29 @@ static DWORD QueryCmdName(LPSTR pMatchBuf,INT nBufLen)
 
 	return SHELL_QUERY_CANCEL;	
 }
-//Command analyzing routine,it analyzes user's input and search
-//command array to find a proper handler,then call it.
-//Default handler will be called if no proper command handler is
-//located.
-static DWORD  CommandParser(LPSTR pCmdBuf)
+/* 
+ * Command analyzing routine,it analyzes user's input and search
+ * command array to find a proper handler,then call it.
+ * Default handler will be called if no proper command handler is
+ * located.
+ */
+static DWORD CommandParser(LPSTR pCmdBuf)
 {
 	__KERNEL_THREAD_OBJECT* hKernelThread = NULL;
-	__CMD_PARA_OBJ*         lpCmdParamObj = NULL;
-	DWORD   dwResult                      = SHELL_CMD_PARSER_INVALID;        //If find the correct command object,then
-	DWORD   dwIndex                       = 0;          //Used for 'for' loop.
-	
+	__CMD_PARA_OBJ* lpCmdParamObj = NULL;
+	DWORD dwResult = SHELL_CMD_PARSER_INVALID;
+	DWORD dwIndex = 0;	
 
+	/* Create parameter object by using cmd line. */
 	lpCmdParamObj = FormParameterObj(pCmdBuf);
-	if(NULL == lpCmdParamObj || lpCmdParamObj->byParameterNum < 1)    //Can not form a valid command parameter object.
+	if(NULL == lpCmdParamObj || lpCmdParamObj->byParameterNum < 1)
 	{
 		CD_PrintString(pCmdBuf,TRUE);
 		goto __END;
 	}
 	
 	dwIndex = 0;
-
-	//is bat file?
+	/* Is batch command? */
 	if(strstr(lpCmdParamObj->Parameter[0],"./"))
 	{
 		BatHandler(lpCmdParamObj);
@@ -784,8 +830,9 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 	while(CmdObj[dwIndex].CmdStr)
 	{
 		if(StrCmp(CmdObj[dwIndex].CmdStr,lpCmdParamObj->Parameter[0]))
-		{			
-			CmdObj[dwIndex].CmdHandler(lpCmdParamObj);  //Call the command handler.
+		{
+			/* Invoke the command's handler. */
+			CmdObj[dwIndex].CmdHandler(lpCmdParamObj);
 			dwResult = SHELL_CMD_PARSER_SUCCESS;
 			break;
 		}
@@ -794,33 +841,44 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 
 	if(dwResult == SHELL_CMD_PARSER_SUCCESS)
 	{
+		/* 
+		 * It's a internal command and has
+		 * been processed successfully.
+		 */
 		goto __END;
 	}
 	
-	dwIndex = 0;  //Now,should search external command array.
+	/* Search external command array. */
+	dwIndex = 0;
 	while(ExtCmdArray[dwIndex].lpszCmdName)
 	{		
-		if(StrCmp(ExtCmdArray[dwIndex].lpszCmdName,lpCmdParamObj->Parameter[0]))  //Found.
+		if(StrCmp(ExtCmdArray[dwIndex].lpszCmdName,lpCmdParamObj->Parameter[0]))
 		{	
+			/* A dedicated kernel thread is used to run the command. */
 			hKernelThread = KernelThreadManager.CreateKernelThread(
 				(__COMMON_OBJECT*)&KernelThreadManager,
 				0,
 				KERNEL_THREAD_STATUS_READY,
 				PRIORITY_LEVEL_NORMAL,
 				ExtCmdArray[dwIndex].ExtCmdHandler,
-				(LPVOID)lpCmdParamObj, //?
+				(LPVOID)lpCmdParamObj,
 				NULL,
 				NULL);
-			if(!ExtCmdArray[dwIndex].bBackground)  //Should wait.
+			if(!ExtCmdArray[dwIndex].bBackground)
 			{
+				/* 
+				 * The command thread require inter-active with
+				 * user,so we set it as the focus thread, and
+				 * wait it to run over.
+				 */
 				DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
-					(__COMMON_OBJECT*)hKernelThread);  //Give the current input focus to this thread.
+					(__COMMON_OBJECT*)hKernelThread);
 				hKernelThread->WaitForThisObject((__COMMON_OBJECT*)hKernelThread);
+				/* Set shell thread as focus thread. */
 				DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,NULL);
 				KernelThreadManager.DestroyKernelThread(
 					(__COMMON_OBJECT*)&KernelThreadManager,
-					(__COMMON_OBJECT*)hKernelThread);  //Destroy it.
-				//Set focus thread to shell.
+					(__COMMON_OBJECT*)hKernelThread);
 			}
 			
 			dwResult = SHELL_CMD_PARSER_SUCCESS;
@@ -829,11 +887,8 @@ static DWORD  CommandParser(LPSTR pCmdBuf)
 		dwIndex ++;
 	}
 	
-	//DefaultHandler(NULL); //Call the default command handler.	
 __END:
-
 	ReleaseParameterObj(lpCmdParamObj);
-	
 	return dwResult;		
 }
 

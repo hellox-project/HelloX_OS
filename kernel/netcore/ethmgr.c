@@ -18,7 +18,6 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
-#include <kapi.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,8 +113,9 @@ static void dhcpRestart(__ETHERNET_INTERFACE* pEthInt, __NETWORK_PROTOCOL* pProt
 #endif
 }
 
-//Configure a given interface by applying the given parameters.
-static void netifConfig(__ETHERNET_INTERFACE* pif, UCHAR proto, __ETH_INTERFACE_STATE* pifState, __ETH_IP_CONFIG* pifConfig)
+/* Configure a given interface by applying the given parameters. */
+static void netifConfig(__ETHERNET_INTERFACE* pif, UCHAR proto, 
+	__ETH_INTERFACE_STATE* pifState, __ETH_IP_CONFIG* pifConfig)
 {
 	int proto_num = 0;
 	__NETWORK_PROTOCOL* pProtocol = NULL;
@@ -699,12 +699,16 @@ static BOOL __BroadcastHandler()
 	return TRUE;
 }
 
-//Dedicated Ethernet core thread,repeatly to poll all ethernet interfaces to receive frame,if
-//interrupt mode is not supported by ethernet driver,and do some other functions.
+/* 
+ * Dedicated thread for ethernet core functions.
+ * It just repeatly poll all ethernet interfaces to receive frame,
+ * if interrupt mode is not supported by ethernet driver.
+ * And do some other functions.
+ */
 static DWORD EthCoreThreadEntry(LPVOID pData)
 {
 	__KERNEL_THREAD_MESSAGE msg;
-	HANDLE                  hTimer = NULL;           //Handle of receiving poll timer.
+	HANDLE                  hTimer = NULL;
 	struct netif*           pif = (struct netif*)pData;
 	__ETHERNET_INTERFACE*   pEthInt = NULL;
 	__WIFI_ASSOC_INFO*      pAssocInfo = NULL;
@@ -714,7 +718,7 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 	int                     tot_len = 0;
 	int                     index = 0;
 
-	//Initialize all ethernet driver(s) registered in system.
+	/* Loads all ethernet NIC driver(s) registered in system. */
 #ifdef __ETH_DEBUG
 	_hx_printf("  Ethernet Manager: Begin to load ethernet drivers...\r\n");
 #endif
@@ -730,7 +734,7 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 	}
 	index = 0;
 
-	//Set the receive polling timer.
+	/* Set the receive polling timer. */
 	hTimer = SetTimer(WIFI_TIMER_ID, WIFI_POLL_TIME, NULL, NULL, TIMER_FLAGS_ALWAYS);
 	if (NULL == hTimer)
 	{
@@ -746,8 +750,7 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 			{
 			case KERNEL_MESSAGE_TERMINAL:
 				goto __TERMINAL;
-
-			case ETH_MSG_SETCONF:             //Configure a given interface.
+			case ETH_MSG_SETCONF:
 				pifConfig = (__ETH_IP_CONFIG*)msg.dwParam;
 				if (NULL == pifConfig)
 				{
@@ -771,6 +774,7 @@ static DWORD EthCoreThreadEntry(LPVOID pData)
 				}
 				//Commit the configurations to interface.
 				netifConfig(pEthInt, pifConfig->protoType, pifState, pifConfig);
+				/* Net config object should be released here. */
 				KMemFree(pifConfig, KMEM_SIZE_TYPE_ANY, 0);
 				break;
 			case ETH_MSG_BROADCAST:  //Broadcast an ethernet frame.
@@ -982,8 +986,10 @@ static BOOL SendFrame(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pEthBuff
 	return TRUE;
 }
 
-//Implementation of AddEthernetInterface,which is called by Ethernet Driver to register an interface
-//object.
+/* 
+ * AddEthernetInterface,which is called by Ethernet Driver to 
+ * register an interface object.
+ */
 static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName, char* mac, LPVOID pIntExtension,
 	__ETHOPS_INITIALIZE Init,
 	__ETHOPS_SEND_FRAME SendFrame,
@@ -1052,6 +1058,7 @@ static __ETHERNET_INTERFACE* AddEthernetInterface(char* ethName, char* mac, LPVO
 	pEthInt->SendFrame = SendFrame;
 	pEthInt->RecvFrame = RecvFrame;
 	pEthInt->IntControl = IntCtrl;
+	pEthInt->IntSpecificShow = NULL;
 
 	//Sending queue(list) size.
 	pEthInt->nSendingQueueSz = 0;
@@ -1221,42 +1228,131 @@ static void ShowBinding(__ETHERNET_INTERFACE* pEthInt)
 	}
 }
 
-//Display all ethernet interface's statistics information.
+/* Show out one ethernet interface's stattistics information. */
+static VOID _ShowIntStat(__ETHERNET_INTERFACE* pEthInt)
+{
+	int index = 0;
+	__ETH_INTERFACE_STATE* pState = NULL;
+	char* link_status = NULL;
+	char* duplex = NULL;
+	char* speed = NULL;
+
+	pState = &pEthInt->ifState;
+	//ShowBinding(pEthInt);
+	_hx_printf("  Statistics information for interface '%s':\r\n",
+		pEthInt->ethName);
+	/* Link status to string. */
+	if (pEthInt->link_status == up)
+	{
+		link_status = "UP";
+	}
+	else
+	{
+		link_status = "DOWN";
+	}
+	/* Duplex to string. */
+	if (pEthInt->duplex == full)
+	{
+		duplex = "FULL";
+	}
+	else
+	{
+		duplex = "HALF";
+	}
+	/* Speed to string. */
+	switch (pEthInt->speed)
+	{
+	case _10M:
+		speed = "10Mbps";
+		break;
+	case _100M:
+		speed = "100Mbps";
+		break;
+	case _1000M:
+		speed = "1000Mbps";
+		break;
+	case _10G:
+		speed = "10Gbps";
+		break;
+	case _40G:
+		speed = "40Gbps";
+		break;
+	case _100G:
+		speed = "100Gbps";
+		break;
+	default:
+		speed = "UNKNOWN";
+		break;
+	}
+	/* Show all information. */
+	_hx_printf("    Link status            : %s\r\n", link_status);
+	_hx_printf("    Duplex/Speed           : %s/%s\r\n", duplex, speed);
+	_hx_printf("    MAC address            : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X\r\n",
+		pEthInt->ethMac[0],
+		pEthInt->ethMac[1],
+		pEthInt->ethMac[2],
+		pEthInt->ethMac[3],
+		pEthInt->ethMac[4],
+		pEthInt->ethMac[5]);
+	_hx_printf("    Send frame#/bytes      : %u/%u\r\n", pState->dwFrameSend, pState->dwTotalSendSize);
+	_hx_printf("    Success send #         : %u\r\n", pState->dwFrameSendSuccess);
+	_hx_printf("    Receive frame#/bytes   : %u/%u\r\n", pState->dwFrameRecv, pState->dwTotalRecvSize);
+	_hx_printf("    Success recv #         : %u\r\n", pState->dwFrameRecvSuccess);
+	_hx_printf("    Bridged frame #        : %u\r\n", pState->dwFrameBridged);
+	_hx_printf("    Tx error number        : %u\r\n", pState->dwTxErrorNum);
+	_hx_printf("    Mcast rx/tx frame #    : %u/%u\r\n", pState->dwRxMcastNum, pState->dwTxMcastNum);
+	_hx_printf("    Sending Queue Sz       : %u\r\n",
+		pEthInt->nSendingQueueSz);
+	/* Call interface specific show routine if specified. */
+	if (pEthInt->IntSpecificShow)
+	{
+		_hx_printf("    ------------------------------------\r\n");
+		pEthInt->IntSpecificShow(&EthernetManager.EthInterfaces[index]);
+	}
+}
+
+/* Show all or a specific ethernet interface. */
 static VOID ShowInt(char* ethName)
 {
-	int                    index = 0;
-	__ETH_INTERFACE_STATE* pState = NULL;
+	int index = 0;
+	__ETHERNET_INTERFACE* pEthInt = NULL;
+	BOOL bFound = FALSE;
 
-	if (NULL == ethName)  //Show all interface(s).
+	if (NULL == ethName)
 	{
+		/* Show all interface(s). */
 		for (index = 0; index < EthernetManager.nIntIndex; index++)
 		{
-			pState = &EthernetManager.EthInterfaces[index].ifState;
-			ShowBinding(&EthernetManager.EthInterfaces[index]);
-			_hx_printf("  Statistics information for interface '%s':\r\n",
-				EthernetManager.EthInterfaces[index].ethName);
-			_hx_printf("    Send frame #       : %u\r\n", pState->dwFrameSend);
-			_hx_printf("    Success send #     : %u\r\n", pState->dwFrameSendSuccess);
-			_hx_printf("    Send bytes size    : %u\r\n", pState->dwTotalSendSize);
-			_hx_printf("    Receive frame #    : %u\r\n", pState->dwFrameRecv);
-			_hx_printf("    Success recv #     : %u\r\n", pState->dwFrameRecvSuccess);
-			_hx_printf("    Receive bytes size : %u\r\n", pState->dwTotalRecvSize);
-			_hx_printf("    Bridged frame #    : %u\r\n", pState->dwFrameBridged);
-			_hx_printf("    Tx error number    : %u\r\n", pState->dwTxErrorNum);
-			_hx_printf("    Recv mcast frame # : %u\r\n", pState->dwRxMcastNum);
-			_hx_printf("    Send mcast frame # : %u\r\n", pState->dwTxMcastNum);
-			_hx_printf("    Sending Queue Sz   : %u\r\n",
-				EthernetManager.EthInterfaces[index].nSendingQueueSz);
+			pEthInt = &EthernetManager.EthInterfaces[index];
+			_ShowIntStat(pEthInt);
 		}
 	}
-	else //Show a specified ethernet interface.
+	else
 	{
+		/* Show a specified ethernet interface. */
+		for (index = 0; index < EthernetManager.nIntIndex; index++)
+		{
+			pEthInt = &EthernetManager.EthInterfaces[index];
+			if (0 == strcmp(pEthInt->ethName, ethName))
+			{
+				_ShowIntStat(pEthInt);
+				bFound = TRUE;
+				break;
+			}
+		}
+		if (!bFound)
+		{
+			_hx_printf("  No interface with name[%s] found.\r\n", ethName);
+		}
 	}
 	return;
 }
 
-//Delivery a frame to layer 3 entity,usually it will be used by ethernet driver intertupt handler,
-//when a frame is received,and call this routine to delivery the frame.
+/*
+ * Delivery a frame to layer 3 entity,usually it will be 
+ * used by ethernet driver intertupt handler, when a frame 
+ * is received,and call this routine to delivery the frame.
+ */
 static BOOL Delivery(__ETHERNET_INTERFACE* pIf, __ETHERNET_BUFFER* pBuff)
 {
 	return FALSE;
@@ -1685,6 +1781,33 @@ static VOID ReleaseEthernetInterface(__ETHERNET_INTERFACE* pEthInt)
 	return;
 }
 
+/* Handle link status change event of an ethernet interface. */
+static VOID _LinkStatusChange(__ETHERNET_INTERFACE* pEthInt,
+	enum __LINK_STATUS link_status,
+	enum __DUPLEX duplex,
+	enum __ETHERNET_SPEED speed)
+{
+	if (NULL == pEthInt)
+	{
+		goto __TERMINAL;
+	}
+	if (down == link_status)
+	{
+		pEthInt->link_status = down;
+		goto __TERMINAL;
+	}
+	if (up == link_status)
+	{
+		pEthInt->link_status = up;
+		pEthInt->duplex = duplex;
+		pEthInt->speed = speed;
+		goto __TERMINAL;
+	}
+
+__TERMINAL:
+	return;
+}
+
 /*
 *
 *  Definition of Ethernet Manager object.
@@ -1729,5 +1852,6 @@ struct __ETHERNET_MANAGER EthernetManager = {
 	_GetEthernetInterfaceState,    //GetEthernetInterfaceState.
 	_CreateEthernetBuffer,         //CreateEthernetBuffer.
 	_CloneEthernetBuffer,          //CloneEthernetBuffer.
-	_DestroyEthernetBuffer         //DestroyEthernetBuffer.
+	_DestroyEthernetBuffer,        //DestroyEthernetBuffer.
+	_LinkStatusChange,             //LinkStatusChange.
 };

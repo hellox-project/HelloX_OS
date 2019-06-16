@@ -1,35 +1,91 @@
 ;;------------------------------------------------------------------------
 ;;  Original Author           : Garry
 ;;  Original Finished date    :
-;;  FileName                  : realinit.asm
-;;  Procedure defined         :
-;;                              1.np_printmsg
-;;                              2.
-;;                              3.
-;;                              4.
-;;                              5.
+;;  Module name               : realinit.asm
+;;  Usage                     : This module contains the initialization code
+;;                              for x86 platform,in real mode,in the very
+;;                              begining of HelloX's development.
+;;                              Some protected mode initialization code and
+;;                              BIOS agent were added into this module later,
+;;                              so even it's name is realinit,it contains
+;;                              protected mode and 32 bits code actually.
 ;;  Last modified date        :
 ;;  Last modified author      :
 ;;  Lines Number              :
-;;  Function                  :
-;;                              This module countains the real mode initia-
-;;                              lize code.
-;;                              These code initialize the CPU context,CRT
-;;                              dis play,Flopy disk controller,8259 chip,etc.
+;;------------------------------------------------------------------------
+
+;;------------------------------------------------------------------------
+;;  Memory layout of this module(load address when running is in bracket):
+;;    0x0000(0x1000) - 0x03FF(0x13FF): 16 bits real mode initializatio code
+;;    0x0400(0x1400) - 0x07FF(0x17FF): 32 bits protected mode code
+;;    0x0800(0x1800) - 0x0BFF(0x1BFF): BIOS service agent for Kernel
+;;    0x0C00(0x1C00) - 0x0FFF(0x1FFF): Reserved for furture's extension.
+;;
+;;  This module is loaded into memory by boot sector as a whole with miniker
+;;  and master modules,the load address is 0x1000,then jump to the begin
+;;  of this module from boot sector.
+;;  The real mode initialization code is running first,and jump to protected
+;;  mode code after that.
+;;  The protected mode code do some processing that must be in protected 
+;;  mode and then jump to miniker module.
+;;  This module prepares a comfort environment for HelloX's kernel to run,
+;;  and it's part of OS loader,in traditional BIOS mode.It should be
+;;  replaced by UEFI loading application in UEFI mode.
 ;;------------------------------------------------------------------------
  
-    bits 16                      ;;The real mode code.
- 
+    bits 16                              ;;The real mode code.
     org 0x0000
 	
-    %define DEF_RINIT_START 0x01000  ;;Start address of this module.
-                                     ;;This code is loaded into memory by
-                                     ;;boot sector,and resides at 0x01000.
+	;;Start address of this module.This code is loaded into 
+	;;memory by boot sector,and resides at 0x01000.
+    %define DEF_RINIT_START     0x01000
+
+	;;Begin location of protected mode code,32 bits.
+	;;Added 1k from the realinit module's length.
+	%define DEF_PM32_BEGIN      0x01400  
+
+	;;The position where memory layout array resides.It's in 
+	;;offset of 12K from startof miniker module.The miniker 
+	;;module is loaded into memory at 0x2000,so the obsolute
+	;;address is 0x5000.
+	%define DEF_MLAYOUT_TABLE_ADDR   0x05000  
+
+	;;Maximal number of memory layout table element.
+	%define DEF_MLAYOUT_TABLE_SIZE   200
  
-    %define DEF_MINI_START  0x02000  ;;The start address of the mini-kernal
-                                     ;;when it be loaded into memory.
-   
-    %define DEF_VBE_INFO    0x0E000  ;;Start address of VBE information block.
+    ;;The start address of the mini-kernal when it was 
+	;;loaded into memory.
+	%define DEF_MINI_START 0x0100000
+
+	;;Start address of VBE information block.
+    %define DEF_VBE_INFO        0x0E000  
+
+	;;The physical start address when mini kernal is
+	;;loaded into memory at very first.
+    con_org_start_addr equ 0x00002000
+
+	;;Start physical address that the mini kernel
+	;;should be relocated to.
+    con_mini_start equ 0x00100000
+
+	;;Start physical address of master module.
+    con_mast_start equ 0x00110000
+
+	;;Mini-kernal's size,fixed as 64k.
+    ;;It's the binary's size,which is 48K now,
+	;;plus the space between miniker and master.
+	;;The space is 16K bytes.
+	con_mini_size  equ 0x00010000
+
+	;;The master's length,can not exceed 560k.
+	;;The usable space in real mode is 639K at
+	;;most,this module(miniker) is loaded at
+	;;8K offset from 0,this module's length is 
+	;;64K,so the master's maximal length is:
+	;;639 - 64 - 8 = 567K.
+	;;For safety we assume the master's maximal
+	;;size is 560k.
+    con_mast_size  equ 0x0008c000
  
 gl_initstart:
     mov ax,DEF_RINIT_START       ;;The following code prepare the execute
@@ -49,19 +105,16 @@ gl_initstart:
     mov ax,initmsg
     call np_printmsg
  
-    ;;The following code initializes the system hardware.
+    ;;Initialize the CRT display.
+    call np_init_crt
+
+	;;Gather memory layout information.
+	call gl_collect_mlayout
  
-    call np_init_crt             ;;Initialize the crt display.
-    call np_init_keybrd          ;;Initialize the key board.
-    call np_init_dmac            ;;Initialize the DMA controller.
-    call np_init_8259            ;;Initialize the interrupt controller.
-    call np_init_clk             ;;Initialize the clock chip.
-    call np_get_syspara          ;;Gather the system parameters.
+    ;;Now,we have finished intializing the system 
+	;;hardware,enter protected mode.
  
-    ;;Now,we have finished intialize the system hardware,it's time to enter
-    ;;protected mode.
- 
-    call np_act20addr            ;;First,activate the above 12 address lines.
+    call np_act20addr
  
     xor eax,eax
     mov ax,ds
@@ -74,46 +127,67 @@ gl_initstart:
     call np_strlen
     mov ax,okmsg
     call np_printmsg
-    ;call np_write_mem
-    ;mov ax,gl_mem_content
-    ;mov cx,0x08
-    ;call np_printmsg
  
     mov eax,cr0
     or eax,0x01                  ;;Set the PE bit of CR0 register.
     mov cr0,eax                  ;;Enter the protected mode.
  
-    ;mov ax,0x010                 ;;The following code reinitialize the segme-
-                                 ;;nt registers.
-    ;mov ds,ax
-    ;mov es,ax
-    ;mov fs,ax
-    ;mov gs,ax
- 
-    jmp dword 0x08 : DEF_MINI_START  ;;Transant the control to Mini Kernal.
- 
-    ;mov ax,0x4c00                ;;------------- ** debug ** -------------
-    ;int 0x21                     ;;------------- ** debug ** -------------
- 
+	;;Jump to protected mode's code.
+	jmp dword 0x08 : DEF_PM32_BEGIN
+
+;;Collect system memory range information,put them into memory layout
+;;table.
+;;INT 15H with AX = E820 is used to query from BIOS.
+gl_collect_mlayout:
+    push es
+	push di
+	;;Construct output buffer(ES:DI).
+	mov ax, DEF_MLAYOUT_TABLE_ADDR
+	shr ax,4
+	mov es,ax
+	xor di,di
+	mov eax,0xE820
+	xor ebx,ebx
+	;;Each table element's size is 20 bytes.
+	mov ecx,20
+	;;edx contains the signature 'SMAP'.
+	mov edx,0x534D4150
+	;;ESI contains the maximal loop counter.
+	mov esi, DEF_MLAYOUT_TABLE_SIZE
+	;;Begin to query.
+.ll_begin:
+    mov eax,0xE820
+    int 0x15
+	;;Just quit if error raise.
+	jc .ll_terminal
+	;;Validate output signature(eax = 'SMAP').
+	cmp eax, 0x534D4150
+	jne .ll_terminal
+	;;Increase the buffer to hold next one.
+	add di, 20
+	cmp ebx,0
+	jz .ll_terminal
+	;;Loop times can not exceed esi.
+	dec esi
+	jnz .ll_begin
+
+.ll_terminal:
+    pop di
+	pop es
+	ret
+
 ;;------------------------------------------------------------------------
 ;;  Initialize procedures,including:
 ;;  1.np_act20addr       : Activate the above 12 address lines of the PC.
 ;;  2.np_init8259        : Initialize the 8259 chip.
 ;;------------------------------------------------------------------------
  
-np_deadloop:                     ;;A dead loop procedure,is called by init-
-                                 ;;ializing procedures,when these initialing
-                                 ;;procedure are failed.
-                                 ;;This procedure print out a message,and
-                                 ;;enter into a dead loop.
-                                 ;;The only way to recover from this dead
-                                 ;;loop is cool restart your computer,because
-                                 ;;of the shutting off of the interrupt.
+np_deadloop:                     ;;A dead loop procedure,just print out 
+                                 ;;a message,and enter into a dead loop.
     mov ax,errormsg
     call np_strlen
     mov ax,errormsg,
-    call np_printmsg
- 
+    call np_printmsg 
     mov cx,0x01
 .ll_dead:
     inc cx
@@ -131,80 +205,6 @@ np_init_crt:
     mov eax,0x01
     pop es
     ret
- 
-__np_init_crt:
-    push ax
-    push bx
-    push cx
-    push dx
-    push es
-    push si
-    push di
-    mov ax,0x00
-    mov es,ax
-    mov word [es : DEF_VBE_INFO],0x00
-    mov si,VBE_MODE_ARRAY
-.ll_testvbe:       ;Test if the present video controller can support VBE.
-    mov di,DEF_VBE_INFO
-    mov ax,0x4f00
-    int 0x10
-    cmp al,0x4f
-    jnz .ll_terminal  ;Can not support VBE mode.
-    ;jmp .ll_terminal  ;Ignore the subsequent int 10 call for testing.
-.ll_setmodebgn:
-    cmp word [si],0x00
-    jz .ll_terminal
-    mov bx,word [si]
-    mov ax,0x4f02
-    int 0x10
-    add si,0x02                  ;;Point to next mode.
-    cmp ah,0x00
-    jnz .ll_setmodebgn           ;;Set display mode failed.
-    ;;Set mode successfully,then retrive mode information.
-    sub si,0x02
-    mov di,DEF_VBE_INFO
-    mov word [es : di],0x01      ;;Indicate in graphic mode.
-    add di,0x02
-    mov ax,word [si]
-    mov word [es : di],ax        ;;Store mode number.
-    add di,0x02
-    mov cx,ax
-    sub cx,0x4000                ;;Mask the flat memory bit.Very important,will be failed otherwise.
-    mov ax,0x4f01
-    int 0x10
-    cmp ah,0x00
-    jz .ll_terminal
-    ;;If can not retrive mode information,return to text mode.
-    mov word [es : DEF_VBE_INFO],0x00
-    mov ax,0x03
-    int 0x10
-.ll_terminal:
-    pop di
-    pop si
-    pop es
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret
-   
-.ll_cannotsupport:
-    ret                          ;;The end of the procedure.
- 
-np_init_keybrd:
-    ret                          ;;The end of the procedure.
- 
-np_init_dmac:
-    ret                          ;;The end of the procedure.
- 
-np_init_8259:
-    ret                          ;;The end of the procedure.
- 
-np_init_clk:
-    ret                          ;;The end of the procedure.
-np_get_syspara:
-    ret                          ;;The end of the procedure.
- 
  
 np_act20addr:                    ;;A procedure to activate the 20th address line.
  
@@ -250,8 +250,7 @@ np_wait_8042free:                ;;This procedure test the 8042 input buffer
     test al,0x02
     jnz .ll_begin
     ret                          ;;End of the procedure.
- 
- 
+
 ;;------------------------------------------------------------------------
 ;;  The following are some helper procedures.
 ;;  Including:
@@ -353,54 +352,71 @@ gl_mem_content:                  ;;--------------- ** debug ** -----------
                dd 0x00000000
                dd 0x00000000
  
-np_write_mem:                    ;;--------------- ** debug ** -----------
-    push ax
-    push bx
-    push cx
-    push dx
-    push si
-    push di
-    mov eax,dword [ds : 0x4668]
-    mov di,gl_mem_content
-    add di,0x07
-    mov cx,0x08
-    mov bl,0x0a
-.ll_begin:
-    mov bh,al
-    and bh,0x0f
-    cmp bh,bl
-    jb .ll_isn
-    sub bh,bl
-    add bh,'a'
-    mov byte [di],bh
-    jmp .ll_continue
-.ll_isn:
-    add bh,'0'
-    mov byte [di],bh
-.ll_continue:
-    shr eax,0x04
-    dec di
-    loop .ll_begin
-    pop di
-    pop si
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret                          ;;End of the procedure.
- 
- 
-    VBE_MODE_ARRAY       dw 0x4118   ;; 1024*768*32 mode,flat display memory.
-                         dw 0x4116   ;; 1024*768*16 mode,flat display memory.
-                         dw 0x4113   ;; 800*600*16 mode,flat display memory.
-                         dw 0x4110   ;; 640*480*16 mode,flat display memory.
-                         dw 0x4105   ;; 1024*768*8 mode,flat display memory.
-                         dw 0x4103   ;; 800*600*8 mode,flat display memory.
-                         dw 0x4101   ;; 640*480*8 mode,flat display memory.
-                         dw 0x00     ;; Terminal indicator of VBE_MODE_ARRAY.
- 
-gl_endof_module:
-    times 2*1024 - ($ - $$) db 0x00
+  
+VBE_MODE_ARRAY       dw 0x4118   ;; 1024*768*32 mode,flat display memory.
+                     dw 0x4116   ;; 1024*768*16 mode,flat display memory.
+                     dw 0x4113   ;; 800*600*16 mode,flat display memory.
+                     dw 0x4110   ;; 640*480*16 mode,flat display memory.
+                     dw 0x4105   ;; 1024*768*8 mode,flat display memory.
+                     dw 0x4103   ;; 800*600*8 mode,flat display memory.
+                     dw 0x4101   ;; 640*480*8 mode,flat display memory.
+                     dw 0x00     ;; Terminal indicator of VBE_MODE_ARRAY.
+
+    ;;About 300 bytes of binary code size above,reserve 1k space for it.
+	times 1*1024 - ($ - $$) db 0x00
+
+;--------------------------------------------------------------------------
+; The following code segment is for protected mode,32 bits.
+; Please be careful that the begining address of this code section is
+; same as DEF_PM32_BEGIN macro,defined at begin of this file and
+; used in previous code section.
+;--------------------------------------------------------------------------
+
+	;;Code running in protected mode and 32 bits.
+	bits 32
+gl_pm32_begin:
+    ;;Initializes the ds and es.
+    mov ax,0x010                 
+    mov ds,ax
+    mov es,ax
+
+    ;Redirect mini-kernel and master to their running location.
+    ;In order to save storage,make the loadable kernel image
+    ;larger,we packed the mini-kernel and master into one image
+    ;file,in which the mini-kernel occupies 16K,and master
+    ;occupies all the rest of the kernel image,follows miniker
+    ;immediately.
+    ;The base address of miniker and master are 0x100000 and 
+    ;0x110000 respectly,there is a space gap between running
+    ;and storage,so we must move the master to it's running position.
+    ;Miniker also be relocated to it's running position from
+    ;where it was loaded.
+
+    ;Relocate mini-kernel.
+    mov ecx,con_mini_size
+    shr ecx,0x02
+    mov esi,con_org_start_addr   ;;Original address.
+    mov edi,con_mini_start       ;;Miniker's target address.
+    cld
+    rep movsd
+
+    ;Relocate master.
+    mov ecx,con_mast_size
+    shr ecx,0x02
+    mov esi,con_org_start_addr
+    add esi,con_mini_size        ;;Master's original position.
+    mov edi,con_mast_start       ;;Miniker's target address.
+    cld
+    rep movsd
+
+    jmp dword 0x08 : DEF_MINI_START  ;;Transant the control to Mini Kernal.
+
+	;;End of the protected mode initialization code.
+gl_pm32_end:
+	;;Reserve 1k space for initialization code in 32 bits and protected mode.
+	times 2*1024 - ($ - $$) db 0x00
+	;;Restore 16 bits.
+	bits 16
  
 ;--------------------------------------------------------------------------
 ; The following code segment is the implementation of BIOS service call.
@@ -518,11 +534,13 @@ __ESP dd 0x00  ;Save ESP
 __REALCODE_BEGIN:
     mov bx,cs
     mov ds,bx
-    mov ss,bx
     mov es,bx
     mov fs,bx
     mov gs,bx
+	;Save ESP.
     mov dword [__ESP],esp
+	;ss and esp must be updated together.
+	mov ss,bx
     mov sp,0xff0
     call __REINIT_8259_EX         ;Set 8259 to BIOS mode
     sti ;Enable interrupt.
@@ -703,8 +721,8 @@ __WRITESECT:
     bits 16
 __BACK_TO_PROTECT:
     cli
-    mov esp,dword [__ESP] ;Restore ESP in protect mode
-    ;cli
+	;Save original ESP to EBP.
+	mov ebp,dword [__ESP]
     mov ebx,cr0
     or bl,0x01  ;Set PE bit.
     mov cr0,ebx
@@ -716,9 +734,9 @@ __BACK_TO_PROTECT:
 __PM_BEGIN:
     mov bx,0x10
     mov ds,bx
-    mov bx,0x18
+	;ss and esp must be updated together.
     mov ss,bx
-    mov bx,0x20
+	mov esp,ebp
     mov es,bx
     mov fs,bx
     mov gs,bx
@@ -791,11 +809,20 @@ np_init8259:                     ;;This procedure initializes the int-
  
     ret                         ;;End of the procedure.
  
-    align 4
-    bits 16   ;Restore the default setting.
- 
+
+    ;;This code section's size is 700 bytes approximitely in
+	;;binary,reserve 1k space for it.
+	times 3*1024 - ($ - $$) db 0x00
+
+;-----------------------------------------------------------------
+; 1k space for future's usage.
+; It's begin from 3k(reletive the begining of realinit module) and
+; length is 1k maximal.
+;-----------------------------------------------------------------
+    ;;Restore to default setting.
+    bits 16 
  
 ;-----------------------------------------------------------------
 ; END OF REALINIT.ASM
 ;-----------------------------------------------------------------
-times 4*1024 - ($ - $$) db 0x00
+    times 4*1024 - ($ - $$) db 0x00

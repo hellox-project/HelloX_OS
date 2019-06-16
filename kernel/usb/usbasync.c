@@ -929,7 +929,7 @@ BOOL usbStartAsyncXfer(__USB_ASYNC_DESCRIPTOR* pAsyncDesc, int new_size)
 	/*
 	* Wait the transaction to be finished.
 	*/
-	dwResult = WaitForThisObjectEx(pAsyncDesc->hEvent, 25000);
+	dwResult = WaitForThisObjectEx(pAsyncDesc->hEvent, 25000, NULL);
 	switch (dwResult)
 	{
 	case OBJECT_WAIT_RESOURCE:

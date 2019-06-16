@@ -17,6 +17,7 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
+#include <process.h>
 #include <kapi.h>
 #include <stdio.h>
 #include <pthread.h>

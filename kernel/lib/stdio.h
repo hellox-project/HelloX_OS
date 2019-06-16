@@ -14,8 +14,8 @@
 //    Lines number              :
 //***********************************************************************/
 
-typedef char *  va_list;
-typedef unsigned int     size_t;
+typedef char* va_list;
+typedef unsigned int size_t;
 
 //Flags to control file seeking operation.
 #define SEEK_SET    0
@@ -35,7 +35,8 @@ typedef unsigned int     size_t;
 
 /* Standard print routine of libc,hellox specific version. */
 int _hx_sprintf(char* buf,const char* fmt,...);
-int _hx_printf(const char* fmt,...);
+//int _hx_printf(const char* fmt,...);
+#define _hx_printf _hx_printk
 int _hx_vsprintf(char *buf, const char *fmt, va_list args);
 int _hx_vfprintf(void* stream,const char* fmt,va_list args);
 int _hx_snprintf(char* buf,size_t n,const char* fmt,...);

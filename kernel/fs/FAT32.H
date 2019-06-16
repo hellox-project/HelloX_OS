@@ -91,15 +91,13 @@ typedef struct FAT32_LONGENTRY
 	BYTE       szName2[12];
 	WORD       Rsved2;
 	BYTE       szName3[4];
-
 }__FAT32_LONGENTRY;
 
 #define  FAT32_SHORTDIR_FILENAME_LEN   11     //Fat32 short entry file name len .        
-#define  FAT32_SHORTDIR_PREFIX_LEN      6     //Fat32 short entry file name len no include ext  .       
+#define  FAT32_SHORTDIR_PREFIX_LEN     6      //Fat32 short entry file name len no include ext  .       
 #define  FAT32_LONGDIR_FILENAME_LEN    13     //Fat32 long  entry  file name len .        
 #define  FAT32_STANDARDEXT_NAME_LEN    3      //Fat32 file Standard extension name len .  
 
-       
 //FAT32 file object.
 struct FAT32_FS;
 typedef struct FAT32_FILE{
@@ -117,11 +115,11 @@ typedef struct FAT32_FILE{
 	DWORD      dwParentClus;     //Parent directory's cluster number.
 	DWORD      dwParentOffset;   //File short entry's offset in directory.
 
-	struct FAT32_FS*          pFileSystem;    //File system this file belong to.
-	__COMMON_OBJECT*   pFileCache;     //File cache object.
-	__COMMON_OBJECT*   pPartition;     //Partition this file belong to.
-	struct FAT32_FILE*        pNext;          //Pointing to next one.
-	struct FAT32_FILE*        pPrev;          //Pointing to previous one.
+	struct FAT32_FS* pFileSystem;    //File system this file belong to.
+	__COMMON_OBJECT* pFileCache;     //File cache object.
+	__COMMON_OBJECT* pPartition;     //Partition this file belong to.
+	struct FAT32_FILE* pNext;          //Pointing to next one.
+	struct FAT32_FILE* pPrev;          //Pointing to previous one.
 }__FAT32_FILE;
 
 #define FAT_CACHE_LENGTH 1024                  //Fat entry cache,default is 1K.
@@ -179,17 +177,16 @@ BOOL Fat32Init(__FAT32_FS* pFatFs,BYTE* pSector0);       //Initialize FAT32 file
 
 BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster);  //Get next cluster given current 1.
 
-VOID  CombinLongFileName(__FAT32_LONGENTRY** plongEntry,INT nLongEntryNum, CHAR* pFileFullName);//combin file long name to full name
+VOID  CombinLongFileName(__FAT32_LONGENTRY** plongEntry,INT nLongEntryNum, CHAR* pFileFullName);
 
 //Get one free cluster and mark the cluster as used.
 //If find,TRUE will be returned and the cluster number will be set in pdwFreeCluster,
 //else FALSE will be returned without any changing to pdwFreeCluster.
 BOOL GetFreeCluster(__FAT32_FS* pFat32Fs, DWORD dwStartToFind, DWORD* pdwFreeCluster);
-
 DWORD GetClusterSector(__FAT32_FS* pFat32Fs,DWORD dwCluster); //Get cluster's start sector no.
 BOOL  ConvertName(__FAT32_SHORTENTRY* pfse,BYTE* pResult);     //Convert to regular file name string.
 
-VOID  AddSpace(CHAR* pStrBuf,INT nCount);                      // add string end space 
+VOID  AddSpace(CHAR* pStrBuf,INT nCount);
 BOOL  GetShortEntry(__FAT32_FS* pFat32Fs,
 				   DWORD dwStartCluster,
 				   CHAR* pFileName,
@@ -230,7 +227,7 @@ BOOL ReleaseClusterChain(__FAT32_FS* pFat32Fs,DWORD dwStartCluster);
 #define  FAT32_DATETIME_WRITE      0x2
 #define  FAT32_DATETIME_ACCEPT     0x4
 
-VOID     SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage);
+VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage);
 
 VOID* FatMem_Alloc(INT nSize);
 VOID  FatMem_Free(VOID* p);

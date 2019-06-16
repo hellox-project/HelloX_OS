@@ -1,0 +1,20 @@
+服务器端基于socket的编程过程：
+1. 采用BSD style socket API访问HPX协议栈，调用socket函数创建socket，各参数：domain：AF_HPX，type：SOCK_STREAM/SOCK_DGRAM之一，与SOCK_CLIENT/SOCK_SERVER之一的组合，protocol：PROTOCOL_HPX。这些参数都需要在socket.h头文件中定义。这里对type参数做了一些扩展，增加了client和server两个选项，用于创建socket的时候，就告诉HPX，这个socket是提供服务的（SOCK_SERVER），还是请求服务的（SOCK_CLIENT）；
+2. 在SOCK_SERVER指定的情况下，socket函数执行成功后，会初始化一个SDB（Service Description Block），SDB里面会把连接的类型（CONNECTIONLESS，CONNECTION-ORIENTED等）标记清楚，以及SCB所属的process/thread ID等信息。同时这个SDB的状态标注为INITIALIZED；当前的实现，socket直接返回一个整数，这个整数是由SDB的地址转换过去的； 
+3. 然后再调用bind函数，与一个具体的HPX地址和service ID绑定。bind函数的各个参数分别为：
+    1）sockfd：就是socket函数返回的整数；
+    2）addr：重新定义一个新的sockaddr_inhpx的结构体，各个字段的含义为：sin_family：AF_HPX，sin_port：16位整数，与socket函数中type的取值结合，形成HPX协议的service ID，sin_addr：是一个struct hpx_addr，这个结构体包含了HPX address，HPX domain address，以及HPX university domain address。HPX的service ID是一个32位的整数，为了与IP协议及socket兼容，定义CONNECTION-ORIENTED服务的service ID最高比特是1，而CONNECTIONLESS服务的最高比特是0。这样就可以把TCP/IP协议的port映射到HPX协议的service ID了：如果socket函数调用的时候，type是SOCK_STREAM，则service ID就是addr字段中sin_port与0x800000的与运算结果。如果type是SOCK_DGRAM，则service ID就是addr参数中的sin_port字段；
+    3）addrlen：就是结构体sockaddr_inhpx的长度。
+4. bind函数会检查试图绑定的HPX地址，是否在endpoint的任何一个接口上。如果没有任何一个接口配置试图绑定的HPX地址，则直接返回失败。如果找到一个匹配的HPX地址，则会更新SDB表项，把service ID，HPX地址（包括domina address），等等信息填写到SDB中，并返回成功。这时候SDB的状态仍然是INITIALIZED，还没有最终创建完成。如果这时候有来自客户的service request请求，则不会被接受。当然，bind函数在执行这些操作之前，首先检查各个参数的合法性；
+5. 调用listen函数，这个函数的backlog参数，告诉HPX最大可以同时接受的服务请求数量。HPX把backlog参数填写到SDB中，更新SDB的状态为COMPLETED，并返回成功。这时候，SDB就ready for service了，来自client的服务请求可以被接受；
+6. 一旦接收到来自其它endpoint的服务请求，HPX会根据service request匹配SDB列表，匹配的内容包括请求的HPX地址，请求的service ID，SDB的状态（只有状态是COMPLETED的SDB才接受请求），当前正在排队但是尚未被处理的pending请求个数（这个数量要小于backlog）等。一旦匹配通过，则创建一个SCB，记录下客户端相关的信息，比如HPX地址/域名，session ID，客户端的sequence number，SCB的状态（REQUEST_RECV）等等，然后链接到SDB的pending SCB list里面；
+7. 如果pending的请求数量超过了backlog，则后续请求将不再接受，直接拒绝客户端（在service request的type字段设置为RESPONSE，result字段设置为DECLINE，reason字段设置为NO RESOURCE）；
+8. 一旦请求被接受，则返回客户端成功消息，在service request header中，type字段设置为RESPONSE，RESULT字段设置为SUCCESS，reason字段设置为0；
+9. 如果这时候客户端发送数据过来，则HPX协议栈会暂时缓存在SCB的数据缓冲区中（大小可以调节，缺省为4K）。如果客户端发送过来的数据超出了数据缓冲区大小，而对应的SCB又没有被即时服务，就会导致丢数据；
+10. 服务器程序调用listen之后，应该马上调用accept函数，试图接收来自client的请求。accept函数的各个参数为：sockfd：socket函数返回值，addr：sockaddr_inhpx结构体对象，addrlen：addr的长度。后面两个参数都是指针，有可能被accept函数修改。accept函数会检查pending的请求个数，如果大于0，则从pending SCB list中提取第一个SCB，返回该SCB的地址。如果当前尚无pending request，则阻塞当前process/thread的执行，有新的request来的时候会被唤醒。判断pending的请求数量，从list中提取SCB，以及进入阻塞状态，这些操作在一个原子代码块内完成；
+11. accept函数返回的，就是一个SCB的地址。这时候服务器程序就可以创建一个额外的process或者thread，对这个SCB进行服务。包括调用recv函数从中获取数据，或者调用send函数发送数据；
+12. 截至目前，socket函数返回一个SDB地址，accept函数返回一个SCB地址，对于client程序来说，socket返回的也是一个SCB地址。这时候就面临如何区分socket到底是SDB还是SCB的问题。在内核的实现中，可以用最低比特来却分。在分配SCB或者SDB地址的时候，调用_aligned_malloc函数，分配2字节对齐的内存，这样内存地址的最后一个bit肯定是0。socket在返回的时候，如果是SDB，则把最后一个bit设置为1然后返回，如果是SCB则直接返回。recv/send/read/write等函数中，首先根据最低bit判断socket到底是SDB还是SCB，并分别展开对应的处理；
+13. read/write函数调用就比较直接了，用socket作为第一个参数，存储数据的缓冲区指针作为第二个参数，第三个参数是缓冲区长度（指针，可能被修改），最后一个参数flags，当前HPX协议不涉及。如果SCB的数据缓冲区内有数据等待读取，则直接读取缓冲区内的数据，然后返回（即使缓冲区内的数据比请求的数据长度小，也会返回，长度值会被修正为读取的长度）。如果没有数据pending，则读取线程会阻塞到这个SCB上，直到有数据到达。数据到达时，先填充到SCB的缓冲区中，然后唤醒等待读取的线程。对于write来说，动作与read类似。所有这些判断，都是在一个原子操作内进行的；
+14. 在HPX协议栈内部，当接收到一个HPX报文时，根据报文头部信息（HPX地址，session ID等）查找SCB表格，如果找到一个对应的SCB表项，则把HPX报文数据拷贝到数据缓冲区中，然后唤醒等待读取的线程，如果有的话。如果缓冲区满了，则报文直接丢弃。需要说明的是，报文不是按字节入缓冲区的，而是按照整个报文大小。在数据缓冲区太小无法容纳整个报文的情况下，整个报文会被丢弃，一点数据也不会向缓冲区内拷贝。在链接类型是CONNECTIONLESS的情况下，下一个ACK客户端的序列号，会是刚刚接收的报文的序列号。如果是CONNECTION ORIENTED类型的SCB，则下一个ACK客户端的序列号，是丢弃报文之前的序列号，这样便于client重发被丢弃的报文。不论接收还是丢弃报文，SCB里面对应的序列号都会根据情况更新；
+15. 完成通信任务之后，服务线程会调用close函数关闭socket。这时候需要根据SCB的状态进行处理了。如果SCB的状态是CLOSE_HALF，即已经收到来自client的关闭请求（HPX报文的序列号是全1），则直接destroy掉这个SCB。如果SCB的状态是正常的（COMPLETED），则设置该SCB的状态为CLOSE_HALF，同时向client发送一个关闭请求（一个普通HPX报文，序列号是全1）。在收到来自client的关闭请求之后，该SCB会被销毁。如果因为丢包或者BUG等原因，无法收到client的关闭请求，那么在一定时间（2小时）之后，HPX的background线程也会销毁这个SCB；
+16. 如果关闭的是SDB（服务器关闭），则对应的SDB会被销毁。如果有线程阻塞在这个SDB中，则会被唤醒（这时候accept返回-1）。如果有pending的SCB，则所有这些SCB都会被销毁。如果如果内核有log机制，则需要记录每个SDB创建/销毁，以及每个SCB创建/销毁事件。

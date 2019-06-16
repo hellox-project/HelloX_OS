@@ -75,6 +75,7 @@
 #define DEFAULT_PDE_FLAGS        (PDE_FLAG_PRESENT | PDE_FLAG_RW)
 #define PTE_FLAGS_FOR_NORMAL     DEFAULT_PTE_FLAGS
 #define PTE_FLAGS_FOR_IOMAP      (DEFAULT_PTE_FLAGS | PTE_FLAG_PWT | PTE_FLAG_PCD)
+#define PTE_FLAGS_FOR_RO         PTE_FLAG_PRESENT
 
 #define INIT_PTE(pte)            (pte  = NULL_PTE)   //Initialize a page table entry to NULL.
 #define INIT_PTE_TO_DEFAULT(pte) (pte  = DEFAULT_PTE_FLAGS)
@@ -97,16 +98,6 @@
 #define SET_PDE(addr,pde)              (*(__PDE*)addr = pde)
 #define SET_PTE(addr,pte)              (*(__PTE*)addr = pte)
 
-//
-//The page directory start address of the current version.
-//
-#define PD_START                (0x00200000 - 0x00010000)
-
-//
-//First several page tables of os kernel.
-//
-#define PT_START                (0x00200000 - 0x00010000 + 1024*4)
-
 #define PD_OFFSET_SHIFT    22    //To locate the page directory index,should shift these
                                  //bits to right.
 #define PT_OFFSET_SHIFT    12    //To locate the page table index,should shift virtual address
@@ -116,6 +107,8 @@
                                  //for Intel CPU.
 #define PT_SIZE            1024  //How many page table entries in one page table,for IA32.
 #define PAGE_SIZE          4096  //One page memory's size,4K.
+/* First level PD's total size of the linear space. */
+#define PD_FULL_SIZE (1024 * sizeof(__PDE))
 
 /*
  * The definition of page index object manager.
@@ -142,6 +135,6 @@ BOOL PageInitialize(__COMMON_OBJECT*);
 //
 //Uninitialize routine for page index manager object.
 //
-VOID PageUninitialize(__COMMON_OBJECT*);
+BOOL PageUninitialize(__COMMON_OBJECT*);
 
 #endif  //__PAGEIDX_H__

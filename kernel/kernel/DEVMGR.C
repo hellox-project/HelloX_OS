@@ -15,8 +15,6 @@
 
 #include "StdAfx.h"
 #include "pci_drv.h"
-#include "kapi.h"
-
 
 //Only DDF(Device Driver Framework) is enabled the following code
 //will be included in OS kernel.
@@ -31,7 +29,7 @@ static BOOL ReservePortRegion(__DEVICE_MANAGER*,__RESOURCE*);
 static VOID ReleasePortRegion(__DEVICE_MANAGER*,__RESOURCE*);
 static VOID DeleteDevice(__DEVICE_MANAGER*,__PHYSICAL_DEVICE*);
 static BOOL AppendDevice(__DEVICE_MANAGER*,__PHYSICAL_DEVICE*);
-static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER*,
+static __PHYSICAL_DEVICE* _GetDevice(__DEVICE_MANAGER*,
 	DWORD,
 	__IDENTIFIER*,
 	__PHYSICAL_DEVICE*);
@@ -472,11 +470,47 @@ BOOL DeviceIdMatch(__IDENTIFIER* lpFirst,__IDENTIFIER* lpSecond)
 	return FALSE;
 }
 
+/* 
+ * A internal helper routine to validate if a specified physical device is valid. 
+ * Caller can specify a start searching position by giving a physical device
+ * pointer,then GetDevice will search physical device from here.
+ * The given physical device must be validated since it's not untrust.
+ */
+static BOOL __validate_physical_device(const __PHYSICAL_DEVICE* pPhysicalDev)
+{
+	BOOL bResult = FALSE;
+	__PHYSICAL_DEVICE* pPhysicalRoot = NULL;
+	unsigned long dwBusType = 0;
+
+	BUG_ON(NULL == pPhysicalDev);
+	dwBusType = pPhysicalDev->DevId.dwBusType;
+	/* Check if the object is in device list. */
+	for (int index = 0; index < MAX_BUS_NUM; index++)
+	{
+		if (DeviceManager.SystemBus[index].dwBusType != dwBusType)
+		{
+			continue;
+		}
+		pPhysicalRoot = DeviceManager.SystemBus[index].lpDevListHdr;
+		while (pPhysicalRoot)
+		{
+			if (pPhysicalDev == pPhysicalRoot)
+			{
+				bResult = TRUE;
+				goto __TERMINAL;
+			}
+			pPhysicalRoot = pPhysicalRoot->lpNext;
+		}
+	}
+__TERMINAL:
+	return bResult;
+}
+
 /*
  * GetDevice routine.
  * This routine returns the appropriate physical device object according to identifier.
  */
-static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER* lpDevMgr,
+static __PHYSICAL_DEVICE* _GetDevice(__DEVICE_MANAGER* lpDevMgr,
 	DWORD dwBusType,
 	__IDENTIFIER* lpId,
 	__PHYSICAL_DEVICE* lpStart)
@@ -517,14 +551,19 @@ static __PHYSICAL_DEVICE* GetDevice(__DEVICE_MANAGER* lpDevMgr,
 	}
 	else
 	{
-		/* This routine isn't called for the first time. */
-		BUG_ON(NULL == lpStart);
+		/* A begin searching position is designated by lpStart. */
+		__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
+		/* Validate the given physical device first. */
+		if (!__validate_physical_device(lpStart))
+		{
+			__LEAVE_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
+			return NULL;
+		}
 		dwIndex = 
 			(DWORD)((DWORD)(lpStart->lpHomeBus) - 
 			(DWORD)(&lpDevMgr->SystemBus[0])) / sizeof(__SYSTEM_BUS);
 		lpPhyDev = lpStart->lpNext;
 
-		__ENTER_CRITICAL_SECTION_SMP(lpDevMgr->spin_lock, dwFlags);
 		while((dwIndex < MAX_BUS_NUM) || lpPhyDev)
 		{
 			while(lpPhyDev)
@@ -606,7 +645,7 @@ __DEVICE_MANAGER DeviceManager = {
 	{0},                               //FreePortResource.
 	{0},                               //UsedPortResource.
 	DevMgrInitialize,                  //Initialize.
-	GetDevice,                         //GetDevice.
+	_GetDevice,                        //GetDevice.
 	AppendDevice,                      //AppendDevice.
 	DeleteDevice,                      //DeleteDevice.
 	CheckPortRegion,                   //CheckPortRegion.

@@ -1,0 +1,45 @@
+运行HPX协议的通信发起方（initiator），通过service request header，来与HPX通信服务方建立连接。这里的连接，主要是协商通信双方的session ID，在双方建立起各自的SCB等信息。一旦连接建立起来，在HPX报文协议头中就不会包含任何service相关的信息，通信双方只会根据session ID来区分会话。这种模式，比IP协议每个报文都携带端口号（UDP/TCP）相对安全，毕竟session ID是随机的，如果攻击者不抓取session建立过程，就无法获知session的用途。而TCP/IP协议下，抓取任何一个IP报文，就可以明确确定这个报文的用途（比如是HTTP通信，文件传输，DNS请求...）。
+Service request header的具体结构如下：
+    hdr_type：5
+    length：这个header的总长度
+    content：这是个可变长度的值，与header相关的属性都包含在这里面。
+content则符合下列定义：
+    type：内容的类型；
+    value：内容的值。
+并没有采用TLV的方式进行定义content，这是为了处理上的方便。将来如果扩展需要，可以在基本type基础上，定义扩展type，用TLV方式来表示。
+当前定义的type及值如下：
+    SERVICE_REQUEST： 1
+        对应的value是32位整数，为请求的service ID。service ID的最高bit如果是1，则service是CONNECTION-ORIENTED，否则是CONNECTIONLESS；
+    SERVICE_RESPONSE： 2
+        对应的value是一个32位的result数字，代表请求的service是不是被允许。如果被允许，则result为0，否则不为零，不同的数值含义不同：
+        1：service un-supported；
+        2：service unavailable;
+        3：service deny
+
+一个典型的service请求及建立过程如下：
+1. 服务端调用socket API，建立服务进程，创建对应的SDB（Service Description Block），等待client请求服务。详细过程，在socket/server部分中描述；
+2. client端的程序代码调用socket API函数，发起向服务器的连接请求。需要注意的是，这里会涉及到多个socket函数调用，只有connect函数会真正发起service request请求，在此之前的socket函数调用，都是用于建立初始的SCB；
+3. client端的HPX协议栈，构造一个HPX报文，如下：
+    1）构造一个HPX报文头，连接类型根据socket函数的参数，设置为CONNECTION-ORIENTED或者CONNECTION-LESS；
+    2）source HPX address/domain填写为本地接口的HPX地址，即通过bind函数绑定的HPX地址；
+    3）destination HPX address/domain填写服务器端的HPX地址；
+    4）构造一个service request header，type为SERVICE_REQUEST，value则是service ID；
+    5）用加密头加密上述service request header，并发送到gateway。
+4. 本地gateway解密HPX报文，剥掉加密头，把service request向server端发送；
+5. Server端接收到service request之后，HPX协议栈会解析这个service request header，首先与已建立的SCB进行匹配（service request重发的情况），然后与本地已经建立的SDB匹配；
+6. 匹配的内容，主要是service ID，connection type（CONNECTION-ORIENTED or CONNECTIONLESS）等；
+7. 如果匹配通过，则重新建立一个SCB（Session Control Block），记录下client的相关信息（HPX地址/session ID/seq number...），并连接到SDB对应的SCB list上。如果这时候SCB list不为空，说明尚未有等待服务的进程/线程在pending，于是直接返回。如果SCB list为空，则试图唤醒一个pending的服务进程/线程（因调用accept而pending），这个唤醒的进程/线程会专门服务这个SCB；
+8. 在匹配的情况下，server端会向client回送一个service request，type填写为SERVICE_RESPONSE，result为0；
+9. 如果不匹配任何一个SDB，则server端会向client会送一个type为SERVICE_RESPONSE，result为非0（按实际情况填写）的service request；
+10. client在接收到server端发送回来的response之后，标记SCB状态为COMPLETED，即可开始发送或者接收数据（调用send/recv函数）；
+11. 如果client收到server端的拒绝response，则需要标记已创建的SCB状态为FAILED，并通过connect函数的返回值告诉应用程序；
+12. 应用程序应该调用close API，删除掉创建的SCB；
+13. 如果因为丢包，server端未收到client的service request，则client端需要在一定时间（定义为10s）之后重发。如果重发三次都无法收到server端的response，则放弃，通过connect函数返回值方式告诉APP；
+14. 如果server端回送的RESPONSE在网络上被丢弃，则会引发client重发service request。如果server再次收到，则会跟已经建立的SCB匹配，会认为是RESPONSE丢弃导致，于是会重发RESPONSE。如果连续三次收到同样的SERVICE REQUEST，则认为是异常情况，删除对应的SCB；
+15. 在server和client的SCB都建立完成（状态是COMPLETED）之后，双方即可发送数据；
+16. 对于CONNECTIONLESS连接，发送方会递增自己发送的HPX报文的序列号，并在ack_seq字段中，对接收到的对方HPX报文的序列号进行确认。任何一方，如果发现ack_seq字段不匹配，则可能是丢包导致，就会作为丢包数量记录到SCB中，但不会重传；
+17. 对于CONNECTION-ORIENTED类型的连接，则会有一个发送list，所有发送的HPX报文，都记录在发送list中。只有收到对方确认的HPX报文，才会被销毁。如果某个报文没有被对方确认，则会重发这个报文。对于CONNECTION-ORIENTED的链接类型，send函数是一个阻塞操作，如果因为sending list满了，则调用send的线程会阻塞，等待发送完之后再返回；
+18. 如果序列号达到最大值（全1），则需绕过最大值，从0开始。因为序列号全1，代表是最后一个HPX报文；
+19. 任何一方，在收到对方序列号全1的HPX报文时，就需要把SCB状态设置为CLOSE_HALF。这时候如果应用调用close函数，则直接销毁掉SCB。如果在调用close之前未收到对方的close request，则标志SCB为CLOSE_HALF，一旦接收到对方的序列号全1的HPX报文，则直接destroy掉SCB；
+20. 在CLOSE_HALF状态下，将不能接收（如果CLOSE_HALF是对方触发）或者发送（如果是本地调用close函数触发）HPX报文。
+

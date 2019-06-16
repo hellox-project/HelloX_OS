@@ -14,7 +14,7 @@
     <SccProjectName />
     <SccLocalPath />
     <ProjectGuid>{156D873E-78D4-9A45-FEBE-A97A5EB779CB}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -46,7 +46,7 @@
     <IntDir>.\Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>config;jvm;network;Lib;drivers;netcore</IncludePath>
+    <IncludePath>usb;config;jvm;network;Lib;drivers;netcore</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -177,9 +177,7 @@
     <ClCompile Include="drivers\x86\IDEHD.C" />
     <ClCompile Include="drivers\x86\KEYBRD.C" />
     <ClCompile Include="drivers\x86\MOUSE.C" />
-    <ClCompile Include="drivers\x86\pcnet.c" />
-    <ClCompile Include="drivers\x86\rtl8111.c" />
-    <ClCompile Include="kernel\chardisplay.c" />
+    <ClCompile Include="kernel\chardisp.c" />
     <ClCompile Include="kernel\console.c" />
     <ClCompile Include="kernel\debug.c" />
     <ClCompile Include="kernel\devmgr.c" />
@@ -200,6 +198,7 @@
     <ClCompile Include="kernel\pci_drv.c" />
     <ClCompile Include="kernel\perf.c" />
     <ClCompile Include="kernel\process.c" />
+    <ClCompile Include="kernel\process2.c" />
     <ClCompile Include="kernel\smp.c" />
     <ClCompile Include="kernel\statcpu.c" />
     <ClCompile Include="kernel\synobj.c" />
@@ -207,6 +206,7 @@
     <ClCompile Include="kernel\system.c" />
     <ClCompile Include="kernel\types.c" />
     <ClCompile Include="kernel\vmm.c" />
+    <ClCompile Include="kernel\vmm2.c" />
     <ClCompile Include="kthread\idle.c" />
     <ClCompile Include="kthread\logcat.c" />
     <ClCompile Include="fs\FAT32.C" />
@@ -238,6 +238,20 @@
     <ClCompile Include="lib\sysmem.c" />
     <ClCompile Include="lib\time.c" />
     <ClCompile Include="netcore\dhcp_srv\dhcp_srv.c" />
+    <ClCompile Include="netcore\dpi\dearray.c" />
+    <ClCompile Include="netcore\dpi\dpi.c" />
+    <ClCompile Include="netcore\dpi\dpidns.c" />
+    <ClCompile Include="netcore\dpi\dpihttp.c" />
+    <ClCompile Include="netcore\dpi\dpiicmp.c" />
+    <ClCompile Include="netcore\dpi\dpimgr.c" />
+    <ClCompile Include="netcore\drivers\e1000.c" />
+    <ClCompile Include="netcore\drivers\e1000e.c" />
+    <ClCompile Include="netcore\drivers\e1000_d.c" />
+    <ClCompile Include="netcore\drivers\pcnet.c" />
+    <ClCompile Include="netcore\drivers\r8152_e.c" />
+    <ClCompile Include="netcore\drivers\r8152_fw.c" />
+    <ClCompile Include="netcore\drivers\rtl8111.c" />
+    <ClCompile Include="netcore\drivers\rtl8152.c" />
     <ClCompile Include="netcore\ebridge\ethbrg.c" />
     <ClCompile Include="netcore\ethentry.c" />
     <ClCompile Include="netcore\ethmgr.c" />
@@ -282,7 +296,6 @@
     <ClCompile Include="shell\SHELL.C" />
     <ClCompile Include="shell\SHELL1.C" />
     <ClCompile Include="shell\SHELL_HELP.C" />
-    <ClCompile Include="shell\ssh2.c" />
     <ClCompile Include="shell\STAT_S.C" />
     <ClCompile Include="shell\SYSD_S.C" />
     <ClCompile Include="osentry\DRVENTRY.C" />
@@ -325,21 +338,7 @@
     <ClCompile Include="shell\Telnet.C" />
     <ClCompile Include="shell\telnet2.c" />
     <ClCompile Include="shell\usbvideo.c" />
-    <ClCompile Include="ssh\ssh.c" />
-    <ClCompile Include="ssh\sshbn.c" />
-    <ClCompile Include="ssh\sshdes.c" />
-    <ClCompile Include="ssh\sshdh.c" />
-    <ClCompile Include="ssh\sshdss.c" />
-    <ClCompile Include="ssh\sshmd5.c" />
-    <ClCompile Include="ssh\sshrsa.c" />
-    <ClCompile Include="ssh\sshsh256.c" />
-    <ClCompile Include="ssh\sshsh512.c" />
-    <ClCompile Include="ssh\sshsha.c" />
-    <ClCompile Include="ssh\ssh_msg.c" />
-    <ClCompile Include="ssh\ssh_pkt.c" />
-    <ClCompile Include="ssh\ssh_text.c" />
-    <ClCompile Include="ssh\sss_terminal.c" />
-    <ClCompile Include="syscall\SYSCALL.C" />
+    <ClCompile Include="syscall\syscall.c" />
     <ClCompile Include="syscall\SYSCALL_IO.C" />
     <ClCompile Include="syscall\SYSCALL_KERNEL.C" />
     <ClCompile Include="syscall\SYSCALL_SOCKET.C" />
@@ -348,9 +347,6 @@
     <ClCompile Include="usb\ehci_pci.c" />
     <ClCompile Include="usb\ent_ary.c" />
     <ClCompile Include="usb\fmt_ucmp.c" />
-    <ClCompile Include="usb\r8152_e.c" />
-    <ClCompile Include="usb\r8152_fw.c" />
-    <ClCompile Include="usb\rtl8152.c" />
     <ClCompile Include="usb\usb.c" />
     <ClCompile Include="usb\usbasync.c" />
     <ClCompile Include="usb\usbkbd.c" />
@@ -370,20 +366,18 @@
     <ClCompile Include="usb\xhci_mem.c" />
     <ClCompile Include="usb\xhci_pci.c" />
     <ClCompile Include="usb\xhci_ring.c" />
-    <ClCompile Include="user\dpi.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\x86\acpi.h" />
     <ClInclude Include="arch\x86\apic.h" />
     <ClInclude Include="arch\x86\arch.h" />
+    <ClInclude Include="arch\x86\arch_x86.h" />
     <ClInclude Include="arch\x86\bios.h" />
     <ClInclude Include="arch\x86\biosvga.h" />
     <ClInclude Include="arch\x86\pic.h" />
     <ClInclude Include="arch\x86\smpx86.h" />
     <ClInclude Include="arch\x86\syn_mech.h" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
-    <ClInclude Include="drivers\x86\pcnet.h" />
-    <ClInclude Include="drivers\x86\rtl8111.h" />
     <ClInclude Include="include\align.h" />
     <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="INCLUDE\BUFFMGR.H" />
@@ -406,12 +400,14 @@
     <ClInclude Include="INCLUDE\KTMSG.H" />
     <ClInclude Include="INCLUDE\MAILBOX.H" />
     <ClInclude Include="INCLUDE\memmgr.h" />
+    <ClInclude Include="include\mlayout.h" />
     <ClInclude Include="INCLUDE\MODMGR.H" />
     <ClInclude Include="INCLUDE\OBJQUEUE.H" />
     <ClInclude Include="INCLUDE\PAGEIDX.H" />
     <ClInclude Include="INCLUDE\PCI_DRV.H" />
     <ClInclude Include="include\pci_ids.h" />
     <ClInclude Include="INCLUDE\PERF.H" />
+    <ClInclude Include="include\pmdesc.h" />
     <ClInclude Include="include\process.h" />
     <ClInclude Include="INCLUDE\RINGBUFF.H" />
     <ClInclude Include="include\smp.h" />
@@ -455,8 +451,21 @@
     <ClInclude Include="lib\time_pri.h" />
     <ClInclude Include="lib\unistd.h" />
     <ClInclude Include="netcore\dhcp_srv\dhcp_srv.h" />
+    <ClInclude Include="netcore\dpi\dpidns.h" />
+    <ClInclude Include="netcore\dpi\dpihttp.h" />
+    <ClInclude Include="netcore\dpi\dpiicmp.h" />
+    <ClInclude Include="netcore\dpi\dpimgr.h" />
+    <ClInclude Include="netcore\drivers\e1000.h" />
+    <ClInclude Include="netcore\drivers\e1000e.h" />
+    <ClInclude Include="netcore\drivers\e1000_d.h" />
+    <ClInclude Include="netcore\drivers\pcnet.h" />
+    <ClInclude Include="netcore\drivers\r8152.h" />
+    <ClInclude Include="netcore\drivers\r8152_e.h" />
+    <ClInclude Include="netcore\drivers\rtl8111.h" />
+    <ClInclude Include="netcore\drivers\usb_ether.h" />
     <ClInclude Include="netcore\ebridge\ethbrg.h" />
     <ClInclude Include="netcore\ethmgr.h" />
+    <ClInclude Include="netcore\hpx\hpx.h" />
     <ClInclude Include="netcore\hx_eth.h" />
     <ClInclude Include="netcore\hx_inet.h" />
     <ClInclude Include="netcore\mii.h" />
@@ -509,19 +518,12 @@
     <ClInclude Include="include\arch\sys_arch.h" />
     <ClInclude Include="shell\Telnet.H" />
     <ClInclude Include="shell\usbvideo.h" />
-    <ClInclude Include="ssh\sshbn.h" />
-    <ClInclude Include="ssh\ssh_def.h" />
-    <ClInclude Include="ssh\ssh_pkt.h" />
-    <ClInclude Include="syscall\K_API_DEF.H" />
-    <ClInclude Include="syscall\SYSCALL.H" />
-    <ClInclude Include="syscall\SYSCALL_KERNEL.H" />
+    <ClInclude Include="syscall\syscall.h" />
     <ClInclude Include="usb\ch9.h" />
     <ClInclude Include="usb\ehci.h" />
     <ClInclude Include="usb\fmt_ucmp.h" />
     <ClInclude Include="usb\hxadapt.h" />
     <ClInclude Include="usb\ohci.h" />
-    <ClInclude Include="usb\r8152.h" />
-    <ClInclude Include="usb\r8152_e.h" />
     <ClInclude Include="usb\scsi.h" />
     <ClInclude Include="usb\usb.h" />
     <ClInclude Include="usb\usbasync.h" />
@@ -532,7 +534,6 @@
     <ClInclude Include="usb\usbmouse.h" />
     <ClInclude Include="usb\usbroothubdes.h" />
     <ClInclude Include="usb\usb_defs.h" />
-    <ClInclude Include="usb\usb_ether.h" />
     <ClInclude Include="usb\uvc.h" />
     <ClInclude Include="usb\xhci.h" />
   </ItemGroup>
@@ -543,7 +544,6 @@
     <None Include="arch\x86\ntfsbs.asm" />
     <None Include="arch\x86\realinit.asm" />
     <None Include="arch\x86\realinit.bin" />
-    <None Include="arch\x86\realinit_g.asm" />
     <None Include="Authors.txt" />
     <None Include="README.md" />
     <None Include="revise.txt" />

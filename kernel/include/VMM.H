@@ -39,36 +39,43 @@
 #define VIRTUAL_MEMORY_IOMAP_END           0xFFFFFFFF
 #define VIRTUAL_MEMORY_END                 0xFFFFFFFF
 
-/* Object virtual memory manager will be refered by virtual area descriptor. */
+/* 
+ * Object virtual memory manager will be refered 
+ * by virtual area descriptor,so we declare it here.
+ */
 DECLARE_PREDEFINED_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 
 /* The maximal length of virtual area's name. */
-#define MAX_VA_NAME_LEN    32
+#define MAX_VA_NAME_LEN 32
 
-/* Virtual Area Descriptor,describes each virtual area in lineary space. */
+/* 
+ * Virtual Area Descriptor,describes a virtual memory
+ * range in process or kernel's virtual memory space. 
+ */
 BEGIN_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
 	/* Pointing back to virtual memory manager. */
     struct tag__VIRTUAL_MEMORY_MANAGER* lpManager;
-    LPVOID lpStartAddr;     //Start virtual address.
-	LPVOID lpEndAddr;       //End virtual address.
-	struct tag__VIRTUAL_AREA_DESCRIPTOR* lpNext;          //Virtual area list header.
+	/* Start virtual address. */
+    LPVOID lpStartAddr;
+	LPVOID lpEndAddr;
+	/* Points to next one in list. */
+	struct tag__VIRTUAL_AREA_DESCRIPTOR* lpNext;
 	DWORD dwAccessFlags;   //Access flags.
 	DWORD dwCacheFlags;    //Cache flags.
 	DWORD dwAllocFlags;    //Allocate flags.
-	__ATOMIC_T Reference;       //Reference counter.
+	__ATOMIC_T Reference;  //Reference counter.
 
-	//DWORD dwTreeHeight;    //AVL tree's height.
 	/* Left sub-tree of AVL. */
 	struct tag__VIRTUAL_AREA_DESCRIPTOR* lpLeft;
 	/* Right sub-tree of AVL. */
 	struct tag__VIRTUAL_AREA_DESCRIPTOR* lpRight;
 	/* Virtual area's name. */
-    UCHAR strName[MAX_VA_NAME_LEN];
-	END_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
+    char strName[MAX_VA_NAME_LEN];
+END_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
 
-		//
-		//Virtual area's access flags.
-		//
+//
+//Virtual area's access flags.
+//
 #define VIRTUAL_AREA_ACCESS_READ        0x00000001    //Read access.
 #define VIRTUAL_AREA_ACCESS_WRITE       0x00000002    //Write access.
 #define VIRTUAL_AREA_ACCESS_RW          (VIRTUAL_AREA_ACCESS_READ | VIRTUAL_AREA_ACCESS_WRITE)
@@ -82,19 +89,39 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
 #define VIRTUAL_AREA_CACHE_IO           0x00000002    //Not cached.
 #define VIRTUAL_AREA_CACHE_VIDEO        0x00000004
 
-//
-//Virtual area's allocate flags.
-//
-#define VIRTUAL_AREA_ALLOCATE_RESERVE   0x00000001    //Reserved only.
-#define VIRTUAL_AREA_ALLOCATE_COMMIT    0x00000002    //Has been committed.
-#define VIRTUAL_AREA_ALLOCATE_IO        0x00000004    //Allocated as IO mapping area.
-#define VIRTUAL_AREA_ALLOCATE_ALL       0x00000008    //Committed.Only be used by VirtualAlloc
-													  //routine,the dwAllocFlags variable of
-													  //virtual area descriptor never set this
-													  //value.
-#define VIRTUAL_AREA_ALLOCATE_IOCOMMIT  0x00000010    //Allocate and commit with cache disabled.
-#define VIRTUAL_AREA_ALLOCATE_IOREMAP   0x00000020    //Remap a existing physical address to
-													  //an IO virtual region.
+/*
+ * Virtual area's allocate flags.
+ * The meaning of these flags and their difference
+ * could be illustrated as following table:
+ * 
+ *             Reserve VAD  |  Reserve Page Tables  |  Reserve RAM pages    
+ * ---------------------------------------------------------------------
+ * RESERVE    |    *        |         N/A           |        N/A
+ * ---------------------------------------------------------------------
+ * COMMIT     |    N/A      |         *             |         *
+ * ---------------------------------------------------------------------
+ * I/O        |    *        |         *             |        N/A
+ * ---------------------------------------------------------------------
+ * ALL        |    *        |         *             |         *
+ * ---------------------------------------------------------------------
+ * IOCOMMIT   |    *        |         *             |         *
+ * ---------------------------------------------------------------------
+ * MAP        |    *        |         *             |        N/A
+ * ---------------------------------------------------------------------
+ * 
+ * Notes:
+ * 1. The combining effectiveness of RESERVE and COMMIT,is same as ALL flag;
+ * 2. The difference between ALL and IOCOMMIT is,cache flag is disabled
+ *    when set page tables for IOCOMMIT,but cache flag is keep enabled when
+ *    allocates page tables for ALL;
+ * 3. DEFAULT as alias of ALL flag.
+ */
+#define VIRTUAL_AREA_ALLOCATE_RESERVE   0x00000001
+#define VIRTUAL_AREA_ALLOCATE_COMMIT    0x00000002
+#define VIRTUAL_AREA_ALLOCATE_IO        0x00000004
+#define VIRTUAL_AREA_ALLOCATE_ALL       0x00000008
+#define VIRTUAL_AREA_ALLOCATE_IOCOMMIT  0x00000010
+#define VIRTUAL_AREA_ALLOCATE_MAP       0x00000020
 #define VIRTUAL_AREA_ALLOCATE_DEFAULT   VIRTUAL_AREA_ALLOCATE_ALL
 
 /*
@@ -103,7 +130,7 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
  * virtual memory manager will switch to AVL tree from list
  * to manage virtual areas.
  */
-#define SWITCH_VA_NUM    64
+#define SWITCH_VA_NUM 2048
 
  /* Virtual memory manager object. */
 BEGIN_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
@@ -123,46 +150,44 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 
 	/* Operations the virtual memory manager can offer. */
 	/* Allocate a block of virtual memory. */
-	LPVOID (*VirtualAlloc)(__COMMON_OBJECT*,
-		LPVOID,    //Desired start virtual addr.
-		DWORD,     //Size.
-		DWORD,     //Allocate flags.
-		DWORD,     //Access flags.
-		UCHAR*,    //Virtual area's name.
-		LPVOID     //Reserved.
-		);
+	LPVOID (*VirtualAlloc)(__COMMON_OBJECT* pThis,
+		LPVOID pDesiredAddr,
+		unsigned long ulSize,
+		unsigned long alloc_flags,
+		unsigned long access_flags,
+		char* va_name,
+		LPVOID pReserved);
 	/* Release the memory block allocated by VirtualAlloc. */
-	VOID (*VirtualFree)(__COMMON_OBJECT*,
-		LPVOID      //Start virtual address.
-		);
+	VOID (*VirtualFree)(__COMMON_OBJECT* pThis, LPVOID pVirtualAddr);
+	/* Map a physical memory block into virtual space. */
+	BOOL (*VirtualMap)(__COMMON_OBJECT* pThis, LPVOID pVirtualAddr,
+		LPVOID pPhysicalAddr, unsigned long length, unsigned long access_flags,
+		char* va_name);
 	/* Return page directory's address. */
 	LPVOID (*GetPdAddress)(__COMMON_OBJECT*);
 	/* Return the physical address by specifying the virtual address. */
 	LPVOID (*GetPhysicalAddress)(__COMMON_OBJECT*, LPVOID);
+	/* Copy memory from user to kernel,or from kernel to user. */
+	BOOL (*UserMemoryCopy)(__COMMON_OBJECT* pThis,
+		LPVOID pKernelStart,
+		LPVOID pUserStart,
+		unsigned long length,
+		BOOL bUserToKernel);
 END_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 
-//
-//The declaration of VmmInitialize routine.
-//
+/* Initializer of virtual memory manager. */
 BOOL VmmInitialize(__COMMON_OBJECT*);
 
-//
-//The definition of VmmUninitialize routine.
-//
-VOID VmmUninitialize(__COMMON_OBJECT*);
+/* Unintializer of VMM. */
+BOOL VmmUninitialize(__COMMON_OBJECT*);
 
-/***********************************************************************************
-************************************************************************************
-************************************************************************************
-************************************************************************************
-***********************************************************************************/
-
-//
-//The first virtual memory manager in system,for OS
-//kernel space's management.
-//
+/*
+ * The first virtual memory manager in system,for OS
+ * kernel space's management.
+ */
 extern __VIRTUAL_MEMORY_MANAGER* lpVirtualMemoryMgr;
 
+/* Show all virtual areas of a process,for debugging. */
 VOID PrintVirtualArea(__VIRTUAL_MEMORY_MANAGER*);
 
 #endif  //__VMM_H__

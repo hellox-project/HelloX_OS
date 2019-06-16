@@ -37,7 +37,7 @@ static BOOL Initialize(__PROCESSOR_MANAGER* pMgr)
  * Add one processor into system,this routine is invoked in process of system boot,
  * when a new processor(logical CPU) is detected.
  */
-static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid)
+static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid, uint8_t processor_id)
 {
 	unsigned long dwFlags = 0;
 	__PROCESSOR_NODE* pNode = NULL;
@@ -46,6 +46,8 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	__PROCESSOR_NODE* pCoreNode = NULL;
 	__PROCESSOR_NODE* pLogicalCPUNode = NULL;
 	BOOL bResult = FALSE;
+
+	BUG_ON(processor_id > MAX_CPU_NUM);
 
 	/* Must be synchronized in SMP environment. */
 	__ENTER_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
@@ -206,6 +208,13 @@ static BOOL AddProcessor(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8
 	}
 	/* Increment the processor number. */
 	ProcessorManager.nProcessorNum++;
+	/* Update maximal processor ID. */
+	if (processor_id > ProcessorManager.maxProcessorID)
+	{
+		ProcessorManager.maxProcessorID = processor_id;
+	}
+	/* Set the corresponding map bit. */
+	ProcessorManager.cpuMap |= (uint64_t)(1 << processor_id);
 	__LEAVE_CRITICAL_SECTION_SMP(ProcessorManager.spin_lock, dwFlags);
 
 	/* Mark as success. */
@@ -451,13 +460,21 @@ static unsigned int GetScheduleCPU()
 	while (TRUE)
 	{
 		cpuRound++;
-		processorID = cpuRound % ProcessorManager.nProcessorNum;
+		//processorID = cpuRound % ProcessorManager.nProcessorNum;
+		processorID = cpuRound % (ProcessorManager.maxProcessorID + 1);
 		/* Skip all halted CPU,by checking processor speicific data. */
 		pLogicalCPU = __GetProcessorNode_LogicalCPU(0,
 			__GetChipID(processorID),
 			__GetCoreID(processorID),
 			__GetLogicalCPUID(processorID));
-		BUG_ON(NULL == pLogicalCPU);
+		if (NULL == pLogicalCPU)
+		{
+			/* 
+			 * If processor ID is not consecutive,will lead 
+			 * this case,just skip it. 
+			 */
+			continue;
+		}
 		pSpec = pLogicalCPU->pLevelSpecificPtr;
 		BUG_ON(NULL == pSpec);
 		if (CPU_STATUS_NORMAL == pSpec->cpuStatus)
@@ -531,6 +548,8 @@ __PROCESSOR_MANAGER ProcessorManager = {
 	NULL, /* Domain list header. */
 	SPIN_LOCK_INIT_VALUE, /* spin_lock. */
 	0, /* nProcessorNum. */
+	0, /* maxProcessorID. */
+	0, /* cpuMap. */
 	0, /* bspProcessorID. */
 
 	Initialize, /* Initializer. */

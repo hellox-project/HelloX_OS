@@ -37,6 +37,7 @@ static DWORD overload(__CMD_PARA_OBJ*);
 static DWORD pcilist(__CMD_PARA_OBJ*);
 static DWORD devinfo(__CMD_PARA_OBJ*);
 static DWORD cpuload(__CMD_PARA_OBJ*);
+static DWORD killthread(__CMD_PARA_OBJ*);
 static DWORD showstk(__CMD_PARA_OBJ*);
 static DWORD devlist(__CMD_PARA_OBJ*);
 static DWORD showint(__CMD_PARA_OBJ*);
@@ -62,6 +63,7 @@ static struct __SHELL_CMD_MAP{
 	{"pcilist",           pcilist,          "  pcilist              : List all PCI device(s) of the system."},
 	{"devinfo",           devinfo,          "  devinfo              : Print out information about a PCI device."},
 	{"cpuload",           cpuload,          "  cpuload              : Display CPU statistics information."},
+	{"kill",              killthread,       "  kill                 : Kill a thread by specifying it's ID."},
 	{"showstk",           showstk,          "  showstk              : Show kernel thread's context information." },
 	{"devlist",           devlist,          "  devlist              : List all devices' information in the system."},
 	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
@@ -281,13 +283,10 @@ static struct __PCI_DEV_DESC{
 	{0x0102,     "Floppy disk controller."},
 	{0x0103,     "IPI Bus controller."},
 	{0x0104,     "RAID controller."},
+	{0x0106, "SATA controller."},
 	{0x0180,     "Mass storage controller."},
 
 	{0x0200,     "Ethernet controller."},
-	{0x0201,     "Token ring controller."},
-	{0x0202,     "FDDI controller."},
-	{0x0203,     "ATM controller."},
-	{0x0204,     "ISDN controller."},
 	{0x0280,     "Other network controller."},
 
 	{0x0300,     "VGA controller."},
@@ -562,6 +561,34 @@ static DWORD cpuload(__CMD_PARA_OBJ* pcpo)
 	msg.wCommand = STAT_MSG_SHOWSTATINFO;
 	KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpStatKernelThread,
 		&msg);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+/* Kill a thread by specifying it's ID value. */
+static DWORD killthread(__CMD_PARA_OBJ* pParaObj)
+{
+	unsigned long thread_id = 0;
+	__KERNEL_THREAD_OBJECT* pThread = NULL;
+
+	if (pParaObj->byParameterNum < 2)
+	{
+		_hx_printf("  No thread ID specified.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+	thread_id = atol(pParaObj->Parameter[1]);
+
+	/* Fetch the thread object by it's ID. */
+	pThread = (__KERNEL_THREAD_OBJECT*)ObjectManager.GetObject(&ObjectManager,
+		OBJECT_TYPE_KERNEL_THREAD, thread_id);
+	if (NULL == pThread)
+	{
+		_hx_printf("  No thread found.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+	/* Kill the thread. */
+	KernelThreadManager.TerminateKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+		(__COMMON_OBJECT*)pThread,
+		0);
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

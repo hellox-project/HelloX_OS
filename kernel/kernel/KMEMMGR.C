@@ -13,46 +13,38 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
+#include <StdAfx.h>
 #include <types.h>
 #include <kmemmgr.h>
-#include "buffmgr.h"
-#include "types.h"
-#include "ktmgr.h"
-#include <../config/config.h>
+#include <buffmgr.h>
+#include <types.h>
+#include <ktmgr.h>
+#include <mlayout.h>
 
-//KMEM_4K_START_ADDRESS = 0x00200000
-//KMEM_4K_END_ADDRESS   = 0x00BFFFFF
-
-//KMEM_ANYSIZE_START_ADDRESS = 0x00C00000
-//KMEM_AYNSIZE_END_ADDRESS   = 0x013EFFEF
-
-//KMEM_STACK_START_ADDRESS   = 0x013EFFF0
-//KMEM_STACK_END_ADDRESS     = 0x013FFFF0
+/*
+ * Start address of 4K pool is 2M(0x0200000) the
+ * base of memory,and total 10M,so the range is
+ * 0x0200000 ~ 0x0BFFFFF
+ * The followed by any size memory pool,which starts
+ * from 0x00C00000 to 0x013FFFFF,total length is 8M.
+ * Please refer the mlayout.h file for detail memory
+ * layout information.
+ */
 
 //
 //4K block pool controller.
 //
 static __4KSIZE_BLOCK g_4kBlockPool[] = {
-	{(LPVOID)(KMEM_4K_START_ADDRESS + 0x00000000),0x00100000,0x00000000},  //First 1M pool.
-	{(LPVOID)(KMEM_4K_START_ADDRESS + 0x00100000),0x00100000,0x00000000},  //Second 1M pool.
-	{(LPVOID)(KMEM_4K_START_ADDRESS + 0x00200000),0x00100000,0x00000000},
-	{(LPVOID)(KMEM_4K_START_ADDRESS + 0x00300000),0x00100000,0x00000000},
-	{0x00000000,0x00000000,0x00000000},
-	{0x00000000,0x00000000,0x00000000},
-	{0x00000000,0x00000000,0x00000000},
-	{0x00000000,0x00000000,0x00000000},
-	{0x00000000,0x00000000,0x00000000},
-	{0x00000000,0x00000000,0x00000000},
+	{(LPVOID)(KMEM_4KPOOL_START + 0x00000000),0x00100000,0x00000000},
+	{(LPVOID)(KMEM_4KPOOL_START + 0x00100000),0x00100000,0x00000000},
+	{(LPVOID)(KMEM_4KPOOL_START + 0x00200000),0x00100000,0x00000000},
+	{(LPVOID)(KMEM_4KPOOL_START + 0x00300000),0x00100000,0x00000000},
 	{0x00000000,0x00000000,0x00000000},
 	{0x00000000,0x00000000,0x00000000},
 	{0x00000000,0x00000000,0x00000000},
 	{0x00000000,0x00000000,0x00000000},
 	{0x00000000,0x00000000,0x00000000},
 	{0x00000000,0x00000000,0x00000000}};
-
 
 //
 //Some helper functions.
@@ -62,8 +54,11 @@ static __4KSIZE_BLOCK g_4kBlockPool[] = {
 //index of first zero.
 //If failed,returns 256.
 
-#define BIT_STRING_SIZE 8            //The bit string's length to be searched
-	                                 //is 8 DWORD,256 bits.
+/* 
+ * The bit string's length to be searched
+ * is 8 DWORD,256 bits.
+ */
+#define BIT_STRING_SIZE 8
 
 DWORD Find0String(DWORD dwNum,BYTE* pdwArray)
 {
@@ -129,12 +124,12 @@ DWORD Find0String(DWORD dwNum,BYTE* pdwArray)
 //
 //Set bit to 0 or 1.This function is used by allocater to set occupy map bit.
 //
-
 VOID SetBit(DWORD dwStart,DWORD dwBitNum,BYTE* pbArray)
 {
 	BYTE bt = 1;
 
-	pbArray += dwStart / 8;             //Adjust the position pointer.
+	/* Adjust the position pointer. */
+	pbArray += dwStart / 8;
 	dwStart =  dwStart % 8;
 	while(dwStart)                  
 	{
@@ -160,7 +155,6 @@ VOID SetBit(DWORD dwStart,DWORD dwBitNum,BYTE* pbArray)
 //This function searchs the occupying map,find the longest
 //1's string,and update the max usable block size.
 //
-
 VOID UpdateMaxBlock(DWORD dwIndex)
 {
 	DWORD dw0Num     = 0x0000;
@@ -216,9 +210,9 @@ VOID UpdateMaxBlock(DWORD dwIndex)
 
 //
 //4k memory allocation functions.
+//The parameter,dwSize must be 4k's times.
 //
-
-LPVOID _4kAllocate(DWORD dwSize)        //The parameter,dwSize must be 4k's times.
+LPVOID _4kAllocate(DWORD dwSize)
 {
 	LPVOID pStartAddress = NULL;
 	BOOL   bFind         = FALSE;
@@ -229,7 +223,7 @@ LPVOID _4kAllocate(DWORD dwSize)        //The parameter,dwSize must be 4k's time
 
 	if((dwSize % 4096) || (!dwSize))    //If the size is not 4k's times,return false.
 		return pStartAddress;
-	if(dwSize > KMEM_MAX_BLOCK_SIZE)
+	if(dwSize > KMEM_MAX_4KBLOCK_SIZE)
 		return pStartAddress;
 
 	for(i = 0;i < KMEM_MAX_4K_POOL_NUM;i ++)
@@ -278,7 +272,7 @@ VOID _4kFree(LPVOID pStartAddress,DWORD dwSize)
 	for(dwLoop = 0;dwLoop < KMEM_MAX_4K_POOL_NUM;dwLoop ++)
 	{
 		if((g_4kBlockPool[dwLoop].pStartAddress <= pStartAddress)
-			&&((DWORD)g_4kBlockPool[dwLoop].pStartAddress + KMEM_MAX_BLOCK_SIZE > (DWORD)pStartAddress))
+			&&((DWORD)g_4kBlockPool[dwLoop].pStartAddress + KMEM_MAX_4KBLOCK_SIZE > (DWORD)pStartAddress))
 		{
 			bFind = TRUE;
 			break;

@@ -13,15 +13,8 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
-#ifndef __BIOS_H__
 #include "bios.h"
-#endif
-
-#include "kapi.h"
 #include "stdio.h"
 
 #ifdef __I386__  //Only available in x86 based PC platform.
@@ -29,12 +22,18 @@
 /* Read data from HD,can not exceed 4k length. */
 static BOOL __BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
 {
-	DWORD i;
+	unsigned int i = 0, ulFlags = 0;
 
 	if((NULL == pBuffer) || (0 == nSectorNum))
 	{
 		return FALSE;
 	}
+
+	/* 
+	 * Local interrupt should be save and disabled,since the assembly code may 
+	 * change it. 
+	 */
+	__DISABLE_LOCAL_INTERRUPT(ulFlags);
 
 #ifdef __GCC__
 	__asm__ (
@@ -94,9 +93,12 @@ static BOOL __BIOSReadSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE
 #endif
 
 __BIOS_FAILED:    //BIOS call failed.
+	/* Restore flags. */
+	__RESTORE_LOCAL_INTERRUPT(ulFlags);
 	return FALSE;
 
 __BIOS_SUCCESS:   //BIOS call successed.
+	__RESTORE_LOCAL_INTERRUPT(ulFlags);
 	for(i = 0;i < 512 * nSectorNum;i ++) //Copy the sector data.
 	{
 		pBuffer[i] = ((BYTE*)BIOS_HD_BUFFER_START)[i];
@@ -137,7 +139,7 @@ __TERMINAL:
 //Write HD sector's entry point.
 static BOOL __BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYTE* pBuffer)
 {
-	DWORD i;
+	unsigned int i = 0, ulFlags = 0;
 
 	if((NULL == pBuffer) || (0 == nSectorNum))
 	{
@@ -149,6 +151,9 @@ static BOOL __BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYT
 	{
 		((BYTE*)BIOS_HD_BUFFER_START)[i] = pBuffer[i];
 	}
+	/* Save and disable local interrupt. */
+	__DISABLE_LOCAL_INTERRUPT(ulFlags);
+
 #ifdef __GCC__
 	__asm__ (
 	"pushl %%ecx              \n\t"
@@ -204,10 +209,12 @@ static BOOL __BIOSWriteSector(int nHdNum,DWORD nStartSector,DWORD nSectorNum,BYT
 #endif
 
 __BIOS_FAILED:    //BIOS call failed.
+	__RESTORE_LOCAL_INTERRUPT(ulFlags);
 	_hx_printf("%s:failed to write sector.\r\n", __func__);
 	return FALSE;
 
 __BIOS_SUCCESS:   //BIOS call successed.
+	__RESTORE_LOCAL_INTERRUPT(ulFlags);
 	return TRUE;
 }
 

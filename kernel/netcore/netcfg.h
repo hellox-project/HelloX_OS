@@ -17,16 +17,19 @@
 #ifndef __NETCFG_H__
 #define __NETCFG_H__
 
-#include <StdAfx.h>  /* For system level configuration. */
+#include <kapi.h>  /* For system level configuration. */
 
 /* IPv4 or IPv6 stack should be enabled before all other modules. */
-#if defined(__CFG_NET_IPv4) || defined(__CFG_NET_IPv6)
+#if (defined(__CFG_NET_IPv4) || defined(__CFG_NET_IPv6))
 
 /* Default domain name if not specified by user. */
 #define DEFAULT_DOMAIN_NAME "HelloX.COM"
 
 /* Domain name length. */
 #define DOMAIN_NAME_LENGTH  64
+
+/* Maximal link layer header's length,used to allocate pbuf. */
+#define MAX_L2_HEADER_LEN   64
 
 /* Enable DHCP Server module. */
 #define __CFG_NET_DHCP_SERVER
@@ -39,6 +42,9 @@
 
 /* Enable NAT functions in system. */
 #define __CFG_NET_NAT
+
+/* Enable DPI(Deep Packet Inspection) function in network sub-system. */
+#define __CFG_NET_DPI
 
 #endif //defined(__CFG_NET_IPv4) || defined(__CFG_NET_IPv6)
 

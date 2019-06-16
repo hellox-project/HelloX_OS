@@ -1,0 +1,35 @@
+Secured mode:
+1. Configure the pre-shared key(PSK) both in gateways and in endpoints,finger-print,face-character,even manual inputed password string,all these things can be used as PSK;
+2. Assume gateways are initialized and in running status,all resources are configured properly,include the PSK;
+3. Power on the endpoint,it sends a discovery broadcast packet whose information element as follows:
+    1) Version = 0, hdr_len = [hdr_len], total_len = [total_len], mode = 1, next_hdr = access_control[4],source HPX address and destination HPX address are all 0;
+    2) Use interface's MAC address as source MAC, destination MAC address is broadcast, the ethernet type as HPX(0x9900);
+    3) Calculate a random challenge string and fill it into protocol_control header;
+    4) Fill other information related into access_control header,and then drop the frame into network;
+    5) Create a connection control block(CCB) in memory,contains the challenge string,the time of sending,...;
+4. All endpoints in local network will receive this broadcast,but only the gateway process it,all other endpoints just drop it silently,since it can not pass the validation of AWL;
+5. Upon reception of discovery broadcast,gateway create a endpoint control block(ECB) object, fill it with the information can be obtained from discovery,such as the MAC address,...
+6. Allocate a free HPX address from local domain, fill it into the ECB,include the local domain's HPX address;
+7. Calculate the degist of endpoint's challenge string with the PSK, also fill it into ECB;
+8. Generate a challenge string(named gateway_challenge) and fill it into ECB;
+9. Mark the ECB's status as INITIALIZED;
+10. Pack the gateway_challenge,HPX address and domain address, gateway's local address, backup gateway address list, and all other related information into a  protocol_control header, pack the digest calculated for endpoint into an authentication header, construct a HPX packet as follows:
+    1) Use local interface's MAC address as source MAC address, use the endpoint's MAC address as destination address, frame type as HPX;
+    2) Source HPX address as local interface's HPX address,destination HPX address as 0;
+    3) Append the authentication header and access_control header;
+    4) Pack the ECB id into protocol_control header,so the endpoint can use this ID to communicate with gateway directly without source HPX addresses;
+    5) Just send the packet into local network,and mark the status of ECB as RESP_SEND(response send).The purge process will release this ECB and callback all resources allocated for it when timeout with no farther reply received from endpoint;
+11. The endpoint validates the digest upon reception of gateway's response, just drop the reply if fail to pass the validation;
+12. If pass the validation, then save the allocated HPX address,domain address, gateway's MAC address, and other information that can be derived from gateway's response,into CCB;
+13. Configure the HPX address and local domain address into local interface, it means all these information elements are valid since the gateway pass authentication. The AWL(Acceptable White List) is created and the gateway's MAC address and backup gateway's MAC address(if present) are added into AWL, and apply the white list checking on all incoming frames;
+14. Calculate the digest of gateway_challenge by using PSK, then construct a reply packet as follows:
+    1) Source MAC address is local MAC address,destination MAC address is gateway's MAC address, frame type as HPX;
+    2) Source HPX address is the just allocated address, destination HPX address is the gateway's address,without domain address;
+    3) Append a authentication header with key cleared, but pack the gateway digest into it, and form a integral packet;
+    4) Calculate a digest of this packet with PSK, fill it into key field of authentication header;
+    5) Then send this HPX packet out.
+15. Validate the digest received from endpoint, update the corresponding ECB as CONFIRMED,the ECB can be located by endpoint's MAC address and other identity information;
+16. Then endpoint and gateway are all ready to work;
+17. Just purge the ECB and recall all resources associated with it if digest validation failure;
+18. The purge process running in gateway will purge the ECB if timeout value is reach and no reply received from endpoint;
+

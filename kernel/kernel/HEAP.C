@@ -12,22 +12,15 @@
 //    Lines number              :
 //***********************************************************************/
 
-//#ifndef __STDAFX_H__
 #include "StdAfx.h"
-//#endif
-
 #include "types.h"
 #include "commobj.h"
-
-#include "kapi.h"
 #include "heap.h"
 
 
 //If and only if the VMM function is enabled,heap function is available since
 //it's reley on the VMM mechanism.
 #ifdef __CFG_SYS_VMM
-
-
 
 //
 //The implementation of CreateHeap routine.

@@ -20,28 +20,25 @@
     bits 16                      ;;This boot sector's code is running under
                                  ;;real address mode.
 
-    org 0x0000                    ;;The start address of one segment.
+    org 0x0000                   ;;Start from very begining.
 
-    %define DEF_BOOT_START 0x9f00  ;0x7c00 ;;The start segment address of the boot sector after relocation.
-                                   
-
-    %define DEF_ORG_START  0x07c0  ;;The orginal address of the boot sector
-                                   ;;when loaded into memory by BIOS.
-
+	;;The start segment address of the boot sector after relocation.
+    ;%define DEF_BOOT_START 0x9f00
+	%define DEF_BOOT_START 0x9EC0
+	;;Original address of the boot sector after loaded into memory.
+    %define DEF_ORG_START  0x07c0
     
-    %define DEF_RINIT_START 0x1000 ;;The real mode initialize code start offset address.
-                                   
-    %define DEF_RINIT_LEN   8      ;;The real mode initialize code's length,unit is 512 byte,one sector.
-                                   								      
+	;;Start address of realinit module.
+    %define DEF_RINIT_START 0x1000
+    ;;The real mode initialize code's length,unit is 512 byte,one sector.                               
+    %define DEF_RINIT_LEN   8
 
-    %define DEF_MAST_LEN   1120    ;840;;The HelloX kernel's length,in sector unit.
-	                               ;Please be noted that the kernel includes miniker and master.The
-								   ;upper boundary of the kernel size is 560k.
-                                   
-
-
-gl_start:                        ;;Start label of the boot code.
-
+    %define DEF_MAST_LEN   1120   ;The HelloX kernel's length,in sector unit.
+	                              ;Please be noted that the kernel includes miniker and master.The
+								  ;upper boundary of the kernel size is 560k.
+    
+	;Start from here.                                   
+gl_start:
     cli                          ;;Mask all maskable interrupts.
     mov ax,DEF_ORG_START         ;;First,the boot code move itself to DEF_-
                                  ;;BOOT_START from DEF_ORG_START.
@@ -50,6 +47,7 @@ gl_start:                        ;;Start label of the boot code.
     mov sp,0xfff0
 	cld  	
 	
+	;Relocate the bootsector.
     mov si,0x0000    
     mov ax,DEF_BOOT_START
     mov es,ax
@@ -62,18 +60,21 @@ gl_start:                        ;;Start label of the boot code.
     mov es,ax
     mov ss,ax
     mov sp,0x0ffe
-    jmp DEF_BOOT_START : gl_bootbgn  ;;Jump to the DEF_BOOT_START to execute.
+    jmp DEF_BOOT_START : gl_bootbgn
 
 gl_bootbgn:
-    call np_printmsg             ;;Print out the process message.
-
+    ;Save boot drive number.
+	mov byte [device_index],dl
+	;Show out a message.
+    call np_printmsg
+	;Load kernel into memory.
     call np_load
 	
-	jmp   0:DEF_RINIT_START     ;;Jump to the real mode initialize code.
-    	
-    call np_deadloop             ;;If correct,this line code can not be rea-
-                                 ;;ched forever.
+	;Jump to the real mode initialize code.
+	jmp   0:DEF_RINIT_START
 
+	;Enter deadloop in case of exception.
+    call np_deadloop
 
 ;;------------------------------------------------------------------------
 ;;  The following is some helper functions and data section.
@@ -82,9 +83,6 @@ gl_bootbgn:
 np_load:                         ;;This procedure use the int 13 interrupt
                                  ;;call,load the operating system kernal
                                  ;;into memory.
-
-
-		
     push es
     mov ax,0
     mov es,ax	
@@ -92,15 +90,13 @@ np_load:                         ;;This procedure use the int 13 interrupt
     xor cx,cx
 			
 .ll_start:    
-
     mov ah,0x42		   
 	mov dl,byte [device_index]
 	lea si,[dap_size]
 	mov word [dap_bufaddr_lw],bx 
 	mov word [dap_bufaddr_hi],es
-
     int 0x13	
-	jc .ll_error	
+	jc .ll_error
 
 .ll_count:	
     inc dword [dap_sector_lw]
@@ -137,12 +133,7 @@ np_load:                         ;;This procedure use the int 13 interrupt
     pop es
     ret                          ;;End of the procedure.
 
-np_deadloop:                     ;;This procedure is a dead loop,when the
-                                 ;;boot sector code detect some exception,
-                                 ;;it calls this procedure.
-                                 ;;If this procedure is called,it means the
-                                 ;;system can not loading continue,the only
-                                 ;;method is to restart the computer.
+np_deadloop:
     mov ah,0x03
     mov bh,0x00
     int 0x010
@@ -155,44 +146,44 @@ np_deadloop:                     ;;This procedure is a dead loop,when the
 .ll_begin:
     inc cx
     loop .ll_begin
-    ret                          ;;End of the procedure,in this procedure,
-                                 ;;this position can not reach forever.
+    ret
 
-
-np_printmsg:                     ;;This procedure print out the loading msg.
+np_printmsg:
     mov ah,0x03
     mov bh,0x00
-    int 0x010                    ;;Read the position of cursor.
+    int 0x010
     mov cx,40
     mov bx,0x0007
     mov bp,loadmsg
     mov ax,0x1301
-    int 0x010                    ;;Print out the loading message.
-    ret                          ;;End of the procedure.
+    int 0x010
+    ret
 
-
-
+;Data section of this module.
 gl_datasection:
     loadmsg db 0x0d
             db 0x0a
-            db 'HelloX is loading now,wait please...'
+            db 'HelloX is loading now,please wait...'
             db 0x0d
             db 0x0a
     errmsg  db 0x0d
             db 0x0a
-            db 'Fault Error:please power off your computer,and restart again.'            
+            db 'Fault Error:please power off and restart again.'            
             db 0x0d
             db 0x0a
     device_index db 0x80
-  _DAP_DATA:
-   dap_size db 0x10
-    dap_reserved db  0x0
-    dap_count  dw  0x2
-	dap_bufaddr_lw dw  0x0	
-	dap_bufaddr_hi dw  0x0	
-	dap_sector_lw  dd  0x02  ;; hx start form 2 sector
-	dap_sector_hi  dd  0x0
-    total_sector   dw  DEF_RINIT_LEN+DEF_MAST_LEN
-	 
+
+  int13_dap:
+    dap_size db 0x10
+    dap_reserved db 0x0
+    dap_count dw 0x2
+	dap_bufaddr_lw dw 0x0	
+	dap_bufaddr_hi dw 0x0
+	;Kernel resides in disk from 2nd sector.
+	dap_sector_lw dd 0x02
+	dap_sector_hi dd 0x0
+    total_sector dw DEF_RINIT_LEN + DEF_MAST_LEN
+
     times 510 - ($ - $$) db 0x00
-            dw 0xaa55
+	;Last word must be 0xAA55.
+    dw 0xAA55

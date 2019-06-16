@@ -1439,14 +1439,14 @@ __TERMINAL:
 //But this one will search the whole file system tree to seek the target.
 BOOL GetDirEntry(__FAT32_FS* pFat32Fs, CHAR* pFullName,	 __FAT32_SHORTENTRY* pfse, DWORD* pDirClus, DWORD* pDirOffset)
 {
-	__FAT32_SHORTENTRY   ShortEntry         = {0};
+	__FAT32_SHORTENTRY   ShortEntry = {0};
 	CHAR                 SubDir[MAX_FILE_NAME_LEN];
 	CHAR                 buffer[MAX_FILE_NAME_LEN];
 	CHAR                 szConvertName[MAX_FILE_NAME_LEN] = {0};
-	BOOL                 bResult            = FALSE;
-	DWORD                dwLevel            = 0;	
-	DWORD                dwStartClus        = 0;      //Start cluster of current directory to search.
-	DWORD                dwSector           = 0;	
+	BOOL                 bResult = FALSE;
+	DWORD                dwLevel = 0;	
+	DWORD                dwStartClus = 0;      //Start cluster of current directory to search.
+	DWORD                dwSector = 0;	
 	int                  i;
 
 	if((NULL == pFat32Fs) || (NULL == pFullName) || (NULL == pfse))

@@ -446,7 +446,7 @@ static BOOL ParseMADTEntry(struct MADT* pMADT, __X86_CHIP_SPECIFIC* pChipSpec)
 			 * Add the found processor into system,using the parameters above. 
 			 * Set domain ID to 0 forcefully since we do not support more than one domain yet.
 			 */
-			if (!ProcessorManager.AddProcessor(0, chip_id, core_id, logical_cpu_id))
+			if (!ProcessorManager.AddProcessor(0, chip_id, core_id, logical_cpu_id, pLocalApic->apic_id))
 			{
 				_hx_printf("Failed to add processor[id = %d] into system.\r\n", pLocalApic->apic_id);
 				goto __TERMINAL;

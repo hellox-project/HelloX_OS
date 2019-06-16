@@ -1,7 +1,7 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : 28 DEC, 2006
-//    Module Name               : OS_ENTRY.cpp
+//    Module Name               : os_entry.c
 //    Module Funciton           : 
 //                                This module contains the OS initializating code,include but not limited:
 //                                1. Global objects initialization;
@@ -106,9 +106,12 @@ static void __OS_Entry_BSP()
 	InitializeVGA();
 #endif
 
-	/* Print out welcome message.
-	 * Please note the output should put here that before the System.BeginInitialization routine,
-	 * since it may cause the interrupt enable,which will lead the failure of system initialization.
+	/* 
+	 * Print out welcome message.
+	 * Please note the output should put here that before the 
+	 * System.BeginInitialization routine,since it may cause 
+	 * the interrupt enable,which will lead the failure result
+	 * of system initialization.
 	 */
 	ClearScreen();
 	GotoHome();
@@ -118,8 +121,8 @@ static void __OS_Entry_BSP()
 	ChangeLine();
 
 	/* 
-	 * Prepare the OS initialization environment.It's worth noting that even the System
-	 * object self is not initialized yet.
+	 * Prepare the OS initialization environment.It's worth 
+	 * noting that even the System object self is not initialized yet.
 	 */
 	if(!System.BeginInitialize((__COMMON_OBJECT*)&System))
 	{
@@ -128,14 +131,28 @@ static void __OS_Entry_BSP()
 	}
 
 	/*
-	 * Initialize memory management object.This object must be initialized before any other
-	 * system level objects since it's function maybe required by them.
-	 * All kernel memory management functions,such as _hx_malloc,KMemAlloc,and corresponding
-	 * free routines are unavailable until after this initialization.
+	 * Initialize memory management object.
+	 * This object must be initialized before any other
+	 * system level objects since it's function maybe 
+	 * required by them.
+	 * All kernel memory management functions,such as 
+	 * _hx_malloc,KMemAlloc,and corresponding free
+	 * routines are unavailable until after this initialization.
 	 */
 	if(!AnySizeBuffer.Initialize(&AnySizeBuffer))
 	{
 		pszErrorMsg = "INIT ERROR: Failed to initialize AnySizeBuffer object.";
+		goto __TERMINAL;
+	}
+
+	/* 
+	 * Object Manager must be initialized then,since 
+	 * all other system objects may use it to create
+	 * kernel objects.
+	 */
+	if (!ObjectManager.Initialize(&ObjectManager))
+	{
+		pszErrorMsg = "INIT ERROR: Failed to initialize Object Manager. ";
 		goto __TERMINAL;
 	}
 
@@ -157,15 +174,6 @@ static void __OS_Entry_BSP()
 		pszErrorMsg = "INIT ERROR: Hardware initialization process failed.";
 		goto __TERMINAL;
 	}
-
-	/* 
-	 * Set the first page directory entry to NULL,to indicate
-	 * this location is not initialized yet,in case of VMM is
-	 * enabled.
-	 */
-#ifdef __CFG_SYS_VMM
-	*(__PDE*)PD_START = NULL_PDE;
-#endif
 
 	//********************************************************************************
 	//
@@ -196,6 +204,7 @@ static void __OS_Entry_BSP()
 	}
 #endif
 
+#if defined(__CFG_SYS_PROCESS)
 	/* 
 	 * Initialize the Process Manager object. 
 	 * All processes in system,will be managed by this global object.
@@ -205,6 +214,13 @@ static void __OS_Entry_BSP()
 		pszErrorMsg = "INIT ERROR: Can not initialize ProcessManager object.";
 		goto __TERMINAL;
 	}
+	/* Initiaizes CPU specific task management function. */
+	if (!ProcessManager.InitializeCPUTask((__COMMON_OBJECT*)&ProcessManager))
+	{
+		pszErrorMsg = "INIT ERROR: Can not initialize CPU task mechanism.";
+		goto __TERMINAL;
+	}
+#endif
 
 	/* 
 	 * Initialize Kernel Thread Manager object.
@@ -241,9 +257,7 @@ static void __OS_Entry_BSP()
 	 * frames.
 	 */
 #ifdef __CFG_SYS_VMM
-	if(!PageFrameManager.Initialize((__COMMON_OBJECT*)&PageFrameManager,
-		(LPVOID)0x02000000,
-		(LPVOID)0x09FFFFFF))
+	if(!PageFrameManager.Initialize((__COMMON_OBJECT*)&PageFrameManager))
 	{
 		pszErrorMsg = "INIT ERROR: Can not initialize PageFrameManager object.";
 		goto __TERMINAL;
@@ -287,7 +301,10 @@ static void __OS_Entry_BSP()
 	 * if __CFG_SYS_VMM flag is defined,until then.
 	 */
 #ifdef __CFG_SYS_VMM
-	EnableVMM();
+	BUG_ON(NULL == lpVirtualMemoryMgr);
+	BUG_ON(NULL == lpVirtualMemoryMgr->lpPageIndexMgr);
+	BUG_ON(NULL == lpVirtualMemoryMgr->lpPageIndexMgr->lpPdAddress);
+	EnableVMM(lpVirtualMemoryMgr->lpPageIndexMgr->lpPdAddress);
 #endif
 
 	/* Initialize Ethernet Manager if it is enabled. */
@@ -370,7 +387,12 @@ static void __OS_Entry_BSP()
 		pszErrorMsg = "INIT ERROR: Can not create SystemIdle kernel thread.";
 		goto __TERMINAL;
 	}
-
+	/* 
+	 * Save current processor's IDLE thread's handle to 
+	 * the corresponding slot in KernelThreadManager object. 
+	 */
+	BUG_ON(NULL != KernelThreadManager.IdleKernelThread[__CURRENT_PROCESSOR_ID]);
+	KernelThreadManager.IdleKernelThread[__CURRENT_PROCESSOR_ID] = lpIdleThread;
 	/* Disable suspend on this kernel thread,since it may lead system crash. */
 	KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIdleThread,
@@ -555,7 +577,10 @@ static void __OS_Entry_AP()
 
 #if defined(__CFG_SYS_VMM)
 	/* Enable paging mechanism. */
-	EnableVMM();
+	BUG_ON(NULL == lpVirtualMemoryMgr);
+	BUG_ON(NULL == lpVirtualMemoryMgr->lpPageIndexMgr);
+	BUG_ON(NULL == lpVirtualMemoryMgr->lpPageIndexMgr->lpPdAddress);
+	EnableVMM(lpVirtualMemoryMgr->lpPageIndexMgr->lpPdAddress);
 #endif
 
 	/* Initialize AP related hardware. */
@@ -565,6 +590,16 @@ static void __OS_Entry_AP()
 			__CURRENT_PROCESSOR_ID);
 		goto __TERMINAL;
 	}
+
+#if defined(__CFG_SYS_PROCESS)
+	/* Initializes CPU specific task management function. */
+	if (!ProcessManager.InitializeCPUTask((__COMMON_OBJECT*)&ProcessManager))
+	{
+		_hx_printk("Failed to intialize AP[%d]'s task.\r\n",
+			__CURRENT_PROCESSOR_ID);
+		goto __TERMINAL;
+	}
+#endif
 
 	/* Create idle thread for the current CPU. */
 	char idleName[16];
@@ -584,36 +619,16 @@ static void __OS_Entry_AP()
 			__CURRENT_PROCESSOR_ID);
 		goto __TERMINAL;
 	}
+	/*
+	* Save current processor's IDLE thread's handle to
+	* the corresponding slot in KernelThreadManager object.
+	*/
+	BUG_ON(NULL != KernelThreadManager.IdleKernelThread[__CURRENT_PROCESSOR_ID]);
+	KernelThreadManager.IdleKernelThread[__CURRENT_PROCESSOR_ID] = lpIdleThread;
 	/* Disable suspend on this kernel thread,since it may lead system crash. */
 	KernelThreadManager.EnableSuspend((__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpIdleThread,
 		FALSE);
-
-#if 0
-	/* Just stop for debugging. */
-	__asm {
-		sti
-	}
-	while (TRUE)
-	{
-		if (0 == counter % 500)
-		{
-			_hx_printk("Current processor[%d] is running,loop_counter = [%d]\r\n",
-				cpuID, counter);
-		}
-		__asm {
-			hlt
-		}
-		counter++;
-		/* Test memory functions. */
-		ptr = _hx_aligned_malloc(4096, 64);
-		if (ptr)
-		{
-			_hx_free(ptr);
-			ptr = NULL;
-		}
-	}
-#endif
 
 	/* 
 	 * Start to schedule kernel thread,in normal case it should not 

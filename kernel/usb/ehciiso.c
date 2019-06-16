@@ -530,7 +530,7 @@ BOOL usbStartISOXfer(__USB_ISO_DESCRIPTOR* pIsoDesc)
 	ReleaseMutex(pEhciCtrl->hMutex);
 
 	//Pending on the descriptor to wait the arrival of data.
-	dwResult = WaitForThisObjectEx(pIsoDesc->hEvent, USB_DEFAULT_XFER_TIMEOUT);
+	dwResult = WaitForThisObjectEx(pIsoDesc->hEvent, USB_DEFAULT_XFER_TIMEOUT, NULL);
 	switch (dwResult)
 	{
 	case OBJECT_WAIT_RESOURCE:

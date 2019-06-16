@@ -241,10 +241,10 @@ static __COMMON_OBJECT* __OpenDevice(__COMMON_OBJECT* lpThis,
  * failing reason by calling GetLastError routine.
  */
 static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object.
-									LPSTR            lpszFileName,
-									DWORD            dwAccessMode,
-									DWORD            dwShareMode,
-									LPVOID           lpReserved)
+	LPSTR            lpszFileName,
+	DWORD            dwAccessMode,
+	DWORD            dwShareMode,
+	LPVOID           lpReserved)
 {
 	CHAR FileName[512];
 	__COMMON_OBJECT*    pFileHandle = NULL;
@@ -254,7 +254,7 @@ static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object
 		return NULL;
 	}
 	/* Path and name too long. */
-	if(StrLen(lpszFileName) > 511)
+	if(StrLen(lpszFileName) > MAX_FILE_NAME_LEN)
 	{
 		return NULL;
 	}
@@ -474,10 +474,10 @@ __TERMINAL:
 	return dwResult ? TRUE : FALSE;
 }
 
-//Implementation of FindFirstFile.
+/* FindFirstFile,it's the begin of finding file's iteration. */
 static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
-									   LPCTSTR lpszFileName,
-									   FS_FIND_DATA* pFindData)
+	LPCTSTR lpszFileName,
+	FS_FIND_DATA* pFindData)
 {
 	__DEVICE_OBJECT*         pFileDriver  = NULL;
 	BYTE                     FsIdentifier = 0;
@@ -495,11 +495,14 @@ static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	if (NULL == pDrcb)
+	{
 		goto __TERMINAL;
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
 		goto __TERMINAL;
+	}
 
 	pDrcb->dwStatus      = DRCB_STATUS_INITIALIZED;
 	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
@@ -519,8 +522,9 @@ static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
 		}
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
-	if(NULL == pFileDriver)  //Can not find the appropriate file system.
+	if(NULL == pFileDriver)
 	{
+		/* Can not find the corresponding file system. */
 		goto __TERMINAL;
 	}
 	if(DEVICE_OBJECT_SIGNATURE != pFileDriver->dwSignature)
@@ -531,16 +535,18 @@ static __COMMON_OBJECT* _FindFirstFile(__COMMON_OBJECT* lpThis,
 	if(0 == pFileDriver->lpDriverObject->DeviceCtrl(
 		(__COMMON_OBJECT*)pFileDriver->lpDriverObject,
 		(__COMMON_OBJECT*)pFileDriver,
-		pDrcb))  //File system processes failed.
+		pDrcb))
 	{
 		goto __TERMINAL;
 	}
-	//File system processes successfully,then return the result.
-	pResult = (__COMMON_OBJECT*)pDrcb->lpOutputBuffer;  //Output buffer contains
-	                                                    //the find result.
+	/* 
+	 * File system processes successfully,then return the result.
+	 * lpOutputBuffer contains the finding handle.
+	 */
+	pResult = (__COMMON_OBJECT*)pDrcb->lpOutputBuffer;
 
 __TERMINAL:
-	if(pDrcb)  //Should release the DRCB object.
+	if(pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)pDrcb);
@@ -548,11 +554,11 @@ __TERMINAL:
 	return pResult;
 }
 
-//Implementation of FindNextFile.
+/* FindNextFile,use the handle that FindFirstFile returned. */
 static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
-						  LPCTSTR lpszFileName,
-						  __COMMON_OBJECT* pFindHandle,
-						  FS_FIND_DATA* pFindData)
+	LPCTSTR lpszFileName,
+	__COMMON_OBJECT* pFindHandle,
+	FS_FIND_DATA* pFindData)
 {
 	__DEVICE_OBJECT*         pFileDriver  = NULL;
 	BYTE                     FsIdentifier = 0;
@@ -562,8 +568,7 @@ static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
 	__IO_MANAGER*            pIoManager   = (__IO_MANAGER*)lpThis;
 	int                      i;
 
-	if((NULL == lpThis) || (NULL == lpszFileName) || (NULL == pFindData)
-		|| (NULL == pFindHandle))
+	if((NULL == lpThis) || (NULL == lpszFileName) || (NULL == pFindData) || (NULL == pFindHandle))
 	{
 		goto __TERMINAL;
 	}
@@ -571,11 +576,14 @@ static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	if (NULL == pDrcb)
+	{
 		goto __TERMINAL;
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
 		goto __TERMINAL;
+	}
 
 	pDrcb->dwStatus      = DRCB_STATUS_INITIALIZED;
 	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
@@ -608,7 +616,7 @@ static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
 	if(0 == pFileDriver->lpDriverObject->DeviceCtrl(
 		(__COMMON_OBJECT*)pFileDriver->lpDriverObject,
 		(__COMMON_OBJECT*)pFileDriver,
-		pDrcb))  //File system processes failed.
+		pDrcb))
 	{
 		goto __TERMINAL;
 	}
@@ -623,10 +631,13 @@ __TERMINAL:
 	return bResult;
 }
 
-//Implementation of FindClose routine.
+/* 
+ * FindClose routine,call this routine after finding iteration finished,
+ * to release the finding resource.
+ */
 static BOOL _FindClose(__COMMON_OBJECT* lpThis,
-					   LPCTSTR lpszFileName,
-					   __COMMON_OBJECT* pFindHandle)
+	LPCTSTR lpszFileName,
+	__COMMON_OBJECT* pFindHandle)
 {
 	__DEVICE_OBJECT*         pFileDriver  = NULL;
 	BYTE                     FsIdentifier = 0;
@@ -644,11 +655,14 @@ static BOOL _FindClose(__COMMON_OBJECT* lpThis,
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	if (NULL == pDrcb)
+	{
 		goto __TERMINAL;
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
 		goto __TERMINAL;
+	}
 
 	pDrcb->dwStatus      = DRCB_STATUS_INITIALIZED;
 	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
@@ -680,7 +694,7 @@ static BOOL _FindClose(__COMMON_OBJECT* lpThis,
 	if(0 == pFileDriver->lpDriverObject->DeviceCtrl(
 		(__COMMON_OBJECT*)pFileDriver->lpDriverObject,
 		(__COMMON_OBJECT*)pFileDriver,
-		pDrcb))  //File system processes failed.
+		pDrcb))
 	{
 		goto __TERMINAL;
 	}
@@ -695,7 +709,7 @@ __TERMINAL:
 	return bResult;
 }
 
-//Implementation of GetFileAttributes.
+/* GetFileAttributes routine,returns the file's attributes information. */
 static DWORD _GetFileAttributes(__COMMON_OBJECT* lpThis,
 							   LPCTSTR lpszFileName)
 {

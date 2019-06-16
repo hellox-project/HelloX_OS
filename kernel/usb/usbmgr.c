@@ -127,7 +127,6 @@ static BOOL UsbMgrInit(__USB_MANAGER* pUsbMgr)
 		return FALSE;
 	}
 
-	//usb_init();
 	return TRUE;
 }
 
@@ -202,16 +201,17 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 	if (ucInt)
 	{
 #ifdef __I386__
-		ucInt += 0x20;  //Offset to CPU's device interrupt vector region.
+		/* Add the base of interrupt in x86. */
+		ucInt += 0x20;
 #endif
-		//Create interrupt object now.
+		/* Establish EHCI interrupt. */
 		pUsbCtrl->IntObject = ConnectInterrupt(CommonInterruptHandler,
 			(LPVOID)pUsbCtrl,
 			ucInt);
-		if (NULL == pUsbCtrl->IntObject)  //Failed to connect interrupt.
+		if (NULL == pUsbCtrl->IntObject)
 		{
-			_hx_printf("%s: Failed to connect interrupt object,vector = %d.\r\n",__func__, ucInt);
-			//Destroy the common USB controller object.
+			_hx_printf("%s: Connect interrupt fail, vector = %d.\r\n",__func__, ucInt);
+			/* Destroy the common USB controller object. */
 			_hx_free(pUsbCtrl);
 			pUsbCtrl = NULL;
 			goto __TERMINAL;
@@ -222,8 +222,9 @@ __TERMINAL:
 	return pUsbCtrl;
 }
 
-//A local helper routine to retrieve usb descriptors from device.
-static int usb_get_descriptor(struct usb_device *dev, unsigned char type,unsigned char index, void *buf, int size)
+/* A local helper routine to retrieve usb descriptors from device. */
+static int usb_get_descriptor(struct usb_device *dev, unsigned char type,
+	unsigned char index, void *buf, int size)
 {
 	int res;
 	res = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),

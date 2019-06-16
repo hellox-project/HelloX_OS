@@ -6,12 +6,6 @@
 //                                This module countains CPU specific code,in this file,
 //                                Intel X86 series CPU's specific code is included.
 //
-//    Last modified Author      : Garry
-//    Last modified Date        : 29 JAN,2009
-//    Last modified Content     :
-//                                1. __inb,__inw,__ind,__inbs,__inws and __inds are added.
-//                                2. __outb,__outw,__outd are added.
-//
 //    Last modified Author      : Tywind
 //    Last modified Date        : 30 JAN,2015
 //    Last modified Content     :
@@ -21,9 +15,12 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
+#include <mlayout.h>
+#include <process.h>
 #include <arch.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/utsname.h>
 
 #include "pic.h"
@@ -118,9 +115,178 @@ static void Init_Sys_Clock()
 	__outb((UCHAR)(((DWORD)__LATCH) >> 8), 0x40);
 }
 
-//Architecture related initialization code,this routine will be called in the
-//begining of system initialization.
-//This routine must be in GLOBAL scope since it will be called by other routines.
+/* Move a memory block from user space to kernel space. */
+BOOL __copy_from_user(__VIRTUAL_MEMORY_MANAGER* pVmmMgr, LPVOID pKernelStart, LPVOID pUserStart,
+	unsigned long length)
+{
+	unsigned long __pdr = 0;
+	unsigned long ulFlags = 0;
+
+	BUG_ON(NULL == pVmmMgr);
+	BUG_ON(length > PAGE_SIZE);
+
+	/* The operation must not be interupted. */
+	__DISABLE_LOCAL_INTERRUPT(ulFlags);
+	/* Use the specified VMM's pdr. */
+	__pdr = (unsigned long)pVmmMgr->lpPageIndexMgr->lpPdAddress;
+	__asm {
+		push eax
+		push ebx
+		mov ebx, cr3
+		mov eax, __pdr
+		mov __pdr, ebx //Save old pdr.
+		mov cr3, eax
+		pop ebx
+		pop eax
+	}
+	memcpy(pKernelStart, pUserStart, length);
+	/* Restore the previous PDR. */
+	__asm {
+		push eax
+		mov eax, __pdr
+		mov cr3, eax
+		pop eax
+	}
+	__RESTORE_LOCAL_INTERRUPT(ulFlags);
+	return TRUE;
+}
+
+/* Move a memory block from kernel space to user space. */
+BOOL __copy_to_user(__VIRTUAL_MEMORY_MANAGER* pVmmMgr, LPVOID pKernelStart, LPVOID pUserStart,
+	unsigned long length)
+{
+	unsigned long __pdr = 0;
+	unsigned long ulFlags = 0;
+
+	BUG_ON(NULL == pVmmMgr);
+	BUG_ON(length > PAGE_SIZE);
+
+	/* The operation must not be interupted. */
+	__DISABLE_LOCAL_INTERRUPT(ulFlags);
+	/* Use the specified VMM's pdr. */
+	__pdr = (unsigned long)pVmmMgr->lpPageIndexMgr->lpPdAddress;
+	__asm {
+		push eax
+		push ebx
+		mov ebx, cr3
+		mov eax, __pdr
+		mov __pdr, ebx //Save old pdr.
+		mov cr3, eax
+		pop ebx
+		pop eax
+	}
+	memcpy(pUserStart, pKernelStart, length);
+	/* Restore the previous PDR. */
+	__asm {
+		push eax
+		mov eax, __pdr
+		mov cr3, eax
+		pop eax
+	}
+	__RESTORE_LOCAL_INTERRUPT(ulFlags);
+	return TRUE;
+}
+
+/* Helper routine to construct a GDT entry. */
+static void __SetGDTEntry(__GDT_ENTRY* pEntry, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
+{
+	pEntry->base_low = (base & 0xFFFF);
+	pEntry->base_middle = (base >> 16) & 0xFF;
+	pEntry->base_high = (base >> 24) & 0xFF;
+	pEntry->limit_low = (limit & 0xFFFF);
+	pEntry->granularity = (limit >> 16) & 0x0F;
+	pEntry->granularity |= gran & 0xF0;
+	pEntry->access = access;
+}
+
+/* 
+ * Helper routine to set a TSS into x86's GDT. 
+ * It just delegate the operation to a routine in 
+ * miniker.
+ */
+typedef BOOL (__cdecl *__SET_TSS_INTO_GDT)(int index, uint32_t low_dword, uint32_t high_dword);
+
+BOOL __cdecl SetTSSToGDT(int index, uint32_t low_dword, uint32_t high_dword)
+{
+	__SET_TSS_INTO_GDT __set_tss = *((__SET_TSS_INTO_GDT*)__SET_GDT_ENTRY_BASE);
+	BUG_ON(index >= MAX_CPU_NUM);
+	return __set_tss(index, low_dword, high_dword);
+}
+
+/* Helper routine to load TR register. */
+static __load_tr(int tss_index)
+{
+	int tr_val = tss_index * 8;
+	tr_val += 10 * 8; /* 10 GDT entries above TSS. */
+	tr_val |= 3; /* Set RPL as 3. */
+	__asm {
+		xor eax,eax
+		mov eax,tr_val
+		ltr ax
+	}
+}
+
+/*
+ * Initializes x86 specific task management function.
+ * It creates a TSS for current processor and save it into
+ * processor specific data structure,and set the TSS into
+ * GDT entry corresponding current processor.
+ * Then TR register is loaded.
+ */
+BOOL __InitCPUTask()
+{
+	__X86_TSS* pTss = NULL;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+	BOOL bResult = FALSE;
+	uint32_t base = 0, limit = 0;
+	__GDT_ENTRY Entry;
+
+	/* Allocate TSS for current processor. */
+	pTss = _hx_aligned_malloc(sizeof(__X86_TSS), DEFAULT_CACHE_LINE_SIZE);
+	if (NULL == pTss)
+	{
+		goto __TERMINAL;
+	}
+	memset(pTss, 0, sizeof(__X86_TSS));
+	/* Initializes the TSS. */
+	pTss->ss0 = 0x10;
+	/* Kernel code segment with RPL set to 3. */
+	pTss->cs = 0x0b;
+	pTss->ds = 0x13;
+	pTss->es = 0x13;
+	pTss->fs = 0x13;
+	pTss->gs = 0x13;
+	pTss->ss = 0x13;
+
+	/* Save the TSS into processor's specific structure. */
+	pSpec = (__LOGICALCPU_SPECIFIC*)ProcessorManager.GetCurrentProcessorSpecific();
+	BUG_ON(NULL == pSpec);
+	pSpec->vendorSpec = pTss;
+
+	/* Save the TSS into GDT. */
+	base = (uint32_t)pTss;
+	limit = base + sizeof(__X86_TSS);
+	__SetGDTEntry(&Entry, base, limit, 0xE9, 0x00);
+	base = *(uint32_t*)&Entry;
+	limit = *((uint32_t*)&Entry + 1);
+	bResult = SetTSSToGDT(__CURRENT_PROCESSOR_ID, base, limit);
+	BUG_ON(!bResult);
+
+	/* Load TR register. */
+	__load_tr(__CURRENT_PROCESSOR_ID);
+
+	/* Init task successfully. */
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
+}
+
+/* 
+ * Architecture related initialization code,
+ * this routine will be called in the
+ * begining of system initialization.
+ */
 BOOL __HardwareInitialize()
 {
 	BOOL bResult = FALSE;
@@ -262,7 +428,7 @@ static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
 	}
 }
 
-//Processor specified exception handler,for x86.
+/* Exception handler,for x86. */
 VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
 {
 	if (ucVector >= MAX_EXCEP_TABLE_SIZE)  //Invalid exception number.
@@ -292,14 +458,15 @@ VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
 }
 
 /*
- * This routine switches the current executing path to the new one identified
- * by lpContext,and acknowledge the interrupt controller before switch to target
- * kernel thread.
+ * Switch to a kernel thread,it just reload the general
+ * purpose registers from target kernel's stack,and switch
+ * to it using iret instruction.
+ * The content of CS/DS/ES/FS/GS/SS registers are unchanged.
  */
 #ifndef __GCC__
 __declspec(naked)
 #endif
-VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
+static void __switchto_kernel(__KERNEL_THREAD_CONTEXT* lpContext)
 {
 #ifdef __GCC__
 	__asm__ (
@@ -334,6 +501,119 @@ VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext)
 #endif
 }
 
+/*
+* Switch to a user thread.
+* The content of CS/DS/ES/FS/GS/SS registers are changed
+* to user,comparing to the __switchto_kernel routine.
+*/
+__declspec(naked) static void __switchto_user(__KERNEL_THREAD_CONTEXT* lpContext)
+{
+	__asm {
+		push ebp
+		mov ebp, esp
+		mov esp, dword ptr[ebp + 0x08]  //Restore ESP.
+		mov ax,0x4b
+		mov ds,ax
+		mov es,ax
+		mov fs,ax
+		mov gs,ax
+		pop ebp
+		pop edi
+		pop esi
+		pop edx
+		pop ecx
+		pop ebx
+		pop eax
+		iretd
+	}
+}
+
+/* 
+ * A helper routine to reload the page directory base register 
+ * from the target thread(process)'s page directory base value.
+ * It will be called in process of context switching if the
+ * target thread is a user one.
+ */
+static void __switch_pdr(unsigned long __pdr)
+{
+	/* Set it into CR3 register. */
+	__asm {
+		push eax
+		mov eax, __pdr
+		mov cr3, eax
+		pop eax
+	}
+}
+
+/*
+ * Context switching routine,will be invoked in 
+ * interrupt handler in most case,such as ScheduleFromInt
+ * routine.
+ * It restores the TSS and CR3 register if the next
+ * thread is a user thread.
+ */
+void __SwitchTo(__KERNEL_THREAD_OBJECT* pPrev, __KERNEL_THREAD_OBJECT* pNext)
+{
+	__PROCESS_OBJECT* pProcess = NULL;
+	__VIRTUAL_MEMORY_MANAGER* pvmmgr = NULL;
+	__PAGE_INDEX_MANAGER* pPageIdxMgr = NULL;
+	unsigned long __pdr = 0;
+	__LOGICALCPU_SPECIFIC* pSpec = NULL;
+	__X86_TSS* pTss = NULL;
+
+	BUG_ON(NULL == pNext);
+	if (IS_USER_THREAD(pNext))
+	{
+		/* 
+		 * This thread is a user thread,has it's own memory
+		 * space,so we should use it by reloading the CR3
+		 * register.
+		 */
+		pProcess = (__PROCESS_OBJECT*)pNext->lpOwnProcess;
+		BUG_ON(NULL == pProcess);
+		pvmmgr = pProcess->pMemMgr;
+		BUG_ON(NULL == pvmmgr);
+		pPageIdxMgr = pvmmgr->lpPageIndexMgr;
+		BUG_ON(NULL == pPageIdxMgr);
+		/* Get the page directory base address from page index manager. */
+		__pdr = (unsigned long)pPageIdxMgr->lpPdAddress;
+		__switch_pdr(__pdr);
+
+		if (THREAD_IN_USER_MODE(pNext))
+		{
+			/*
+			 * The thread may trap into kernel for handling
+			 * interrupt,so we must switch to user space.
+			 * Change kernel stack of current processor's TSS
+			 * to this thread's kernel stack.
+			 */
+			pSpec = ProcessorManager.GetCurrentProcessorSpecific();
+			BUG_ON(NULL == pSpec);
+			pTss = (__X86_TSS*)pSpec->vendorSpec;
+			BUG_ON(NULL == pTss);
+			pTss->esp0 = (uint32_t)pNext->lpInitStackPointer;
+			/* Just fall back to user. */
+			__switchto_user(pNext->lpKernelThreadContext);
+		}
+		else
+		{
+			/* The thread is in interrim of system call. */
+			__switchto_kernel(pNext->lpKernelThreadContext);
+		}
+	}
+	else
+	{
+		/* 
+		 * It's a kernel thread,so we use the system
+		 * memory space to reload the CR3. 
+		 */
+		pPageIdxMgr = lpVirtualMemoryMgr->lpPageIndexMgr;
+		__pdr = (unsigned long)pPageIdxMgr->lpPdAddress;
+		__switch_pdr(__pdr);
+		__switchto_kernel(pNext->lpKernelThreadContext);
+	}
+}
+
 /* Acknowledge the default interrupt controller,which is PIC 8259. */
 void __AckDefaultInterrupt()
 {
@@ -349,10 +629,65 @@ void __AckDefaultInterrupt()
 /*
  * Context switching routine for x86 architecture.
  * Saves the current kernel thread's stack top pointer into context pointer,
- * and switchs to the new kernel thread by restoring it's context.
+ * and switchs to the new kernel thread by calling __SwitchTo routine in
+ * assembly language.
  * The three variables,are used as temporary space to store registers of
  * current kernel thread in process of saving context.
  */
+static __declspec(naked) VOID __cdecl __local_SaveAndSwitch(
+	__KERNEL_THREAD_CONTEXT** lppOldContext,
+	__KERNEL_THREAD_OBJECT* pNextThread,
+	unsigned long _t_ebp,
+	unsigned long _t_eip,
+	unsigned long _t_eax)
+{
+	__asm {
+		/* Save current EBP into _t_ebp. */
+		mov dword ptr[esp + 12], ebp
+		/* Establish the stack frame. */
+		mov ebp, esp
+		/* Save current EAX register into _t_eax. */
+		mov dword ptr[ebp + 20], eax
+		/* Save the return address(EIP) into _t_eip. */
+		pop dword ptr[ebp + 16]
+		/* Save flags register. */
+		pushfd
+		/* Save CS. */
+		xor eax, eax
+		mov ax, cs
+		push eax
+		/* Store return address into stack. */
+		push dword ptr[ebp + 16]
+		/* Store EAX into stack. */
+		push dword ptr[ebp + 20]
+		/* Save all other registers except EBP. */
+		push ebx
+		push ecx
+		push edx
+		push esi
+		push edi
+		/* Save the original EBP register. */
+		push dword ptr[ebp + 12]
+
+		/*
+		* Current kernel thread's stack frame built over,then
+		* save the stack top pointer into kernel thread's context
+		* pointer.
+		* We can use any registers since all of them are saved.
+		*/
+		mov ebx, dword ptr[ebp + 0x04]
+		mov dword ptr[ebx], esp
+
+		/* Call the __SwitchTo routine to switch to the new thread. */
+		mov ebx, dword ptr[ebp + 0x08]
+		push ebx
+		xor ebx,ebx
+		push ebx
+		call __SwitchTo
+	}
+}
+
+#if 0
 static __declspec(naked) VOID __cdecl __local_SaveAndSwitch(
 	__KERNEL_THREAD_CONTEXT** lppOldContext,
 	__KERNEL_THREAD_CONTEXT** lppNewContext,
@@ -410,9 +745,10 @@ static __declspec(naked) VOID __cdecl __local_SaveAndSwitch(
 		 iretd
 	}
 }
+#endif
 
 /* Context switching in process context. */
-void __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext, __KERNEL_THREAD_CONTEXT** lppNewContext)
+void __SaveAndSwitch(__KERNEL_THREAD_OBJECT* pCurrent, __KERNEL_THREAD_OBJECT* pNew)
 {
 	/* 
 	 * Make room in local stack to be used by local SaveAndSwitch routine
@@ -423,7 +759,8 @@ void __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext, __KERNEL_THREAD_CO
 	unsigned long _t_eip = 0;
 
 	/* Commit context switching by invoke arch specific routine. */
-	__local_SaveAndSwitch(lppOldContext, lppNewContext, _t_ebp, _t_eip, _t_eax);
+	__local_SaveAndSwitch(&pCurrent->lpKernelThreadContext, pNew,
+		_t_ebp, _t_eip, _t_eax);
 }
 
 /*
@@ -524,37 +861,25 @@ VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,__KERNEL_THREAD_CON
 }
 #endif
 
-//
-//Enable Virtual Memory Management mechanism.This routine will be called in
-//process of OS initialization if __CFG_SYS_VMM flag is defined.
-//
-VOID EnableVMM()
+/*
+ * Enable Virtual Memory Management mechanism.
+ * This routine will be called in process of OS 
+ * initialization if __CFG_SYS_VMM flag is defined.
+ * The physical address of page directory will be
+ * passed to this routine,as the initial value
+ * of page directory register.
+ */
+VOID EnableVMM(unsigned long* pdAddr)
 {
-#ifdef __GCC__
-	__asm__ (
-	".code32			\n\t"
-	"pushl	%%eax		\n\t"
-	"movl	%0,	%%eax	\n\t"
-	"movl	%%eax,		%%cr3	\n\t"
-	"movl	%%cr0,		%%eax	\n\t"
-	"orl	$0x80000000,	%%eax	\n\t"
-	"movl	%%eax,		%%cr0	\n\t"
-	"popl	%%eax				\n\t"
-	:
-	:"r"(PD_START)
-	);
-
-#else
 	__asm{
 		push eax
-		mov eax,PD_START
+		mov eax,pdAddr
 		mov cr3,eax
 		mov eax,cr0
 		or eax,0x80000000
 		mov cr0,eax
 		pop eax
 	}
-#endif
 }
 
 //Halt current CPU in case of IDLE,it will be called by IDLE thread.
@@ -569,21 +894,6 @@ VOID HaltSystem()
 #endif
 }
 
-//
-//This routine initializes a kernel thread's context.
-//This routine's action depends on different platform.
-//
-VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
-							 __KERNEL_THREAD_WRAPPER lpStartAddr)
-{
-	DWORD*        lpStackPtr = NULL;
-	DWORD         dwStackSize = 0;
-
-	if((NULL == lpKernelThread) || (NULL == lpStartAddr))  //Invalid parameters.
-	{
-		return;
-	}
-
 //Define a macro to make the code readable.
 #define __PUSH(stackptr,val) \
 	do{  \
@@ -591,25 +901,83 @@ VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 	*((DWORD*)stackptr) = (DWORD)(val); \
 	}while(0)
 
-	lpStackPtr = (DWORD*)lpKernelThread->lpInitStackPointer;
+/*
+ * Initializes a kernel thread's context.
+ */
+void InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
+	__KERNEL_THREAD_WRAPPER lpStartAddr)
+{
+	unsigned long* lpStackPtr = NULL;
+	unsigned long dwStackSize = 0;
+	char* pUserStack = NULL;
 
-	__PUSH(lpStackPtr,lpKernelThread);       //Push lpKernelThread to stack.
-	__PUSH(lpStackPtr,NULL);                 //Push a new return address,simulate a call.
-	__PUSH(lpStackPtr,INIT_EFLAGS_VALUE);    //Push EFlags.
-	__PUSH(lpStackPtr,0x00000008);           //Push CS.
-	__PUSH(lpStackPtr,lpStartAddr);  //Push start address.
-	__PUSH(lpStackPtr,0);                   //Push eax.
-	__PUSH(lpStackPtr,0);
-	__PUSH(lpStackPtr,0);
-	__PUSH(lpStackPtr,0);
-	__PUSH(lpStackPtr,0);
-	__PUSH(lpStackPtr,0);
-	__PUSH(lpStackPtr,0);
+	BUG_ON((NULL == lpKernelThread) || (NULL == lpStartAddr));
+	BUG_ON(IS_USER_THREAD(lpKernelThread));
+
+	lpStackPtr = (DWORD*)lpKernelThread->lpInitStackPointer;
+	__PUSH(lpStackPtr, lpKernelThread);       //Push lpKernelThread to stack.
+	__PUSH(lpStackPtr, NULL);                 //Push a new return address,simulate a call.
+	__PUSH(lpStackPtr, INIT_EFLAGS_VALUE);    //Push EFlags.
+	__PUSH(lpStackPtr, 0x00000008);           //Push CS.
+	__PUSH(lpStackPtr, lpStartAddr);          //Push start address.
+	__PUSH(lpStackPtr, 0);                    //Push general purpose registers.
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
 
 	//Save context.
 	lpKernelThread->lpKernelThreadContext = (__KERNEL_THREAD_CONTEXT*)lpStackPtr;
 	return;
 }
+
+/* Initializes a user thread's context. */
+void InitUserThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
+	__KERNEL_THREAD_WRAPPER lpStartAddr)
+{
+	unsigned long* lpStackPtr = NULL;
+	unsigned long dwStackSize = 0;
+	char* pUserStack = NULL;
+
+	BUG_ON((NULL == lpKernelThread) || (NULL == lpStartAddr));
+	BUG_ON(IS_KERNEL_THREAD(lpKernelThread));
+
+	lpStackPtr = (DWORD*)lpKernelThread->lpInitStackPointer;
+	pUserStack = (char*)lpKernelThread->pUserStack;
+	pUserStack += lpKernelThread->user_stk_size;
+	/* 
+	 * One page of memory in user stack is used as 
+	 * parameter(s) or environment information that 
+	 * transfer to user agent or user application.
+	 * This block of memory is initialized by PrepareProcessCtx
+	 * routine in process module.
+	 */
+	pUserStack -= PAGE_SIZE;
+
+	__PUSH(lpStackPtr, 0x0000004B);           //User SS.
+	__PUSH(lpStackPtr, pUserStack);           //User stack top ptr.
+	__PUSH(lpStackPtr, INIT_EFLAGS_VALUE);    //EFlags.
+	__PUSH(lpStackPtr, 0x00000043);           //User CS.
+	__PUSH(lpStackPtr, KMEM_USERAPP_START);   //Push start address.
+	__PUSH(lpStackPtr, 0);                    //Push general purpose registers.
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+	__PUSH(lpStackPtr, 0);
+
+	/* The thread should be in user mode when first switch to. */
+	__ATOMIC_SET(&lpKernelThread->in_user, 1);
+
+	//Save context.
+	lpKernelThread->lpKernelThreadContext = (__KERNEL_THREAD_CONTEXT*)lpStackPtr;
+	return;
+}
+
+#undef __PUSH
 
 //Return CPU frequency.
 uint64_t __GetCPUFrequency()
@@ -753,27 +1121,6 @@ static void __udelay(unsigned long usec)
 VOID __MicroDelay(DWORD dwmSeconds)
 {
 	__udelay(dwmSeconds);
-
-	/*
-	__U64    u64CurrTsc;
-	__U64    u64TargetTsc;
-
-	__GetTsc(&u64TargetTsc);
-	u64CurrTsc.dwHighPart = 0;
-	u64CurrTsc.dwLowPart  = dwmSeconds;
-	//u64Mul(&u64CurrTsc,CLOCK_PER_MICROSECOND);
-	u64RotateLeft(&u64CurrTsc,10);
-	u64Add(&u64TargetTsc,&u64CurrTsc,&u64TargetTsc);
-	while(TRUE)
-	{
-		__GetTsc(&u64CurrTsc);
-		if(MoreThan(&u64CurrTsc,&u64TargetTsc))
-		{
-			break;
-		}
-	}
-	return;
-	*/
 }
 
 VOID __outd(WORD wPort,DWORD dwVal)  //Write one double word to a port.
@@ -915,7 +1262,7 @@ VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 #else
 	__asm{
 		push ebp
-		mov 	ebp,esp
+		mov ebp,esp
 		push ecx
 		push edx
 		push edi
@@ -981,7 +1328,7 @@ VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort)
 #endif
 }
 
-//Implemention of uname routine,which is hardware specified.
+/* uname routine in C lib,which is hardware specified. */
 int uname(struct utsname* __name)
 {
 	memset(__name,sizeof(struct utsname),0);

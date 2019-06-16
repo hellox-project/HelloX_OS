@@ -15,11 +15,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
-#include "kapi.h"
 
 //
 //The implementation of unsigned 64 bits add.

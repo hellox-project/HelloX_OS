@@ -17,36 +17,29 @@
 #include "statcpu.h"
 #include "stdio.h"
 #include "hellocn.h"
-#include "kapi.h"
 
-__THREAD_HOOK_ROUTINE  lpCreateHook        = NULL;
-__THREAD_HOOK_ROUTINE  lpBeginScheduleHook = NULL;
-__THREAD_HOOK_ROUTINE  lpEndScheduleHook   = NULL;
-__THREAD_HOOK_ROUTINE  lpTerminalHook      = NULL;
+/* Hook routines for thread. */
+__THREAD_HOOK_ROUTINE lpCreateHook = NULL;
+__THREAD_HOOK_ROUTINE lpBeginScheduleHook = NULL;
+__THREAD_HOOK_ROUTINE lpEndScheduleHook = NULL;
+__THREAD_HOOK_ROUTINE lpTerminalHook = NULL;
 
-//
-//Create hook,when a kernel thread is created,this routine is called.
-//
-static DWORD CreateHook(__KERNEL_THREAD_OBJECT*  lpKernelThread,DWORD* lpdwUserData)
+/* Hook routine which is called when a new thread is created. */
+static DWORD CreateHook(__KERNEL_THREAD_OBJECT* lpKernelThread, DWORD* lpdwUserData)
 {
-	__THREAD_STAT_OBJECT*        lpStatObj = &StatCpuObject.IdleThreadStatObj;
-	DWORD                        dwFlags;
+	__THREAD_STAT_OBJECT* lpStatObj = NULL; // &StatCpuObject.IdleThreadStatObj;
+	unsigned long dwFlags;
 
-	if((NULL == lpdwUserData) || (NULL == lpKernelThread))  //Invalid parameter.
+	/* Basic parameters checking. */
+	if((NULL == lpdwUserData) || (NULL == lpKernelThread))
 	{
 		return 0;
 	}
+
 	__ENTER_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
-	if(NULL == lpStatObj->lpKernelThread)  //This stat object was not used yet.
-	{
-		lpStatObj->lpKernelThread = lpKernelThread;
-		*lpdwUserData             = (DWORD)lpStatObj;
-		__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
-		return 1;
-	}
-	/* Should create a kernel stat object. */
+	/* Create a new statistics object. */
 	lpStatObj = (__THREAD_STAT_OBJECT*)GET_KERNEL_MEMORY(sizeof(__THREAD_STAT_OBJECT));
-	if(NULL == lpStatObj)  //Can not allocate memory.
+	if(NULL == lpStatObj)
 	{
 		__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock, dwFlags);
 		return 0;
@@ -66,27 +59,24 @@ static DWORD CreateHook(__KERNEL_THREAD_OBJECT*  lpKernelThread,DWORD* lpdwUserD
 	lpStatObj->wMaxStatRatio    = 0;
 	lpStatObj->wCurrPeriodRatio = 0;
 	lpStatObj->wOneMinuteRatio  = 0;
-	memzero((LPVOID)lpStatObj->RatioQueue,sizeof(lpStatObj->RatioQueue));  //Clear memory.
+	memzero((LPVOID)lpStatObj->RatioQueue,sizeof(lpStatObj->RatioQueue));
 
 	/* Save this object. */
-	*lpdwUserData             = (DWORD)lpStatObj;
+	*lpdwUserData = (DWORD)lpStatObj;
 
 	/* Insert this object into stat list. */
-	lpStatObj->lpNext  = StatCpuObject.IdleThreadStatObj.lpNext;
-	lpStatObj->lpPrev  = &StatCpuObject.IdleThreadStatObj;
+	lpStatObj->lpNext = StatCpuObject.StatObjHdr.lpNext;
+	lpStatObj->lpPrev = &StatCpuObject.StatObjHdr;
 	
-	StatCpuObject.IdleThreadStatObj.lpNext->lpPrev = lpStatObj;
-	StatCpuObject.IdleThreadStatObj.lpNext         = lpStatObj;
+	StatCpuObject.StatObjHdr.lpNext->lpPrev = lpStatObj;
+	StatCpuObject.StatObjHdr.lpNext = lpStatObj;
 	__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock,dwFlags);
 	return 1L;
 }
 
-//
-//Begin Schedule Hook,when a thread will be scheduled to run,this routine
-//is called.
-//
+/* Hook routine and is called when a thread is scheduled to run. */
 static DWORD BeginScheduleHook(__KERNEL_THREAD_OBJECT* lpKernelThread,
-							   DWORD*                  lpdwUserData)
+	DWORD* lpdwUserData)
 {
 	__THREAD_STAT_OBJECT* lpStatObj = (__THREAD_STAT_OBJECT*)(*lpdwUserData);
 
@@ -105,15 +95,12 @@ static DWORD BeginScheduleHook(__KERNEL_THREAD_OBJECT* lpKernelThread,
 	return 1;
 }
 
-//
-//End Schedule Hook,when a kernel thread was scheduled to give the CPU,this routine
-//is called.
-//
-static DWORD EndScheduleHook(__KERNEL_THREAD_OBJECT*   lpKernelThread,
-							 DWORD*                    lpdwUserData)
+/* Hook routine which is called when a thread is scheduled out of CPU. */
+static DWORD EndScheduleHook(__KERNEL_THREAD_OBJECT* lpKernelThread,
+	DWORD* lpdwUserData)
 {
 	__THREAD_STAT_OBJECT* lpStatObj = (__THREAD_STAT_OBJECT*)(*lpdwUserData);
-	__U64                 currtsc;
+	__U64 currtsc;
 
 	if((NULL == lpKernelThread) || (NULL == lpdwUserData))
 	{
@@ -131,11 +118,9 @@ static DWORD EndScheduleHook(__KERNEL_THREAD_OBJECT*   lpKernelThread,
 	return 0;
 }
 
-//
-//Terminal Hook,when a kernel thread was destroyed,this routine will be called.
-//
-static DWORD TerminalHook(__KERNEL_THREAD_OBJECT*      lpKernelThread,
-						  DWORD*                       lpdwUserData)
+/* Called when the corresponding thread object is destroyed. */
+static DWORD TerminalHook(__KERNEL_THREAD_OBJECT* lpKernelThread,
+	DWORD* lpdwUserData)
 {
 	__THREAD_STAT_OBJECT* lpStatObj = (__THREAD_STAT_OBJECT*)(*lpdwUserData);
 	DWORD dwFlags;
@@ -156,12 +141,13 @@ static DWORD TerminalHook(__KERNEL_THREAD_OBJECT*      lpKernelThread,
 	return 1L;
 }
 
+/* Initializer of statistics object. */
 static BOOL Initialize(__STAT_CPU_OBJECT*  lpStatObj)
 {
-	lpCreateHook          = CreateHook;
-	lpBeginScheduleHook   = BeginScheduleHook;
-	lpEndScheduleHook     = EndScheduleHook;
-	lpTerminalHook        = TerminalHook;
+	lpCreateHook = CreateHook;
+	lpBeginScheduleHook = BeginScheduleHook;
+	lpEndScheduleHook = EndScheduleHook;
+	lpTerminalHook = TerminalHook;
 
 	//Install hook routines.
 	KernelThreadManager.SetThreadHook(THREAD_HOOK_TYPE_CREATE,CreateHook);
@@ -170,8 +156,8 @@ static BOOL Initialize(__STAT_CPU_OBJECT*  lpStatObj)
 	KernelThreadManager.SetThreadHook(THREAD_HOOK_TYPE_TERMINAL,TerminalHook);
 
 	//Initialize the StatCpuObject.
-	StatCpuObject.IdleThreadStatObj.lpNext = &StatCpuObject.IdleThreadStatObj;
-	StatCpuObject.IdleThreadStatObj.lpPrev = &StatCpuObject.IdleThreadStatObj;
+	StatCpuObject.StatObjHdr.lpNext = &StatCpuObject.StatObjHdr;
+	StatCpuObject.StatObjHdr.lpPrev = &StatCpuObject.StatObjHdr;
 
 #if defined(__CFG_SYS_SMP)
 	/* Init spin lock. */
@@ -202,24 +188,23 @@ static VOID ShowStat(void)
 {
 }
 
-//
-//Do statistics action.
-//This routine does the following:
-// 1. Calculate total CPU cycle past since previous statistics action;
-// 2. For each thread statistics object,calculate CPU occupancy ratio;
-// 3. Save the result to thread statistics object,as ring queue;
-// 4. Update total CPU cycle counter;
-// 5. Record current CPU cycle counter.
-//
+/*
+ * Do statistics.
+ * This routine does the following:
+ *  1. Calculate total CPU cycle past since previous statistics action;
+ *  2. For each thread statistics object,calculate CPU occupancy ratio;
+ *  3. Save the result to thread statistics object,as ring queue;
+ *  4. Update total CPU cycle counter;
+ *  5. Record current CPU cycle counter.
+ */
 static VOID DoStat(void)
 {
-	__STAT_CPU_OBJECT*    lpStatObj       = &StatCpuObject;
+	__STAT_CPU_OBJECT* lpStatObj = &StatCpuObject;
 	__THREAD_STAT_OBJECT* lpThreadStatObj = NULL;
-	__U64                 currtsc;
-	__U64                 temp;
-	__U64                 remainder;
-	WORD                  ratio;
-	int                   i,j;
+	__U64 currtsc, temp, remainder;
+	WORD ratio;
+	int i,j;
+	unsigned long ulFlags;
 
 	__GetTsc(&currtsc);
 	u64Sub(&currtsc,&lpStatObj->PreviousTsc,&currtsc);  //Get CPU cycle difference.
@@ -232,24 +217,29 @@ static VOID DoStat(void)
 
 	//Calculate each thread's CPU occupancy.
 	remainder.dwHighPart = 0;
-	remainder.dwLowPart  = 1000;  //Divisor used to shrink currtsc later.
-	u64Div(&currtsc,&remainder,&currtsc,&remainder); //currtsc = currtsc / 1000.
-	lpThreadStatObj = &lpStatObj->IdleThreadStatObj;
-	do{
+	/* Divisor used to shrink currtsc later. */
+	remainder.dwLowPart  = 1000;
+	/* currtsc = currtsc / 1000. */
+	u64Div(&currtsc,&remainder,&currtsc,&remainder);
+	lpThreadStatObj = lpStatObj->StatObjHdr.lpNext;
+	__ENTER_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock, ulFlags);
+	while (lpThreadStatObj != &lpStatObj->StatObjHdr) {
 		temp = lpThreadStatObj->CurrPeriodCycle;
-		u64Div(&temp,&currtsc,&temp,&remainder); //temp = temp / currtsc.
+		/* temp = temp / currtsc. */
+		u64Div(&temp,&currtsc,&temp,&remainder);
 		ratio = (WORD)(temp.dwLowPart);
 		//Clear this period's counter of the kernel thread.
 		lpThreadStatObj->CurrPeriodCycle.dwHighPart = 0;
-		lpThreadStatObj->CurrPeriodCycle.dwLowPart  = 0;
+		lpThreadStatObj->CurrPeriodCycle.dwLowPart = 0;
 
 		//Save calculation result to kernel thread's statistics object.
 		lpThreadStatObj->RatioQueue[lpThreadStatObj->wQueueHdr] = ratio;
-		lpThreadStatObj->wCurrPeriodRatio                       = ratio;
+		lpThreadStatObj->wCurrPeriodRatio = ratio;
 		//Update ratio queue's pointers.
 		lpThreadStatObj->wQueueHdr += 1;
-		if(lpThreadStatObj->wQueueHdr == MAX_STAT_PERIOD)  //Exceed queue length.
+		if(lpThreadStatObj->wQueueHdr == MAX_STAT_PERIOD)
 		{
+			/* Exceed queue length. */
 			lpThreadStatObj->wQueueHdr = 0;
 		}
 		if(lpThreadStatObj->wQueueHdr == lpThreadStatObj->wQueueTail)
@@ -261,37 +251,32 @@ static VOID DoStat(void)
 			}
 		}
 		//Calculate CPU occupancy ration in last one minute.
-		lpThreadStatObj->wOneMinuteRatio   = 0;
-		lpThreadStatObj->wMaxStatRatio     = 0;
+		lpThreadStatObj->wOneMinuteRatio = 0;
+		lpThreadStatObj->wMaxStatRatio = 0;
 		for(i = 0,j = lpThreadStatObj->wQueueHdr;i < MAX_STAT_PERIOD;i ++,j --)
 		{
 			if(j <= 0)
 			{
 				j = MAX_STAT_PERIOD;
 			}
-
-			if(i < ONE_MINUTE_PERIOD)  //Accumulate last ONE_MINUTE_PERIOD
-				                                         //result.
+			if(i < ONE_MINUTE_PERIOD)
 			{
+				/* Accumulate last ONE_MINUTE_PERIOD result. */
 				lpThreadStatObj->wOneMinuteRatio += lpThreadStatObj->RatioQueue[j - 1];
 			}
 			lpThreadStatObj->wMaxStatRatio   += lpThreadStatObj->RatioQueue[j - 1];
 		}
 		lpThreadStatObj->wOneMinuteRatio /= ONE_MINUTE_PERIOD;
-		lpThreadStatObj->wMaxStatRatio   /= MAX_STAT_PERIOD;
+		lpThreadStatObj->wMaxStatRatio /= MAX_STAT_PERIOD;
 		//Process next thread statistics object.
 		lpThreadStatObj = lpThreadStatObj->lpNext;
-	}while(lpThreadStatObj != &lpStatObj->IdleThreadStatObj);
+	};
+	__LEAVE_CRITICAL_SECTION_SMP(StatCpuObject.spin_lock, ulFlags);
 }
 
-/*************************************************************************
-**************************************************************************
-**************************************************************************
-**************************************************************************
-*************************************************************************/
-//
-//Global object StatCpuObject's declaration.
-//
+/*************************************************************************/
+
+/* StatCpuObject. */
 __STAT_CPU_OBJECT StatCpuObject = {
 	{0},                         //PreviousTsc.
 	{0},                         //CurrPeriodCycle.
@@ -301,6 +286,7 @@ __STAT_CPU_OBJECT StatCpuObject = {
 	SPIN_LOCK_INIT_VALUE,        //spin_lock.
 #endif
 
+	/* Operation routines. */
 	Initialize,                  //Initialize.
 	GetFirstThreadStat,          //GetFirstThreadStatObj.
 	GetNextThreadStat,           //GetNextThreadStatObj.

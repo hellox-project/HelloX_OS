@@ -416,9 +416,6 @@
     <ClInclude Include="hxlib\io.h">
       <Filter>Header Files\hxlib</Filter>
     </ClInclude>
-    <ClInclude Include="hxlib\kapi.h">
-      <Filter>Header Files\hxlib</Filter>
-    </ClInclude>
     <ClInclude Include="hxlib\limits.h">
       <Filter>Header Files\hxlib</Filter>
     </ClInclude>
@@ -480,6 +477,12 @@
       <Filter>Header Files\hxlib\sys</Filter>
     </ClInclude>
     <ClInclude Include="hxlib\__hxcomm.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\hellox.h">
+      <Filter>Header Files\hxlib</Filter>
+    </ClInclude>
+    <ClInclude Include="hxlib\kapi.h">
       <Filter>Header Files\hxlib</Filter>
     </ClInclude>
   </ItemGroup>
@@ -838,9 +841,6 @@
     <ClCompile Include="hxlib\io.c">
       <Filter>Source Files\hxlib</Filter>
     </ClCompile>
-    <ClCompile Include="hxlib\kapi.c">
-      <Filter>Source Files\hxlib</Filter>
-    </ClCompile>
     <ClCompile Include="hxlib\log.c">
       <Filter>Source Files\hxlib</Filter>
     </ClCompile>
@@ -899,6 +899,9 @@
       <Filter>Source Files\hxlib</Filter>
     </ClCompile>
     <ClCompile Include="hxlib\trig.c">
+      <Filter>Source Files\hxlib</Filter>
+    </ClCompile>
+    <ClCompile Include="hxlib\hellox.c">
       <Filter>Source Files\hxlib</Filter>
     </ClCompile>
   </ItemGroup>

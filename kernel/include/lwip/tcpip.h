@@ -87,6 +87,7 @@ err_t tcpip_apimsg_lock(struct api_msg *apimsg);
 #endif /* LWIP_NETCONN */
 
 err_t tcpip_input(struct pbuf *p, struct netif *inp);
+err_t tcpip_output(struct pbuf *p, struct netif *out_if);
 
 #if LWIP_NETIF_API
 err_t tcpip_netifapi(struct netifapi_msg *netifapimsg);
@@ -112,6 +113,7 @@ enum tcpip_msg_type {
   TCPIP_MSG_API,
 #endif /* LWIP_NETCONN */
   TCPIP_MSG_INPKT,
+  TCPIP_MSG_OUTPKT,
 #if LWIP_NETIF_API
   TCPIP_MSG_NETIFAPI,
 #endif /* LWIP_NETIF_API */

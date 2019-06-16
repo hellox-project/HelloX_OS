@@ -70,7 +70,7 @@ END_DEFINE_OBJECT(__INTERRUPT_OBJECT)
 /* Interrupt object's initializing routine. */
 BOOL InterruptInitialize(__COMMON_OBJECT* lpThis);
 /* Uninitializing routine of interrupt object. */
-VOID InterruptUninitialize(__COMMON_OBJECT* lpThis);
+BOOL InterruptUninitialize(__COMMON_OBJECT* lpThis);
 
 //
 //Timer object's definition.
@@ -97,7 +97,7 @@ BEGIN_DEFINE_OBJECT(__TIMER_OBJECT)
 END_DEFINE_OBJECT(__TIMER_OBJECT)
 
 BOOL  TimerInitialize(__COMMON_OBJECT* lpThis);    //Initializing routine of timer object.
-VOID  TimerUninitialize(__COMMON_OBJECT* lpThis);  //Uninitializing routine of timer object.
+BOOL  TimerUninitialize(__COMMON_OBJECT* lpThis);  //Uninitializing routine of timer object.
 
 //Determine interrupt types:interrupt or exception.
 //In some platform,only exception exists,so we must adjust the target platform

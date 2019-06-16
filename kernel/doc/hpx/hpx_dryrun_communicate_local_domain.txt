@@ -1,0 +1,41 @@
+本地通信就是在同一个HPX域内不同endpoint之间的通信，类似于IP协议的一个subnet内的通信。由于通信双方的HPX domain address都相同，因此在HPX报文中，可以不携带source HPX domain address和destination HPX domain address。只需要确保source HPX address的最高bit为0即可。
+在安全模式（secured mode）下，所有endpoint之间的流量，必须经过gateway转接，这包括本地通信。
+具体来说，本地通信的过程如下：
+1. Session发起端（initiator）首先判断目标HPX地址是否跟自己是同一个domain，这可以直接通过比较local domain address和应用指定的domain address。因为domain address是64位，在64位机器上直接做一个整数对比即可，可确保效率；
+2. 如果不是位于同一个domain，则走域间通信流程。后面假设是同一个domain中；
+3. 根据domain address会找到一个外出的网络接口，进而可以找到外出接口本身的硬件地址。这些信息都可以在CCB中查找到；
+4. 按照下列规则，封装一个HPX报文：
+    1）填写协议版本，通信类型，下一个header的type，所有header的长度，所有数据的长度，等等，到common header中；
+    2）source HPX address设置为出接口的HPX地址，最高bit必须为0。因为是域内通信，因此不需要填写source HPX domain address；
+    3）destination HPX address设置为对端endpoint的HPX address，最高bit为0；
+    4）生成一个session ID，并设置sequence number为初始值（一般为0）；
+    5）按需增加HPX头，比如protocol control，service request等；
+    6）增加authentication头，用PSK计算digest并填写到authentication头中；
+    7）按需增加具体的应用发出的数据，如果没有应用数据，则保持payload为空；
+    8）计算出checksum并附加在HPX报文最后面；
+    9）根据CCB找到gateway的硬件地址，填写到链路层frame的目的硬件地址中。
+5. 构造完HPX报文后，调用网络接口驱动程序，发送该HPX报文；
+6. Gateway收到这个HPX报文，首先根据ECB中的内容，对报文的合法性进行检查。包括这个endpoint是否是已知的endpoint，其HPX地址是否是gateway分配，校验authentication头，等等。如果任何一个环节校验失败，则直接丢弃该HPX报文；
+7. 在校验通过的情况下，改写该HPX报文：
+    1）根据目的HPX address查ECB表，找到目的MAC地址，替换原来HPX报文的目的MAC地址；
+    2）源MAC地址设置为gateway自己的MAC地址；
+    3）对整个frame重新计算一个authentication header，替换原来的authentication header；
+8. 调用NIC驱动提供的接口，把上述报文发送到网络上；
+9. 目标endpoint会接收到这个HPX报文。运行HPX的endpoint在初始化时，会建立一个白名单（叫做Accept Whilte List，AWL），里面只包含gateway或者backup gateway的MAC地址。也就是说，只有在白名单里面的endpoint或gateway发送的frame，才会被接收。这时候是根据frame的源MAC地址来查AWL的；
+10. 通过AWL过滤的HPX报文，会再一次匹配CCB进行检查。主要是检查HPX报文的source HPX address是不是local的（最高bit为0），destination HPX address是不是自己的，同时还会检查authentication header。任何一项检查通不过，则该HPX报文被丢弃；
+11. 通过CCB的检查之后，接收方endpoint会根据HPX报文的source HPX address，session ID等信息做一个hash，根据hash key查找SCB。如果能够找到一个对应的entry，则根据该SCB记录的信息，把报文直接交给对应的process，或者剥掉所有header之后，把纯数据交给process进行处理，并更新SCB中记录的sequence numbers等信息；
+12. 如果查找SCB失败，则直接在HPX协议内处理。比如，endpoint只是做一个连通性测试（ping），这时候HPX报文头的service request会指明这个要求，接收方会发送一个echo packet给initiator。如果是其它的service request，则接收方endpoint会做一些本地检查，看看是否能提供对应的服务，并安排资源（比如创建相应的process或thread）进行处理。
+
+至此，本地通信过程结束。可以看出，不论是gateway还是endpoint，在接收到HPX报文时，都会做层层检查，确保HPX报文的来源可靠，内容合法。
+几个安全问题分析：
+1. 任何一台计算机接入广播网络（以太网），然后随机性的发起端口扫描。不论这台恶意计算机给哪个endpoint发送HPX报文，都会在AWL过滤时就被过滤掉。有些硬件会提供可行来源过滤机制（只接收系统指定的MAC地址来的frame），这样在硬件层面就可以过滤掉，不用浪费任何CPU资源；
+2. 任何一台计算机接入广播网络，发送广播报文。同样的AWL过滤机制，这台计算机发出的HPX报文不会到达AWL过滤以上的层面，甚至直接在硬件层面就被过滤掉。而在IP协议中，这种广播会一直被送到至少IP层面进行处理，大量消耗CPU资源，甚至形成DDoS攻击；
+3. 恶意计算机接入网络，随机配置一个HPX地址，并试图向其它endpoint发送信息。直接发送会被AWL过滤掉，因此恶意计算机会发送到gateway。gateway会做ECB检查，发现该HPX address不是自己分配的，于是该报文直接被丢弃；
+4. 恶意计算机接入网络，仿造gateway的MAC地址，给endpoint发送HPX报文。这时候问题相对严重一些，这些恶意的HPX报文会通过endpoint的AWL检查，但是不会通过CCB检查，因为这个层面会检查authentication header，恶意计算机不知道PSK，检查无法通过；
+5. 如果恶意计算机知道PSK（或证书等其它认证信息），并模拟gateway发起对某个endpoint的攻击。这种情况我们认为是“自己人”反水，毕竟知道PSK的都认为是自己人，要通过管理手段确保PSK或者证书不泄露。即使是这种情况，HPX协议还有一层SCB的检查，除非攻击者持续窃听，获取到了随机分配的session ID，才有可能通过SCB检查。而在IP协议下，工具报文则可以直接通到应用层；
+6. HPX本地通信过程（secured mode）没有类似ARP一样的地址解析协议，因此地址解析协议引入的安全问题也得到了避免，而这是传统IP协议在以太网上很大的威胁。
+
+但HPX协议这种集中化的通信模型，也有一些问题：
+1. 流量绕行集中点，会造成整体吞吐量的降低。这是相比endpoint之间直接通信来说的，毕竟所有的流量都压到gateway上，然后再分发；
+2. Gateway的单点故障问题，一旦gateway故障，整个本地网络将无法工作。可以通过多个gateway选举和备份的方式规避。
+

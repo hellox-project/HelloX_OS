@@ -1,0 +1,39 @@
+Session ID是32位的数字，在网络上按网络序传输。这是HPX协议里面实现多核负载均衡的关键信息。
+session ID由HPX会话发起方生成，可以为任何32位数字，安全起见，建议采用随机数，只要确保到相同peer的session ID不同即可。
+每建立一个session，运行HPX协议的endpoint都要创建一个session control block（SCB），保存session相关的信息，比如对端的HPX address，对端的HPX domain address，属于这个session的相关的sequence number，以及session ID。当然，这个session所属的进程号（process ID）也会被记录到SCB里面。
+这里要注意，session ID与process ID是不一样的，当然也可以用process ID作为session ID。
+HPX的API，与TCP/IP协议的BSD style socket API相同，即一套BSD style的API，既可用于IP协议，也可以用于HPX协议。所不同的是，API函数的参数取值不同，会导致基于不同的协议栈建立session。
+基于这样的假设，一个运行HPX协议的endpoint，与另外一个endpoint建立session连接并完成会话的过程如下：
+1. 会话发起方（initiator）应用程序调用socket API，向HPX协议栈提出创建session的请求。在API中给出对端endpoint的HPX address，HPX domain address，session类型（CONNECTIONLESS or CONNECTION ORIENTED），要访问的对端endpoint的服务信息，比如automobile data service，等等信息；
+2. HPX协议代码创建一个SCB，设置其状态为INITIAL，在这个SCB中保存HPX address等信息，并生成一个session ID，保存在SCB中；
+3. Endpoint生成一个HPX报文，内容如下：
+    1）目的HPX地址为应用给出的地址，源HPX地址为出接口的HPX地址。如果目标endpoint的domain address与所在接口的domain address相同，则在报文中不携带domain address；报文的出接口，通过查找HPX路由表获得，并保存在SCB里面；
+    2）在HPX报文中增加一个service request header，描述要访问的对端endpoint提供的service；
+    3）查找CCB表，找到下一条的MAC地址。在安全模式下，这个MAC地址必然是gateway的MAC地址。如果是非安全模式，则如果是本地domain，则是对端endpoint的MAC地址。如果是远程domain，则也是gateway的MAC地址；
+    4）封装这个packet到ethernet frame中，并发送到网络上。
+4. 运行HPX协议的gateway会一跳一跳的传递这个报文，直到到达请求的目的endpoint；
+5. 目标endpoint收到service request请求，做一番检查。主要有：
+    1）检查HPX协议报文的协议版本，checksum等信息，并对HPX address进行检查，确保这是一个合法的HPX报文；
+    2）根据HPX报文中携带的service request头信息，判断是否能够提供所请求的服务；
+    3）如果不能提供所请求的服务，则直接回应一个service request decline消息，会话结束；
+    4）如果能够提供所请求的服务，则处理继续进行。
+6. 创建一个SCB并根据接收到的HPX报文进行初始化，主要是记录下来source HPX address/domain，session ID，相关的sequence number，并设置该SCB状态为REQUEST_RECV；
+7. 创建一个独立的进程或者线程（thread），处理这个request。当然也可以不创建新的线程，直接沿用已有的线程，这是由操作系统或者应用程序本身决定的。不论哪种情况，都会得到一个process ID或者thread ID，把这个ID也记录到SCB里面（service process ID）；
+8. 给session发起方（initiator）返回一个service confirm报文。这个报文也是一个普通HPX报文，携带一个service request头；
+9. Initiator收到这个service confirm报文，确认对端可提供服务，这时候通过socket API的返回值（同步情况）或者通过独立的消息或者信号量等机制，告诉应用程序，session建立。在initiator端的SCB状态，被更新为ESTABLISHED；
+10. 应用程序即可通过该session进行报文交互。在正式开始服务之前，也可进行一些应用层的authentication，比如用户名和密码等；
+11. 服务提供方接收到任何一个从initiator发送过来的HPX报文，只要通过检查，能够匹配SCB，就会把服务方的SCB设置为ESTABLISHED；
+12. 正常的数据交互开始进行；
+13. 数据交互结束后，不论是哪一方，希望终止session。这时候只需要把HPX报文的sequence number设置为全1即可；
+14. 任何一方收到sequence number为全1的HPX报文，则终止session，销毁SCB。
+
+在上述过程中，如果initiator在service request报文中直接携带了应用层数据，则接收方在收到HPX报文，并通过检查之后，也会直接把应用数据提交给对应的处理程序。也就是说，在session初始化阶段，也可以携带应用数据。
+
+session ID在HPX报文分发中的作用：
+在多CPU或者多核的计算环境中，HPX协议栈可以用session ID等信息，快速判断出接收到的HPX报文是属于哪个CPU上的哪个process的，这样就可以直接把HPX报文调度到对应的CPU，进而调度到服务进程或者线程，减少由于跨CPU分发报文导致的cache miss，大大提升整体的性能。
+HPX协议可以在每个CPU核上，创建一个独立工作的HPX线程。这个线程维护一份独立的数据结构，比如接收队列，发送队列等等。当HPX报文到达时，一般会引发一个中断。中断处理程序读取HPX报文的源HPX地址信息，目的HPX地址信息，session ID，把这些数据做一个hash，根据hash结果查找SCB表。这样就可以查找到目标process ID，然后根据process ID再得到该process的亲和CPU，把这个HPX报文调度到对应CPU的HPX线程上。
+由于服务的process和HPX都在同一个CPU上运行，这样可以减少cache miss的数量。但是这要求一个process要固定锚定在一个CPU核心上运行，不是所有的操作系统都支持这种特性，因此这可以作为HPX协议的可选特性。
+
+session ID对HPX协议安全性的影响：
+用session ID标识一个临时的会话，而且这个session ID是随机的，会大大提升HPX协议的安全行，相比TCP/IP协议来说的话。比如，在TCP/IP协议中，即使一个session已经建立（比如web browsing的HTTP会话），在IP报文交换过程中也会携带业务信息，最典型的就是TCP协议的目的端口号，在数据交互当中始终被携带在IP报文中。这样很容易根据这个端口信息，判断出所携带的内容是HTML网页或者脚本，并进行修改。
+但是HPX协议就不同，只有第一个HPX报文（service request）中携带业务信息，后续所有交互报文中都是以session ID作为标识的。因此除非是把第一个报文获取并解码，才能判断业务信息，只抓取中间报文是无法判断业务信息的。这就增强了业务的安全行。

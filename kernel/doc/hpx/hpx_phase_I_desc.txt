@@ -1,0 +1,11 @@
+HPX协议第一阶段将在HelloX操作系统中实现，随HelloX V1.85版本发布。第一阶段将主要实现下列基本功能：
+1. 安全模式，非安全模式暂不实现；
+2. 安全模式下的终端自动配置，即终端（endpoint）与gateway成功认证之后，使用由gateway发布的配置信息。同时gateway上会保留endpoint的会话信息（ECB，Endpoint Control Block），接收到终端的报文转发请求之后，首先检查ECB，如果不匹配则直接丢弃；
+3. HPX协议到IP协议的转换。在gateway（运行HelloX操作系统的电脑）上配置HPX地址和IP地址的对应关系，接收到出本地域（报文中携带了目标HPX domain address）的HPX报文后，首先根据HPX目的地址查表，只要能查找到一个对应的IP地址，则转换为IP报文向外发送；
+4. 转换规则：
+    1）创建一个转换表象（HPX to IP translation entry,HIT entry），记录相关的状态信息；
+    2）源IP地址设置为出接口的IP地址，目的IP地址为查找转换表得到的IP地址；
+    3）如果HPX报文携带access control头，则转换为ICMP协议，当前只实现detect endpoint，类似于ping；
+    4）如果HPX报文是CONNECTIONLESS类型，则转换为UDP报文，session ID与UDP端口号对应转换；
+    5）如果HPX报文是CONNECTION类型的，则转换为TCP协议，与目标IP host建立一个TCP连接。Phase I暂不实现；
+    6）如果是其它类型的报文，当前直接丢弃。

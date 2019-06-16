@@ -14,7 +14,6 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
-#include <kapi.h>
 #include <stdio.h>
 
 #include "mouse.h"

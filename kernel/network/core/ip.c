@@ -56,9 +56,10 @@
 #include "lwip/stats.h"
 #include "arch/perf.h"
 
-/* For NAT support. */
+/* For NAT/DPI support. */
 #include "netcfg.h"
 #include "nat/nat.h"
+#include "dpi/dpimgr.h"
 
 #include <string.h>
 
@@ -203,6 +204,22 @@ ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
   }
 #endif //__CFG_NET_NAT
 
+  /* 
+   * Apply out-going direction DPI if DPI flag is 
+   * enabled in the out-going interface.
+   */
+#ifdef __CFG_NET_DPI
+  if (netif->flags & NETIF_FLAG_DPI)
+  {
+	  p = DPIManager.dpiPacketOut(p, netif);
+	  if (NULL == p)
+	  {
+		  /* The packet is eaten by DPI. */
+		  return;
+	  }
+  }
+#endif //__CFG_NET_DPI
+
   /* decrement TTL */
   IPH_TTL_SET(iphdr, IPH_TTL(iphdr) - 1);
   /* send ICMP if TTL == 0 */
@@ -240,6 +257,62 @@ return_noroute:
   snmp_inc_ipoutnoroutes();
 }
 #endif /* IP_FORWARD */
+
+/*
+ * Send an IP packet out in a specified interface directly,
+ * without any checking since the IP packet's source IP or
+ * other fields are specified by caller.
+ * The out going interface will be found by looking up routing
+ * table if not specified(out_if == NULL).
+ * The difference between ip_forward and this routine is,no
+ * DPI or NAT applied in this routine.
+ */
+BOOL ip_send_directly(struct pbuf* p, struct netif* out_if)
+{
+	struct netif *netif;
+	BOOL bResult = FALSE;
+	struct ip_hdr* pHdr = NULL;
+	ip_addr_t dest;
+
+	PERF_START;
+	BUG_ON(NULL == p);
+	pHdr = (struct ip_hdr*)p->payload;
+
+	/* Do some basic checking. */
+	if (IPH_V(pHdr) != 4)
+	{
+		goto __TERMINAL;
+	}
+	dest.addr = pHdr->dest.addr;
+
+	/* 
+	 * Find network interface where to forward this IP 
+	 * packet to,if not specified by caller. 
+	 */
+	if (NULL == out_if)
+	{
+		netif = ip_route(&dest);
+		if (netif == NULL) {
+			LWIP_DEBUGF(IP_DEBUG, ("ip_send_directly: no forwarding route for %"U16_F".%"U16_F".%"U16_F".%"U16_F" found\r\n",
+				ip4_addr1_16(&dest), ip4_addr2_16(&dest),
+				ip4_addr3_16(&dest), ip4_addr4_16(&dest)));
+			goto __TERMINAL;
+		}
+	}
+	else
+	{
+		/* Send to the specified interface directly. */
+		netif = out_if;
+	}
+
+	/* transmit pbuf on chosen interface */
+	netif->output(netif, p, &dest);
+	bResult = TRUE;
+__TERMINAL:
+	/* Release the pbuf. */
+	pbuf_free(p);
+	return bResult;
+}
 
 /**
  * This function is called by the network interface device driver when
@@ -323,6 +396,26 @@ ip_input(struct pbuf *p, struct netif *inp)
 	  }
   }
 #endif //__CFG_NET_NAT.
+
+  /* Apply DPI in the incoming interface if is enabled. */
+#ifdef __CFG_NET_DPI
+  if (inp)
+  {
+	  if (inp->flags & NETIF_FLAG_DPI)
+	  {
+		  p = DPIManager.dpiPacketIn(p, inp);
+		  if (NULL == p)
+		  {
+			  /* 
+			   * Packet is eaten by DPI,the pbuf also 
+			   * should be destroyed by DPI packet in 
+			   * routine. 
+			   */
+			  return ERR_OK;
+		  }
+	  }
+  }
+#endif //__CFG_NET_DPI
 
   /* verify checksum */
 #if CHECKSUM_CHECK_IP

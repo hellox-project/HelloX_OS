@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "kapi.h"
 #include "idehd.h"
 #include "idebase.h"
 #include "stdio.h"

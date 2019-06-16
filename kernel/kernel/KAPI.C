@@ -15,6 +15,10 @@
 //***********************************************************************/
 
 #include "kapi.h"
+#include "usbdescriptors.h"
+#include "ch9.h"
+#include "usb.h"
+#include "usbasync.h"
 
 HANDLE CreateKernelThread(DWORD dwStackSize,
 						  DWORD dwInitStatus,
@@ -66,10 +70,33 @@ DWORD SetThreadPriority(HANDLE hThread,DWORD dwPriority)
 		dwPriority);
 }
 
+/* 
+ * Get message from current kernel thread's message queue. 
+ * Current kernel thread will be blocked if no message present.
+ */
 BOOL GetMessage(MSG* lpMsg)
 {
-	__KERNEL_THREAD_OBJECT*  lpKernelThread = __CURRENT_KERNEL_THREAD;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = __CURRENT_KERNEL_THREAD;
+	if (NULL == lpMsg)
+	{
+		return FALSE;
+	}
 	return KernelThreadManager.GetMessage((__COMMON_OBJECT*)lpKernelThread,lpMsg);
+}
+
+/* 
+ * Get message from current kernel thread's message queue. 
+ * Return immediately even no message in queue,FALSE will be
+ * returned in this case.
+ */
+BOOL PeekMessage(MSG* pMsg)
+{
+	__KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
+	if (NULL == pMsg)
+	{
+		return FALSE;
+	}
+	return KernelThreadManager.PeekMessage((__COMMON_OBJECT*)pKernelThread, pMsg);
 }
 
 BOOL SendMessage(HANDLE hThread,MSG* lpMsg)
@@ -128,6 +155,22 @@ BOOL ResumeKernelThread(HANDLE hThread)
 	return KernelThreadManager.ResumeKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		(__COMMON_OBJECT*)lpKernelThread);
+}
+
+/* Get a processor to schedule a new kernel thread to. */
+unsigned int GetScheduleCPU()
+{
+	return ProcessorManager.GetScheduleCPU();
+}
+
+/* Change a specified kernel thread's CPU affinity. */
+unsigned int ChangeAffinity(HANDLE hThread, unsigned int nAffinity)
+{
+#if defined(__CFG_SYS_SMP)
+	return KernelThreadManager.ChangeAffinity((__COMMON_OBJECT*)hThread, nAffinity);
+#else
+	return 0;
+#endif
 }
 
 HANDLE SetTimer(DWORD dwTimerID,
@@ -236,14 +279,191 @@ DWORD ReleaseMutex(HANDLE hEvent)
 	return ((__MUTEX*)hEvent)->ReleaseMutex(hEvent);
 }
 
+/* Create a new mailbox object. */
+HANDLE CreateMailbox(int size)
+{
+	__COMMON_OBJECT*   pMailbox = NULL;
+
+	/* Mailbox's size must large than 0. */
+	if (size <= 0)
+	{
+		goto __TERMINAL;
+	}
+
+	pMailbox = ObjectManager.CreateObject(&ObjectManager,
+		NULL,
+		OBJECT_TYPE_MAILBOX);
+	if (NULL == pMailbox)
+	{
+		goto __TERMINAL;
+	}
+	if (!pMailbox->Initialize(pMailbox))
+	{
+		ObjectManager.DestroyObject(&ObjectManager, pMailbox);
+		pMailbox = NULL;
+		goto __TERMINAL;
+	}
+
+	//Set mailbox size accordingly.
+	if (!((__MAIL_BOX*)pMailbox)->SetMailboxSize(pMailbox, size))
+	{
+		ObjectManager.DestroyObject(&ObjectManager, pMailbox);
+		pMailbox = NULL;
+		return 0;
+	}
+
+__TERMINAL:
+	return (HANDLE)pMailbox;
+}
+
+/* Destroy a mailbox object. */
+VOID DestroyMailbox(HANDLE hMailbox)
+{
+	__COMMON_OBJECT* pMailbox = (__COMMON_OBJECT*)hMailbox;
+	
+	/* Do some basic checking. */
+	if (NULL == pMailbox)
+	{
+		return;
+	}
+	if (pMailbox->dwObjectType != OBJECT_TYPE_MAILBOX)
+	{
+		return;
+	}
+	ObjectManager.DestroyObject(&ObjectManager,
+		(__COMMON_OBJECT*)hMailbox);
+}
+
+/* Send a mail to mailbox. */
+DWORD SendMail(HANDLE hMailbox, LPVOID pMsg, DWORD dwPriority, DWORD dwWaitTime, DWORD* pdwWaited)
+{
+	__MAIL_BOX* pMailbox = (__MAIL_BOX*)hMailbox;
+	
+	/* Basic checking. */
+	if ((NULL == pMailbox) || (NULL == pMsg))
+	{
+		return OBJECT_WAIT_FAILED;
+	}
+	if (OBJECT_TYPE_MAILBOX != pMailbox->dwObjectType)
+	{
+		return OBJECT_WAIT_FAILED;
+	}
+	return pMailbox->SendMail((__COMMON_OBJECT*)pMailbox, pMsg, dwPriority, dwWaitTime, pdwWaited);
+}
+
+/* Get mail from mailbox. */
+DWORD GetMail(HANDLE hMailbox, LPVOID* ppMsg, DWORD dwWaitTime, DWORD* pdwWaited)
+{
+	__MAIL_BOX* pMailbox = (__MAIL_BOX*)hMailbox;
+
+	/* Basic checking. */
+	if ((NULL == pMailbox) || (NULL == ppMsg))
+	{
+		return OBJECT_WAIT_FAILED;
+	}
+	if (OBJECT_TYPE_MAILBOX != pMailbox->dwObjectType)
+	{
+		return OBJECT_WAIT_FAILED;
+	}
+	return pMailbox->GetMail((__COMMON_OBJECT*)pMailbox, ppMsg, dwWaitTime, pdwWaited);
+}
+
+/* Create semaphore object. */
+HANDLE CreateSemaphore(int max_count, int curr_count)
+{
+	__SEMAPHORE*  pSem = NULL;
+	
+	/* Checking parameters. */
+	if ((max_count <= 0) || (curr_count < 0))
+	{
+		goto __TERMINAL;
+	}
+	if (curr_count > max_count)
+	{
+		goto __TERMINAL;
+	}
+	/* Create and initializes the semaphore object. */
+	pSem = (__SEMAPHORE*)ObjectManager.CreateObject(&ObjectManager,
+		NULL,
+		OBJECT_TYPE_SEMAPHORE);
+	if (NULL == pSem)
+	{
+		goto __TERMINAL;
+	}
+	if (!pSem->Initialize((__COMMON_OBJECT*)pSem))
+	{
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pSem);
+		pSem = NULL;
+		goto __TERMINAL;
+	}
+	/* Change initial counters. */
+	if (!pSem->SetSemaphoreCount((__COMMON_OBJECT*)pSem, max_count, curr_count))
+	{
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pSem);
+		pSem = NULL;
+		goto __TERMINAL;
+	}
+__TERMINAL:
+	return (HANDLE)pSem;
+}
+
+/*
+* Release a semaphore object,i.e,increase it's counter and
+* activate one kernel thread who is waiting for the semaphore
+* object if there is(are).
+*/
+int ReleaseSemaphore(HANDLE hSem)
+{
+	__SEMAPHORE* pSem = (__SEMAPHORE*)hSem;
+	int count = -1;
+
+	/* Validate the object. */
+	if (NULL == pSem)
+	{
+		goto __TERMINAL;
+	}
+	if (OBJECT_TYPE_SEMAPHORE != pSem->dwObjectType)
+	{
+		goto __TERMINAL;
+	}
+	if (pSem->ReleaseSemaphore((__COMMON_OBJECT*)pSem, &count))
+	{
+		goto __TERMINAL;
+	}
+	/* Release operation failed,set return value to -1. */
+	count = -1;
+
+__TERMINAL:
+	return count;
+}
+
+/* Release the semaphore object. */
+VOID DestroySemaphore(HANDLE hSem)
+{
+	__SEMAPHORE* pSem = (__SEMAPHORE*)hSem;
+
+	/* Validate the semaphore object. */
+	if (NULL == pSem)
+	{
+		return;
+	}
+	if (pSem->dwObjectType != OBJECT_TYPE_SEMAPHORE)
+	{
+		return;
+	}
+	/* Destroy it. */
+	ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pSem);
+}
+
 DWORD WaitForThisObject(HANDLE hObject)
 {
 	__COMMON_OBJECT* lpCommonObject = (__COMMON_OBJECT*)hObject;
 	__KERNEL_THREAD_OBJECT* lpThread = NULL;
 	__EVENT* lpEvent = NULL;
 	__MUTEX* lpMutex = NULL;
+	__SEMAPHORE* pSem = NULL;
 
-	if(NULL == lpCommonObject) //Invalid parameter.
+	if(NULL == lpCommonObject)
 	{
 		return OBJECT_WAIT_FAILED;
 	}
@@ -259,20 +479,23 @@ DWORD WaitForThisObject(HANDLE hObject)
 	case OBJECT_TYPE_MUTEX:
 		lpMutex = (__MUTEX*)lpCommonObject;
 		return lpMutex->WaitForThisObject((__COMMON_OBJECT*)lpMutex);
+	case OBJECT_TYPE_SEMAPHORE:
+		pSem = (__SEMAPHORE*)lpCommonObject;
+		return pSem->WaitForThisObject((__COMMON_OBJECT*)pSem);
 	default:
 		break;
 	}
 	return OBJECT_WAIT_FAILED;
 }
 
-DWORD WaitForThisObjectEx(HANDLE hObject,DWORD dwMillionSecond)
+DWORD WaitForThisObjectEx(HANDLE hObject, DWORD dwMillionSecond, DWORD* pdwWaited)
 {
 	__COMMON_OBJECT* lpCommonObject = (__COMMON_OBJECT*)hObject;
-	//__KERNEL_THREAD_OBJECT* lpThread = NULL;
 	__EVENT* lpEvent = NULL;
 	__MUTEX* lpMutex = NULL;
+	__SEMAPHORE* pSem = NULL;
 
-	if(NULL == lpCommonObject) //Invalid parameter.
+	if(NULL == lpCommonObject)
 	{
 		return OBJECT_WAIT_FAILED;
 	}
@@ -280,13 +503,27 @@ DWORD WaitForThisObjectEx(HANDLE hObject,DWORD dwMillionSecond)
 	switch(lpCommonObject->dwObjectType)
 	{
 	case OBJECT_TYPE_KERNEL_THREAD:
-		return OBJECT_WAIT_FAILED;  //Don't support timeout waiting yet.
+		/* Don't support timeout waiting yet. */
+		return OBJECT_WAIT_FAILED;
 	case OBJECT_TYPE_EVENT:
+		/* Can not return the waited time yet. */
+		if (pdwWaited)
+		{
+			return OBJECT_WAIT_FAILED;
+		}
 		lpEvent = (__EVENT*)lpCommonObject;
 		return lpEvent->WaitForThisObjectEx((__COMMON_OBJECT*)lpEvent,dwMillionSecond);
 	case OBJECT_TYPE_MUTEX:
+		/* Can not return the waited time yet. */
+		if (pdwWaited)
+		{
+			return OBJECT_WAIT_FAILED;
+		}
 		lpMutex = (__MUTEX*)lpCommonObject;
 		return lpMutex->WaitForThisObjectEx((__COMMON_OBJECT*)lpMutex,dwMillionSecond);
+	case OBJECT_TYPE_SEMAPHORE:
+		pSem = (__SEMAPHORE*)lpCommonObject;
+		return pSem->WaitForThisObjectEx((__COMMON_OBJECT*)pSem, dwMillionSecond, pdwWaited);
 	default:
 		break;
 	}
@@ -354,7 +591,16 @@ DWORD SignalCondition(HANDLE hCond)
 }
 
 //Broadcast a CONDITION object.
-DWORD BroadcastCondition(HANDLE hCond);
+DWORD BroadcastCondition(HANDLE hCond)
+{
+	__CONDITION* pCond = (__CONDITION*)hCond;
+
+	if (NULL == pCond)
+	{
+		return 0;
+	}
+	return pCond->CondBroadcast((__COMMON_OBJECT*)pCond);
+}
 
 //Destroy a CONDITION object.
 VOID DestroyCondition(HANDLE hCond)
@@ -658,36 +904,72 @@ VOID DestroyDevice(HANDLE hDevice)
 #endif
 }
 
-//LPVOID KMemAlloc(DWORD dwSize,DWORD dwSizeType);
-//VOID KMemFree(LPVOID lpMemAddr,DWORD dwSizeType,DWORD dwMemLength);
+/* Return system tick counter since boot. */
+unsigned long GetClockTickCounter()
+{
+	return System.GetClockTickCounter((__COMMON_OBJECT*)&System);
+}
+
+/*
+* Get a device from system,the device is identified
+* by ID parameter.
+* The first matched device will be returned if pPrev is set
+* to NULL.Other matched devices following pPrev will be returned
+* if pPrev is set.
+*/
+__PHYSICAL_DEVICE* GetDevice(__IDENTIFIER* id, __PHYSICAL_DEVICE* pPrev)
+{
+	__PHYSICAL_DEVICE* pDevice = NULL;
+
+	if (NULL == id)
+	{
+		goto __TERMINAL;
+	}
+	switch (id->dwBusType)
+	{
+	case BUS_TYPE_PCI:
+		pDevice = DeviceManager.GetDevice(&DeviceManager,
+			BUS_TYPE_PCI,
+			id,
+			pPrev);
+		break;
+	case BUS_TYPE_USB:
+		pDevice = USBManager.GetUsbDevice(id, pPrev);
+		break;
+	default:
+		break;
+	}
+
+__TERMINAL:
+	return pDevice;
+}
 
 //------------------------------------------------------------------------
-
 HANDLE CreateRingBuff(DWORD dwBuffLength)
 {
 	__RING_BUFFER* lprb = (__RING_BUFFER*)ObjectManager.CreateObject(
 		&ObjectManager,
 		NULL,
 		OBJECT_TYPE_RING_BUFFER);
-	if(NULL == lprb)  //Can not create ring buffer.
+	if (NULL == lprb)  //Can not create ring buffer.
 	{
 		return NULL;
 	}
-	if(!lprb->Initialize((__COMMON_OBJECT*)lprb)) //Failed to initialize.
+	if (!lprb->Initialize((__COMMON_OBJECT*)lprb)) //Failed to initialize.
 	{
 		return NULL;
 	}
-	if(0 != dwBuffLength)
+	if (0 != dwBuffLength)
 	{
-		lprb->SetBuffLength((__COMMON_OBJECT*)lprb,dwBuffLength);
+		lprb->SetBuffLength((__COMMON_OBJECT*)lprb, dwBuffLength);
 	}
 	return (HANDLE)lprb;
 }
 
-BOOL GetRingBuffElement(HANDLE hRb,DWORD* lpdwElement,DWORD dwMillionSecond)
+BOOL GetRingBuffElement(HANDLE hRb, DWORD* lpdwElement, DWORD dwMillionSecond)
 {
 	__RING_BUFFER* lprb = (__RING_BUFFER*)hRb;
-	if(NULL == lprb) //Invalid parameter.
+	if (NULL == lprb) //Invalid parameter.
 	{
 		return FALSE;
 	}
@@ -696,10 +978,10 @@ BOOL GetRingBuffElement(HANDLE hRb,DWORD* lpdwElement,DWORD dwMillionSecond)
 		dwMillionSecond);
 }
 
-BOOL AddRingBuffElement(HANDLE hRb,DWORD dwElement)
+BOOL AddRingBuffElement(HANDLE hRb, DWORD dwElement)
 {
 	__RING_BUFFER* lprb = (__RING_BUFFER*)hRb;
-	if(NULL == lprb)
+	if (NULL == lprb)
 	{
 		return FALSE;
 	}
@@ -707,10 +989,10 @@ BOOL AddRingBuffElement(HANDLE hRb,DWORD dwElement)
 		dwElement);
 }
 
-BOOL SetRingBuffLength(HANDLE hRb,DWORD dwNewLength)
+BOOL SetRingBuffLength(HANDLE hRb, DWORD dwNewLength)
 {
 	__RING_BUFFER* lprb = (__RING_BUFFER*)hRb;
-	if(NULL == lprb)
+	if (NULL == lprb)
 	{
 		return FALSE;
 	}
@@ -723,27 +1005,4 @@ VOID DestroyRingBuff(HANDLE hRb)
 	ObjectManager.DestroyObject(
 		&ObjectManager,
 		hRb);
-}
-
-
-//*********************************
-// For log
-//Author :	Erwin
-//Email  :	erwin.wang@qq.com
-//Date	 :  7th June, 2014
-//********************************
-void Log(char *tag, char *msg)
-{
-#ifdef __CFG_SYS_LOGCAT
-	DebugManager.Log(&DebugManager, tag, msg);
-#endif //__CFG_SYS_LOGCAT.
-	return;
-}
-
-void Logk(char *tag, char *msg)
-{
-#ifdef __CFG_SYS_LOGCAT
-	DebugManager.Logk(&DebugManager, tag, msg);
-#endif //__CFG_SYS_LOGCAT.
-	return;
 }

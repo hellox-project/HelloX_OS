@@ -62,6 +62,8 @@ static sys_mbox_t mbox;
 sys_mutex_t lock_tcpip_core;
 #endif /* LWIP_TCPIP_CORE_LOCKING */
 
+/* Routines refered in this module. */
+extern BOOL ip_send_directly(struct pbuf* p, struct netif* out_if);
 
 /**
 * The main lwIP thread. This thread has exclusive access to lwIP core functions
@@ -79,6 +81,7 @@ tcpip_thread(void *arg)
 	struct tcpip_msg *msg;
 	__LWIP_EXTENSION* pExt = NULL;
 	__INCOME_IP_PACKET* pIncomPkt = NULL;
+	__OUTGOING_IP_PACKET* pOutPkt = NULL;
 	DWORD dwFlags;
 	BOOL bShouldBreak = FALSE;
 
@@ -105,7 +108,7 @@ tcpip_thread(void *arg)
 
 #if !LWIP_TCPIP_CORE_LOCKING_INPUT
 		case TCPIP_MSG_INPKT:
-			LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: PACKET %p\n", (void *)msg));
+			LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: PACKET %p\r\n", (void *)msg));
 			BUG_ON(NULL == plwipProto);
 			pExt = plwipProto->pProtoExtension;
 			BUG_ON(NULL == pExt);
@@ -165,6 +168,61 @@ tcpip_thread(void *arg)
 			memp_free(MEMP_TCPIP_MSG_INPKT, msg);
 			break;
 #endif /* LWIP_TCPIP_CORE_LOCKING_INPUT */
+		case TCPIP_MSG_OUTPKT:
+			/* 
+			 * Output a IP packet to the given interface,
+			 * or lookup routing table to find the out
+			 * going interface if not specified by caller.
+			 */
+			LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: PACKET %p\r\n", (void *)msg));
+			BUG_ON(NULL == plwipProto);
+			pExt = plwipProto->pProtoExtension;
+			BUG_ON(NULL == pExt);
+			/*
+			* The packet(s) associated with this message is processed over,
+			* so should break the while loop,otherwise may lead message queue
+			* full,even in rare case.
+			*/
+			bShouldBreak = FALSE;
+
+			/* Fetch out going packet(s) and process it. */
+			while (TRUE)
+			{
+				__ENTER_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+				if (0 == pExt->nOutgoingPktSize) /* No pending packet. */
+				{
+					BUG_ON(NULL != pExt->pOutgoingPktFirst);
+					BUG_ON(NULL != pExt->pOutgoingPktLast);
+					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+					break;
+				}
+				else /* Out going list is not empty. */
+				{
+					/* Fetch one pending IP packet. */
+					pOutPkt = pExt->pOutgoingPktFirst;
+					pExt->pOutgoingPktFirst = pOutPkt->pNext;
+					pExt->nOutgoingPktSize--;
+					if (NULL == pOutPkt->pNext) /* Last one. */
+					{
+						/* Out going pkt list size must be 0. */
+						BUG_ON(pExt->nOutgoingPktSize != 0);
+						pExt->pOutgoingPktLast = NULL;
+						/* Should break the loop. */
+						bShouldBreak = TRUE;
+					}
+					__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+				}
+				/* Process it. */
+				ip_send_directly(pOutPkt->p, pOutPkt->out_if);
+				/* Release the structure. */
+				_hx_free(pOutPkt);
+				if (bShouldBreak)
+				{
+					break;
+				}
+			}
+			memp_free(MEMP_TCPIP_MSG_INPKT, msg);
+			break;
 
 #if LWIP_NETIF_API
 		case TCPIP_MSG_NETIFAPI:
@@ -290,6 +348,84 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 	}
 	return ERR_VAL;
 #endif /* LWIP_TCPIP_CORE_LOCKING_INPUT */
+}
+
+/**
+* Pass an IP packet to tcpip_thread for output directly,bypass
+* the IP stack's normal checking.It's mainly used by DPI or other
+* applications to construct any kind of IP packets and send out
+* to wire.
+* In order to guarantee the throughput we use two step mechanism,
+* just same as IP packet incoming:
+* step 1: Link the packet into a global list and send a message
+* to TCP/IP thread;
+* step 2: TCP/IP thread will dispatch the out going packet in a
+* while batch.
+*/
+err_t tcpip_output(struct pbuf *p, struct netif *out_if)
+{
+	struct tcpip_msg *msg;
+	__LWIP_EXTENSION* pExt = NULL;
+	__OUTGOING_IP_PACKET* pOutPkt = NULL;
+	DWORD dwFlags;
+
+	BUG_ON(NULL == plwipProto);
+	pExt = (__LWIP_EXTENSION*)plwipProto->pProtoExtension;
+	BUG_ON(NULL == pExt);
+
+	/* Create an incoming IP packet struct to hold the incoming packet. */
+	pOutPkt = (__OUTGOING_IP_PACKET*)_hx_malloc(sizeof(__OUTGOING_IP_PACKET));
+	if (NULL == pOutPkt)
+	{
+		return ERR_MEM;
+	}
+	pOutPkt->p = p;
+	pOutPkt->out_if = out_if;
+	pOutPkt->pNext = NULL;
+
+	/*
+	* Try to put the out going packet to list.
+	* Use critical section since this routine maybe called in NIC
+	* interrupt handler.
+	*/
+	__ENTER_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+	if (0 == pExt->nOutgoingPktSize) /* No packet in list yet. */
+	{
+		if (sys_mbox_valid(&mbox)) {
+			msg = (struct tcpip_msg *)memp_malloc(MEMP_TCPIP_MSG_INPKT);
+			if (msg == NULL) {
+				__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+				_hx_free(pOutPkt);
+				return ERR_MEM;
+			}
+
+			msg->type = TCPIP_MSG_OUTPKT;
+			msg->msg.inp.p = p;
+			msg->msg.inp.netif = out_if;
+			if (sys_mbox_trypost(&mbox, msg) != ERR_OK) {
+				__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+				memp_free(MEMP_TCPIP_MSG_INPKT, msg);
+				_hx_free(pOutPkt);
+				return ERR_MEM;
+			}
+			/* Put the incoming packet structure into out going list. */
+			pExt->pOutgoingPktLast = pOutPkt;
+			pExt->pOutgoingPktFirst = pOutPkt;
+			pExt->nOutgoingPktSize++;
+			__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+			return ERR_OK;
+		}
+	}
+	else  /* The out going list already has packet(s). */
+	{
+		/* Just put the packet into list. */
+		pExt->pOutgoingPktLast->pNext = pOutPkt;
+		pExt->pOutgoingPktLast = pOutPkt;
+		pExt->nOutgoingPktSize++;
+		__LEAVE_CRITICAL_SECTION_SMP(pExt->spin_lock, dwFlags);
+		return ERR_OK;
+	}
+	return ERR_VAL;
 }
 
 /**

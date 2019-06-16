@@ -13,11 +13,8 @@
 //                                2.
 //    Lines number              :
 //***********************************************************************/
-#ifndef __STDAFX_H__
-#include "StdAfx.h"
-#endif
 
-#include "kapi.h"
+#include "StdAfx.h"
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"

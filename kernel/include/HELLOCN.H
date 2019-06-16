@@ -16,10 +16,6 @@
 #ifndef __HELLO_CHINA__
 #define __HELLO_CHINA__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Mini-kernal's base address when running. */
 #define __MINIKER_BASE 0x00100000
 /* The master's base address in memory. */
@@ -31,9 +27,16 @@ extern "C" {
  * into here by master,and will be invoked by mini kernel
  * when interrupt raise.
  */
-#define __GENERAL_INT_HANDLER_OFFSET (8*1024 - 0x04)
+#define __GENERAL_INT_HANDLER_OFFSET (8*1024 - 0x08)
+
+/* Offset of SetGDTEntry's routine in miniker module from it's begining in file. */
+#define __SET_GDT_ENTRY_OFFSET (8*1024 - 0x04)
+
 /* General interrupt handler's address. */
 #define __GENERAL_INT_HANDLER_BASE (__GENERAL_INT_HANDLER_OFFSET + __MINIKER_BASE)
+
+/* Base address of SetGDTEntry routine,in miniker. */
+#define __SET_GDT_ENTRY_BASE (__SET_GDT_ENTRY_OFFSET + __MINIKER_BASE)
 
 /*
  * Base address of SMP trampoline,all AP processor(s) in SMP environment 
@@ -285,7 +288,4 @@ extern "C" {
 		DWORD,
 		WORD);
 
-#ifdef __cplusplus
-}
-#endif
-#endif //hellocn.h
+#endif //__HELLO_CHINA__

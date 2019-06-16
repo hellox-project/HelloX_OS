@@ -30,8 +30,6 @@
 #include "system.h"
 #include "hellocn.h"
 #include "stdio.h"
-#include "kapi.h"
-
 
 //Timer handler routine for all synchronous object.
 static DWORD WaitingTimerHandler(LPVOID lpData)
@@ -251,7 +249,7 @@ __TERMINAL:
  * if there are kernel threads waiting for this object,then wakeup
  * all kernel threads,and then destroy the event object.
  */
-VOID EventUninitialize(__COMMON_OBJECT* lpThis)
+BOOL EventUninitialize(__COMMON_OBJECT* lpThis)
 {
 	__EVENT* lpEvent = (__EVENT*)lpThis;
 	__PRIORITY_QUEUE* lpPriorityQueue = NULL;
@@ -290,7 +288,7 @@ VOID EventUninitialize(__COMMON_OBJECT* lpThis)
 	lpEvent->dwObjectSignature = 0;
 	ObjectManager.DestroyObject(&ObjectManager,
 		(__COMMON_OBJECT*)lpPriorityQueue);
-	return;
+	return TRUE;
 }
 
 /*
@@ -856,7 +854,7 @@ __TERMINAL:
  * This object support safety deleted,so in this routine,all kernel thread(s)
  * must be waken up before this object is destroyed.
  */
-VOID MutexUninitialize(__COMMON_OBJECT* lpThis)
+BOOL MutexUninitialize(__COMMON_OBJECT* lpThis)
 {
 	__PRIORITY_QUEUE* lpWaitingQueue = NULL;
 	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
@@ -892,7 +890,7 @@ VOID MutexUninitialize(__COMMON_OBJECT* lpThis)
 	/* Destroy the waiting queue. */
 	ObjectManager.DestroyObject(&ObjectManager,
 		(__COMMON_OBJECT*)lpWaitingQueue);
-	return;
+	return TRUE;
 }
 
 //------------------------------------------------------------------------

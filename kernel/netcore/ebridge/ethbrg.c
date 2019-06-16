@@ -16,7 +16,6 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
-#include <kapi.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

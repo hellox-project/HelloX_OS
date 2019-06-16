@@ -1,0 +1,3 @@
+在HPX的安全模式下，所有endpoint之间的通信都需要经过gateway，因此gateway就成为一个具备单点故障的集中点。
+比较稳定的架构，是有一个集中的管理节点，同时指定几个备用的节点，一旦管理节点故障，则备用节点继续工作。如果备用节点故障，则重新选举备用节点。要选举出主用的gateway和backup gateway list，需要有gateway selection算法。
+当前先不实现该算法，规定一个local domain内，只有一个gateway，这是phase I实现的方案，主要是为了简化。

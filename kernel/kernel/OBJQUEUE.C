@@ -18,7 +18,6 @@
 #include <kmemmgr.h>
 #include <objqueue.h>
 #include <hellocn.h>
-#include <kapi.h>
 
 /*
  * Insert an element into Priority Queue.
@@ -238,22 +237,19 @@ BOOL PriQueueInitialize(__COMMON_OBJECT* lpThis)
  * Uninitialize routine of Priority Queue.
  * This routine frees all memory this priority queue occupies.
  */
-VOID PriQueueUninitialize(__COMMON_OBJECT* lpThis)
+BOOL PriQueueUninitialize(__COMMON_OBJECT* lpThis)
 {
 	__PRIORITY_QUEUE_ELEMENT*    lpElement    = NULL;
 	__PRIORITY_QUEUE_ELEMENT*    lpTmpElement   = NULL;
 	__PRIORITY_QUEUE*            lpPriorityQueue   = NULL;
 
-	if(NULL == lpThis)
-	{
-		return;
-	}
+	BUG_ON(NULL == lpThis);
 
 	lpPriorityQueue = (__PRIORITY_QUEUE*)lpThis;
 	/* Validate the object. */
 	if (lpPriorityQueue->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
 	{
-		return;
+		return FALSE;
 	}
 	lpElement = lpPriorityQueue->ElementHeader.lpNextElement;
 	//Delete all queue element(s).
@@ -265,4 +261,5 @@ VOID PriQueueUninitialize(__COMMON_OBJECT* lpThis)
 	}
 	/* Reset object signature. */
 	lpPriorityQueue->dwObjectSignature = 0;
+	return TRUE;
 }

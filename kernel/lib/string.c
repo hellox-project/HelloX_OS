@@ -629,9 +629,6 @@ char * strstr(const char *s1,const char *s2)
 	return (char *) NULL;
 }
 
-
-
-
 //static int isdigit(int x)
 //{
 //    if(x<='9'&&x>='0')

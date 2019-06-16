@@ -621,6 +621,7 @@ int _hx_sprintf(char *buf, const char *fmt, ...)
   return n;
 }
 
+#if 0
 //A mutex object to sychronize the console accessing between
 //different kernel threads.If do not enforce the sychronization,
 //the output will mix when multiple threads are accessing the
@@ -713,6 +714,7 @@ int _hx_printf(const char* fmt,...)
 
 	return 0;
 }
+#endif
 
 #if defined(__CFG_SYS_SMP)
 /* Spin lock used by _hx_printk routine. */

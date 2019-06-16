@@ -67,7 +67,7 @@ END_DEFINE_OBJECT(__SEMAPHORE)
 
 //Initializer and Uninitializer of semaphore object.
 BOOL SemInitialize(__COMMON_OBJECT* pSemaphore);
-VOID SemUninitialize(__COMMON_OBJECT* pSemaphore);
+BOOL SemUninitialize(__COMMON_OBJECT* pSemaphore);
 
 //Definition of mailbox's message.
 typedef struct tag_MB_MESSAGE{
@@ -101,7 +101,7 @@ END_DEFINE_OBJECT(__MAIL_BOX)
 
 //Initializer and Uninitializer of mail box object.
 BOOL MailboxInitialize(__COMMON_OBJECT* pMailbox);
-VOID MailboxUninitialize(__COMMON_OBJECT* pMailbox);
+BOOL MailboxUninitialize(__COMMON_OBJECT* pMailbox);
 
 /* 
  * Definition of __CONDITION object.This object is conforms POSIX standard pthread_cond_xxx
@@ -128,6 +128,6 @@ END_DEFINE_OBJECT(__CONDITION)
 
 //Initializer and Uninitializer of condition object.
 BOOL ConditionInitialize(__COMMON_OBJECT* pCondObj);
-VOID ConditionUninitialize(__COMMON_OBJECT* pCondObj);
+BOOL ConditionUninitialize(__COMMON_OBJECT* pCondObj);
 
 #endif //__KTMGR2_H__

@@ -28,16 +28,11 @@
 #include "fsstr.h"
 #include "fat32.h"
 
-//This module will be available if and only if DDF is enabled.
 #ifdef __CFG_SYS_DDF
 
 //Global variables used by FAT32.
 static __DRIVER_OBJECT*    g_Fat32Driver  = NULL;
 static __DEVICE_OBJECT*    g_Fat32Object  = NULL;
-
-//A helper routine used to convert a string from lowercase to capital.
-//The string should be terminated by a zero,i.e,a C string.
-
 
 //A helper routine to dump out a FAT32 file system's global information.
 static VOID DumpFat32(__FAT32_FS* pFat32Fs)
@@ -195,9 +190,15 @@ __TERMINAL:
 	return pFatObject;
 }
 
-//Implementation of CheckPartition.
-static BOOL CheckPartition(__COMMON_OBJECT* lpThis,  //FAT32 driver device object.
-		                   __COMMON_OBJECT* pPartitionObject)
+/* 
+ * CheckPartition routine.Check if a given partition is FAT32 volume,
+ * and create the corresponding file system object if it is,otherwise
+ * FALSE will be returned.
+ * This routine is called by IOManager when a new partition object is
+ * detected.
+ */
+static BOOL CheckPartition(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* pPartitionObject)
 {
 	__DEVICE_OBJECT*       pPartition = (__DEVICE_OBJECT*)pPartitionObject;
 	__FAT32_FS*            pFatObject = NULL;
@@ -206,17 +207,7 @@ static BOOL CheckPartition(__COMMON_OBJECT* lpThis,  //FAT32 driver device objec
 	CHAR                   DevName[64];
 	int                    nIndex;
 	static CHAR            nNameIndex = 0 ;
-	//__PARTITION_EXTENSION* ppe = NULL;
 
-	/*
-	//Debug only.
-	ppe = (__PARTITION_EXTENSION*)pPartition->lpDevExtension;
-	sprintf(DevName," PT is : %X, attr is : %X",
-		ppe->PartitionType,
-		pPartition->dwAttribute);
-	PrintLine(DevName);
-	*/
-	
 	if(pPartition == NULL)
 	{
 		goto __TERMINAL;
@@ -474,7 +465,6 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 	return 0;
 }
 
-
 //Implementation of _fat32DeleteFile routine.
 static BOOL _fat32DeleteFile(__COMMON_OBJECT* lpDev,LPSTR pszFileName)       //Delete a file.
 {
@@ -489,11 +479,11 @@ static BOOL _fat32DeleteFile(__COMMON_OBJECT* lpDev,LPSTR pszFileName)       //D
 	return DeleteFatFile(pFat32Fs,pszFileName);
 }
 
-
 //Implementation of _fat32FindClose routine.
-static BOOL _fat32FindClose(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* pHandle)  //Close find handle.
+static BOOL _fat32FindClose(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* pHandle)
 {
 	__FAT32_FIND_HANDLE*  pFindHandle = (__FAT32_FIND_HANDLE*)pHandle;
+
 	if(NULL == pFindHandle)
 	{
 		return FALSE;
@@ -573,13 +563,18 @@ static __FAT32_FIND_HANDLE* BuildFindHandle(__FAT32_FS* pFat32Fs,CHAR* pszDirNam
 			goto __TERMINAL;
 		}
 		//Attach this cluster into directory cluster list.
-		if(NULL == pFindHandle->pClusterRoot)  //First cluster now.
+		if(NULL == pFindHandle->pClusterRoot)
 		{
+			/* First cluster. */
 			pFindHandle->pClusterRoot = pDirCluster;
 			pFindHandle->pCurrCluster = pDirCluster;
 		}
-		else  //Not the first cluster,pCurrCluster pointing to the last node.
+		else
 		{
+			/* 
+			 * Not the first cluster,just hook to cluster list of find handle.
+			 * pCurrCluster pointing to the last node. 
+			 */
 			pFindHandle->pCurrCluster->pNext = pDirCluster;
 			pFindHandle->pCurrCluster        = pDirCluster;
 		}
@@ -707,7 +702,6 @@ __FIND:
 	return bResult;
 }
 
-
 //Implementation of _fat32FindFirstFile.
 static __COMMON_OBJECT* _fat32FindFirstFile(__COMMON_OBJECT* lpThis,CHAR*  pszFileName,FS_FIND_DATA* pFindData)
 {
@@ -733,10 +727,10 @@ static __COMMON_OBJECT* _fat32FindFirstFile(__COMMON_OBJECT* lpThis,CHAR*  pszFi
 	return (__COMMON_OBJECT*)pFindHandle;
 }
 
-//Implementation of _FindNextFile.
+/* FindNextFile routine,use this routine to iterate the file finding process. */
 static BOOL _FindNextFile(__COMMON_OBJECT* lpThis,
-		                 __COMMON_OBJECT* pFindHandle,
-		                 FS_FIND_DATA* pFindData)
+	__COMMON_OBJECT* pFindHandle,
+	FS_FIND_DATA* pFindData)
 {
 	if((NULL == pFindHandle) || (NULL == pFindData))
 	{
@@ -1017,7 +1011,7 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv,__COMMON_OBJECT* lpDev, __DRCB
 			(FS_FIND_DATA*)lpDrcb->dwExtraParam2) ? 1 : 0;
 	case IOCONTROL_FS_FINDCLOSE:
 		_fat32FindClose((__COMMON_OBJECT*)lpDev,
-			(__COMMON_OBJECT*)lpDrcb->lpInputBuffer);
+			(__COMMON_OBJECT*)lpDrcb->dwExtraParam2);
 		break;
 	case IOCONTROL_FS_CREATEDIR:
 		if(_CreateDirectory(lpDev,

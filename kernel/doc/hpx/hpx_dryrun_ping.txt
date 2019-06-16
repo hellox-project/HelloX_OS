@@ -1,0 +1,6 @@
+ping除了支持HPX endpoint可达性测试外，还支持检测endpoint是否提供指定的服务。传统的IP协议的ping操作，无法探测某个UDP或者TCP端口是否开放，而HPX协议的ping，则具备这个功能。
+在ping的时候，除了指定目的HPX address/HPX domina外，还可以指定ping报文的大小，对端service ID等等参数。如果对端service ID没有开放，则返回service ID unreachable的消息，否则返回service ID ok。
+ping用的是protocol control协议头，在协议头的相应字段里面，设置endpoint期望的操作。由于用的是protocol协议头，因此无需对端建立SCB（Session Control Block），HPX协议本身就直接处理掉。
+ping的发起端，调用socket API来实现，保持与传统IP的ping实现方式一致，至少在HelloX操作系统上是这样的。在调用socket函数时，指定创建socket的类型为SOCK_RAW，即HPX也支持IP协议栈中的SOCK_RAW类型。这样socket函数就可以支持SOCK_DGRAM/SOCK_STREAM/SOCK_RAW三种类型。但SOCK_RAW只能跟SOCK_CLIENT组合，不能与SOCK_SERVER组合；
+下面描述详细的过程：
+1. ping应用程序调用socket API创建一个socket，socket函数的参数：domain：AF_HPX，type：SOCK_RAW | SOCK_CLIENT，protocol：PROTOCOL_HPX；

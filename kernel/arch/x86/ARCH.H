@@ -1,10 +1,12 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : Sep,18 2006
-//    Module Name               : ARCH_X86.H
+//    Module Name               : arch.h
 //    Module Funciton           : 
-//                                This module countains CPU specific code,in this file,
-//                                Intel X86 series CPU's specific code is included.
+//                                Common header for all architectures,arch
+//                                specific definitions or routines should
+//                                defined in arch specific header file,such
+//                                as arch_x86.h.
 //
 //    Last modified Author      :
 //    Last modified Date        :
@@ -17,59 +19,42 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
-//Constants for x86 CPU.
-#define DEFAULT_CACHE_LINE_SIZE 64
-#define ARCH_DMA_MINALIGN DEFAULT_CACHE_LINE_SIZE
+#include <config.h>
 
-//A macro converting BCD code to decimal.
-#define BCD_TO_DEC_BYTE(bcd)   ((bcd>>4)&0xF)*10+((bcd)&0xF)
+/* Arch specific header files. */
+#if defined(__I386__)
+#include "arch_x86.h"
+#endif
 
-//Unaligned memory accessing.The following macros must be adapted according CPU
-//architecture,since it may lead exception when implemented unproper.
-//We just get and put value as aligned memory accessing since x86 support unaligned
-//memory accessing directly.
-#define __GET_UNALIGNED(ptr) (*ptr)
-#define __GET_UNALIGNED_I16(ptr) (*ptr)
-#define __GET_UNALIGNED_I32(ptr) (*ptr)
-#define __GET_UNALIGNED_I64(ptr) (*ptr)
-#define __GET_UNALIGNED_U16(ptr) (*ptr)
-#define __GET_UNALIGNED_U32(ptr) (*ptr)
-#define __GET_UNALIGNED_U64(ptr) (*ptr)
-
-#define __PUT_UNALIGNED(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_I16(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_I32(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_I64(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_U16(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_U32(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_U64(val,ptr) (*ptr = val)
+/* converts BCD code to decimal. */
+#define BCD_TO_DEC_BYTE(bcd)   ((bcd >> 4) & 0xF) * 10 + ((bcd) & 0xF)
 
 //Kernel thread wrapper routine.
 typedef VOID (*__KERNEL_THREAD_WRAPPER)(__COMMON_OBJECT*);
 
-//Processor specified exception handler,for x86.
-VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector);
+/* 
+ * Initializes the context of a kernel thread.
+ * The initialization process is different on different platforms,so
+ * implement this routine in ARCH directory.
+ */
+void InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
+	__KERNEL_THREAD_WRAPPER lpStartAddr);
 
-//
-//Initializes the context of a kernel thread.
-//The initialization process is different on different platforms,so
-//implement this routine in ARCH directory.
-//
-VOID InitKernelThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
-							 __KERNEL_THREAD_WRAPPER lpStartAddr);
+/* Initializes the context of a user thread. */
+void InitUserThreadContext(__KERNEL_THREAD_OBJECT* pUserThread,
+	__KERNEL_THREAD_WRAPPER pUserStartAddr);
 
 //Enable VMM mechanism.
-VOID EnableVMM(void);
+VOID EnableVMM(unsigned long* pdAddr);
 
 //Halt the system in case of idle.
 VOID HaltSystem();
 
-//Switch to a new kernel thread from interrupt context.
-VOID __SwitchTo(__KERNEL_THREAD_CONTEXT* lpContext);
+/* Switch to the next thread. */
+VOID __SwitchTo(__KERNEL_THREAD_OBJECT* pPrev, __KERNEL_THREAD_OBJECT* pNext);
 
-//Saves current kernel thread's context,and switches to the new one.
-VOID __SaveAndSwitch(__KERNEL_THREAD_CONTEXT** lppOldContext,
-	__KERNEL_THREAD_CONTEXT** lppNewContext);
+/* Saves current kernel thread's context,and switches to the new one. */
+VOID __SaveAndSwitch(__KERNEL_THREAD_OBJECT* pCurrent, __KERNEL_THREAD_OBJECT* pNext);
 
 /*
  * Acknowledge interrupt from default interrupt controller,
@@ -89,28 +74,23 @@ VOID __MicroDelay(DWORD dwmSeconds);
 /* Return the frequency of CPU. */
 uint64_t __GetCPUFrequency();
 
-//Simulate a NOP instruction.
-#ifdef __I386__
-#define __NOP() \
-__asm{    \
-	nop   \
-}
-#else
-#define __NOP()
-#endif
+/* Initializes CPU specific task management function. */
+BOOL __InitCPUTask();
 
-//Port operating routines for x86 architecture.
-DWORD __ind(WORD wPort);
-VOID __outd(WORD wPort,DWORD dwVal);
-UCHAR __inb(WORD wPort);
-VOID __outb(UCHAR ucVal,WORD wPort);
-WORD __inw(WORD wPort);
-VOID __outw(WORD wVal,WORD wPort);
-VOID __inws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort);
-VOID __outws(BYTE* pBuffer,DWORD dwBuffLen,WORD wPort);
+/* Processor specified exception handler. */
+VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector);
 
-//Read or write to device maped space,in some architecture,it may
-//different compare to normal memory access.
+/* Move a memory block from user space to kernel space. */
+BOOL __copy_from_user(__VIRTUAL_MEMORY_MANAGER* pVmmMgr, LPVOID pKernelStart, LPVOID pUserStart,
+	unsigned long length);
+/* Move a memory block from kernel space to user space. */
+BOOL __copy_to_user(__VIRTUAL_MEMORY_MANAGER* pVmmMgr, LPVOID pKernelStart, LPVOID pUserStart,
+	unsigned long length);
+
+/* 
+ * Read or write to device maped space. 
+ * They should be common in all architectures.
+ */
 #define __readb(addr) (*(volatile unsigned char*)(addr))
 #define __readw(addr) (*(volatile unsigned short*)(addr))
 #define __readl(addr) (*(volatile unsigned long*)(addr))

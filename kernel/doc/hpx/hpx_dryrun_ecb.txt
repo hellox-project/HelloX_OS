@@ -1,0 +1,9 @@
+ECB management in gateway:
+1. ECB由endpoint接入时，触发gateway建立。在ECB中保存了有关endpoint的所有信息，比如MAC地址（物理地址），分配给endpoint的HPX address和domain address，PSK，状态（STATUS），计时器等；
+2. 在接收到来自endpoint的frame时（initial access发起的broadcast除外），将会根据frame的MAC地址，HPX address等信息查找ECB表，找到一个对应条目并进行authentication，只有通过ECB authentication的frame，gateway才做进一步的转发处理；
+3. 每条ECB entry都有一个计数器，ECB刚创建时清零，该定时器会被运行在gateway上的HPX后台线程周期性的递增（ECP_TIMER_PERIOD，缺省3s）。如果ECB的状态是INITIALIZED 或者RESP_SEND，则一旦定时器的值达到ECB_TIMER_PURGE_1（缺省为60），则该ECB会被删除，相关的资源会被收回，这包括HPX address等资源。这种状态下ECB被清除，说明endpoint长时间没有相应gateway的response消息，属异常情况；
+4. 如果ECB的状态是CONFIRMED，则每次收到对应endpoint的frame，并通过ECB检查，则会重新把计数器清零；
+5. 如果ECB的状态是CONFIRMED，且计数器的值达到了ECB_TIMER_PURGE_2（缺省为288000，一天时间），则该ECB也会被清除，记录的HPX address等资源会被收回重新利用。这种情况的超时，说明endpoint已很长时间没有发送数据，很大概率已经离线；
+6. 每台运行HPX协议的gateway上，都有一个设定的ECB表的大小（缺省为8K）。不论ECB entry是何种状态，只要ECB表项的数量超过了设定最大值的80%，则会引发告警，gateway会向管理中心发送ECB overflow warning，这是一种异常的情况，有可能已经受到攻击；
+7. 一旦ECB表项的数量达到设定的最大值，则gateway将不再相应endpoint发起的initial access请求，直到ECB表项数量降低到80%以下。这种限制ECB表项数量的机制，可以一定程度上发现并抵御initial access攻击。即使在遭受攻击，导致ECB表项达到最大值的情况下，已经成功接入的endpoint是不受影响的，但是新的合法的endpoint，就会因为ECB表项被攻击耗尽而无法接入。但管理中心应该可以立即看到告警，并采取管理动作；
+8. 

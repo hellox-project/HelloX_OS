@@ -1,0 +1,16 @@
+在HPX协议的安全模式下，endpoint与网关之间的通信都是加密的。在gateway上可以配置多个密钥，在endpoint上也可以配置多个密钥。当前暂时规定，endpoint和gateway上加密密钥的数量，不超过8个。
+这时候，endpoint与gateway之间在通信时，就需要协商密钥。这里的协商，不是确定一个新的密钥，而是在endpoint和gateway上所配置的密钥之中，选择一个双方都可以识别的密钥。
+这通过密钥初始化算法完成，过程如下：
+1. endpoint先随机生成4个256字节的报文，并把这四个256字节的报文进行摘要运算。当前的摘要算法是SHA-512；
+2. 把上述四段报文，以及每段报文的摘要结果，按顺序组装到一个报文中，这个报文的长度为1024+4*64 = 1280字节；
+3. 选择一个本地密钥，对上述protocol control header的内容进行加密，用AES加密算法。把加密后的结果，打包在一个protocol control header中；
+4. 把这个protocol control header，组装到一个HPX报文中，广播出去；
+5. HPX gateway收到这个广播之后，首先查看这个endpoint的MAC地址是否在DBL（Deny black list）里面。如果在，直接丢弃该报文。如果一个MAC地址连续发起8次协商加密密钥的请求，每次都不通过，则这个MAC地址会被加入DBL；DBL的目的，是防止密钥协商广播攻击；
+6. 如果MAC地址不在DBL里面，则gateway会接收，并创建一个初始的ECB项，在这个ECB中记录了endpoint的MAC地址，ECB的状态（KEY_NEGOTIATING），密钥协商请求计数等。然后用gateway本身的密钥，依次去尝试解密protocol header里面的内容；
+7. 解密之后，会按320字节一组（共四组），计算每一组的前256字节摘要（用SHA-256算法），然后把计算结果跟后面的64字节对比。如果任何一组对比失败，则认为密钥不匹配，选择本地另外一个密钥；
+8. 如果所有密钥都不匹配，则给endpoint回一条protocol control消息，告诉endpoint密钥协商失败；
+9. 如果有一个密钥对比通过，则把这个密钥填写到ECB中，作为跟这个endpoint通信的初始密钥；
+10. 在密钥匹配不通过的情况下，ECB会保留一段时间，当前定义是1分钟。如果在1分钟内连续到endpoint超过8次的密钥匹配请求，则认为该endpoint是恶意的，加入DBL，并删除ECB；
+11. 在ECB超时时，gateway会删除掉这个ECB；
+12. 在通信过程中，endpoint和gateway可以随时协商修改加密密钥，以保证整个通信的安全。
+

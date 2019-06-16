@@ -71,8 +71,9 @@ static void ShowAlive()
 		{
 			return;
 		}
-		//No active input untile then,show alive message.
-		//_hx_printf("  System is alive,but no human input yet.\r\n");
+		/* Show alive message if no input. */
+		//_hx_printk("  CPU[%d]: System is alive,but no human input yet.\r\n",
+		//	__CURRENT_PROCESSOR_ID);
 	}
 }
 #endif
@@ -435,6 +436,9 @@ DWORD SystemIdle(LPVOID lpData)
 #ifdef __I386__
 		ShowAlive();
 #endif
+		/* Scan killed queue and clean up all killed thread(s). */
+		KernelThreadManager.ProcessKilledQueue((__COMMON_OBJECT*)&KernelThreadManager);
+
 		dwIdleCounter ++;
 		if(0xFFFFFFFF == dwIdleCounter)
 		{

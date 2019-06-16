@@ -31,7 +31,6 @@
 #include "config.h"
 #endif
 
-
 #ifndef __TYPES_H__
 #include "types.h"
 #endif
@@ -78,10 +77,6 @@
 
 #ifndef __KTMGR2_H__
 #include "ktmgr2.h"
-#endif
-
-#ifndef __PROCESS_H__
-#include "process.h"
 #endif
 
 #ifndef __RINGBUFF_H__
@@ -155,5 +150,8 @@
 #include "../arch/stm32/arch.h"
 #endif
 #endif
+
+#include "HELLOCN.H"
+#include "KAPI.H"
 
 #endif  //__STDAFX_H__

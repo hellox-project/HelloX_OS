@@ -63,6 +63,9 @@
 #define __DISABLE_LOCAL_INTERRUPT(dwFlags) __ENTER_CRITICAL_SECTION_UP(NULL,dwFlags)
 #define __RESTORE_LOCAL_INTERRUPT(dwFlags) __LEAVE_CRITICAL_SECTION_UP(NULL,dwFlags)
 
+/* Enable local CPU's interrupt flag. */
+#define __ENABLE_LOCAL_INTERRUPT() __asm{ sti } 
+
 /*
  * Unified critical section operation macros,they actually refer 
  * UP or SMP version of __ENTER_CRITICAL_SECTION/__LEAVECRITICAL_SECTION,

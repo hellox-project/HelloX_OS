@@ -107,9 +107,9 @@ static int get_user_script(char* buffer, size_t* len)
 	{
 		if (GetMessage(&Msg))
 		{
-			if (KERNEL_MESSAGE_AKDOWN == Msg.wCommand)    //This is a key down message.
+			if (KERNEL_MESSAGE_AKDOWN == Msg.command)    //This is a key down message.
 			{
-				bt = (BYTE)Msg.dwParam;
+				bt = (BYTE)Msg.lParam;
 				switch (bt)
 				{
 				case VK_RETURN:                  //This is a return key.
@@ -154,7 +154,7 @@ static int get_user_script(char* buffer, size_t* len)
 					{
 						*pCurrPos++ = bt; //Save this character.
 						wr += bt;
-						PrintChar(wr);
+						PrintChar((char)wr);
 						wr = 0x0700;
 					}
 					break;
@@ -162,17 +162,17 @@ static int get_user_script(char* buffer, size_t* len)
 			}
 			else
 			{
-				if (KERNEL_MESSAGE_VKDOWN == Msg.wCommand)
+				if (KERNEL_MESSAGE_VKDOWN == Msg.command)
 				{
-					bt = (BYTE)Msg.dwParam;
+					bt = (BYTE)Msg.lParam;
 					if (VK_CONTROL == bt)
 					{
 						bCtrlDown = TRUE;
 					}
 				}
-				if (KERNEL_MESSAGE_VKUP == Msg.wCommand)
+				if (KERNEL_MESSAGE_VKUP == Msg.command)
 				{
-					bt = (BYTE)Msg.dwParam;
+					bt = (BYTE)Msg.lParam;
 					if (VK_CONTROL == bt)    //Control key up.
 					{
 						bCtrlDown = FALSE;

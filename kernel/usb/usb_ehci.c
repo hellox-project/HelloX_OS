@@ -1228,8 +1228,13 @@ static int ehci_common_init(struct ehci_ctrl *ctrl, uint tweaks)
 	/* unblock posted write */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
 
-	//When estimately running here,the system will halt for several seconds(about 10~20) without
-	//any response,I don't know why,maybe caused by USB controller's hardware...
+	/*
+	 * When estimately running here,the system 
+	 * will halt for several seconds(about 10~20) without
+	 * any response,I don't know why,maybe caused 
+	 * by USB controller's hardware...
+	 */
+	/* Issue is caused by BIOS setting of EHCI and solved. */
 	mdelay(5);
 
 #ifndef USB_EHCI_DISABLE_INTERRUPT

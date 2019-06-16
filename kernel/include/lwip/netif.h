@@ -98,6 +98,12 @@ extern "C" {
 #ifdef __CFG_NET_NAT
 #define NETIF_FLAG_NAT          0x100U
 #endif /* __CFG_NET_NAT */
+/* DPI function is enabled on this interface if set. */
+#ifdef __CFG_NET_DPI
+#define NETIF_FLAG_DPI          0x200U
+#endif /* __CFG_NET_DPI */
+/* DHCP Server is enabled on this interface if set. */
+#define NETIF_FLAG_DHCPSERVER   0x400U
 
 /** Function prototype for netif init functions. Set up flags and output/linkoutput
  * callback functions in this function.

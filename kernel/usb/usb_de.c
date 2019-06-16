@@ -47,7 +47,7 @@
 #endif
 
 #if defined(__CFG_SYS_USB) && defined(__CFG_DRV_USBNETWORK)
-#include "r8152_e.h"
+#include "drivers/r8152_e.h"
 #endif
 
 //Each USB driver should put one entry routine into this array,

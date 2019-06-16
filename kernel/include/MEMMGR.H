@@ -26,24 +26,20 @@
 
 //
 //The definition of __PAGE_FRAME object.
-//This object is used to describe a page frame.
+//This object is used to manage a page frame.
 //
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME)
-    struct tag__PAGE_FRAME*         lpNextFrame;
-    struct tag__PAGE_FRAME*         lpPrevFrame;
-	DWORD                 dwKernelThreadNum;
-	DWORD                 dwFrameFlag;
-	LPVOID                lpReserved;
+    struct tag__PAGE_FRAME* lpNextFrame;
+    struct tag__PAGE_FRAME* lpPrevFrame;
+	DWORD dwKernelThreadNum;
+	DWORD dwFrameFlag;
 END_DEFINE_OBJECT(__PAGE_FRAME)
 
-//
-//Constants definition.
-//
-#define PAGE_FRAME_SIZE     4096              //One page frame's size,in current version,
-                                              //this value is 4K.
+/* One page frame's size,in current version is 4K. */
+#define PAGE_FRAME_SIZE     4096
 
-#define PAGE_FRAME_FLAG_READONLY  0x00000001  //Read only page.
-#define PAGE_FRAME_FLAG_WRITE     0x00000002  //Write page.
+#define PAGE_FRAME_FLAG_READONLY  0x00000001
+#define PAGE_FRAME_FLAG_WRITE     0x00000002
 #define PAGE_FRAME_READWRITE      0x00000003
 #define PAGE_FRAME_EXECUTABLE     0x00000004
 
@@ -79,28 +75,35 @@ END_DEFINE_OBJECT(__PAGE_FRAME_BLOCK)
 //The definition of object Page Frame Manager.
 //
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME_MANAGER)
-    __PAGE_FRAME*          lpPageFrameArray;
-    __PAGE_FRAME_BLOCK     FrameBlockArray[PAGE_FRAME_BLOCK_NUM];
-	DWORD                  dwTotalFrameNum;
-	DWORD                  dwFreeFrameNum;
-	LPVOID                 lpStartAddress;
+    __PAGE_FRAME* lpPageFrameArray;
+    __PAGE_FRAME_BLOCK FrameBlockArray[PAGE_FRAME_BLOCK_NUM];
+	unsigned long dwTotalFrameNum;
+	unsigned long dwFreeFrameNum;
+	LPVOID lpStartAddress;
 #if defined(__CFG_SYS_SMP)
 	__SPIN_LOCK spin_lock;
 #endif
 
-	BOOL                   (*Initialize)(__COMMON_OBJECT*    lpThis,
-		                                 LPVOID              lpStartAddr,
-										 LPVOID              lpEndAddr);
-
-	LPVOID                 (*FrameAlloc)(__COMMON_OBJECT*    lpThis,
-		                                 DWORD               dwSize,
-										 DWORD               dwFrameFlag);
-
-	VOID                   (*FrameFree)(__COMMON_OBJECT*     lpThis,
-		                                LPVOID               lpStartAddr,
-										DWORD                dwSize);
-
+	/* Initializer. */
+	BOOL (*Initialize)(__COMMON_OBJECT* lpThis);
+	LPVOID (*FrameAlloc)(__COMMON_OBJECT* lpThis,
+		DWORD dwSize,
+		DWORD dwFrameFlag);
+	VOID (*FrameFree)(__COMMON_OBJECT* lpThis,
+		LPVOID lpStartAddr,
+		DWORD dwSize);
 END_DEFINE_OBJECT(__PAGE_FRAME_MANAGER)
+
+/* 
+ * The maximal RAM length that Page Frame Manager can manage. 
+ * Page frame manager allocates memory from kernel pool,to
+ * manage each frame.Thus restricts the maximal size that
+ * page frame manager can manage,since each page will use
+ * about 16 bytes to describe.
+ * This restrict will be omited in future that we will use
+ * the page pool it self to offer management memory.
+ */
+#define MEM_MAX_PAGEPOOL_LEN (1024 * 1024 * 1024)
 
 /*************************************************************************
 **************************************************************************

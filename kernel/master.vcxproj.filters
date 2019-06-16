@@ -359,12 +359,6 @@
     <ClCompile Include="shell\hiscmd.c">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
-    <ClCompile Include="drivers\x86\pcnet.c">
-      <Filter>Source Files\drivers</Filter>
-    </ClCompile>
-    <ClCompile Include="syscall\SYSCALL.C">
-      <Filter>Source Files\syscall</Filter>
-    </ClCompile>
     <ClCompile Include="syscall\SYSCALL_IO.C">
       <Filter>Source Files\syscall</Filter>
     </ClCompile>
@@ -455,9 +449,6 @@
     <ClCompile Include="network\arch\lwip_pro.c">
       <Filter>Source Files\network</Filter>
     </ClCompile>
-    <ClCompile Include="drivers\x86\rtl8111.c">
-      <Filter>Source Files\drivers</Filter>
-    </ClCompile>
     <ClCompile Include="usb\ehciiso.c">
       <Filter>Source Files\usb</Filter>
     </ClCompile>
@@ -482,64 +473,7 @@
     <ClCompile Include="shell\telnet2.c">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
-    <ClCompile Include="ssh\ssh.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\ssh_msg.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\ssh_pkt.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\ssh_text.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshbn.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshdes.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshdh.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshdss.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshmd5.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshrsa.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshsh256.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshsh512.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sshsha.c">
-      <Filter>Source Files\ssh</Filter>
-    </ClCompile>
-    <ClCompile Include="shell\ssh2.c">
-      <Filter>Source Files\shell</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh\sss_terminal.c">
-      <Filter>Source Files\shell</Filter>
-    </ClCompile>
-    <ClCompile Include="usb\rtl8152.c">
-      <Filter>Header Files\usb_hdr</Filter>
-    </ClCompile>
-    <ClCompile Include="usb\r8152_fw.c">
-      <Filter>Source Files\usb</Filter>
-    </ClCompile>
-    <ClCompile Include="usb\r8152_e.c">
-      <Filter>Source Files\usb</Filter>
-    </ClCompile>
     <ClCompile Include="netcore\hx_eth.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="user\dpi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="usb\usbasync.c">
@@ -624,9 +558,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="netcore\nat\naticmp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="kernel\chardisplay.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kernel\console.c">
@@ -732,6 +663,60 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="arch\x86\pic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\r8152_e.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\r8152_fw.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\rtl8152.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\pcnet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\rtl8111.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\e1000.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\e1000_d.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\e1000e.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dpi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dpimgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dearray.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dpiicmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dpidns.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dpihttp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\chardisp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\vmm2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall\syscall.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\process2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -988,18 +973,6 @@
     <ClInclude Include="lib\sys\stat.h">
       <Filter>Source Files\lib\sys</Filter>
     </ClInclude>
-    <ClInclude Include="drivers\x86\pcnet.h">
-      <Filter>Header Files\drv_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="syscall\K_API_DEF.H">
-      <Filter>Header Files\syscal_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="syscall\SYSCALL.H">
-      <Filter>Header Files\syscal_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="syscall\SYSCALL_KERNEL.H">
-      <Filter>Header Files\syscal_hdr</Filter>
-    </ClInclude>
     <ClInclude Include="include\byteord.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
@@ -1057,9 +1030,6 @@
     <ClInclude Include="network\arch\lwip_pro.h">
       <Filter>Header Files\net_hdr</Filter>
     </ClInclude>
-    <ClInclude Include="drivers\x86\rtl8111.h">
-      <Filter>Header Files\drv_hdr</Filter>
-    </ClInclude>
     <ClInclude Include="usb\uvc.h">
       <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
@@ -1075,29 +1045,11 @@
     <ClInclude Include="shell\Telnet.H">
       <Filter>Header Files\shell_hdr</Filter>
     </ClInclude>
-    <ClInclude Include="ssh\ssh_def.h">
-      <Filter>Source Files\ssh</Filter>
-    </ClInclude>
-    <ClInclude Include="ssh\ssh_pkt.h">
-      <Filter>Source Files\ssh</Filter>
-    </ClInclude>
-    <ClInclude Include="ssh\sshbn.h">
-      <Filter>Source Files\ssh</Filter>
-    </ClInclude>
     <ClInclude Include="include\ssh\ssh.h">
       <Filter>Header Files\ssh_hdr</Filter>
     </ClInclude>
-    <ClInclude Include="usb\r8152.h">
-      <Filter>Header Files\usb_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="usb\usb_ether.h">
-      <Filter>Header Files\usb_hdr</Filter>
-    </ClInclude>
     <ClInclude Include="netcore\mii.h">
       <Filter>Header Files\netcore</Filter>
-    </ClInclude>
-    <ClInclude Include="usb\r8152_e.h">
-      <Filter>Header Files\usb_hdr</Filter>
     </ClInclude>
     <ClInclude Include="netcore\hx_eth.h">
       <Filter>Header Files</Filter>
@@ -1222,6 +1174,57 @@
     <ClInclude Include="arch\x86\pic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="netcore\drivers\r8152.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\r8152_e.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\usb_ether.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\pcnet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\rtl8111.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\e1000.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\e1000_d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\e1000e.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\dpi\dpimgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\dpi\dpiicmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\dpi\dpidns.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\dpi\dpihttp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\hpx\hpx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mlayout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arch\x86\arch_x86.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall\syscall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pmdesc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1241,7 +1244,6 @@
     <None Include="arch\x86\realinit.bin">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="arch\x86\realinit_g.asm" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />

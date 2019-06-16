@@ -185,23 +185,65 @@ struct __PROTO_INTERFACE_BIND{
 	LPVOID pL3Interface;
 };
 
-//Ethernet interface object,represents an dedicated ethernet interface.
+/* Ethernet interface duplex mode. */
+enum __DUPLEX {
+	half = 0,
+	full = 1
+};
+
+/* Ethernet speed options. */
+enum __ETHERNET_SPEED {
+	_10M = 0,
+	_100M = 1,
+	_1000M = 2,
+	_10G = 3,
+	_40G = 4,
+	_80G = 5,
+	_100G = 6
+};
+
+/* Link status. */
+enum __LINK_STATUS {
+	down = 0,
+	up = 1
+};
+
+/* 
+ * Ethernet interface object,represents 
+ * an dedicated ethernet interface. 
+ */
 typedef struct tag__ETHERNET_INTERFACE{
-	char                    ethName[MAX_ETH_NAME_LEN + 1];
-	char                    ethMac[ETH_MAC_LEN];       //MAC address of the interface.
-	__ETHERNET_BUFFER       SendBuffer;                //First element of sending buffer.
-	__ETH_INTERFACE_STATE   ifState;                   //Interface state info.
+	/* Name and MAC address. */
+	char ethName[MAX_ETH_NAME_LEN + 1];
+	char ethMac[ETH_MAC_LEN];
+	/* First element of sending buffer. */
+	__ETHERNET_BUFFER SendBuffer;
+	/* Interface state info. */
+	__ETH_INTERFACE_STATE ifState;
+	/* L3 protocol(s) bound to this interface. */
 	struct __PROTO_INTERFACE_BIND Proto_Interface[MAX_BIND_PROTOCOL_NUM];
-	LPVOID                  pIntExtension;             //Private information.
+	/* Interface extension. */
+	LPVOID pIntExtension;
+	/* Link status,duplex and speed. */
+	enum __LINK_STATUS link_status;
+	enum __DUPLEX duplex;
+	enum __ETHERNET_SPEED speed;
+
 	/*
 	 * Sending queue(list) size of the current interface.
 	 */
-	volatile size_t         nSendingQueueSz;
+	volatile size_t nSendingQueueSz;
 
 	//Operations open to HelloX's ethernet framework.
-	BOOL                    (*SendFrame)(struct tag__ETHERNET_INTERFACE*); //Sending operation.
-	__ETHERNET_BUFFER*      (*RecvFrame)(struct tag__ETHERNET_INTERFACE*); //Receive operation.
-	BOOL                    (*IntControl)(struct tag__ETHERNET_INTERFACE*, DWORD dwOperations, LPVOID);  //Other operations.
+	BOOL (*SendFrame)(struct tag__ETHERNET_INTERFACE*); //Sending operation.
+	__ETHERNET_BUFFER* (*RecvFrame)(struct tag__ETHERNET_INTERFACE*); //Receive operation.
+	BOOL (*IntControl)(struct tag__ETHERNET_INTERFACE*, DWORD dwOperations, LPVOID);  //Other operations.
+	/* 
+	 * Interface specific show out routine.
+	 * will be called when 'showint' command is invoked,
+	 * if not NULL. 
+	 */
+	VOID (*IntSpecificShow)(struct tag__ETHERNET_INTERFACE*);
 }__ETHERNET_INTERFACE;
 
 //Operation protypes for convinence.
@@ -280,34 +322,38 @@ struct __ETHERNET_MANAGER{
 	__atomic_t nDrvSendingQueueSz;
 
 	//Initializer of Ethernet Manager,should be called in process of system initialize.
-	BOOL(*Initialize)       (struct __ETHERNET_MANAGER*);
+	BOOL (*Initialize)(struct __ETHERNET_MANAGER*);
 
 	//Operations can be called by layer 3 or ethernet drivers.
-	__ETHERNET_INTERFACE*   (*AddEthernetInterface)(char* ethName,
+	__ETHERNET_INTERFACE* (*AddEthernetInterface)(char* ethName,
 		char* mac,
 		LPVOID pIntExtension,
 		__ETHOPS_INITIALIZE Init,
 		__ETHOPS_SEND_FRAME SendFrame,
 		__ETHOPS_RECV_FRAME RecvFrame,
 		__ETHOPS_INT_CONTROL IntCtrl);
-	__ETHERNET_INTERFACE*   (*GetEthernetInterface)(char* name);
-	VOID                    (*ReleaseEthernetInterface)(__ETHERNET_INTERFACE* pEthInt);
-	BOOL                    (*DeleteEthernetInterface)(__ETHERNET_INTERFACE*);
-	BOOL                    (*ConfigInterface)(char* ethName,__ETH_IP_CONFIG* pConfig);
-	BOOL                    (*Rescan)(char* ethName);
-	BOOL                    (*Assoc)(char* ethName, __WIFI_ASSOC_INFO* pInfo);
-	BOOL                    (*Delivery)(__ETHERNET_INTERFACE* pIf, __ETHERNET_BUFFER* p);  //Called by ethernet device driver.
-	BOOL                    (*SendFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);  //Called by layer 3 entities.
-	BOOL                    (*BroadcastEthernetFrame)(__ETHERNET_BUFFER* pEthBuffer);
-	BOOL                    (*TriggerReceive)(__ETHERNET_INTERFACE*); //Trigger a receiving poll.
-	BOOL                    (*PostFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);  //Post ethernet frame.
-	VOID                    (*ShowInt)(char* ethName);
-	BOOL                    (*ShutdownInterface)(char* ethName);
-	BOOL                    (*UnshutInterface)(char* ethName);
-	BOOL                    (*GetEthernetInterfaceState)(__ETH_INTERFACE_STATE* pState, int nIndex, int* pnNextInt);
-	__ETHERNET_BUFFER*      (*CreateEthernetBuffer)(int buffer_length);
-	__ETHERNET_BUFFER*      (*CloneEthernetBuffer)(__ETHERNET_BUFFER* pEthBuff);
-	VOID                    (*DestroyEthernetBuffer)(__ETHERNET_BUFFER* pEthBuff);
+	__ETHERNET_INTERFACE* (*GetEthernetInterface)(char* name);
+	VOID (*ReleaseEthernetInterface)(__ETHERNET_INTERFACE* pEthInt);
+	BOOL (*DeleteEthernetInterface)(__ETHERNET_INTERFACE*);
+	BOOL (*ConfigInterface)(char* ethName,__ETH_IP_CONFIG* pConfig);
+	BOOL (*Rescan)(char* ethName);
+	BOOL (*Assoc)(char* ethName, __WIFI_ASSOC_INFO* pInfo);
+	BOOL (*Delivery)(__ETHERNET_INTERFACE* pIf, __ETHERNET_BUFFER* p);  //Called by ethernet device driver.
+	BOOL (*SendFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);  //Called by layer 3 entities.
+	BOOL (*BroadcastEthernetFrame)(__ETHERNET_BUFFER* pEthBuffer);
+	BOOL (*TriggerReceive)(__ETHERNET_INTERFACE*); //Trigger a receiving poll.
+	BOOL (*PostFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);  //Post ethernet frame.
+	VOID (*ShowInt)(char* ethName);
+	BOOL (*ShutdownInterface)(char* ethName);
+	BOOL (*UnshutInterface)(char* ethName);
+	BOOL (*GetEthernetInterfaceState)(__ETH_INTERFACE_STATE* pState, int nIndex, int* pnNextInt);
+	__ETHERNET_BUFFER* (*CreateEthernetBuffer)(int buffer_length);
+	__ETHERNET_BUFFER* (*CloneEthernetBuffer)(__ETHERNET_BUFFER* pEthBuff);
+	VOID (*DestroyEthernetBuffer)(__ETHERNET_BUFFER* pEthBuff);
+	VOID (*LinkStatusChange)(__ETHERNET_INTERFACE* pEthInt, 
+		enum __LINK_STATUS link_status,
+		enum __DUPLEX duplex, 
+		enum __ETHERNET_SPEED speed);
 };
 
 //Global ethernet manager objects.

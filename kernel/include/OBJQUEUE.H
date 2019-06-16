@@ -56,7 +56,7 @@ END_DEFINE_OBJECT(__PRIORITY_QUEUE)
 
 //Initialize routine and Uninitialize's definition.
 BOOL PriQueueInitialize(__COMMON_OBJECT* lpThis);
-VOID PriQueueUninitialize(__COMMON_OBJECT* lpThis);
+BOOL PriQueueUninitialize(__COMMON_OBJECT* lpThis);
 
 #ifdef __cplusplus
 }

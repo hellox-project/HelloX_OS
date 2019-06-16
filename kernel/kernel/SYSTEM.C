@@ -30,9 +30,7 @@
 #include "../syscall/syscall.h"
 #include "stdio.h"
 #include "ktmsg.h"
-
 #include "hellocn.h"
-#include "kapi.h"
 
 #ifdef __I386__
 #include "../arch/x86/bios.h"
@@ -267,7 +265,7 @@ __WAKEUP_KERNEL_THREAD:
  *  1. Insert the current object into interrupt object array(maintenanced by system object);
  *  2. Set the object's data members correctly.
  */
-static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT* lpThis,
+static __COMMON_OBJECT* __ConnectInterrupt(__COMMON_OBJECT* lpThis,
 	__INTERRUPT_HANDLER lpInterruptHandler,
 	LPVOID lpHandlerParam,
 	UCHAR ucVector,
@@ -337,7 +335,7 @@ static __COMMON_OBJECT* kConnectInterrupt(__COMMON_OBJECT* lpThis,
 }
 
 /* DisconnectInterrupt,detach a specified interrupt from system and destroy it. */
-static VOID kDiskConnectInterrupt(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpInterrupt)
+static VOID __DisconnectInterrupt(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpInterrupt)
 {
 	__INTERRUPT_OBJECT* lpIntObject = NULL;
 	__SYSTEM* lpSystem = NULL;
@@ -396,9 +394,9 @@ BOOL InterruptInitialize(__COMMON_OBJECT* lpThis)
 }
 
 /* Destructor of interrupt object. */
-VOID InterruptUninitialize(__COMMON_OBJECT* lpThis)
+BOOL InterruptUninitialize(__COMMON_OBJECT* lpThis)
 {
-	return;
+	return TRUE;
 }
 
 /* Initializer of timer object. */
@@ -424,13 +422,13 @@ BOOL TimerInitialize(__COMMON_OBJECT* lpThis)
 }
 
 /* Destructor of timer object. */
-VOID TimerUninitialize(__COMMON_OBJECT* lpThis)
+BOOL TimerUninitialize(__COMMON_OBJECT* lpThis)
 {
 	__TIMER_OBJECT* pTimer = (__TIMER_OBJECT*)lpThis;
 	BUG_ON(NULL == pTimer);
 	/* Reset object signature. */
 	pTimer->dwObjectSignature = 0;
-	return;
+	return TRUE;
 }
 
 //-----------------------------------------------------------------------------------
@@ -448,19 +446,16 @@ VOID TimerUninitialize(__COMMON_OBJECT* lpThis)
  */
 static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 {
-	__SYSTEM*            lpSystem         = (__SYSTEM*)lpThis;
-	__PRIORITY_QUEUE*    lpPriorityQueue  = NULL;
-	__INTERRUPT_OBJECT*  lpIntObject      = NULL;
+	__SYSTEM* lpSystem = (__SYSTEM*)lpThis;
+	__PRIORITY_QUEUE* lpPriorityQueue = NULL;
+	__INTERRUPT_OBJECT* lpIntObject = NULL;
 #ifdef __CFG_SYS_SYSCALL
-	__INTERRUPT_OBJECT*  lpExpObject      = NULL;
+	__INTERRUPT_OBJECT* lpExpObject = NULL;
 #endif
-	BOOL                 bResult          = FALSE;
-	DWORD                dwFlags          = 0;
+	BOOL bResult = FALSE;
+	DWORD dwFlags = 0;
 
-	if(NULL == lpSystem)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpSystem);
 
 	/* Create timer list(queue) and initialize it. */
 	lpPriorityQueue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(&ObjectManager,
@@ -615,6 +610,7 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 {
 	__INTERRUPT_OBJECT* lpIntObject  = NULL;
 	__SYSTEM* lpSystem = (__SYSTEM*)lpThis;
+	BOOL bServiced = FALSE;
 #if defined(__CFG_SYS_SMP)
 	__INTERRUPT_CONTROLLER* pIntCtrl = NULL;
 	__LOGICALCPU_SPECIFIC* pSpec = NULL;
@@ -689,20 +685,28 @@ static VOID DispatchInterrupt(__COMMON_OBJECT* lpThis,
 	/* Travel the whole interrupt list of this vector. */
 	while(lpIntObject)
 	{
-		//If an interrupt object handles the interrupt,then returns.
+		/* Call the corresponding handler. */
 		if(lpIntObject->InterruptHandler(lpEsp,lpIntObject->lpHandlerParam))
 		{
-			//Increment the interrupt counters.
+			/* The interrupt is serviced. */
+			bServiced = TRUE;
 			lpSystem->InterruptSlotArray[ucVector].dwSuccHandledInt ++;
-			lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
-			//break;
-			goto __RETFROMINT;
 		}
+		lpSystem->InterruptSlotArray[ucVector].dwTotalInt++;
+		/* 
+		 * Call next interrupt object,make sure any interrupt 
+		 * object has same chance to be called.
+		 */
 		lpIntObject = lpIntObject->lpNextInterruptObject;
 	}
-	//Unhandled interrupt.
-	DefaultIntHandler(lpEsp, ucVector);
-	lpSystem->InterruptSlotArray[ucVector].dwTotalInt ++;
+	if (!bServiced)
+	{
+		/* 
+		 * No interrupt object service the interrupt,
+		 * just bounce to default handler. 
+		 */
+		DefaultIntHandler(lpEsp, ucVector);
+	}
 
 __RETFROMINT:
 	lpSystem->ucIntNestLevel[processor_id] -= 1;
@@ -811,25 +815,20 @@ static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
 
 
 /* 
- * DispatchException,called by GeneralIntHandler to handle exception,include
- * system calls.
+ * DispatchException,called by GeneralIntHandler to handle exception,
+ * include system calls.
  */
 static VOID DispatchException(__COMMON_OBJECT* lpThis,
-							  LPVOID           lpEsp,
-							  UCHAR            ucVector)
+	LPVOID lpEsp,
+	UCHAR ucVector)
 {
-	__SYSTEM*                 lpSystem  = (__SYSTEM*)lpThis;
-	__INTERRUPT_OBJECT*       lpIntObj  = NULL;
+	__SYSTEM* lpSystem  = (__SYSTEM*)lpThis;
+	__INTERRUPT_OBJECT* lpIntObj  = NULL;
 
-	if(NULL == lpSystem)
-	{
-		return;
-	}
+	BUG_ON(NULL == lpSystem);
 	/* Not an exception. */
-	if(!IS_EXCEPTION(ucVector))
-	{
-		return;
-	}
+	BUG_ON(!IS_EXCEPTION(ucVector));
+
 	/* Locate the handler to handle the exception. */
 	lpIntObj = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
 	if(NULL == lpIntObj)
@@ -859,7 +858,7 @@ static VOID DispatchException(__COMMON_OBJECT* lpThis,
  *  3. Insert into the timer object into timer queue of system object;
  *  4. Return the timer object's base address if all successfully.
  */
-static __COMMON_OBJECT* kSetTimer(__COMMON_OBJECT* lpThis,
+static __COMMON_OBJECT* __SetTimer(__COMMON_OBJECT* lpThis,
 	__KERNEL_THREAD_OBJECT* lpKernelThread,
 	DWORD dwTimerID,
 	DWORD dwTimeSpan,
@@ -969,7 +968,7 @@ __TERMINAL:
  * maybe triggered and destroyed before this routine is
  * called.
  */
-static BOOL kCancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
+static BOOL __CancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 {
 	__SYSTEM*                  lpSystem = NULL;
 	DWORD                      dwPriority = 0;
@@ -1178,10 +1177,10 @@ __SYSTEM System = {
 	GetPhysicalMemorySize,    //GetPhysicalMemorySize routine.
 	DispatchInterrupt,        //DispatchInterrupt routine.
 	DispatchException,        //DispatchException routine.
-	kConnectInterrupt,        //kConnectInterrupt.
-	kDiskConnectInterrupt,    //kDiskConnectInterrupt.
-	kSetTimer,                //kSetTimerRoutine.
-	kCancelTimer,             //CancelTimer.
+	__ConnectInterrupt,       //ConnectInterrupt.
+	__DisconnectInterrupt,   //DiskConnectInterrupt.
+	__SetTimer,               //SetTimerRoutine.
+	__CancelTimer,            //CancelTimer.
 	_GetInterruptStat         //GetInterruptStat.
 };
 

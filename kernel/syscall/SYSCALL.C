@@ -28,7 +28,7 @@
 
 //A static array to contain system call range.
 static __SYSCALL_RANGE SyscallRange[SYSCALL_RANGE_NUM] = {0};
-static SYSCALL_ENTRY  s_szScCallArray[SYSCALL_MAX_COUNT] = {0};
+static SYSCALL_ENTRY s_szScCallArray[SYSCALL_MAX_COUNT] = {0};
 
 //Register all call 
 void RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry);
@@ -76,8 +76,8 @@ static BOOL DispatchToModule(LPVOID lpEsp,LPVOID lpParam)
 
 	for(i = 0;i < SYSCALL_RANGE_NUM;i ++)
 	{
-		if((SyscallRange[i].dwStartSyscallNum <= pspb->dwSyscallNum) &&
-		   (SyscallRange[i].dwEndSyscallNum   >= pspb->dwSyscallNum))
+		if((SyscallRange[i].dwStartSyscallNum <= pspb->syscall_num) &&
+		   (SyscallRange[i].dwEndSyscallNum   >= pspb->syscall_num))
 		{
 			SyscallRange[i].sde(lpEsp,NULL);
 			return TRUE;
@@ -86,34 +86,38 @@ static BOOL DispatchToModule(LPVOID lpEsp,LPVOID lpParam)
 	return FALSE;  //Can not find a system call range to handle it.
 }
 
-//Register All System call entry point.
+/* Register all system calls into kernel. */
 void  RegisterSysCallEntry()
 {	
-	//Register Kernel routines.
 	RegisterKernelEntry(s_szScCallArray);
 	RegisterIoEntry(s_szScCallArray);
-	RegisterSocketEntry(s_szScCallArray);
+	//RegisterSocketEntry(s_szScCallArray);
 }
 
 //System call entry point.
 BOOL SyscallHandler(LPVOID lpEsp,LPVOID lpParam)
 {
-	__SYSCALL_PARAM_BLOCK*  pspb     = (__SYSCALL_PARAM_BLOCK*)lpEsp;
-	SYSCALL_ENTRY           pScEntry = NULL; 
+	__SYSCALL_PARAM_BLOCK* pspb = (__SYSCALL_PARAM_BLOCK*)lpEsp;
+	SYSCALL_ENTRY pScEntry = NULL; 
+	__KERNEL_THREAD_OBJECT* pCurrentThread = __CURRENT_KERNEL_THREAD;
+	BOOL bResult = FALSE;
+	unsigned long ulFlags = 0;
 
-	if (NULL == lpEsp)
-	{
-		return FALSE;
-	}
-	if(pspb->dwSyscallNum >= SYSCALL_MAX_COUNT)
+	BUG_ON(NULL == lpEsp);
+
+	/* Set current thread's mode as kernel. */
+	__ATOMIC_SET(&pCurrentThread->in_user, 0);
+	/* Enable local interrupt,since it disabled by CPU automatically. */
+	__ENABLE_LOCAL_INTERRUPT();
+
+	if(pspb->syscall_num >= SYSCALL_MAX_COUNT)
 	{
 		__LOG("Invalid system call ID[call_id = %d].\r\n",
-			pspb->dwSyscallNum);
-		return FALSE;
+			pspb->syscall_num);
+		goto __TERMINAL;
 	}
 	
-	//_hx_printf("call num=%X\r\n",pspb->dwSyscallNum);
-	pScEntry = s_szScCallArray[pspb->dwSyscallNum];
+	pScEntry = s_szScCallArray[pspb->syscall_num];
 	if(pScEntry)
 	{
 		pScEntry(pspb);
@@ -121,8 +125,14 @@ BOOL SyscallHandler(LPVOID lpEsp,LPVOID lpParam)
 	else if(!DispatchToModule(lpEsp,NULL))
 	{
 		_hx_printf("SyscallHandler: Unknown system call[num = 0x%0X] raised.\r\n",
-			pspb->dwSyscallNum);
+			pspb->syscall_num);
+		goto __TERMINAL;
 	}
-	
-	return TRUE;
+	bResult = TRUE;
+__TERMINAL:
+	/* Disable local interrupt as the syscall enter. */
+	__DISABLE_LOCAL_INTERRUPT(ulFlags);
+	/* Set current mode as user since we will switch to user space. */
+	__ATOMIC_SET(&pCurrentThread->in_user, 1);
+	return bResult;
 }

@@ -29,8 +29,6 @@
 #include <commobj.h>
 #include <heap.h>
 #include <hellocn.h>
-#include <kapi.h>
-
 
 /* Change semaphore's default counter value. */
 static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD dwCurrSem)
@@ -66,7 +64,7 @@ static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore,DWORD dwMaxSem,DWORD d
  * wake up one kernel thread if exist.
  * The previous current counter will be returned in pdwPrevCount.
  */
-static BOOL ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
+static BOOL _ReleaseSemaphore(__COMMON_OBJECT* pSemaphore,DWORD* pdwPrevCount)
 {
 	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
@@ -317,7 +315,7 @@ BOOL SemInitialize(__COMMON_OBJECT* pSemaphore)
 	pSem->WaitForThisObject   = WaitForSemObject;
 	pSem->WaitForThisObjectEx = WaitForSemObjectEx;
 	pSem->SetSemaphoreCount   = SetSemaphoreCount;
-	pSem->ReleaseSemaphore    = ReleaseSemaphore;
+	pSem->ReleaseSemaphore    = _ReleaseSemaphore;
 
 __TERMINAL:
 	if(!bResult)
@@ -332,7 +330,7 @@ __TERMINAL:
 }
 
 //Unitializer of semaphore object.
-VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
+BOOL SemUninitialize(__COMMON_OBJECT* pSemaphore)
 {
 	__SEMAPHORE* pSem = (__SEMAPHORE*)pSemaphore;
 	__PRIORITY_QUEUE* lpPriorityQueue = NULL;
@@ -342,7 +340,7 @@ VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
 	BUG_ON(NULL == pSem);
 	if (pSem->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
 	{
-		return;
+		return FALSE;
 	}
 
 	__ENTER_CRITICAL_SECTION_SMP(pSem->spin_lock,dwFlags);
@@ -371,7 +369,7 @@ VOID SemUninitialize(__COMMON_OBJECT* pSemaphore)
 
 	//Destroy prirority queue of the semaphore.
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpPriorityQueue);
-	return;
+	return TRUE;
 }
 
 //**------------------------------------------------------------------------------------------------
@@ -467,7 +465,7 @@ __TERMINAL:
  * The processing time from the call emit to successful return will be set if pdwWait
  * is not NULL.
  */
- DWORD GetMail(__COMMON_OBJECT* pMailboxObj,LPVOID* ppMessage,DWORD dwMillionSecond,DWORD* pdwWait)
+ static DWORD _GetMail(__COMMON_OBJECT* pMailboxObj,LPVOID* ppMessage,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__MAIL_BOX*               pMailbox      = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
@@ -676,7 +674,7 @@ static VOID __SendMail(__MAIL_BOX* pMailbox,LPVOID pMessage,DWORD dwPriority)
  * even in case of failure(queue full,timeout flag will be returned).
  * The waited time will be returned if pdwWait is set(not NULL).
  */
- DWORD SendMail(__COMMON_OBJECT* pMailboxObj,LPVOID pMessage,DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait)
+ static DWORD _SendMail(__COMMON_OBJECT* pMailboxObj,LPVOID pMessage,DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait)
 {
 	__MAIL_BOX*               pMailbox      = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
@@ -870,8 +868,8 @@ BOOL MailboxInitialize(__COMMON_OBJECT* pMailboxObj)
 	pMailbox->lpGettingQueue      = pGettingQueue;
 	pMailbox->WaitForThisObject   = WaitForMailboxObject;
 	pMailbox->SetMailboxSize      = SetMailboxSize;
-	pMailbox->SendMail            = SendMail;
-	pMailbox->GetMail             = GetMail;
+	pMailbox->SendMail            = _SendMail;
+	pMailbox->GetMail             = _GetMail;
 	pMailbox->dwObjectSignature   = KERNEL_OBJECT_SIGNATURE;
 #if defined(__CFG_SYS_SMP)
 	/* Initialize spin lock. */
@@ -900,20 +898,18 @@ __TERMINAL:
 }
 
 //Uninitializer of mailbox object.
-VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
+BOOL MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 {
 	__MAIL_BOX*              pMailbox       = (__MAIL_BOX*)pMailboxObj;
 	__KERNEL_THREAD_OBJECT*  pKernelThread  = NULL;
 	unsigned long dwFlags = 0, dwFlags1 = 0;
 
-	if(NULL == pMailbox)
-	{
-		return;
-	}
+	BUG_ON(NULL == pMailbox);
+
 	/* Verify object signature. */
 	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
 	{
-		return;
+		return FALSE;
 	}
 
 	//Wake up all kernel thread(s) pending on the mail box.
@@ -962,6 +958,7 @@ VOID MailboxUninitialize(__COMMON_OBJECT* pMailboxObj)
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pMailbox->lpGettingQueue);
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pMailbox->lpSendingQueue);
 	KMemFree(pMailbox->pMessageArray,KMEM_SIZE_TYPE_ANY,0);
+	return TRUE;
 }
 
 /****************************************************************************************
@@ -1332,7 +1329,7 @@ __TERMINAL:
 }
 
 /* Uninitializer of Condition object. */
-VOID ConditionUninitialize(__COMMON_OBJECT* pCondObj)
+BOOL ConditionUninitialize(__COMMON_OBJECT* pCondObj)
 {
 	__CONDITION* pCond = (__CONDITION*)pCondObj;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
@@ -1343,7 +1340,7 @@ VOID ConditionUninitialize(__COMMON_OBJECT* pCondObj)
 	//Check if the specified condition object is a valid kernel thread.
 	if(KERNEL_OBJECT_SIGNATURE != pCond->dwObjectSignature)
 	{
-		return;
+		return FALSE;
 	}
 
 	//Wakeup all pending kernel thread(s) if there is(are).
@@ -1368,5 +1365,5 @@ VOID ConditionUninitialize(__COMMON_OBJECT* pCondObj)
 
 	//Destroy the pending queue object.
 	ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pCond->lpPendingQueue);
-	return;
+	return TRUE;
 }

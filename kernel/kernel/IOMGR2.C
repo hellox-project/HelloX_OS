@@ -14,12 +14,8 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "stdio.h"
-#include "kapi.h"
 
 //Only Device Driver Framework is enabled the following code will be included
 //in OS kernel.
@@ -159,14 +155,11 @@ BOOL DrcbInitialize(__COMMON_OBJECT*  lpThis)
 //
 //The Uninitialize of DRCB.
 //
-VOID DrcbUninitialize(__COMMON_OBJECT*  lpThis)
+BOOL DrcbUninitialize(__COMMON_OBJECT*  lpThis)
 {
 	__DRCB*           lpDrcb            = NULL;
 
-	if(NULL == lpThis)
-	{
-		return;
-	}
+	BUG_ON(NULL == lpThis);
 
 	lpDrcb = (__DRCB*)lpThis;
 
@@ -174,7 +167,7 @@ VOID DrcbUninitialize(__COMMON_OBJECT*  lpThis)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)(lpDrcb->lpSynObject));
 	}
-	return;
+	return TRUE;
 }
 
 //
@@ -198,9 +191,9 @@ BOOL DrvObjInitialize(__COMMON_OBJECT*  lpThis)
 //
 //The implementation of driver object's Uninitialize routine.
 //
-VOID DrvObjUninitialize(__COMMON_OBJECT* lpThis)
+BOOL DrvObjUninitialize(__COMMON_OBJECT* lpThis)
 {
-	return;
+	return TRUE;
 }
 
 /* Initialize a device object. */
@@ -231,10 +224,9 @@ BOOL DevObjInitialize(__COMMON_OBJECT* lpThis)
 //
 //Device object's Uninitialize routine.
 //
-
-VOID DevObjUninitialize(__COMMON_OBJECT* lpThis)
+BOOL DevObjUninitialize(__COMMON_OBJECT* lpThis)
 {
-	return;
+	return TRUE;
 }
 
 //A helper macro to check if the specified value is a letter.

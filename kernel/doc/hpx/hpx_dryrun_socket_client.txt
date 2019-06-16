@@ -1,0 +1,17 @@
+客户端基于socket的编程过程：
+1. 采用BSD style socket API访问HPX协议栈，调用socket函数创建socket，各参数：domain：AF_HPX，type：SOCK_STREAM/SOCK_DGRAM之一，与SOCK_CLIENT/SOCK_SERVER之一的组合，protocol：PROTOCOL_HPX。这些参数都需要在socket.h头文件中定义。这里对type参数做了一些扩展，增加了client和server两个选项，用于创建socket的时候，就告诉HPX，这个socket是提供服务的（SOCK_SERVER），还是请求服务的（SOCK_CLIENT）；
+2. 在SOCK_CLIENT指定的情况下，socket函数执行成功后，会初始化一个SCB（Session Control Block），SCB里面会把连接的类型（CONNECTIONLESS，CONNECTION-ORIENTED等）标记清楚，生成一个session ID字段填写到SCB里面，同时把SCB所属的process/thread ID等信息填写到SCB里面。同时这个SCB的状态标注为INITIALIZED；当前的实现，socket直接返回一个整数，这个整数是由SCB的地址转换过去的； 
+3. 然后再调用bind函数，与一个具体的HPX地址绑定。这个绑定的目的，是当发送HPX报文时，用绑定的地址作为源地址。bind函数的各个参数分别为：
+    1）sockfd：就是socket函数返回的整数；
+    2）addr：重新定义一个新的sockaddr_inhpx的结构体，各个字段的含义为：sin_family：AF_HPX，sin_port：设置为0，sin_addr：是一个struct hpx_addr，这个结构体包含了HPX address，HPX domain address，以及HPX university domain address；
+    3）addrlen：就是结构体sockaddr_inhpx的长度。
+4. bind函数会检查试图绑定的HPX地址，是否在endpoint的任何一个接口上。如果没有任何一个接口配置试图绑定的HPX地址，则直接返回失败。如果找到一个匹配的HPX地址，则会更新SCB表项，把service ID，HPX地址（包括domina address），等等信息填写到SCB中，并返回成功。当然，bind函数在执行这些操作之前，首先检查各个参数的合法性；
+5. 然后客户端调用connect函数，试图与服务器端连接。这时候HPX协议栈会给server端发送一个service request请求，在这个请求中包含了service ID等信息。这时候会同步更新SCB，把server端的HPX address/HPX domain，service ID等信息写入SCB中。在发送service request请求的时候，会用SCB里面的session ID，填充HPX报文头的session ID。connect函数会等待server的响应，如果正确收到server的响应（service request头中的result为SUCCESS），则返回成功值，否则返回失败。如果超时未收到响应，也会返回失败。connect函数的参数如下：
+    1）sockfd：调用socket返回的值；
+    2）*addr：一个sockaddr_inhpx结构体指针，这个结构体包含了server端的HPX address/domain，service ID等信息；
+    3）addrlen：sockaddr_inhpx结构体的长度。
+6. 如果connect返回失败，则意味着服务器不提供对应服务，或者网络超时。HPX协议只发一次service request，因此如果因为网络丢包原因，再次尝试connect操作，就有可能成功。因此，在因为timeout原因导致connect失败时，client应用可以再次尝试connect调用；
+7. 如果connect返回成功，则应用程序就可以用read/write函数调用来访问数据了；
+8. read/write函数调用就比较直接了，用socket作为第一个参数，存储数据的缓冲区指针作为第二个参数，第三个参数是缓冲区长度（指针，可能被修改），最后一个参数flags，当前HPX协议不涉及。如果SCB的数据缓冲区内有数据等待读取，则直接读取缓冲区内的数据，然后返回（即使缓冲区内的数据比请求的数据长度小，也会返回，长度值会被修正为读取的长度）。如果没有数据pending，则读取线程会阻塞到这个SCB上，直到有数据到达。数据到达时，先填充到SCB的缓冲区中，然后唤醒等待读取的线程。对于write来说，动作与read类似。所有这些判断，都是在一个原子操作内进行的；
+9. 在HPX协议栈内部，当接收到一个HPX报文时，根据报文头部信息（HPX地址，session ID等）查找SCB表格，如果找到一个对应的SCB表项，则把HPX报文数据拷贝到数据缓冲区中，然后唤醒等待读取的线程，如果有的话。如果缓冲区满了，则报文直接丢弃。需要说明的是，报文不是按字节入缓冲区的，而是按照整个报文大小。在数据缓冲区太小无法容纳整个报文的情况下，整个报文会被丢弃，一点数据也不会向缓冲区内拷贝。在链接类型是CONNECTIONLESS的情况下，下一个ACK客户端的序列号，会是刚刚接收的报文的序列号。如果是CONNECTION ORIENTED类型的SCB，则下一个ACK客户端的序列号，是丢弃报文之前的序列号，这样便于client重发被丢弃的报文。不论接收还是丢弃报文，SCB里面对应的序列号都会根据情况更新；
+10. 完成通信任务之后，应用线程会调用close函数关闭socket。这时候需要根据SCB的状态进行处理了。如果SCB的状态是CLOSE_HALF，即已经收到来自server的关闭请求（HPX报文的序列号是全1），则直接destroy掉这个SCB。如果SCB的状态是正常的（COMPLETED），则设置该SCB的状态为CLOSE_HALF，同时向server发送一个关闭请求（一个普通HPX报文，序列号是全1）。在收到来自server的关闭请求之后，该SCB会被销毁。如果因为丢包或者BUG等原因，无法收到server的关闭请求，那么在一定时间（2小时）之后，HPX的background线程也会销毁这个SCB。

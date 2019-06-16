@@ -176,16 +176,14 @@ static BOOL ScanUsbKeyboard()
 	pPhyDev = USBManager.GetUsbDevice(&id, NULL);
 	if (NULL == pPhyDev)
 	{
+		_hx_printf("No usb keyboard found.\r\n");
 		goto __TERMINAL;
 	}
 
 	//Make farther check according HID spec.
 	pUsbDev = (struct usb_device*)pPhyDev->lpPrivateInfo;
-	if (NULL == pUsbDev)
-	{
-		BUG();
-		goto __TERMINAL;
-	}
+	BUG_ON(NULL == pUsbDev);
+
 	pUsbInt = &pUsbDev->config.if_desc[pPhyDev->dwNumber & 0xFFFF];
 	if (pUsbInt->desc.bNumEndpoints != 1)
 	{

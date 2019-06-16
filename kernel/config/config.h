@@ -28,8 +28,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.83"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.830(Beta),build in 2018/10/01,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.85"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.850(Beta),initiated in 2018/10/24,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
@@ -70,7 +70,7 @@
 
 /* Maximal logical CPU supported in case of SMP. */
 #if defined(__CFG_SYS_SMP)
-#define MAX_CPU_NUM 16
+#define MAX_CPU_NUM 64
 #endif //__CFG_SYS_SMP
 
 //************************************************************************
@@ -114,6 +114,9 @@
 
 //Include virtual memory management functions in OS.
 #define __CFG_SYS_VMM
+
+/* Enable or disable process mechanism in system. */
+#define __CFG_SYS_PROCESS
 
 //Enable or disable interrupt nest.It should be disabled under x86 platform,
 //and maybe enabled on ARM platform.
@@ -160,7 +163,7 @@
 //************************************************************************
 
 //Include IDE driver in OS.
-//#define __CFG_DRV_IDE
+#define __CFG_DRV_IDE
 
 //Include COM driver in OS.
 #define __CFG_DRV_COM
@@ -238,7 +241,7 @@
 //#define __CFG_NET_RTL8111
 
 //Include E1000 driver in OS.
-//#define __CFG_NET_E1000
+#define __CFG_NET_E1000
 
 //Include IPv6 network protocol in OS.
 //#define __CFG_NET_IPv6

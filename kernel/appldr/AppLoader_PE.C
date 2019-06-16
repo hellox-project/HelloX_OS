@@ -12,10 +12,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-#include "kapi.h"
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -37,7 +34,6 @@
 #define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
 #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
 #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
-
 
 #define IMAGE_REL_BASED_HIGHLOW               3
 
@@ -83,7 +79,6 @@ typedef struct _IMAGE_FILE_HEADER
 	WORD    SizeOfOptionalHeader;
 	WORD    Characteristics;
 } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
-
 
 typedef struct _IMAGE_DATA_DIRECTORY
 {
@@ -146,7 +141,6 @@ typedef struct _IMAGE_OPTIONAL_HEADER
 	IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
 } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 
-
 typedef struct _IMAGE_NT_HEADERS
 {
 	DWORD Signature;
@@ -176,20 +170,17 @@ typedef struct _IMAGE_SECTION_HEADER
 	DWORD   Characteristics;
 } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
 
-
-// code data  relocate
+/* Relocate code. */
 static BOOL CodeReLocate(DWORD dwNewImageBase, DWORD dwRelocBlockVa, DWORD dwOldImageBase)
 {
-	PIMAGE_BASE_RELOCATION  pRelocBlock = NULL;
-	LPBYTE                  pRunBuffer = (LPBYTE)dwNewImageBase;
-	WORD*                   pRelocData = NULL;
-	INT                     nRelocNum = 0;
-	INT                     i = 0;
+	PIMAGE_BASE_RELOCATION pRelocBlock = NULL;
+	LPBYTE pRunBuffer = (LPBYTE)dwNewImageBase;
+	WORD* pRelocData = NULL;
+	int nRelocNum = 0, i = 0;
 
 	//_hx_printf("ImageBase = 0x%X,NewImageBase= 0x%X RelocBlock VA = 0x%X\r\n",dwOldImageBase,dwNewImageBase,dwRelocBlockVa);
 
 	pRelocBlock = (PIMAGE_BASE_RELOCATION)(pRunBuffer + dwRelocBlockVa);
-
 	while (TRUE)
 	{
 		nRelocNum = (pRelocBlock->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / 2;
@@ -197,8 +188,8 @@ static BOOL CodeReLocate(DWORD dwNewImageBase, DWORD dwRelocBlockVa, DWORD dwOld
 		pRelocData = (WORD*)((LPBYTE)pRelocBlock + sizeof(IMAGE_BASE_RELOCATION));
 		for (i = 0; i<nRelocNum; i++)
 		{
-			DWORD*   pRelocAddress = NULL;
-			WORD     nPageOff = 0;
+			DWORD* pRelocAddress = NULL;
+			WORD nPageOff = 0;
 
 			if (((*pRelocData) >> 12) == IMAGE_REL_BASED_HIGHLOW)
 			{
@@ -213,15 +204,15 @@ static BOOL CodeReLocate(DWORD dwNewImageBase, DWORD dwRelocBlockVa, DWORD dwOld
 			else
 			{
 				/* 
-				 * Show a warning since we don't process other relocation type,but 
+				 * Show a warning and give up since we cann't process other relocation type,but 
 				 * the type of 0 is skiped since it's only the pad of relacation table,
 				 * to make sure the whole size of the table is align with double word
 				 * boundary.
 				 */
 				if ((*pRelocData) >> 12)
 				{
-					_hx_printf("%s:Unknown relocate type[%d].\r\n", __FUNCTION__,
-						(*pRelocData) >> 12);
+					_hx_printf("%s:Unknown relocate type[%d].\r\n", __FUNCTION__, (*pRelocData) >> 12);
+					return FALSE;
 				}
 			}
 			pRelocData++;
@@ -404,7 +395,11 @@ LPBYTE LoadAppToMemory_PE(HANDLE hFileObj)
 				ImageOptionalHeader->ImageBase,
 				(DWORD)pRunBuffer);*/
 			/* Relocate the code. */
-			CodeReLocate((DWORD)pRunBuffer, dwRelocBlockVa, ImageOptionalHeader->ImageBase);
+			if (!CodeReLocate((DWORD)pRunBuffer, dwRelocBlockVa, ImageOptionalHeader->ImageBase))
+			{
+				/* Failed to relocate the binary,just give up. */
+				goto __TERMINAL;
+			}
 		}
 	}
 	

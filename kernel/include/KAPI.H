@@ -1,7 +1,7 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : Nov,02 2006
-//    Module Name               : KAPI.H
+//    Module Name               : kapi.h
 //    Module Funciton           : 
 //                                Declares all kernel API functions that can be
 //                                used by other modules in kernel or application
@@ -18,9 +18,7 @@
 #ifndef __KAPI_H__
 #define __KAPI_H__
 
-#ifndef __TYPES_H__
 #include "types.h"
-#endif
 
 #ifndef __CONFIG_H__
 #include "../config/config.h"
@@ -94,13 +92,8 @@
 #endif
 #endif
 
-#ifndef __IOMGR_H__
 #include "iomgr.h"
-#endif
-
-#ifndef __DEBUG_H__
-#include "../include/debug.h"
-#endif
+#include "DEVMGR.H"
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,6 +135,9 @@ BOOL GetMessage(MSG* lpMsg);
 //Send a message to a specified thread.
 BOOL SendMessage(HANDLE hThread,MSG* lpMsg);
 
+/* Get message from queue without blocking if no message present. */
+BOOL PeekMessage(MSG* lpMsg);
+
 //Enable or disable suspend on a kernel thread.
 //Enable the suspending operation on the specified thread
 //if bEnable is TRUE,disable it if FALSE.
@@ -155,6 +151,12 @@ BOOL ResumeKernelThread(HANDLE hThread);
 
 //Sleep a period specified by dwMillionSecond.
 BOOL Sleep(DWORD dwMillionSecond);
+
+/* Get a CPU(processor) to schedule a kernel thread to. */
+unsigned int GetScheduleCPU();
+
+/* Change a specified kernel thread's CPU affinity. */
+unsigned int ChangeAffinity(HANDLE hThread, unsigned int nAffinity);
 
 //Set a timer object.
 HANDLE SetTimer(DWORD dwTimerID,
@@ -198,11 +200,41 @@ VOID DestroyMutex(HANDLE hMutex);
 //thread(s) waiting for this object.
 DWORD ReleaseMutex(HANDLE hEvent);
 
+/* Create a new mailbox object. */
+HANDLE CreateMailbox(int size);
+
+/* Destroy a mailbox object. */
+VOID DestroyMailbox(HANDLE hMailbox);
+
+/* Send a mail to mailbox. */
+DWORD SendMail(HANDLE hMailbox, LPVOID pMsg, DWORD dwPriority, DWORD dwWaitTime, DWORD* pdwWaited);
+
+/* Get mail from mailbox. */
+DWORD GetMail(HANDLE hMailbox, LPVOID* ppMsg, DWORD dwWaitTime, DWORD* pdwWaited);
+
+/* Create semaphore object. */
+HANDLE CreateSemaphore(int max_count,int curr_count);
+
+/* 
+ * Release a semaphore object,i.e,increase it's counter and 
+ * activate one kernel thread who is waiting for the semaphore
+ * object if there is(are). 
+ * Previous counter will be returned.
+ */
+int ReleaseSemaphore(HANDLE hSem);
+
+/* Release the semaphore object. */
+VOID DestroySemaphore(HANDLE hSem);
+
 //Wait a synchronizing object,such as event,mutex,kernel thread,...
 DWORD WaitForThisObject(HANDLE hObject);
 
-//Can specify a timeout value when wait a synchronizing object.
-DWORD WaitForThisObjectEx(HANDLE hObject,DWORD dwMillionSecond);
+/* 
+ * Can specify a timeout value when wait a synchronizing object.
+ * The actually wait time will be returned in case of wait sucess,if pdwWaited
+ * is specified.
+ */
+DWORD WaitForThisObjectEx(HANDLE hObject,DWORD dwMillionSecond,DWORD* pdwWaited);
 
 //Create a CONDITION object.
 HANDLE CreateCondition(DWORD condAttr);
@@ -225,18 +257,18 @@ VOID DestroyCondition(HANDLE hCond);
 //Bind interrupt handler and vector together,so that the handler can be
 //called when the specified interrupt is raised.
 HANDLE ConnectInterrupt(__INTERRUPT_HANDLER lpInterruptHandler,
-						LPVOID              lpHandlerParam,
-						UCHAR               ucVector);
+	LPVOID lpHandlerParam,
+	UCHAR ucVector);
 
 //Can the binding between interrupt handler and it's vector.
 VOID DisconnectInterrupt(HANDLE hInterrupt);
 
 //Allocate a memory region in system or application's memory space.
 LPVOID VirtualAlloc(LPVOID lpDesiredAddr,
-					DWORD  dwSize,
-					DWORD  dwAllocateFlags,
-					DWORD  dwAccessFlags,
-					UCHAR* lpszRegName);
+	DWORD  dwSize,
+	DWORD  dwAllocateFlags,
+	DWORD  dwAccessFlags,
+	UCHAR* lpszRegName);
 
 //Release the memory region allocated by VirtualAlloc.
 VOID VirtualFree(LPVOID lpVirtualAddr);
@@ -331,22 +363,24 @@ LPVOID KMemAlloc(DWORD dwSize,DWORD dwSizeType);
 //Release the memory allocated by KMemAlloc.
 VOID KMemFree(LPVOID lpMemAddr,DWORD dwSizeType,DWORD dwMemLength);
 
+/* Return system tick counter since boot. */
+unsigned long GetClockTickCounter();
+
+/* 
+ * Get a device from system,the device is identified 
+ * by ID parameter. 
+ * The first matched device will be returned if pPrev is set
+ * to NULL.Other matched devices following pPrev will be returned
+ * if pPrev is set.
+ */
+__PHYSICAL_DEVICE* GetDevice(__IDENTIFIER* id, __PHYSICAL_DEVICE* pPrev);
+
 //------------------------------------------------------------------------
 HANDLE CreateRingBuff(DWORD dwBuffLength);
 BOOL GetRingBuffElement(HANDLE hRb,DWORD* lpdwElement,DWORD dwMillionSecond);
 BOOL AddRingBuffElement(HANDLE hRb,DWORD dwElement);
 BOOL SetRingBuffLength(HANDLE hRb,DWORD dwNewLength);
 VOID DestroyRingBuff(HANDLE hRb);
-
-//*********************************
-// For log service
-//Author :	Erwin
-//Email  :	erwin.wang@qq.com
-//Date	 :  9th June, 2014
-//********************************
-void Log(char *tag, char *msg);
-void Logk(char *tag, char *msg);
-
 
 #ifdef __cplusplus
 }

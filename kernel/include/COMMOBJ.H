@@ -1,7 +1,7 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : Sep,03 2004
-//    Module Name               : commobj.cpp
+//    Module Name               : commobj.h
 //    Module Function           : 
 //                                This module countains common object definition
 //                                and macros.
@@ -16,39 +16,47 @@
 #ifndef __COMMOBJ_H__
 #define __COMMOBJ_H__
 
-
 #include "types.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-//Root object for all system level objects.
+/* 
+ * Ancester object for all kernel objects. 
+ * Any kernel object is inherit from this object,
+ * it's contains some common attributes apply
+ * to all kernel objects.
+ */
 typedef struct tag__COMMON_OBJECT{
-	DWORD              dwObjectType;         //Object type.
-	DWORD              dwObjectID;           //Object ID.
-	DWORD              dwObjectSize;         //This object's size.
-	struct tag__COMMON_OBJECT*   lpPrevObject;         //Point to previous object.
-	struct tag__COMMON_OBJECT*   lpNextObject;         //Point to next object.
-	struct tag__COMMON_OBJECT*   lpObjectOwner;        //This object's owner.
-	//__COMMON_OBJECT*   lpLeft;               //Used in the future,AVL tree's left branch.
-	//__COMMON_OBJECT*   lpRight;              //Used in the ruture,AVL tree's right branch.
-	BOOL               (*Initialize)(struct tag__COMMON_OBJECT*); //Object's initialize routine.
-	VOID               (*Uninitialize)(struct tag__COMMON_OBJECT*);
+	DWORD dwObjectType;
+	DWORD dwObjectID;
+	DWORD dwObjectSize;
+	/* Refer counter of this object. */
+	__ATOMIC_T refCount;
+	/* Points to previous one in object list. */
+	struct tag__COMMON_OBJECT* lpPrevObject;
+	/* Points to next one in object list. */
+	struct tag__COMMON_OBJECT* lpNextObject;
+	/* This object's owner object,maybe thread,process,... */
+	struct tag__COMMON_OBJECT* lpObjectOwner;
+
+	/* Initialization routine of the object,like constructor in C++. */
+	BOOL (*Initialize)(struct tag__COMMON_OBJECT*);
+	/* Destructor routine. */
+	BOOL (*Uninitialize)(struct tag__COMMON_OBJECT*);
 } __COMMON_OBJECT;
 
-
-//
-//The following macro is used to implementation inherit.
-//
+/*
+ * Simulates inherit mechanism in C++, inherits all
+ * attributes of common object by using this macro.
+ */
 #define INHERIT_FROM_COMMON_OBJECT \
 	DWORD              dwObjectType;        \
 	DWORD              dwObjectID;          \
 	DWORD              dwObjectSize;        \
+	__ATOMIC_T         refCount;            \
 	__COMMON_OBJECT*   lpPrevObject;        \
 	__COMMON_OBJECT*   lpNextObject;        \
 	__COMMON_OBJECT*   lpObjectOwner;       \
 	BOOL               (*Initialize)(__COMMON_OBJECT*);    \
-	VOID               (*Uninitialize)(__COMMON_OBJECT*);  
+	BOOL               (*Uninitialize)(__COMMON_OBJECT*);  
 
 //
 //Begin to define a object type,i.e,a class.
@@ -71,14 +79,19 @@ typedef struct tag__COMMON_OBJECT{
 #define DECLARE_PREDEFINED_OBJECT(objname) \
 	struct objname;
 
-//
-//The following object is used to create object by object manager.
-//
+/* 
+ * Describes kernel object's attributes that are 
+ * used by Object Manager,when create kernel object.
+ * Each kernel object corresponding to one entry,in
+ * a global array defined in objmgr.c file.
+ * Object Manager will create kernel object by using
+ * these attributes.
+ */
 BEGIN_DEFINE_OBJECT(__OBJECT_INIT_DATA)
-	DWORD               dwObjectType;
-	DWORD               dwObjectSize;
-	BOOL                (*Initialize)(__COMMON_OBJECT*);
-	VOID                (*Uninitialize)(__COMMON_OBJECT*);
+	DWORD dwObjectType;
+	DWORD dwObjectSize;
+	BOOL (*Initialize)(__COMMON_OBJECT*);
+	BOOL (*Uninitialize)(__COMMON_OBJECT*);
 END_DEFINE_OBJECT(__OBJECT_INIT_DATA)
 
 //
@@ -91,7 +104,6 @@ END_DEFINE_OBJECT(__OBJECT_INIT_DATA)
 // init    :  Initialization routine.
 // uninit  :  Uninitialization routine.
 //
-
 #define BEGIN_DECLARE_INIT_DATA(name)            \
 	static __OBJECT_INIT_DATA name[] = \
 	{
@@ -103,51 +115,56 @@ END_DEFINE_OBJECT(__OBJECT_INIT_DATA)
 	{0,0,0,0}                   \
 	};
 
-
-//
-//The following object is used by Object Manager to manage objects.
-//
-
+/* 
+ * Header element of kernel object list. 
+ * Each kernel object created by Object Manager is
+ * linked into it's list,according to it's type.
+ */
 BEGIN_DEFINE_OBJECT(__OBJECT_LIST_HEADER)
-    DWORD              dwObjectNum;
-    DWORD              dwMaxObjectID;
-	__COMMON_OBJECT*   lpFirstObject;
+    DWORD dwObjectNum;
+    DWORD dwMaxObjectID;
+	__COMMON_OBJECT* lpFirstObject;
 END_DEFINE_OBJECT(__OBJECT_LIST_HEADER)
 
+/* Kernel object type's maximal value. */
+#define MAX_KERNEL_OBJECT_TYPE 64
 
-//
-//The following object are Object Manager.
-//
-
-#define MAX_OBJECT_TYPE    64         //The maximal types in this version.
-
+/* Object Manager. */
 BEGIN_DEFINE_OBJECT(__OBJECT_MANAGER)
     DWORD dwCurrentObjectID;
 #if defined(__CFG_SYS_SMP)
 	__SPIN_LOCK spin_lock;
 #endif
-	__OBJECT_LIST_HEADER ObjectListHeader[MAX_OBJECT_TYPE];
+	/* 
+	 * Kernel object's list array,each type of kernel object 
+	 * corresponding one entry of this array,indexed by it's
+	 * object type value.
+	 */
+	__OBJECT_LIST_HEADER ObjectListHeader[MAX_KERNEL_OBJECT_TYPE];
+
+	/* Initializer of object manager. */
+	BOOL (*Initialize)(struct tag__OBJECT_MANAGER*);
+	/* Create a new object. */
 	__COMMON_OBJECT* (*CreateObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*,DWORD);
+	/* Get an object by specifying it's type and ID. */
+	__COMMON_OBJECT* (*GetObject)(struct tag__OBJECT_MANAGER*, unsigned long type, unsigned long _id);
+	/* Get an object by specifying it's ID. */
 	__COMMON_OBJECT* (*GetObjectByID)(struct tag__OBJECT_MANAGER*,DWORD);
+	/* Get the specified type's object list header. */
 	__COMMON_OBJECT* (*GetFirstObjectByType)(struct tag__OBJECT_MANAGER*,DWORD);
-	VOID (*DestroyObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*);
+	/* Destroy one kernel object. */
+	BOOL (*DestroyObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*);
+	/* Increase kernel object's reference counter. */
+	BOOL (*AddRefCount)(struct tag__OBJECT_MANAGER*, __COMMON_OBJECT*);
 END_DEFINE_OBJECT(__OBJECT_MANAGER)
 
-//
-//************************************************************************
-//************************************************************************
-//************************************************************************
-//The declare of ObjectManager,the first global object of Hello China!
-//
-
+/* 
+ * Object Manager object,all kernel objects are 
+ * managed by this one. 
+ */
 extern __OBJECT_MANAGER ObjectManager;
 
-
-//
-//The following are object types's definition.
-//For each object in this system,it must have a type value assocated with it.
-//
-
+/* Kernel objects HelloX has defined up to now. */
 #define OBJECT_TYPE_DRIVER                  0x00000001
 #define OBJECT_TYPE_FILE                    0x00000002
 #define OBJECT_TYPE_VOLUME                  0x00000003
@@ -177,11 +194,10 @@ extern __OBJECT_MANAGER ObjectManager;
 #define OBJECT_TYPE_RING_BUFFER             0x0000001B
 #define OBJECT_TYPE_CONDITION               0x0000001C
 
-// Please define your object type here,and increment the type value.
-//The maximal object type value should not exceed 63.
+/*
+ * Please define your object type here,and increment 
+ * the type value.
+ * The maximal object type value should not exceed 63.
+ */
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif //End of commobj.h
+#endif //__COMMOBJ_H__

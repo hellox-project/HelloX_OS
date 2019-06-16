@@ -1,0 +1,46 @@
+HPX = HelloX Packet eXchange.
+Main objectives:
+1. Security,for Industry and military,interstellar connection,...;
+2. Mobility,end station running HPX can move freely with established connection;
+3. Interstellar connection, connect globe in university in future;
+4. QoS measurable, packet delay,drop,jitter can be measured in any node of whole path;
+5. Simplicity, combine SSL,IPSec,LAN authentication,...together;omit transport layer,...
+6. High performance, support multiple core machines, paralling process,...
+7. Coordinate with IP make a better Internet;
+8. Application friendly, use BSD style socket as API,but the HPX is much thin than TCP/IP suite...
+9. Can fit to any transport protocol,such as Ethernet,WiFi,Cellular mobile communications,Blue tooth,...
+
+Common Header structure:
+All HPX packets must have one and only one common header,and must be the first header.
+ver+hdr_len+total_len+mode+next_hdr_type, 32 bits;
+    ver: 3bits
+    hdr_len: 8bits in unit of 4;
+    total_len: 14 bits in unit of 4;
+    1 bits free;
+    mode: 1bit, 0 = regular mode, 1 = secured mode;
+    session type(ST) bit, 1bit, 0 = CONNECTIONLESS session,1 = CONNECTION SESSION;
+    next_hdr_type: 4bits, total 15 kind of header,0 means no next header;
+source HPX endpoint address(SHA), 64 bits;
+source HPX domain address(SHDA), 64 bits, optional, present if highest bit of SHA is 1;
+source HPX university address(SHUA), 64 bits, optional, present if highest bit of SHDA is 1;
+dest HPX endpoint address(DHA), 64 bits;
+dest HPX domain address(DHDA), 64 bits, optional, present if highest bit of DHA is 1;
+dest HPX university address(DHUA), 64 bits, optional, present if highest bit of DHDA is 1;
+session_ID, 32 bits, could bind with process ID and used as input validation;
+seq_no, 32 bits, increment when a packet is sent out, all 1s denotes the last packet of the session;
+ack_seq_no, 32 bits, acknowledges the peer's seq_no;
+next header if present, 32 bits at least;
+payload, 256K at most;
+check sum, 16bits, include all header(s) and payload;
+So the common header's length varies from 42 ~ 74 bytes, and can be shrink to 34 bytes if HPX address is 32 bits.
+
+Header types:
+type 1: mobility header,the original common header is moved into this header when endpoint moves to other domain,the roaming domain's information will be used to construct the new common header;
+type 2: authentication header, only available when secured mode is enabled;the whole packet without the authentication key cleared will be digisted using SHA or MD5, then fill in the authentication key domain. The reception will check the key and drop the packet if failed to pass validation;the digest key is the key used when first joining;both part of the communication will be authenticated by this same header,...
+type 3: encryption header, used to encrypt the whole packet...;
+type 4: protocol control header, obtain HPX address, find gateway and secondary gateway, detect the status of gateway, broadcast information from gateway,launch reachable detecting(ping), etc;
+type 5: service request header, created by session's initiator and tells the destination that what kind of service that initiator wants;
+
+Modes:
+Regular mode, all endpoints can communicate with each other, traffic outside the local domain steered to gateway;authentication and encryption can be adopted even in regular mode;
+Secured mode: authentication must be enabled, endpoints can not communicate with each other without the centralized gateway;endpoint's HPX address is assigned by gateway...the secondary gateway will be designated by the default gateway and broadcast to all members in local domain;

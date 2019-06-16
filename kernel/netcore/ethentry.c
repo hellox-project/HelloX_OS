@@ -16,9 +16,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include <StdAfx.h>
 #include <stdio.h>
-
 #include "ethmgr.h"
 
 #ifdef __STM32__
@@ -34,15 +32,16 @@
 #endif //__STM32__
 
 #ifdef __CFG_NET_PCNET  //PCNet controller is enabled.
-#include "x86/pcnet.h"
+#include "drivers/pcnet.h"
 #endif
 
 #ifdef __CFG_NET_RTL8111 //Realtek 8111/8168 NIC
-#include "x86/rtl8111.h"
+#include "drivers/rtl8111.h"
 #endif
 
 #ifdef __CFG_NET_E1000   //Intel e1000 NIC.
-#include "x86/e1000_d.h"
+#include "drivers/e1000_d.h"
+#include "drivers/e1000e.h"
 #endif
 
 __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] = 
@@ -64,7 +63,8 @@ __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] =
 #endif
 
 #ifdef __CFG_NET_E1000
-	{ E1000_Drv_Initialize, NULL },
+	//{ E1000_Drv_Initialize, NULL },
+	{ E1000E_Drv_Initialize, NULL },
 #endif
 
   //Please add your ethernet driver's entry here.

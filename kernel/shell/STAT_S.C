@@ -18,8 +18,8 @@
 #include "stdio.h"
 #include "stat_s.h"
 
-__KERNEL_THREAD_OBJECT*  lpStatKernelThread = NULL;  //Used to save statistics kernel
-                                                     //thread's object.
+/* Kernel thread that to do statistics of system. */
+__KERNEL_THREAD_OBJECT*  lpStatKernelThread = NULL;
 
 //Print out memory usage information.
 static VOID ShowMemInfo()
@@ -95,14 +95,14 @@ static VOID ShowDevList()
 //
 static VOID ShowStatInfo()
 {
-	__THREAD_STAT_OBJECT* lpStatObj = &StatCpuObject.IdleThreadStatObj;
+	__THREAD_STAT_OBJECT* lpStatObj = StatCpuObject.StatObjHdr.lpNext;
 	CHAR Buff[256];
 
 	/* Show out table header. */
 #if defined(__CFG_SYS_SMP)
 	ChangeLine();
 	GotoHome();
-	PrintLine("  Thread Name  cpu/st/tag  Mem used   1s usage  60s usage  5m usage  Msg r/d");
+	PrintLine("  Thread Name  cpu/st/tag  Mem used   1s usage  60s usage  threadid  Msg r/d");
 	PrintLine("-------------  ----------  ---------  --------  ---------  --------  -------");
 #else
 	ChangeLine();
@@ -111,13 +111,13 @@ static VOID ShowStatInfo()
 	PrintLine("-------------  ------  ---------  --------  ---------  --------  -------");
 #endif
 	/* Print out statistics information for each kernel thread. */
-	do{
+	while(lpStatObj != &StatCpuObject.StatObjHdr){
 #if defined(__CFG_SYS_SMP)
-		_hx_sprintf(Buff,"%13s       %d/%d/%X  %9d  %6d.%d  %7d.%d  %6d.%d  %d/%d",
+		_hx_sprintf(Buff,"%13s       %d/%d/%X  %9d  %6d.%d  %7d.%d  %8d  %d/%d",
 			lpStatObj->lpKernelThread->KernelThreadName,
 			lpStatObj->lpKernelThread->cpuAffinity,
 #else
-		_hx_sprintf(Buff,"%13s       %d/%X  %9d  %6d.%d  %7d.%d  %6d.%d  %d/%d",
+		_hx_sprintf(Buff,"%13s       %d/%X  %9d  %6d.%d  %7d.%d  %8d  %d/%d",
 			lpStatObj->lpKernelThread->KernelThreadName,
 #endif
 			lpStatObj->lpKernelThread->dwThreadStatus,
@@ -127,27 +127,28 @@ static VOID ShowStatInfo()
 			lpStatObj->wCurrPeriodRatio % 10,
 			lpStatObj->wOneMinuteRatio  / 10,
 			lpStatObj->wOneMinuteRatio  % 10,
-			lpStatObj->wMaxStatRatio    / 10,
-			lpStatObj->wMaxStatRatio    % 10,
+			//lpStatObj->wMaxStatRatio    / 10,
+			//lpStatObj->wMaxStatRatio    % 10,
+			lpStatObj->lpKernelThread->dwThreadID,
 			lpStatObj->lpKernelThread->nMsgReceived,
 			lpStatObj->lpKernelThread->nMsgDroped
 			);
 		PrintLine(Buff);
 
 		lpStatObj = lpStatObj->lpNext;
-	}while(lpStatObj != &StatCpuObject.IdleThreadStatObj);
+	};
 }
 
 /* Show out kernel thread's context information if enabled. */
 #if defined(__SYSDIAG_TRACE_STACK)
 static void ShowStackTrace()
 {
-	__THREAD_STAT_OBJECT* lpStatObj = &StatCpuObject.IdleThreadStatObj;
+	__THREAD_STAT_OBJECT* lpStatObj = StatCpuObject.StatObjHdr.lpNext;
 
 	//Print table header.
 	_hx_printf("  Kernel thread's stack:\r\n");
 	/* Show out each kernel thread's stack context. */
-	do{
+	while(lpStatObj != &StatCpuObject.StatObjHdr){
 		_hx_printf("    name:%s, stk/base:0x%0X/0x%0X[size:%d], eip:0x%0X\r\n",
 #define __STAT_THREAD_MEMBER(x) (lpStatObj->lpKernelThread)->x
 			__STAT_THREAD_MEMBER(KernelThreadName),
@@ -158,7 +159,7 @@ static void ShowStackTrace()
 			);
 #undef __STAT_THREAD_MEMBER
 		lpStatObj = lpStatObj->lpNext;
-	} while (lpStatObj != &StatCpuObject.IdleThreadStatObj);
+	};
 }
 #endif
 

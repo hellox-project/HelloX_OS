@@ -15,12 +15,10 @@
 
 #include "StdAfx.h"
 #include "modmgr.h"
-#include "kapi.h"
 #include "string.h"
 #include "types.h"
 #include "commobj.h"
 #include "stdio.h"
-#include "kapi.h"
 #include "process.h"
 
 //Implementation of InitModule routine.

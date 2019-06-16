@@ -79,7 +79,10 @@
 #define IP_FORWARD           1
 
 //Maximal fragmented IP packet.
-#define IP_REASS_MAX_PBUFS   64
+#define IP_REASS_MAX_PBUFS   256
+
+/* Maximal ARP table entry size. */
+#define ARP_TABLE_SIZE       64
 
 //Change the default value(3) to larger number,since DHCP is enabled.
 #define MEMP_NUM_SYS_TIMEOUT 8

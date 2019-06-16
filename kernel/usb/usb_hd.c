@@ -396,7 +396,6 @@ static int InitPartitions(int nHdNum,
 		}
 
 		//Create device object for this partition.
-		//strcpy(strDevName,PARTITION_NAME_BASE);  // -------- CAUTION !!! ---------
 		StrCpy(PARTITION_NAME_BASE, strDevName);
 		__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 		strDevName[StrLen(PARTITION_NAME_BASE) - 1] += (BYTE)IOManager.dwPartitionNumber;

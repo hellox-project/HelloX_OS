@@ -33,32 +33,29 @@
 
 //Structures to manage COM interface,one for each and it will
 //be the device extension part of COM device object.
-typedef struct{
-         CHAR*             pComName;   //COM interface's name.
-//#ifdef __I386__
-         WORD              wBasePort;  //IO port base address.
-         BYTE              IntVector;  //Interrupt vector number.
-//#else
-//#endif
-         LPVOID            hInterrupt; //Handle of this device's interrupt object.
-         int               nOpenCount;     //How many times the interface is opened.
-         __DRCB*           pReadingList;   //DRCB list for reading.
-         __DRCB*           pReadingListTail; //Reading list's tail,to simply operation of DRCB list.
-         __DRCB*           pWrittingList;  //DRCB list for writting.
-         __DRCB*           pWrittingListTail; //Witting list's tail.
-         __DRCB*           pCurrWritting;  //The DRCB that is in writting process.
-         volatile int      nReadingPtr;    //Reading buffer's current position.
-         CHAR*             pReadingPtr;    //Reading buffer's pointer.
-         volatile int      nReadingSize;   //How many bytes to read.
+typedef struct {
+	CHAR*             pComName;   //COM interface's name.
+	WORD              wBasePort;  //IO port base address.
+	BYTE              IntVector;  //Interrupt vector number.
+	LPVOID            hInterrupt; //Handle of this device's interrupt object.
+	int               nOpenCount;     //How many times the interface is opened.
+	__DRCB*           pReadingList;   //DRCB list for reading.
+	__DRCB*           pReadingListTail; //Reading list's tail,to simply operation of DRCB list.
+	__DRCB*           pWrittingList;  //DRCB list for writting.
+	__DRCB*           pWrittingListTail; //Witting list's tail.
+	__DRCB*           pCurrWritting;  //The DRCB that is in writting process.
+	volatile int      nReadingPtr;    //Reading buffer's current position.
+	CHAR*             pReadingPtr;    //Reading buffer's pointer.
+	volatile int      nReadingSize;   //How many bytes to read.
 
-         volatile int      nWrittingPtr;   //Writting buffer's current position.
-         CHAR*             pWrittingPtr;   //Writting buffer's pointer.
-         volatile int      nWrittingSize;  //How many bytes to write.
+	volatile int      nWrittingPtr;   //Writting buffer's current position.
+	CHAR*             pWrittingPtr;   //Writting buffer's pointer.
+	volatile int      nWrittingSize;  //How many bytes to write.
 
-         //COM interface's data buffer and it's pointer.
-         CHAR              Buffer[COM_BUFF_LENGTH];
-         volatile int      nBuffHeader;
-         volatile int      nBuffTail;
+	//COM interface's data buffer and it's pointer.
+	CHAR              Buffer[COM_BUFF_LENGTH];
+	volatile int      nBuffHeader;
+	volatile int      nBuffTail;
 }__COM_CONTROL_BLOCK;
 
 //A macro used to add extra COM/USART/UART device into COM device array.
@@ -89,7 +86,7 @@ typedef struct{
 //platforms.
 //A helper macro to enable writting buffer empty interrupt.
 #ifdef __I386__
-#define EnableWBInt(base)  __outb(0x0F,base + 1)
+#define EnableWBInt(base)  __outb(0x03,base + 1)
 #else
 #define EnableWBInt(base)
 #endif
@@ -101,23 +98,23 @@ typedef struct{
 #define DisableWBInt(base)
 #endif
 
-//Send out a byte.
+/* Send out a byte. */
 #ifdef __I386__
 #define COMSendByte(bt,base) __outb(bt,base)
 #else
 #define COMSendByte(bt,base)
 #endif
 
-//Receive a byte from COM interface.
+/* Receive a byte from COM interface. */
 #ifdef __I386__
 #define COMRecvByte(base) __inb(base)
 #else
 #define COMRecvByte(base) base
 #endif
- 
-//Entry point of COM device driver,all COM interfaces,include
-//COM1 and COM2 and others,will use the only driver entry routine.
+
+/*
+ * Entry point of serial port device driver.
+ */
 BOOL COMDrvEntry(__DRIVER_OBJECT* lpDriverObject);
 
 #endif //__COM_H__
-

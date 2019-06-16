@@ -77,7 +77,7 @@ static BOOL ObtainOwnership(__PHYSICAL_DEVICE* pDev, struct ehci_hccr* hccr, str
 }
 
 static BOOL ehci_pci_common_init(__PHYSICAL_DEVICE* pdev, struct ehci_hccr **ret_hccr,
-struct ehci_hcor **ret_hcor)
+	struct ehci_hcor **ret_hcor)
 {
 	struct ehci_hccr *hccr = NULL;
 	struct ehci_hcor *hcor = NULL;
@@ -146,9 +146,9 @@ struct ehci_hcor **ret_hcor)
 	*ret_hccr = hccr;
 	*ret_hcor = hcor;
 
-	/* Enable busmaster */
+	/* Enable busmaster and memory access. */
 	cmd = pdev->ReadDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, 4);
-	cmd |= 0x04;
+	cmd |= (PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 	pdev->WriteDeviceConfig(pdev, PCI_CONFIG_OFFSET_COMMAND, cmd, 4);
 
 	//Acquire ownership from BIOS.

@@ -10,6 +10,7 @@
  *
  */
 
+#include <KAPI.H>
 #include <stdio.h>
 
 #include "lwip/opt.h"
@@ -73,7 +74,7 @@ static struct raw_pcb *ping_pcb;
 
 /** Prepare a echo ICMP request */
 static void
-ping_prepare_echo( struct icmp_echo_hdr *iecho, u16_t len)
+ping_prepare_echo(struct icmp_echo_hdr *iecho, u16_t len)
 {
   size_t i;
   size_t data_len = len - sizeof(struct icmp_echo_hdr);
@@ -134,8 +135,7 @@ ping_send(int s, ip_addr_t *addr,int size)
   return (err ? ERR_OK : ERR_VAL);
 }
 
-static void
-ping_recv(int s)
+static void ping_recv(int s)
 {
   char*     buf            = NULL;
   int       fromlen, len;
@@ -165,8 +165,8 @@ ping_recv(int s)
       iecho = (struct icmp_echo_hdr *)(buf + (IPH_HL(iphdr) * 4));
       if (((iecho->id == PING_ID) && (iecho->seqno == htons(ping_seq_num)) && iecho->type == ICMP_ER))
 	  {
-		  len = len - sizeof(struct ip_hdr) - sizeof(struct icmp_echo_hdr);  //Adjust received data's length,since it
-		                                                                     //includes IP and ICMP headers.
+		  /* Adjust received data's length,since it includes IP and ICMP headers. */
+		  len = len - sizeof(struct ip_hdr) - sizeof(struct icmp_echo_hdr);
 		  _hx_printf("  [%d] Reply from %s,size = %d,time = %d(ms)\r\n",ping_pkt_seq,inet_ntoa(fromaddr),len,ms);
 		  ping_succ ++;
 		  bResult = TRUE;
@@ -192,16 +192,18 @@ ping_recv(int s)
 //Entry point of ping application.
 void ping_Entry(void *arg)
 {
-  int s;
-  int timeout = PING_RCV_TIMEO;
-  __PING_PARAM* pParam = (__PING_PARAM*)arg;
-
-  ping_pkt_seq = 0;  //Reset ping sequence number.
+	int s;
+	int timeout = PING_RCV_TIMEO;
+	__PING_PARAM* pParam = (__PING_PARAM*)arg;
+	MSG msg;
+	
+	/* Reset ping sequence number. */
+	ping_pkt_seq = 0;
 	ping_succ    = 0;
 
   if((s = lwip_socket(AF_INET, SOCK_RAW, IP_PROTO_ICMP)) < 0)
   {
-		PrintLine("  ping : Create raw socket failed,quit.");
+	_hx_printf("  ping : Create raw socket failed,quit.\r\n");
     return;
   }
 
@@ -209,31 +211,43 @@ void ping_Entry(void *arg)
   _hx_printf("\r\n  Ping %s with %d bytes packet:\r\n",inet_ntoa(pParam->targetAddr),pParam->size);
   while (1)
   {
-	//ping_target = PING_TARGET; //ping gw
-	//IP4_ADDR(&ping_target, 127,0,0,1); //ping loopback.
-	if (ping_send(s, &pParam->targetAddr,pParam->size) == ERR_OK)
-	{
-		//printf(" ping_Entry : Send out packet,addr = %s,size = %d\r\n",inet_ntoa(pParam->targetAddr),pParam->size);
-		ping_time = sys_now();
-		ping_recv(s);
-		ping_pkt_seq ++;
-	}
-	else
-	{
-		_hx_printf("ping : Send out packet failed.");
-	}
+	  /* Check if user want to exit. */
+	  if (PeekMessage(&msg))
+	  {
+		  if (KERNEL_MESSAGE_TERMINAL == msg.wCommand)
+		  {
+			  /* Should exit. */
+			  goto __TERMINAL;
+		  }
+	  }
 
-	//Try the specified times.
-	pParam->count --;
-	if(0 == pParam->count)
-	{
-	 break;
-	}
+	  if (ping_send(s, &pParam->targetAddr,pParam->size) == ERR_OK)
+	  {
+		  //printf(" ping_Entry : Send out packet,addr = %s,size = %d\r\n",inet_ntoa(pParam->targetAddr),pParam->size);
+		  ping_time = sys_now();
+		  ping_recv(s);
+		  ping_pkt_seq ++;
+	  }
+	  else
+	  {
+		  _hx_printf("ping : Send out packet failed.");
+	  }
+	  
+	  //Try the specified times.
+	  pParam->count --;
+	  if(0 == pParam->count)
+	  {
+		  break;
+	  }
   }
-  //Show ping statistics.
-  _hx_printf("\r\n");
-  _hx_printf("  ping statistics: total send = %d,received = %d,%d loss.\r\n",
-  ping_pkt_seq,ping_succ,(ping_pkt_seq - ping_succ));
-  //Close socket.
-  lwip_close(s);
+
+__TERMINAL:
+	//Show ping statistics.
+	_hx_printf("\r\n");
+	_hx_printf("  ping statistics: total send = %d,received = %d,%d loss.\r\n",
+		ping_pkt_seq,
+		ping_succ,
+		(ping_pkt_seq - ping_succ));
+	//Close socket.
+	lwip_close(s);
 }

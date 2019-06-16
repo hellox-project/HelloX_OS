@@ -55,7 +55,7 @@
 #include <lwip/dhcp.h>
 
 /* buffer size for receive DHCP packet */
-#define BUFSZ               1024
+#define BUFSZ 1024
 
 /* 
  * List head of DHCP allocations,each IP address that assigned
@@ -666,7 +666,7 @@ static void dhcp_server_start(char* netif_name)
 
 	if (NULL == netif_name)
 	{
-		_hx_printf("Please specify the netif that DHCP Server will run.\r\n");
+		_hx_printf("Please specify an interface name.\r\n");
 		goto __TERMINAL;
 	}
 
@@ -692,6 +692,13 @@ static void dhcp_server_start(char* netif_name)
 		}
 	}
 
+	/* Check if the DHCP server already enabled on this if. */
+	if (netif->flags & NETIF_FLAG_DHCPSERVER)
+	{
+		_hx_printf("DHCP server already enabled on this interface.\r\n");
+		goto __TERMINAL;
+	}
+
 	/* Config IP addr on the specified interface,as gateway of client. */
 	addr.addr = DHCPD_SERVER_IPADDR0;
 	addr.addr <<= 8;
@@ -708,33 +715,41 @@ static void dhcp_server_start(char* netif_name)
 	mask.addr += 255;
 	gw.addr = addr.addr; /* Use interface IP addr as gw. */
 	netif_set_down(netif);
+	/* Disable dhcp function on this if. */
+	dhcp_stop(netif);
+	/* Configure IP addr and gw. */
 	netif_set_addr(netif, &addr, &mask, &gw);
 	netif_set_up(netif);
+	/* Set the DHCP server flag of this interface. */
+	netif->flags |= NETIF_FLAG_DHCPSERVER;
 
-	/* Start the DHCP server thread now. */
-	unsigned int nAffinity = 0;
-	pDhcpThread = KernelThreadManager.CreateKernelThread(
-		(__COMMON_OBJECT*)&KernelThreadManager,
-		0,
-		KERNEL_THREAD_STATUS_SUSPENDED,
-		PRIORITY_LEVEL_NORMAL,
-		dhcpd_thread_entry,
-		netif,
-		NULL,
-		DHCP_SERVER_NAME);
+	/* Start the DHCP server thread now,if it is not started yet. */
 	if (NULL == pDhcpThread)
 	{
-		_hx_printk("Failed to start DHCP task.\r\n");
-		goto __TERMINAL;
-	}
+		unsigned int nAffinity = 0;
+		pDhcpThread = KernelThreadManager.CreateKernelThread(
+			(__COMMON_OBJECT*)&KernelThreadManager,
+			0,
+			KERNEL_THREAD_STATUS_SUSPENDED,
+			PRIORITY_LEVEL_NORMAL,
+			dhcpd_thread_entry,
+			netif,
+			NULL,
+			DHCP_SERVER_NAME);
+		if (NULL == pDhcpThread)
+		{
+			_hx_printk("Failed to start DHCP task.\r\n");
+			goto __TERMINAL;
+		}
 #if defined(__CFG_SYS_SMP)
-	/* Get a CPU to schedule DHCP server thread to. */
-	nAffinity = ProcessorManager.GetScheduleCPU();
+		/* Get a CPU to schedule DHCP server thread to. */
+		nAffinity = ProcessorManager.GetScheduleCPU();
 #endif
-	KernelThreadManager.ChangeAffinity((__COMMON_OBJECT*)pDhcpThread, nAffinity);
-	/* Resume the kernel thread to ready to run. */
-	KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
-		(__COMMON_OBJECT*)pDhcpThread);
+		KernelThreadManager.ChangeAffinity((__COMMON_OBJECT*)pDhcpThread, nAffinity);
+		/* Resume the kernel thread to ready to run. */
+		KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+			(__COMMON_OBJECT*)pDhcpThread);
+	}
 
 __TERMINAL:
 	return;

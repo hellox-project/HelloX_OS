@@ -41,6 +41,9 @@
 #ifdef __CFG_NET_NAT
 #include "nat/nat.h"
 #endif
+#ifdef __CFG_NET_DPI
+#include "dpi/dpimgr.h"
+#endif
 
 #define  NETWORK_PROMPT_STR   "[network_view]"
 
@@ -59,16 +62,25 @@ static DWORD showdbg(__CMD_PARA_OBJ*);    //Display ethernet related debugging i
 static DWORD assoc(__CMD_PARA_OBJ*);      //Associate to a specified WiFi SSID.
 static DWORD scan(__CMD_PARA_OBJ*);       //Rescan the WiFi networks.
 static DWORD setif(__CMD_PARA_OBJ*);      //Set a given interface's configurations.
+
+/* DHCP Server control command. */
 #ifdef __CFG_NET_DHCP_SERVER
-static DWORD dhcpd(__CMD_PARA_OBJ*);      //DHCP Server control command.
+static DWORD dhcpd(__CMD_PARA_OBJ*);
 #endif
 
-#ifdef __CFG_NET_PPPOE                    //PPPoE control command.
+/* PPPoE control command. */
+#ifdef __CFG_NET_PPPOE
 static DWORD pppoe(__CMD_PARA_OBJ*);
 #endif
 
-#ifdef __CFG_NET_NAT                      //NAT control command.
+/* NAT control command. */
+#ifdef __CFG_NET_NAT
 static DWORD nat(__CMD_PARA_OBJ*);
+#endif
+
+/* DPI control command. */
+#ifdef __CFG_NET_DPI
+static DWORD dpi(__CMD_PARA_OBJ*);
 #endif
 
 //
@@ -96,6 +108,9 @@ static struct __FDISK_CMD_MAP{
 #endif
 #ifdef __CFG_NET_NAT
 	{ "nat",        nat,       "  nat      : NAT control commands." },
+#endif
+#ifdef __CFG_NET_DPI
+	{ "dpi",        dpi,       "  dpi      : DPI function control commands."},
 #endif
 	{ "help",       help,      "  help     : Print out this screen." },
 	{ "exit",       _exit,     "  exit     : Exit the application." },
@@ -284,25 +299,25 @@ static DWORD ping(__CMD_PARA_OBJ* lpCmdObj)
 	return dwRetVal;
 }
 
-//setif command's implementation.
+/* Change network interface's configuration. */
 static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 {
-	DWORD                   dwRetVal   = SHELL_CMD_PARSER_FAILED;
-	__ETH_IP_CONFIG*        pifConfig  = NULL;
-	BYTE                    index      = 1;
-	char*                   errmsg     = "  Error: Invalid parameter(s).\r\n";
-	BOOL                    bAddrOK    = FALSE;
-	BOOL                    bMaskOK    = FALSE;
+	DWORD dwRetVal = SHELL_CMD_PARSER_FAILED;
+	__ETH_IP_CONFIG* pifConfig = NULL;
+	char index = 1;
+	char* errmsg = "  Error: Invalid parameter(s).\r\n";
+	BOOL bAddrOK = FALSE, bMaskOK = FALSE;
 
-	//Allocate a association information object,to contain user specified associating info.
-	//This object will be destroyed by ethernet thread.
+	/*
+	 * Allocate a association information object,
+	 * to contain user specified associating info.
+	 * This object will be destroyed by ethernet thread.
+	 */
 	pifConfig = (__ETH_IP_CONFIG*)KMemAlloc(sizeof(__ETH_IP_CONFIG),KMEM_SIZE_TYPE_ANY);
 	if(NULL == pifConfig)
 	{
 		goto __TERMINAL;
 	}
-	
-	//Initialize to default value.
 	memset(pifConfig,0,sizeof(__ETH_IP_CONFIG));
 	
 	if(lpCmdObj->byParameterNum <= 1)
@@ -310,10 +325,10 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 		goto __TERMINAL;
 	}
 
-	//Parse command line.
+	/* Parse command line. */
 	while(index < lpCmdObj->byParameterNum)
 	{		
-		if(strcmp(lpCmdObj->Parameter[index],"/d") == 0) //Key of association.
+		if(strcmp(lpCmdObj->Parameter[index],"/d") == 0)
 		{
 			index ++;
 			if(index >= lpCmdObj->byParameterNum)
@@ -321,20 +336,24 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 				_hx_printf(errmsg);
 				goto __TERMINAL;
 			}
-			if(strcmp(lpCmdObj->Parameter[index],"enable") == 0)  //Enable DHCP functions.
+			if(strcmp(lpCmdObj->Parameter[index],"enable") == 0)
 			{
+				/* Enable DHCP functions. */
 				pifConfig->dwDHCPFlags = ETH_DHCPFLAGS_ENABLE;
 			}
-			else if(strcmp(lpCmdObj->Parameter[index],"disable") == 0) //Disable DHCP functions.
+			else if(strcmp(lpCmdObj->Parameter[index],"disable") == 0)
 			{
+				/* Disable DHCP functions. */
 				pifConfig->dwDHCPFlags = ETH_DHCPFLAGS_DISABLE;
 			}
-			else if(strcmp(lpCmdObj->Parameter[index],"restart") == 0) //Restart DHCP.
+			else if(strcmp(lpCmdObj->Parameter[index],"restart") == 0)
 			{
+				/* Restart DHCP. */
 				pifConfig->dwDHCPFlags = ETH_DHCPFLAGS_RESTART;
 			}
-			else if(strcmp(lpCmdObj->Parameter[index],"release") == 0) //Release DHCP configurations.
+			else if(strcmp(lpCmdObj->Parameter[index],"release") == 0)
 			{
+				/* Release DHCP configurations. */
 				pifConfig->dwDHCPFlags = ETH_DHCPFLAGS_RELEASE;
 			}
 			else
@@ -343,8 +362,9 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 				goto __TERMINAL;
 			}
 		}
-		else if(strcmp(lpCmdObj->Parameter[index],"/a") == 0) //Set IP address.
+		else if(strcmp(lpCmdObj->Parameter[index],"/a") == 0)
 		{
+			/* Set IP address. */
 			index ++;
 			if(index >= lpCmdObj->byParameterNum)
 			{
@@ -355,8 +375,9 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 			pifConfig->ipaddr.AddressType = NETWORK_ADDRESS_TYPE_IPV4;
 			bAddrOK = TRUE;
 		}		
-		else if(strcmp(lpCmdObj->Parameter[index],"/m") == 0) //Set IP subnet mask.
+		else if(strcmp(lpCmdObj->Parameter[index],"/m") == 0)
 		{
+			/* Set IP subnet mask. */
 			index ++;
 			if(index >= lpCmdObj->byParameterNum)
 			{
@@ -367,8 +388,9 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 			pifConfig->mask.AddressType = NETWORK_ADDRESS_TYPE_IPV4;
 			bMaskOK = TRUE;
 		}
-		else if(strcmp(lpCmdObj->Parameter[index],"/g") == 0) //Set default gateway.
+		else if(strcmp(lpCmdObj->Parameter[index],"/g") == 0)
 		{
+			/* Set default gateway. */
 			index ++;
 			if(index >= lpCmdObj->byParameterNum)
 			{
@@ -378,43 +400,47 @@ static DWORD setif(__CMD_PARA_OBJ* lpCmdObj)
 			pifConfig->defgw.Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
 			pifConfig->defgw.AddressType = NETWORK_ADDRESS_TYPE_IPV4;
 		}
-		else  //Default parameter as interface's name.
+		else
 		{
-			if(strlen(lpCmdObj->Parameter[index]) < 2)  //Invalid interface name.
+			if(strlen(lpCmdObj->Parameter[index]) < 2)
 			{
+				/* Invalid interface name. */
 				_hx_printf(errmsg);
 				goto __TERMINAL;
 			}
-			//pifConfig->ifName[0] = lpCmdObj->Parameter[index][0];
-			//pifConfig->ifName[1] = lpCmdObj->Parameter[index][1];
 			strcpy(pifConfig->ethName,lpCmdObj->Parameter[index]);
 		}
 		index ++;
 	}
 	
-	//If IP address and mask are all specified correctly,then assume the DHCP
-	//functions will be disabled.
+	/*
+	 * If IP address and mask are all specified 
+	 * correctly,then assume the DHCP client
+	 * functions on this interface should be disabled.
+	 */
 	if(bAddrOK && bMaskOK)
 	{
 		pifConfig->dwDHCPFlags = ETH_DHCPFLAGS_DISABLE;
 	}
 	
-	//If only specify one parameter without another,it's an error.
+	/* Only one parameter specified,it's an error. */
 	if((bAddrOK && !bMaskOK) || (!bAddrOK & bMaskOK))
 	{
 		_hx_printf(errmsg);
 		goto __TERMINAL;
 	}
 	
-	//Everything is OK,send a message to EthernetManager to launch the
-	//modification.
+	/* 
+	 * Everything is OK,send a message to EthernetManager 
+	 * to carry out the modification.
+	 */
 	pifConfig->protoType = NETWORK_PROTOCOL_TYPE_IPV4;
 	EthernetManager.ConfigInterface(pifConfig->ethName,pifConfig);
 	
 	dwRetVal = SHELL_CMD_PARSER_SUCCESS;
 	
 __TERMINAL:
-	if(pifConfig)  //Should release the config object.
+	if(pifConfig)
 	{
 		KMemFree(pifConfig,KMEM_SIZE_TYPE_ANY,0);
 	}
@@ -490,9 +516,23 @@ __TERMINAL:
 //showint command,display statistics information of ethernet interface.
 static DWORD showint(__CMD_PARA_OBJ* lpCmdObj)
 {
-	//Just send a message to ethernet main thread.
-	EthernetManager.ShowInt(NULL);
-	
+	char if_name[MAX_ETH_NAME_LEN];
+
+	if (lpCmdObj->byParameterNum < 2) /* No interface name specified. */
+	{
+		//Just send a message to ethernet main thread.
+		EthernetManager.ShowInt(NULL);
+	}
+	else /* Interface name specified. */
+	{
+		strncpy(if_name, lpCmdObj->Parameter[1], sizeof(if_name));
+		if (strlen(if_name) < 2)
+		{
+			_hx_printf("Invalid interface name.\r\n");
+			return NET_CMD_SUCCESS;
+		}
+		EthernetManager.ShowInt(if_name);
+	}
 	return NET_CMD_SUCCESS;
 }
 
@@ -917,11 +957,12 @@ static void testPPPoE(int times)
 }
 
 /* Default password and user name,to simplify testing. */
-#define PPPOE_DEFAULT_USERNAME "053202039989"
-#define PPPOE_DEFAULT_PASSWORD "60767168"
+#define PPPOE_DEFAULT_USERNAME_QD "053202039989"
+#define PPPOE_DEFAULT_PASSWORD_QD "60767168"
 
-//#define PPPOE_DEFAULT_USERNAME "dl3111504b"
-//#define PPPOE_DEFAULT_PASSWORD "123"
+/* Default password and user name,to simplify testing. */
+#define PPPOE_DEFAULT_USERNAME "01012187137"
+#define PPPOE_DEFAULT_PASSWORD "858137"
 
 static DWORD pppoe(__CMD_PARA_OBJ* lpCmdObj)
 {
@@ -1094,6 +1135,14 @@ __TERMINAL:
 }
 #endif
 
+/* Sub command of NAT/DPI... */
+typedef enum {
+	enable = 0,
+	disable,
+	list,
+	stat,
+}__SUB_CMD;
+
 /* NAT control command. */
 #ifdef __CFG_NET_NAT
 
@@ -1141,20 +1190,12 @@ static void ShowNatEntry(__EASY_NAT_ENTRY* pEntry)
 		pEntry->match_times);
 }
 
-/* Sub command of NAT. */
-typedef enum{
-	enable = 0,
-	disable,
-	list,
-	stat,
-}__NAT_SUB_CMD;
-
 static DWORD nat(__CMD_PARA_OBJ* lpCmdObj)
 {
 	__CMD_PARA_OBJ* pCurCmdObj = lpCmdObj;
 	int index = 1;
 	char if_name[MAX_ETH_NAME_LEN];
-	__NAT_SUB_CMD sub_cmd;
+	__SUB_CMD sub_cmd;
 	BOOL bEnable = FALSE;
 	size_t ss_num = 0;
 
@@ -1251,3 +1292,90 @@ __TERMINAL:
 }
 
 #endif  //__CFG_NET_NAT.
+
+/* DPI function command. */
+#if defined(__CFG_NET_DPI)
+
+/* DPI usage. */
+static void dpiUsage(char* sub_cmd)
+{
+	_hx_printf("Usage:\r\n");
+	_hx_printf("  dpi enable [int_name]\r\n");
+	_hx_printf("  dpi disable [int_name]\r\n");
+	_hx_printf("  dpi stat\r\n");
+}
+
+static DWORD dpi(__CMD_PARA_OBJ* lpCmdObj)
+{
+	__CMD_PARA_OBJ* pCurCmdObj = lpCmdObj;
+	int index = 1;
+	char if_name[MAX_ETH_NAME_LEN];
+	__SUB_CMD sub_cmd;
+	BOOL bEnable = FALSE;
+	size_t ss_num = 0;
+
+	BUG_ON(NULL == pCurCmdObj);
+
+	if (pCurCmdObj->byParameterNum <= 1)
+	{
+		dpiUsage(NULL);
+		goto __TERMINAL;
+	}
+
+	while (index < lpCmdObj->byParameterNum)
+	{
+		if (strcmp(pCurCmdObj->Parameter[index], "enable") == 0)
+		{
+			/* Obtain interface name. */
+			index++;
+			if (index >= lpCmdObj->byParameterNum)
+			{
+				natUsage(pCurCmdObj->Parameter[1]);
+				goto __TERMINAL;
+			}
+			strncpy(if_name, pCurCmdObj->Parameter[index], sizeof(if_name));
+			sub_cmd = enable;
+			bEnable = TRUE;
+		}
+		else if (strcmp(pCurCmdObj->Parameter[index], "disable") == 0)
+		{
+			index++;
+			if (index >= lpCmdObj->byParameterNum)
+			{
+				natUsage(pCurCmdObj->Parameter[1]);
+				goto __TERMINAL;
+			}
+			strncpy(if_name, pCurCmdObj->Parameter[index], sizeof(if_name));
+			sub_cmd = disable;
+			bEnable = FALSE;
+		}
+		else
+		{
+			dpiUsage(NULL);
+			goto __TERMINAL;
+		}
+		index++;
+	}
+
+	/* Enable or disable NAT on interface. */
+	if ((sub_cmd == enable) || (sub_cmd == disable))
+	{
+		if (DPIManager.dpiEnable(if_name, bEnable))
+		{
+			_hx_printf("Set DPI flag on interface[%s] OK.\r\n", if_name);
+		}
+		else
+		{
+			_hx_printf("Set DPI flag on interface[%s] failed.\r\n", if_name);
+		}
+	}
+	else if (sub_cmd == stat)
+	{
+		/* Show DPI statistics information. */
+	}
+
+__TERMINAL:
+	return NET_CMD_SUCCESS;
+}
+
+#endif //__CFG_NET_DPI

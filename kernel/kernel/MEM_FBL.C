@@ -573,23 +573,14 @@ __TERMINAL:
 	return bResult;
 }
 
-//Initialization oepration of buffer manager.
-//It's initializes a given buffer manager and creates free memory regions according
-//SystemMemRegion array residing in mem_scat.c file.
-//So the global array SystemMemRegion should be decared first.
-
-#ifdef __GCC__
-__MEMORY_REGION SystemMemRegion[] = {
-	//{Start address of memory region,memory region's length}
-	{(LPVOID)KMEM_ANYSIZE_START_ADDRESS,0x00100000},  //1M memory,start from KMEM_ANYSIZE_START_ADDRESS
-	{(LPVOID)(KMEM_ANYSIZE_START_ADDRESS + 0x00100000),0x00100000},
-	{(LPVOID)(KMEM_ANYSIZE_START_ADDRESS + 0x00200000),0x00100000},
-	{(LPVOID)(KMEM_ANYSIZE_START_ADDRESS + 0x00300000),0x00100000},
-	//Please add more memory regions here.
-	//The last entry must be NULL and zero,to indicate the end of this array.
-	{NULL,0}
-};
-#endif
+/*
+ * Initialization routine of buffer manager.
+ * It's initializes a given buffer manager and initializes
+ * it's free block list according a array named
+ * SystemMemRegion,RAM memories available for any size
+ * buffer are recorded in it.
+ * SystemMemRegion array resides in mem_scat.c file.
+  */
 extern __MEMORY_REGION SystemMemRegion[];
 
 static BOOL Initialize(__BUFFER_CONTROL_BLOCK* pControlBlock)

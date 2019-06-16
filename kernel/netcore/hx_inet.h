@@ -18,6 +18,9 @@
 #ifndef __HX_INET_H__
 #define __HX_INET_H__
 
+/* For __xx types. */
+#include <TYPES.H>
+
 //Host order to network order.
 __u32 _hx_htonl(__u32 n);
 __u16 _hx_htons(__u16 n);

@@ -151,7 +151,7 @@ typedef struct tag__DRCB{
 //Initialize routine and Uninitialize routine's definition.
 //
 BOOL DrcbInitialize(__COMMON_OBJECT*);
-VOID DrcbUninitialize(__COMMON_OBJECT*);
+BOOL DrcbUninitialize(__COMMON_OBJECT*);
 
 //
 //DRCB status definition.
@@ -276,7 +276,7 @@ typedef struct tag__DRIVER_OBJECT{
 //Initialize routine and Uninitialize routine's definition.
 //
 BOOL DrvObjInitialize(__COMMON_OBJECT*);
-VOID DrvObjUninitialize(__COMMON_OBJECT*);
+BOOL DrvObjUninitialize(__COMMON_OBJECT*);
 
 //
 //The definition of __DEVICE_OBJECT.
@@ -317,7 +317,7 @@ typedef struct tag__DEVICE_OBJECT{
 //Initialize routine and Uninitialize routine's definition.
 //
 BOOL DevObjInitialize(__COMMON_OBJECT*);
-VOID DevObjUninitialize(__COMMON_OBJECT*);
+BOOL DevObjUninitialize(__COMMON_OBJECT*);
 
 //
 //Device type definition.

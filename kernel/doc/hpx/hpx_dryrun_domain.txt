@@ -1,0 +1,3 @@
+HPX协议支持domain的概念，类似IP协议中的VRF。不同domain之间的HPX地址可以重复，不同domain之间严格隔离，HPX报文不能直接打破domain边界进行交换。
+domain的主要目的是安全的考虑。结合CPU本身的地址空间保护，HelloX操作系统的存储沙盒机制，以及网络domain的概念，可以在一台计算机上模拟出若干个严格隔离的运行环境，每个运行环境供不同的应用使用。
+当然，domain也可以被多个process共享。这些process的地址空间严格隔离，但是可以绑定在相同的domain中。

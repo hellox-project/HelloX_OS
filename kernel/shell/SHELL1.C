@@ -4,8 +4,6 @@
 //    Module Name               : shell1.cpp
 //    Module Funciton           : 
 //                                This module countains shell procedures.
-//                                Some functions in shell.cpp originally are moved to this file to reduce the
-//                                shell.cpp's size.
 //    Last modified Author      :tywind
 //    Last modified Date        :Aug 25,2015
 //    Last modified Content     :modify loadapp and gui route 
@@ -14,21 +12,25 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "StdAfx.h"
-#include "kapi.h"
-#include "shell.h"
-#include "string.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "../appldr/AppLoader.h"
+#include <StdAfx.h>
+#include <KAPI.H>
+#include <mlayout.h>
+#include <pmdesc.h>
+#include <process.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
+#include "shell.h"
+#include "../appldr/AppLoader.h"
 
 //Handler of version command.
 DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	PrintLine(HELLOX_VERSION_INFO);
-	PrintLine(HELLOX_SLOGAN_INFO);
-	PrintLine(HELLOX_SPECIAL_INFO);
+	_hx_printf("%s\r\n", HELLOX_VERSION_INFO);
+	_hx_printf("Build date:%s,time:%s\r\n", __DATE__, __TIME__);
+	_hx_printf("%s\r\n", HELLOX_SLOGAN_INFO);
+	//_hx_printf("%s\r\n", HELLOX_SPECIAL_INFO);
 	_hx_printf("Default k_thread stack sz: %d\r\n", DEFAULT_STACK_SIZE);
 	return S_OK;
 }
@@ -36,9 +38,9 @@ DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
 //Handler for memory,this routine print out the memory layout and memory usage status.
 DWORD  MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	CHAR   buff[256];
-	DWORD  dwFlags;
+	__SYSTEM_MLAYOUT_DESCRIPTOR* pLayout = NULL;
 
+	DWORD  dwFlags;
 	DWORD  dwPoolSize;
 	DWORD  dwFreeSize;
 	DWORD  dwFreeBlocks;
@@ -61,20 +63,44 @@ DWORD  MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	dwFreeTimesH       = AnySizeBuffer.dwFreeTimesH;
 	__LEAVE_CRITICAL_SECTION_SMP(AnySizeBuffer.spin_lock, dwFlags);
 
-	PrintLine("    Free block list algorithm is adopted:");
-	//Get and dump out memory usage status.
-	_hx_sprintf(buff,"    Total memory size     : %d(0x%X)",dwPoolSize,dwPoolSize);
-	PrintLine(buff);
-	_hx_sprintf(buff,"    Free memory size      : %d(0x%X)",dwFreeSize,dwFreeSize);
-	PrintLine(buff);
-	_hx_sprintf(buff,"    Free memory blocks    : %d",dwFreeBlocks);
-	PrintLine(buff);
-	_hx_sprintf(buff,"    Alloc success times   : %d/%d",dwAllocTimesSuccH,dwAllocTimesSuccL);
-	PrintLine(buff);
-	_hx_sprintf(buff,"    Alloc operation times : %d/%d",dwAllocTimesH,dwAllocTimesL);
-	PrintLine(buff);
-	_hx_sprintf(buff,"    Free operation times  : %d/%d",dwFreeTimesH,dwFreeTimesL);
-	PrintLine(buff);
+	/* Show out any size kernel pool's usage info. */
+	_hx_printf("    Any size pool(FBL is adopted):\r\n");
+	_hx_printf("    Total memory size     : %u(0x%X)\r\n",dwPoolSize,dwPoolSize);
+	_hx_printf("    Total used size       : %u(0x%X)\r\n", (dwPoolSize - dwFreeSize), 
+		(dwPoolSize - dwFreeSize));
+	_hx_printf("    Free memory blocks    : %u\r\n",dwFreeBlocks);
+	_hx_printf("    Alloc success times   : %u/%u\r\n",dwAllocTimesSuccH,dwAllocTimesSuccL);
+	_hx_printf("    Alloc operation times : %u/%u\r\n",dwAllocTimesH,dwAllocTimesL);
+	_hx_printf("    Free operation times  : %u/%u\r\n",dwFreeTimesH,dwFreeTimesL);
+
+	/* Show out page frame resource usage info. */
+	_hx_printf("\r\n    Page frame pool(Pagesz is %d):\r\n", PAGE_FRAME_SIZE);
+	_hx_printf("    Total frames:         : %u(0x%X)\r\n",
+		PageFrameManager.dwTotalFrameNum, PageFrameManager.dwTotalFrameNum);
+	_hx_printf("    Free frames:          : %u(0x%X)\r\n",
+		PageFrameManager.dwFreeFrameNum, PageFrameManager.dwFreeFrameNum);
+
+	/* Show system memory layout information. */
+	pLayout = (__SYSTEM_MLAYOUT_DESCRIPTOR*)SYS_MLAYOUT_ADDR;
+	unsigned int count = 200;
+	_hx_printf("\r\n    ------------ system RAM layout ------------ \r\n");
+	while (count)
+	{
+		if ((0 == pLayout->length_lo) && (0 == pLayout->start_addr_lo))
+		{
+			break;
+		}
+		if (pLayout->mem_type == PHYSICAL_MEM_TYPE_RAM)
+		{
+			/* Only show out RAM information. */
+			_hx_printf("    start_addr:0x%08X, length:0x%08X, type:%d\r\n",
+				(uint32_t)pLayout->start_addr_lo,
+				(uint32_t)pLayout->length_lo,
+				pLayout->mem_type);
+		}
+		count--;
+		pLayout++;
+	}
 
 	return S_OK;
 }
@@ -138,8 +164,66 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	return S_OK;
 }
 
+/* 
+ * Load the specified user application and run it. 
+ * The user application runs in user space as process.
+ */
+unsigned long LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
+{
+	__PROCESS_OBJECT* pProcess = NULL;
+
+	/* A module name must be specified. */
+	if (pCmdParaObj->byParameterNum < 2)
+	{
+		_hx_printf("No module specified.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* 
+	 * Make sure the length of module's path and name 
+	 * is not too long. 
+	 * The module's name as process's default name.
+	 */
+	BUG_ON(NULL == pCmdParaObj->Parameter[1]);
+	if (strlen(pCmdParaObj->Parameter[1]) > MAX_FILE_NAME_LEN)
+	{
+		_hx_printf("Name is too long(should < %d).\r\n", MAX_FILE_NAME_LEN);
+		goto __TERMINAL;
+	}
+
+	/* Launch a new process to run the module. */
+	pProcess = ProcessManager.CreateProcess(
+		(__COMMON_OBJECT*)&ProcessManager,
+		0,
+		PRIORITY_LEVEL_NORMAL,
+		NULL,
+		pCmdParaObj,
+		NULL,
+		"Process");
+	if (NULL == pProcess)
+	{
+		_hx_printf("  Failed to launch the application.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+
+	/*
+	 * Set the main thread as focus thread so as
+	 * user input could be directed to this process.
+	 */
+	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
+		(__COMMON_OBJECT*)pProcess->lpMainThread);
+	pProcess->WaitForThisObject((__COMMON_OBJECT*)pProcess);
+	/* Reset focus thread as default. */
+	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
+		NULL);
+	ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager, (__COMMON_OBJECT*)pProcess);
+
+__TERMINAL:
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
 /* Load the specified application into memory and run it. */
-DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
+DWORD __old_LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {	
 	__CMD_PARA_OBJ* pAppParaObj        = NULL;
 	CHAR            FullPathName[128]  = {0};  //Full name of binary file.
@@ -147,7 +231,7 @@ DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 
 	if(pCmdParaObj->byParameterNum < 2)
 	{
-		_hx_printf("Please specify app module's path and name.\r\n");
+		_hx_printf("No module specified.\r\n");
 		goto __TERMINAL;
 	}
 	
@@ -155,7 +239,7 @@ DWORD LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	BUG_ON(NULL == pCmdParaObj->Parameter[1]);
 	if (strlen(pCmdParaObj->Parameter[1]) > 127)
 	{
-		_hx_printf("Module's path and name too long(should < 128).\r\n");
+		_hx_printf("Too long name(should < 128).\r\n");
 		goto __TERMINAL;
 	}
 

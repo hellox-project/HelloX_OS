@@ -24,9 +24,9 @@
 #define SYS_SEM_NULL  NULL
 
 //Redefinition for HelloX's kernel objects,required by lwIP.
-typedef __KERNEL_THREAD_OBJECT*  sys_thread_t;
-typedef DWORD                    sys_prot_t;
-typedef __COMMON_OBJECT*         sys_mbox_t;
-typedef __COMMON_OBJECT*         sys_sem_t;
+typedef HANDLE sys_thread_t;
+typedef HANDLE sys_mbox_t;
+typedef HANDLE sys_sem_t;
+typedef unsigned long sys_prot_t;
 
 #endif /* __ARCH_SYS_ARCH_H__ */

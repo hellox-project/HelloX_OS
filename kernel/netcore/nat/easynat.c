@@ -138,7 +138,7 @@ static void _tcp_check_sum(struct ip_hdr* p, struct pbuf* pb)
 	}
 
 	/* Validate IP packet's total length. */
-	if (ip_len < (iph_len + sizeof(struct tcp_hdr)))
+	if (ip_len < (iph_len + (int)sizeof(struct tcp_hdr)))
 	{
 		return;
 	}
@@ -575,7 +575,7 @@ static BOOL validateTCPChksum(struct ip_hdr* p, struct pbuf* pb)
 	}
 
 	/* Validate the length of this packet. */
-	if (ip_len < (iph_len + sizeof(struct tcp_hdr)))
+	if (ip_len < (iph_len + (int)sizeof(struct tcp_hdr)))
 	{
 		return FALSE;
 	}

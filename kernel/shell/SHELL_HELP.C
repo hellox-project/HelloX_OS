@@ -13,8 +13,8 @@
 //***********************************************************************/
 
 #include "StdAfx.h"
+#include "stdio.h"
 #include "stdlib.h"
-#include "kapi.h"
 #include "string.h"
 #include "shell.h"
 
@@ -59,19 +59,17 @@ VOID ClearUnVisableChar(LPCSTR pszStr)
 	}
 }
 
-//The following function form the command parameter object link from the command
-//line string.
+/* 
+ * The following function construct the command parameter 
+ * object from the command line string.
+ */
 __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 {
-	__CMD_PARA_OBJ*     pObjBuffer    = NULL;  
-	LPSTR               pCmdPos       = (LPSTR)pszCmd;
-	BYTE                byParamPos    = 0;
-	BYTE                byParamNum    = 0;
+	__CMD_PARA_OBJ* pObjBuffer = NULL;
+	LPSTR pCmdPos = (LPSTR)pszCmd;
+	BYTE byParamPos = 0, byParamNum = 0;
 
-	if(NULL == pCmdPos)    //Parameter check.
-	{
-		return NULL;
-	}
+	BUG_ON(NULL == pCmdPos);
 
 	pObjBuffer = (__CMD_PARA_OBJ*)KMemAlloc(sizeof(__CMD_PARA_OBJ),KMEM_SIZE_TYPE_ANY);
 	if(NULL == pObjBuffer)
@@ -87,19 +85,19 @@ __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 			pCmdPos ++;
 			continue; 
 		}    
-				
-		// add papam
+
+		/* Add one parameter into command parameter object. */
 		while((' ' != *pCmdPos) && (*pCmdPos) && (byParamPos <= CMD_PARAMETER_LEN))
 		{
 			if(pObjBuffer->Parameter[byParamNum] == NULL)
 			{
-				pObjBuffer->Parameter[byParamNum] = (CHAR*)KMemAlloc(CMD_PARAMETER_LEN+1,KMEM_SIZE_TYPE_ANY);
-				memzero(pObjBuffer->Parameter[byParamNum],CMD_PARAMETER_LEN+1);
+				pObjBuffer->Parameter[byParamNum] = (CHAR*)KMemAlloc(CMD_PARAMETER_LEN + 1,
+					KMEM_SIZE_TYPE_ANY);
+				memzero(pObjBuffer->Parameter[byParamNum], CMD_PARAMETER_LEN + 1);
 			}
-
 			pObjBuffer->Parameter[byParamNum][byParamPos] = *pCmdPos;
-			pCmdPos   ++;
-			byParamPos ++;
+			pCmdPos++;
+			byParamPos++;
 		}
 
 		byParamNum ++;                                     
@@ -110,7 +108,7 @@ __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 			break;
 		}
 
-		//Skip the no space characters if the parameter's length
+		/* Skip all other characters if it's too long. */
 		while(' ' != *pCmdPos && *pCmdPos)
 		{					
 			pCmdPos ++;          
@@ -118,7 +116,6 @@ __CMD_PARA_OBJ* FormParameterObj(LPCSTR pszCmd)
 	}
 
 	pObjBuffer->byParameterNum  = byParamNum;
-
 	return pObjBuffer;
 }
 
@@ -151,25 +148,24 @@ __CMD_PARA_OBJ* CopyParameterObj(__CMD_PARA_OBJ* lpParamObj,BYTE nStart)
 
 	return pNewParamObj;
 }
-//
-//Releases the parameter object created by FormParameterObj routine.
-//
+
+/*
+ * Releases the parameter object created 
+ * by FormParameterObj routine.
+ */
 VOID ReleaseParameterObj(__CMD_PARA_OBJ* lpParamObj)
 {	
-	BYTE     Index      = 0;
+	int Index = 0;
 
-	if(NULL == lpParamObj)  //Parameter check.
-	{
-		return;
-	}
+	BUG_ON(NULL == lpParamObj);
 
 	for(Index = 0;Index < lpParamObj->byParameterNum;Index ++)
 	{
+		BUG_ON(NULL == lpParamObj->Parameter[Index]);
 		KMemFree((LPVOID)lpParamObj->Parameter[Index],KMEM_SIZE_TYPE_ANY,0);
 	}
 
 	KMemFree((LPVOID)lpParamObj,KMEM_SIZE_TYPE_ANY,0);
-	
 	return;
 }
 
@@ -518,7 +514,7 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 				break;
 			case KERNEL_MESSAGE_TIMER:
 				{
-					PrintLine("Timer message received.");
+					_hx_printf("Timer message received.\r\n");
 				}
 				break;
 			case KERNEL_MESSAGE_TERMINAL: 

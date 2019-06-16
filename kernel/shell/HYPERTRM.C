@@ -319,7 +319,7 @@ __REPEAT:
 	//If try nCount times even not successfull,then wait on the event
 	//for a longer time.
 	__outb(0x0F,port + 1);  //Set write hold register empty interrupt.
-	dwResult = WaitForThisObjectEx(hEvent,MAX_SEND_WAIT);  //Wait for 2s.
+	dwResult = WaitForThisObjectEx(hEvent,MAX_SEND_WAIT,NULL);  //Wait for 2s.
 	if(OBJECT_WAIT_RESOURCE == dwResult)  //Wait successfully.
 	{
 		nCount = 16;
@@ -346,7 +346,7 @@ __REPEAT:
 	}
 	//If even failed after try nCount times,then wait on the hEvent for a
 	//longer time.
-	dwResult = WaitForThisObjectEx(hEvent,MAX_RECV_WAIT);
+	dwResult = WaitForThisObjectEx(hEvent,MAX_RECV_WAIT,NULL);
 	if(OBJECT_WAIT_RESOURCE == dwResult)  //COM interface has data for read.
 	{
 		nCount = 16;
@@ -481,7 +481,7 @@ static DWORD IntRecv(LPVOID lpData)  //Receive thread routine in interrupt mode.
 			}
 		}
 		if(OBJECT_WAIT_RESOURCE == WaitForThisObjectEx(pbe2->hTerminateEvent,
-			0))  //Should terminate.
+			0, NULL))  //Should terminate.
 		{
 			PrintLine("Receiving kernel thread exit now.");
 			return 0;

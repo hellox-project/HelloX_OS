@@ -12,15 +12,10 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
 #include "syscall.h"
-#include "kapi.h"
 #include "modmgr.h"
 #include "stdio.h"
-//devmgr.h
 #include "devmgr.h"
 #include "iomgr.h"
 

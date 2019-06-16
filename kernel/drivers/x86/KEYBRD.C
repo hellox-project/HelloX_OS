@@ -12,18 +12,9 @@
 //                issue should not be a problem since more and more key boards are
 //                designed without number pad.
 //------------------------------------------------------------------------
-#ifndef __STDAFX_H__
+
 #include <StdAfx.h>
-#endif
-
-#ifndef __KAPI_H__
-#include <kapi.h>
-#endif
-
-#ifndef __KEYBRD_H__
 #include "keybrd.h"
-#endif
-
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF

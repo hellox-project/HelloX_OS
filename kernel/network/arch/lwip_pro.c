@@ -62,8 +62,11 @@ BOOL lwipInitialize(struct tag__NETWORK_PROTOCOL* pProtocol)
 	{
 		goto __TERMINAL;
 	}
+	memset(pExt, 0, sizeof(__LWIP_EXTENSION));
 	pExt->nIncomePktSize = 0;
 	pExt->pIncomePktFirst = pExt->pIncomePktLast = NULL;
+	pExt->nOutgoingPktSize = 0;
+	pExt->pOutgoingPktFirst = pExt->pOutgoingPktLast = NULL;
 #if defined(__CFG_SYS_SMP)
 	__INIT_SPIN_LOCK(pExt->spin_lock, "lwIP");
 #endif

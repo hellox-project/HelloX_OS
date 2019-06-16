@@ -19,30 +19,24 @@
 #include "dim.h"
 #include "types.h"
 #include "hellocn.h"
-#include "kapi.h"
 
-//
-//Initializer of DIM object.
-//
+/* Initializer of DIM object. */
 static BOOL DimInitialize(__COMMON_OBJECT* lpThis,
 	__COMMON_OBJECT* lpFocusThread,
 	__COMMON_OBJECT* lpShellThread)
 {
 	__DEVICE_INPUT_MANAGER* lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
-	unsigned long ulFlags;
-
 	BUG_ON(NULL == lpInputMgr);
 
-	__ENTER_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, ulFlags);
 	lpInputMgr->lpFocusKernelThread = (__KERNEL_THREAD_OBJECT*)lpFocusThread;
 	lpInputMgr->lpShellKernelThread = (__KERNEL_THREAD_OBJECT*)lpShellThread;
-	__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, ulFlags);
 
 	return TRUE;
 }
 
 /*
- * Send a device message to a specified kernel thread,or to the default shell thread
+ * Send a device message to a specified kernel thread,
+ * or to the default shell thread
  * if target thread is not specified.
  */
 static DWORD SendDeviceMessage(__COMMON_OBJECT* lpThis,
@@ -51,18 +45,27 @@ static DWORD SendDeviceMessage(__COMMON_OBJECT* lpThis,
 {
 	__DEVICE_INPUT_MANAGER* lpInputMgr = (__DEVICE_INPUT_MANAGER*)lpThis;
 	__KERNEL_THREAD_MESSAGE* lpThreadMsg = (__KERNEL_THREAD_MESSAGE*)lpDevMsg;
+	__KERNEL_THREAD_OBJECT* pMsgTarget = NULL;
 	unsigned long dwFlags = 0;
 
 	BUG_ON((NULL == lpInputMgr) || (NULL == lpThreadMsg));
 
-	/* Send device input message to target kernel thread if specified. */
+	/* 
+	 * Send device input message to target kernel 
+	 * thread if specified. 
+	 */
 	if(lpTarget != NULL)
 	{
 		KernelThreadManager.SendMessage(lpTarget,lpThreadMsg);
 		return DEVICE_MANAGER_SUCCESS;
 	}
 
-	/* Send message to current focus or shell thread. */
+	/* 
+	 * Send message to current focus or shell thread. 
+	 * We get the target thread in critical section and
+	 * send the message out of critical section,since 
+	 * the SendMessage routine will lead reschedule.
+	 */
 	__ENTER_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
 	if(lpInputMgr->lpFocusKernelThread != NULL)
 	{
@@ -73,51 +76,58 @@ static DWORD SendDeviceMessage(__COMMON_OBJECT* lpThis,
 		 */
 		if(KERNEL_THREAD_STATUS_TERMINAL == lpInputMgr->lpFocusKernelThread->dwThreadStatus)
 		{
-			//Clear the current focus thread since it's status is TERMINAL.
+			/* Clear the current focus thread since it's status is TERMINAL. */
 			lpInputMgr->lpFocusKernelThread = NULL;
-			//Send to the default shell thread if exist.
+			/* Send to the default shell thread if exist. */
 			if(NULL != lpInputMgr->lpShellKernelThread)
 			{
-				KernelThreadManager.SendMessage(
-					(__COMMON_OBJECT*)(lpInputMgr->lpShellKernelThread),
-					lpThreadMsg);
+				pMsgTarget = lpInputMgr->lpShellKernelThread;
 				__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
-				return DEVICE_MANAGER_SUCCESS;
+				goto __TERMINAL;
 			}
 			else
 			{
 				/* The current shell kernel thread is not exists. */
 				__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
-				return DEVICE_MANAGER_NO_SHELL_THREAD;
+				goto __TERMINAL;
 			}
 		}
 		else
 		{
 			/* Just send it to current focus kernel thread. */
-			KernelThreadManager.SendMessage(
-				(__COMMON_OBJECT*)lpInputMgr->lpFocusKernelThread,
-				lpThreadMsg);
+			pMsgTarget = lpInputMgr->lpFocusKernelThread;
 			__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
-			return DEVICE_MANAGER_SUCCESS;
+			goto __TERMINAL;
 		}
 	}
 	else
 	{
-		/* The current focus kernel thread is not exists,send to default shell thread. */
+		/* 
+		 * The current focus kernel thread is not exists,
+		 * send to default shell thread. 
+		 */
 		if(NULL != lpInputMgr->lpShellKernelThread)
 		{
-			KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpInputMgr->lpShellKernelThread,
-				lpThreadMsg);
+			pMsgTarget = lpInputMgr->lpShellKernelThread;
 			__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
-			return DEVICE_MANAGER_SUCCESS;
+			goto __TERMINAL;
 		}
 		else
 		{
 			/* No kernel thread is available to receive device message. */
 			__LEAVE_CRITICAL_SECTION_SMP(lpInputMgr->spin_lock, dwFlags);
-			return DEVICE_MANAGER_NO_SHELL_THREAD;
+			goto __TERMINAL;
 		}
 	}
+__TERMINAL:
+	if (pMsgTarget)
+	{
+		KernelThreadManager.SendMessage(
+			(__COMMON_OBJECT*)pMsgTarget,
+			lpThreadMsg);
+		return DEVICE_MANAGER_SUCCESS;
+	}
+	return DEVICE_MANAGER_FAILED;
 }
 
 /* Set the current focus thread. */
@@ -139,8 +149,8 @@ static __COMMON_OBJECT* SetFocusThread(__COMMON_OBJECT* lpThis,
 }
 
 /*
- * Set the default shell thread.Any device input message will be sent to this thread if no
- * current focus thread exist.
+ * Set the default shell thread.Any device input message will 
+ * be sent to this thread if no current focus thread exist.
  */
 static __COMMON_OBJECT* SetShellThread(__COMMON_OBJECT* lpThis,
 	__COMMON_OBJECT* lpShellThread)
@@ -159,23 +169,15 @@ static __COMMON_OBJECT* SetShellThread(__COMMON_OBJECT* lpThis,
 	return (__COMMON_OBJECT*)lpRetVal;
 }
 
-/************************************************************************
-*************************************************************************
-*************************************************************************
-*************************************************************************
-************************************************************************/
-
-//
-//The definition of Global Object DeviceInputManager.
-//
+/* Globa device input manager object. */
 __DEVICE_INPUT_MANAGER DeviceInputManager = {
-	NULL,                                     //lpFocusKernelThread.
-	NULL,                                     //lpShellKernelThread.
+	NULL,                   //lpFocusKernelThread.
+	NULL,                   //lpShellKernelThread.
 #if defined(__CFG_SYS_SMP)
 	SPIN_LOCK_INIT_VALUE,
 #endif
-	SendDeviceMessage,                        //SendDeviceMessage routine.
-	SetFocusThread,                           //SetFocusThread routine.
-	SetShellThread,                           //SetShellThread routine.
-	DimInitialize                             //Initialize routine.
+	SendDeviceMessage,      //SendDeviceMessage routine.
+	SetFocusThread,         //SetFocusThread routine.
+	SetShellThread,         //SetShellThread routine.
+	DimInitialize           //Initialize routine.
 };

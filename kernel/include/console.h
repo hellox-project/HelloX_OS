@@ -15,22 +15,12 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
-
-
 #include "commobj.h"
 #include "dim.h"
 #include "hellocn.h"
-
 #include "ktmsg.h"
-
 #include "process.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//Available when and only when the __CFG_SYS_CONSOLE macro is defined.
 #ifdef __CFG_SYS_CONSOLE
 	
 //Default output usert under STM32 platform.
@@ -40,6 +30,9 @@ extern "C" {
 
 //CONSOLE object's definition.
 typedef struct tag__CONSOLE{
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
 	BOOL           bInitialized;   //If the console object is initialized.
 	BOOL           bLLInitialized; //If low level output function is initialized.
 	int            nRowNum;        //Current row number.
@@ -86,10 +79,5 @@ typedef struct tag__CONSOLE{
 //Declaration of global CONSOLE object.
 extern __CONSOLE Console;
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif  //__CFG_SYS_CONSOLE.
-
 #endif  //__CONSOLE_H__

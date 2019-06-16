@@ -543,7 +543,7 @@ void* EHCIPollIntQueue(struct usb_device *dev,struct int_queue *queue)
 	DWORD dwResult = 0;
 	void* pRet = NULL;
 
-	dwResult = WaitForThisObjectEx(queue->hEvent, USB_DEFAULT_XFER_TIMEOUT);
+	dwResult = WaitForThisObjectEx(queue->hEvent, USB_DEFAULT_XFER_TIMEOUT, NULL);
 	switch (dwResult)
 	{
 	case OBJECT_WAIT_RESOURCE:

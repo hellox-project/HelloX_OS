@@ -247,11 +247,7 @@ static DWORD dir(__CMD_PARA_OBJ* pCmdObj)
 	BOOL              bFindNext   = FALSE;
 	
 	strcpy(Buffer,FsGlobalData.CurrentDir);
-	/*if(pCmdObj->byParameterNum >= 2)  //Target directory specified.
-	{
-		strcat(Buffer,pCmdObj->Parameter[1]);
-	}*/
-	ToCapital(Buffer);  //Convert to capital.
+	ToCapital(Buffer);
 	
 	if(pCmdObj->byParameterNum >= 2 && strcmp(pCmdObj->Parameter[1],"-l") == 0)
 	{
@@ -259,9 +255,9 @@ static DWORD dir(__CMD_PARA_OBJ* pCmdObj)
 	}
 		
 	pFindHandle = IOManager.FindFirstFile((__COMMON_OBJECT*)&IOManager,	Buffer,	&ffd);
-	if(NULL == pFindHandle)  //Can not open the target directory.
+	if(NULL == pFindHandle)
 	{		
-		PrintLine("Can not open the specified or current directory to display.");
+		_hx_printf("Can not open directory.\r\n");
 		goto __TERMINAL;
 	}
 
@@ -396,7 +392,7 @@ static DWORD del(__CMD_PARA_OBJ* pCmdObj)
 
 	if(pCmdObj->byParameterNum < 2)
 	{
-		PrintLine("  Please specify the file name to be deleted.");
+		_hx_printf("  No file specified.\r\n");
 		goto __TERMINAL;
 	}
 	strcpy(FullName,FsGlobalData.CurrentDir);
@@ -406,7 +402,7 @@ static DWORD del(__CMD_PARA_OBJ* pCmdObj)
 		FullName);
 	if(!bResult)
 	{
-		PrintLine("  Can not delete the specified file.");
+		_hx_printf("  Can not delete the specified file.");
 		goto __TERMINAL;
 	}
 __TERMINAL:
@@ -424,7 +420,7 @@ static DWORD rd(__CMD_PARA_OBJ* pCmdObj)
 
 	if(pCmdObj->byParameterNum < 2)
 	{
-		PrintLine("  Please specify the directory name to be deleted.");
+		_hx_printf("  No directory specified.\r\n");
 		goto __TERMINAL;
 	}
 	strcpy(FullName,FsGlobalData.CurrentDir);
@@ -460,7 +456,7 @@ static DWORD vl(__CMD_PARA_OBJ* pCmdObj)
 
 	if(pCmdObj->byParameterNum < 2)
 	{
-		PrintLine("  Please specify the file name to be displayed.");
+		_hx_printf("  No file specified.\r\n");
 		goto __TERMINAL;
 	}
 	strcpy(FullName,FsGlobalData.CurrentDir);
@@ -508,17 +504,17 @@ __TERMINAL:
 static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 {
 #ifdef __CFG_SYS_DDF
-	HANDLE   hFile = NULL;
-	CHAR     Buffer[128];
-	DWORD    dwReadSize   = 0;
-	DWORD    dwTotalRead  = 0;
-	DWORD    i;
-	CHAR     FullName[MAX_FILE_NAME_LEN];
-	WORD     ch = 0x0700;
+	HANDLE hFile = NULL;
+	CHAR Buffer[128];
+	DWORD dwReadSize = 0, dwTotalRead = 0;
+	unsigned int i = 0;
+	CHAR FullName[MAX_FILE_NAME_LEN];
+	WORD ch = 0x0700;
+	MSG msg;
 
 	if(pCmdObj->byParameterNum < 2)
 	{
-		PrintLine("  Please specify the file name to be displayed.");
+		_hx_printf("  No file name specified.\r\n");
 		goto __TERMINAL;
 	}
 	strcpy(FullName,FsGlobalData.CurrentDir);
@@ -533,7 +529,7 @@ static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 		NULL);
 	if(NULL == hFile)
 	{
-		PrintLine("  Please specify a valid and present file name.");
+		_hx_printf("  File is not exist.\r\n");
 		goto __TERMINAL;
 	}
 	//Try to read the target file and display it.
@@ -546,7 +542,7 @@ static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 			Buffer,
 			&dwReadSize))
 		{
-			PrintLine("  Can not read the target file.");
+			_hx_printf("  Failed to read file.\r\n");
 			goto __TERMINAL;
 		}
 		for(i = 0;i < dwReadSize;i ++)
@@ -566,12 +562,19 @@ static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 			ch = 0x0700;
 		}
 		dwTotalRead += dwReadSize;
+		/* Check if user want to break. */
+		while (KernelThreadManager.PeekMessage(NULL, &msg))
+		{
+			if (msg.wCommand == KERNEL_MESSAGE_TERMINAL)
+			{
+				goto __TERMINAL;
+			}
+		}
 	}while(dwReadSize == 128);
 
 	GotoHome();
 	ChangeLine();
-	_hx_sprintf(Buffer,"%d byte(s) read.",dwTotalRead);
-	PrintLine(Buffer);
+	_hx_printf("%d byte(s) read.",dwTotalRead);
 
 __TERMINAL:
 	if(NULL != hFile)
@@ -622,7 +625,7 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 
 	if (pCmdObj->byParameterNum < 3)
 	{
-		_hx_printf("Please specify the source and destination file name.\r\n");
+		_hx_printf("No source or destination file specified.\r\n");
 		goto __TERMINAL;
 	}
 	/* Construct source file's full name. */
@@ -693,7 +696,7 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 	pBuffer = (char*)_hx_malloc(__TMP_FILE_BUFFSZ);
 	if (NULL == pBuffer)
 	{
-		_hx_printf("Failed to allocate data buffer.\r\n");
+		_hx_printf("Out of memory.\r\n");
 		goto __TERMINAL;
 	}
 
@@ -800,7 +803,7 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 	}
 	if(!bMatched)  //The specified file system identifier is not in system now.
 	{
-		PrintLine("  The specified file system is not present now.");
+		PrintLine("  The specified file system is not present.");
 		goto __TERMINAL;
 	}
 	//Valid file system,change current information.

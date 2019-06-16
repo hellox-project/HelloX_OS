@@ -125,12 +125,16 @@ typedef struct tag__PROCESSOR_MANAGER {
 	__SPIN_LOCK spin_lock;
 	/* How many logical CPU(Processor) in system. */
 	volatile int nProcessorNum;
+	/* Maximal processor ID value in system. */
+	volatile uint8_t maxProcessorID;
+	/* CPU map,each CPU occupies one bit of this integer. */
+	volatile uint64_t cpuMap;
 	/* BSP's processor ID in SMP environment. */
 	unsigned int bspProcessorID;
 
 	/* Process Manager offered operations. */
 	BOOL (*Initialize)(struct tag__PROCESSOR_MANAGER* pMgr);
-	BOOL (*AddProcessor)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid);
+	BOOL (*AddProcessor)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid, uint8_t processor_id);
 	/* Set chip specific information. */
 	BOOL (*SetChipSpecific)(uint8_t domainid, uint8_t chipid, void* pSpec);
 	/* Get chip specific information. */
@@ -138,7 +142,10 @@ typedef struct tag__PROCESSOR_MANAGER {
 	/* Set logical CPU specific information. */
 	BOOL (*SetLogicalCPUSpecific)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid, void* pSpec);
 	/* Get Logical CPU specific information. */
-	void* (*GetLogicalCPUSpecific)(uint8_t domainid, uint8_t chipid, uint8_t coreid, uint8_t lcpuid);
+	void* (*GetLogicalCPUSpecific)(uint8_t domainid, 
+		uint8_t chipid, 
+		uint8_t coreid, 
+		uint8_t lcpuid);
 	/* Get current processor ID. */
 	unsigned int (*GetCurrentProcessorID)();
 	/* Return current processor's specific information. */

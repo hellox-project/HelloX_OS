@@ -17,7 +17,7 @@
 #define __STRING_H__
 
 /* For basic HelloX data types. */
-#include <StdAfx.h>
+#include <types.h>
 
 #define MAX_STRING_LEN 512       //Max string length.
 

@@ -11,9 +11,7 @@
 //    Lines number              :
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
 
 #ifdef __STM32__
 #include <stm32f10x.h>                       /* STM32F10x definitions         */
@@ -27,7 +25,10 @@
 #include "ktmgr.h"
 #include <chardisplay.h>
 
-//Available when and only when the __CFG_SYS_CONSOLE macro is defined.
+/* 
+ * Available when and only when the 
+ * __CFG_SYS_CONSOLE macro is defined. 
+ */
 #ifdef __CFG_SYS_CONSOLE
 
 #ifdef __STM32__
@@ -75,76 +76,102 @@ static void __Init_Default_Usart()
 }
 #endif //__STM32__
 
-//Low level output routine,which is used in interrupt context or OS initialization
-//phase.
+/*
+ * Low level output routine,which is used in 
+ * interrupt context or OS initialization phase.
+ */
 static void __LL_Output(UCHAR bt)
 {
+	unsigned long ulFlags;
 #ifdef __I386__
 	DWORD dwCount1 = 1024;
 	DWORD dwCount2 = 3;
-	UCHAR ctrlReg  = 0;    //Used to save and restore temporary control register of COM interface.
+	UCHAR ctrlReg  = 0;
 #endif //__I386__
 
-	//Check if the low level output function is initialized,initialize it if not.
-	if(!Console.bLLInitialized)
+	/* Can not be interrupted. */
+	__ENTER_CRITICAL_SECTION_SMP(Console.spin_lock, ulFlags);
+
+	/*
+	 * Check if the low level output function is 
+	 * and initialized,initialize it if not.
+	 */
+	if (!Console.bLLInitialized)
 	{
 #ifdef __I386__
-		 __outb(0x80,CON_DEF_COMBASE + 3);  //Set DLAB bit to 1,thus the baud rate divisor can be set.
-         __outb(0x0C,CON_DEF_COMBASE);      //Set low byte of baud rate divisor.
-         __outb(0x00,CON_DEF_COMBASE + 1);  //Set high byte of baud rate divisor.
-         __outb(0x07,CON_DEF_COMBASE + 3);  //Reset DLAB bit,and set data bit to 8,one stop bit,without parity check.
-         __outb(0x00,CON_DEF_COMBASE + 1);  //Disable all interrupts.
+		/* Disable all interrupts. */
+		__outb(0x00, CON_DEF_COMBASE + 1);
+		/* Set DLAB bit to 1,thus the baud rate divisor can be set. */
+		__outb(0x80, CON_DEF_COMBASE + 3);
+		/* Set low byte of baud rate divisor. */
+		__outb(0x0C, CON_DEF_COMBASE);
+		/* Set high byte of baud rate divisor. */
+		__outb(0x00, CON_DEF_COMBASE + 1);
+		/* Reset DLAB bit,set data bit to 8,1 stop bit,no parity check. */
+		__outb(0x03, CON_DEF_COMBASE + 3);
 #elif defined(__STM32__)
-		 //Initialize STM32's default USART port,which is defined in console.h file,default is USART1.
-		 __Init_Default_Usart();
-#endif  //__I386__
-		 Console.bLLInitialized = TRUE;      //Indicate low level function is initialized.
+		//Initialize STM32's default USART port,
+		//which is defined in console.h file,default is USART1.
+		__Init_Default_Usart();
+#endif
+		Console.bLLInitialized = TRUE;
 	}
 
 #ifdef __I386__
-	//Try to output one byte.Please note that the output operation may fail,if the hardware is not ready for
-	//sending for too long time.Control register of COM interface should be saved before sending,and restore
-	//it after sending.
+	/*
+	 * Try to output one byte.Please note that the
+	 * output operation may fail,if the hardware is 
+	 * not ready for sending for too long time.
+	 * Control register of COM interface should be 
+	 * saved before sending,and restore it after sending.
+	 */
 	ctrlReg = __inb(CON_DEF_COMBASE + 1);
-	__outb(0x00,CON_DEF_COMBASE + 1);     //Disable all interrupts.
+	/* Disable all interrupts. */
+	__outb(0x00,CON_DEF_COMBASE + 1);
 	while((dwCount2 --) > 0)
 	{
 		while((dwCount1 --) > 0)
 		{
-			if(__inb(CON_DEF_COMBASE + 5) & 32)  //Send register empty.
+			if(__inb(CON_DEF_COMBASE + 5) & 32)
 			{
 				__outb(bt,CON_DEF_COMBASE);
 				__outb(ctrlReg,CON_DEF_COMBASE + 1);
+				__LEAVE_CRITICAL_SECTION_SMP(Console.spin_lock, ulFlags);
 				return;
 			}
 		}
 		dwCount1 = 1024;
 	}
-	__outb(ctrlReg,CON_DEF_COMBASE + 1);  //Restore previous control register.
+	/* Restore previous control register. */
+	__outb(ctrlReg,CON_DEF_COMBASE + 1);
 #elif defined(__STM32__)
 	//Call USART's low level output function.
 	__SER_PutChar(bt);
 #endif  //__I386__
+	__LEAVE_CRITICAL_SECTION_SMP(Console.spin_lock, ulFlags);
 }
 
-//Console reading thread,it reads console input message and deliver
-//it to DIM object by simulating a key board down message.
+/* 
+ * Console reading thread.
+ * It reads console input message and deliver
+ * it to DIM object by simulating a key board down message.
+ */
 static DWORD ConReadThread(LPVOID pData)
 {
-	__DEVICE_MESSAGE  msg;
-	int               ch;
+	__DEVICE_MESSAGE msg;
+	int ch;
 
-	if(!Console.bInitialized)  //Check Console object's status.
+	if(!Console.bInitialized)
 	{
 		return 0;
 	}
-	//The thread will never terminate.
+
 	while(TRUE)
 	{
 		ch = Console.getch();
 		if(-1 != ch)
 		{
-			msg.wDevMsgType = ASCII_KEY_DOWN;
+			msg.wDevMsgType = KERNEL_MESSAGE_AKEYDOWN;
 			msg.dwDevMsgParam = (DWORD)ch;
 			DeviceInputManager.SendDeviceMessage(
 				(__COMMON_OBJECT*)&DeviceInputManager,
@@ -152,26 +179,22 @@ static DWORD ConReadThread(LPVOID pData)
 				NULL); 
 		}
 	}
-	//return 0;
+	return 0;
 }
 
-//Initialization routine of Console object.
+/* Initializer of console object. */
 static BOOL ConInitialize(__CONSOLE* pConsole)
 {
 	__COMMON_OBJECT* hCom1  = NULL;
-	if(NULL == pConsole)
-	{
-		return FALSE;
-	}
 
-	//Try to open COM1 interface.
-	hCom1 = IOManager.CreateFile(
-		(__COMMON_OBJECT*)&IOManager,
-		CON_DEF_COMNAME,
-		0,
-		0,
-		NULL);
+	BUG_ON(NULL == pConsole);
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(pConsole->spin_lock, "con");
+#endif
 
+	/* Open the console port file. */
+	hCom1 = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
+		CON_DEF_COMNAME, 0, 0, NULL);
 	if(NULL == hCom1)
 	{
 		return FALSE;
@@ -182,7 +205,11 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 	pConsole->nRowNum      = CON_MAX_ROWNUM;
 	pConsole->nColNum      = CON_MAX_COLNUM;
 
-	//Create console read thread to process COM interface input message.
+	/* 
+	 * Create console read thread to process
+	 * COM interface input message,console works
+	 * in polling mode.
+	 */
 	pConsole->hConThread = KernelThreadManager.CreateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
 		0,
@@ -193,7 +220,7 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 		NULL,
 		CON_THREAD_NAME);
 
-	if(NULL == pConsole->hConThread)  //Failed to create thread.
+	if(NULL == pConsole->hConThread)
 	{
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,pConsole->hComInt);
 		pConsole->hComInt      = NULL;
@@ -203,13 +230,12 @@ static BOOL ConInitialize(__CONSOLE* pConsole)
 	return TRUE;
 }
 
-//Un-initialization routine of console object.
+/* Destructor of the console object. */
 static VOID ConUninitialize(__CONSOLE* pConsole)
 {
-	if(NULL == pConsole)
-	{
-		return;
-	}
+
+	BUG_ON(NULL == pConsole);
+
 	//Close COM interface.
 	if(NULL != pConsole->hComInt)
 	{
@@ -234,18 +260,17 @@ static VOID ConPrintStr(const char* pszStr)
 	DWORD   dwWriteSize = 0;
 	DWORD   i;
 
-	//Low level output should be used if in context or in system initialization phase.
-	if(IN_INTERRUPT() || IN_SYSINITIALIZATION())
+	if (IN_INTERRUPT() || IN_SYSINITIALIZATION())
 	{
-		dwWriteSize   = strlen(pszStr);
-		for(i = 0;i < dwWriteSize;i ++)
+		dwWriteSize = strlen(pszStr);
+		for (i = 0; i < dwWriteSize; i++)
 		{
 			__LL_Output(pszStr[i]);
 		}
 		return;
 	}
 
-	if(!Console.bInitialized)
+	if (!Console.bInitialized)
 	{
 		return;
 	}
@@ -260,13 +285,11 @@ static VOID ConPrintStr(const char* pszStr)
 
 static VOID ConClearScreen(void)
 {
-	//Adopt low level output operation if in interrupt context or in process
-	//of system initialization.
-	if(IN_INTERRUPT() || IN_SYSINITIALIZATION())
+	if (IN_INTERRUPT() || IN_SYSINITIALIZATION())
 	{
 		return;
 	}
-	if(!Console.bInitialized)
+	if (!Console.bInitialized)
 	{
 		return;
 	}
@@ -276,17 +299,19 @@ static VOID ConClearScreen(void)
 static VOID ConPrintCh(unsigned short ch)
 {
 	DWORD   dwWriteSize = 0;
-	CHAR    chTarg      = (CHAR)ch;
+	CHAR    chTarg = (CHAR)ch;
 
-	//Low level output operation should be used when under interrupt context or in process
-	//of OS initialization.
-	if(IN_INTERRUPT() || IN_SYSINITIALIZATION())
+	/* 
+	 * Low level output operation should be used when 
+	 * under interrupt context or in process of OS initialization.
+	 */
+	if (IN_INTERRUPT() || IN_SYSINITIALIZATION())
 	{
 		__LL_Output(chTarg);
 		return;
 	}
 
-	if(!Console.bInitialized)
+	if (!Console.bInitialized)
 	{
 		return;
 	}
@@ -302,17 +327,15 @@ static VOID ConPrintCh(unsigned short ch)
 static VOID ConGotoHome(void)
 {
 	DWORD   dwWriteSize = 0;
-	CHAR    chTarg      = '\r';
+	CHAR    chTarg = '\r';
 
-	//Low level output operation should be used when in interrupt context or in process
-	//of OS initialization.
-	if(IN_INTERRUPT() || IN_SYSINITIALIZATION())
+	if (IN_INTERRUPT() || IN_SYSINITIALIZATION())
 	{
 		__LL_Output(chTarg);
 		return;
 	}
 
-	if(!Console.bInitialized)
+	if (!Console.bInitialized)
 	{
 		return;
 	}
@@ -328,16 +351,15 @@ static VOID ConGotoHome(void)
 static VOID ConChangeLine(void)
 {
 	DWORD   dwWriteSize = 0;
-	CHAR    chTarg      = '\n';
+	CHAR    chTarg = '\n';
 
-	//Interrupt context or OS initialization phase output.
-	if(IN_INTERRUPT() || IN_SYSINITIALIZATION())
+	if (IN_INTERRUPT() || IN_SYSINITIALIZATION())
 	{
 		__LL_Output(chTarg);
 		return;
 	}
 
-	if(!Console.bInitialized)
+	if (!Console.bInitialized)
 	{
 		return;
 	}
@@ -353,16 +375,16 @@ static VOID ConChangeLine(void)
 static VOID ConGotoPrev(void)
 {
 	DWORD   dwWriteSize = 0;
-	CHAR    chTarg      = VK_BACKSPACE;
+	CHAR    chTarg = VK_BACKSPACE;
 
 	//Interrupt context or OS initialization phase.
-	if(IN_INTERRUPT())
+	if (IN_INTERRUPT())
 	{
 		__LL_Output(chTarg);
 		return;
 	}
 
-	if(!Console.bInitialized)
+	if (!Console.bInitialized)
 	{
 		return;
 	}
@@ -376,6 +398,69 @@ static VOID ConGotoPrev(void)
 }
 
 static VOID ConPrintLine(const char* pszStr)
+{
+	ConGotoHome();
+	ConChangeLine();
+	ConPrintStr(pszStr);
+	return;
+}
+
+//Operations of Console object.
+static VOID ConPrintStr_k(const char* pszStr)
+{
+	DWORD   dwWriteSize = 0;
+	DWORD   i;
+
+	dwWriteSize   = strlen(pszStr);
+	for(i = 0;i < dwWriteSize;i ++)
+	{
+		__LL_Output(pszStr[i]);
+	}
+	return;
+}
+
+static VOID ConClearScreen_k(void)
+{
+	return;
+}
+
+static VOID ConPrintCh_k(unsigned short ch)
+{
+	DWORD   dwWriteSize = 0;
+	CHAR    chTarg      = (CHAR)ch;
+
+	__LL_Output(chTarg);
+	return;
+}
+
+static VOID ConGotoHome_k(void)
+{
+	DWORD   dwWriteSize = 0;
+	CHAR    chTarg      = '\r';
+
+	__LL_Output(chTarg);
+	return;
+}
+
+static VOID ConChangeLine_k(void)
+{
+	DWORD   dwWriteSize = 0;
+	CHAR    chTarg      = '\n';
+
+	__LL_Output(chTarg);
+	return;
+}
+
+static VOID ConGotoPrev_k(void)
+{
+	DWORD   dwWriteSize = 0;
+	CHAR    chTarg      = VK_BACKSPACE;
+
+	__LL_Output(chTarg);
+	return;
+}
+
+static VOID ConPrintLine_k(const char* pszStr)
 {
 	ConGotoHome();
 	ConChangeLine();
@@ -410,19 +495,22 @@ static int getchar(void)
 	return -1;
 }
 
-//CONSOLE object's definition.
+/* Global console object. */
 __CONSOLE Console = {
-	FALSE,                         //bInitialized;
-	FALSE,                         //bLLInitialized;
-	0,                             //nRowNum;
-	0,                             //nColNum;
-	NULL,                          //hComInt;
-	NULL,                          //hConThread;
+#if defined(__CFG_SYS_SMP)
+	SPIN_LOCK_INIT_VALUE,
+#endif
+	FALSE,            //bInitialized;
+	FALSE,            //bLLInitialized;
+	0,                //nRowNum;
+	0,                //nColNum;
+	NULL,             //hComInt;
+	NULL,             //hConThread;
 
-	//Initializer and un-initializer routines.
-	ConInitialize,                          //Initialize;
-	ConUninitialize,                        //Uninitialize;
+	ConInitialize,    //Initialize;
+	ConUninitialize,  //Uninitialize;
 
+#if 0
 	//Operations of console's output.
 	ConPrintStr,
 	ConClearScreen,
@@ -431,6 +519,15 @@ __CONSOLE Console = {
 	ConChangeLine,
 	ConGotoPrev,
 	ConPrintLine,
+#endif
+
+	ConPrintStr_k,
+	ConClearScreen_k,
+	ConPrintCh_k,
+	ConGotoHome_k,
+	ConChangeLine_k,
+	ConGotoPrev_k,
+	ConPrintLine_k,
 
 	//Console's input operations.
 	getch,

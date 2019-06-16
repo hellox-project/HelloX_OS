@@ -26,7 +26,7 @@ typedef char *  va_list;
 
 #ifndef __SIZE_T_DEFINED__
 #define __SIZE_T_DEFINED__
-typedef unsigned int     size_t;
+typedef unsigned int size_t;
 #endif
 
 //Flags to control file seeking operation.
