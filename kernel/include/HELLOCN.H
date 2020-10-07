@@ -19,7 +19,7 @@
 /* Mini-kernal's base address when running. */
 #define __MINIKER_BASE 0x00100000
 /* The master's base address in memory. */
-#define __MASTER_BASE       0x00110000
+#define __MASTER_BASE 0x00110000
 
 /* 
  * Offset of general interrupt handler in mini kernel. 
@@ -257,35 +257,38 @@
 	//
 	//Write a byte to port.
 	//
-	VOID WriteByteToPort(UCHAR,            //The byte to write out.
-		WORD);            //I/O port.
+	VOID WriteByteToPort(UCHAR, WORD);
 
 	//
 	//Read string of data from port.
 	//
-	VOID ReadByteStringFromPort(LPVOID,        //The local buffer to store string data.
-		DWORD,         //How many bytes to be read.
-		WORD);         //I/O port.
+	VOID ReadByteStringFromPort(LPVOID, DWORD, WORD);
 
 	//
 	//Write string data to port.
 	//
-	VOID WriteByteStringToPort(LPVOID,         //The data buffer to be write out.
-		DWORD,          //How many byte to write out.
-		WORD);          //I/O port.
+	VOID WriteByteStringToPort(LPVOID, DWORD, WORD);
 
-	VOID ReadWordFromPort(WORD* pWord,
-		WORD  wPort);
+	VOID ReadWordFromPort(WORD* pWord, WORD  wPort);
 
-	VOID WriteWordToPort(WORD,
-		WORD);
+	VOID WriteWordToPort(WORD, WORD);
 
-	VOID ReadWordStringFromPort(LPVOID,
-		DWORD,
-		WORD);
+	VOID ReadWordStringFromPort(LPVOID, DWORD, WORD);
 
-	VOID WriteWordStringToPort(LPVOID,
-		DWORD,
-		WORD);
+	VOID WriteWordStringToPort(LPVOID, DWORD, WORD);
+
+/*
+ * compiler internal defined macros,since they
+ * maybe different corresponding to compiler,we
+ * define standard macros to represent them.
+ */
+/* current function. */
+#define __func__ __FUNCTION__
+
+/* current source file. */
+#define __file__ __FILE__
+
+/* current line number. */
+#define __line__ __LINE__
 
 #endif //__HELLO_CHINA__

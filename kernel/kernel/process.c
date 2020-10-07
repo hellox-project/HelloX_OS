@@ -4,21 +4,6 @@
 //    Module Name               : process.c
 //    Module Funciton           : 
 //                                Process mechanism related data types and
-//                                operations.
-//                                As a embedded operating system,it's no
-//                                strong need to implement process,since it
-//                                should be supported by VMM mechanism,and
-//                                VMM feature is not supported in most
-//                                embedded OS.But a clear difference is exist
-//                                between traditional embedded OS and HelloX
-//                                that HelloX will support more powerful smart
-//                                devices than legacy embedded OS,so we implements 
-//                                process mechanism here,to support current's
-//                                application.
-//                                It's worth noting that the architecture of
-//                                HelloX's process framework is extensible and
-//                                add new features in the future according to
-//                                real application.
 //    Last modified Author      :
 //    Last modified Date        :
 //    Last modified Content     :
@@ -91,6 +76,12 @@ BOOL ProcessInitialize(__COMMON_OBJECT* lpThis)
 	lpProcess->WaitForThisObject  = WaitForProcessObject;
 	lpProcess->ProcessName[0]     = 0;
 
+	/* Initializes handle array of this process. */
+	lpProcess->handleArray.pRoot = NULL;
+	lpProcess->handleArray.handleNum = 0;
+	lpProcess->handleArray.maxHandleValue = 0;
+	lpProcess->handleArray.elementNum = 0;
+
 #if defined(__CFG_SYS_SMP)
 	__INIT_SPIN_LOCK(lpProcess->spin_lock, "proc");
 #endif 
@@ -102,6 +93,8 @@ BOOL ProcessInitialize(__COMMON_OBJECT* lpThis)
  * Destroy a process object.
  * Just delegates to DestroyObject routine of ObjectManager,
  * since process object is a kernel object.
+ * All kernel objects or other resources belong to this
+ * process will be preserved before this routine is invoked.
  */
 static VOID DestroyProcess(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpObject)
 {
@@ -111,7 +104,12 @@ static VOID DestroyProcess(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpObject)
 	return;
 }
 
-//Uninitializer of process object.
+/* 
+ * Uninitializer of process object,will be invoked when
+ * process object is to be destroyed. 
+ * All kernel objects and other resources will be released
+ * in this routine.
+ */
 BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 {
 	__PROCESS_OBJECT* pProcessObject = (__PROCESS_OBJECT*)lpThis;
@@ -121,20 +119,25 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 
 	BUG_ON(NULL == pProcessObject);
 
-	//Only the process with TERMINAL status can be destroyed,please use TerminateProcess
-	//routine to terminate process's normal execution and put it into this status.
+	/*
+	 * Only the process with TERMINAL status can be 
+	 * destroyed,please use TerminateProcess routine to 
+	 * terminate process's normal execution and put 
+	 * it into this status.
+	 */
 	if (PROCESS_STATUS_TERMINAL != pProcessObject->dwProcessStatus)
 	{
 		return FALSE;
 	}
 
-	//Delete it from the global process list.
+	/* Delete it from the global process list. */
 	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, ulFlags);
 	pListNode = ProcessManager.ProcessList.next;
 	while (pListNode != &ProcessManager.ProcessList)
 	{
-		if ((__COMMON_OBJECT*)pProcessObject == pListNode->pKernelObject)  //Find.
+		if ((__COMMON_OBJECT*)pProcessObject == pListNode->pKernelObject)
 		{
+			/* Found the process in list. */
 			break;
 		}
 		pListNode = pListNode->next;
@@ -147,9 +150,17 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, ulFlags);
 
-	/* Does not find the process object in global list. */
+	/* Could not find the process object in global list. */
 	BUG_ON(pListNode->next != NULL);
 	KMemFree(pListNode, KMEM_SIZE_TYPE_ANY, 0);
+
+	/*
+	 * Destroy the handle array this process own.
+	 * We do this before destroying all thread(s) is,
+	 * other threads will be waken up if they are waiting
+	 * for kernel objects,the waiting result is OBJECT_WAIT_DELETED.
+	 */
+	DestroyHandleArray(pProcessObject);
 
 	/* 
 	 * Destroy all kernel thread(s) this process own. 
@@ -405,7 +416,9 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT* lpThis,
 	 * Construct user stack frame. 
 	 * It should be invoked after the creation of
 	 * main thread,since the user stack is created in
-	 * CreateUserThread routine.
+	 * CreateUserThread routine per user thread.
+	 * Only the first thread(main thread) is required
+	 * to call this routine.
 	 */
 	if (!PrepareUserStack(pProcessObject, pCmdObject, pszCmdLine))
 	{
@@ -740,6 +753,9 @@ __PROCESS_MANAGER ProcessManager = {
 	PMInitialize,               //Initialize.
 	__InitializeCPUTask,        //InitCPUTask.
 	ProcessHalfBottom,          //ProcessHalfBottom.
+	GetHandle,                  //GetHandle.
+	CloseHandle,                //CloseHandle.
+	GetObjectByHandle,          //GetObjectByHandle.
 };
 
 /*

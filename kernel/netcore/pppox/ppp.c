@@ -602,13 +602,25 @@ pppOverEthernetClose(int pd)
   lcp_close(pd, NULL);
 
   /* The original code of lwIP as follows,it should be a bug. */
-  //pppoe_destroy(&pc->netif);
+  /* pppoe_destroy(&pc->netif); */
   /* Change as follows,use ethif instead of netif. */
   pppoe_destroy(pc->ethif);
+
+  /* 
+   * Clear open flag so the ppp control 
+   * block could be resued again. 
+   */
+  pc->openFlag = 0;
 }
 
+/*
+ * Open a ppp over ethernet connection.It allocates one
+ * ppp descriptor from global pppControl array, occupies
+ * it and create a new pppoe soft control block,initiates
+ * a connection.
+ */
 int pppOverEthernetOpen(struct netif *ethif, const char *service_name, const char *concentrator_name,
-                        pppLinkStatusCB_fn linkStatusCB, void *linkStatusCtx)
+	pppLinkStatusCB_fn linkStatusCB, void *linkStatusCtx)
 {
   PPPControl *pc;
   int pd;
@@ -654,6 +666,7 @@ int pppOverEthernetOpen(struct netif *ethif, const char *service_name, const cha
 
     if(pppoe_create(ethif, pd, pppOverEthernetLinkStatusCB, &pc->pppoe_sc) != ERR_OK) {
       pc->openFlag = 0;
+	  __LOG("[%s]error on create pppoe softc.\r\n", __func__);
       return PPPERR_OPEN;
     }
 
@@ -662,6 +675,7 @@ int pppOverEthernetOpen(struct netif *ethif, const char *service_name, const cha
 
   return pd;
 }
+
 #endif /* PPPOE_SUPPORT */
 
 
@@ -1377,6 +1391,7 @@ sifup(int pd)
 {
   PPPControl *pc = &pppControl[pd];
   int st = 1;
+  __PPPOE_INSTANCE* pInstance = NULL;
   
   if (pd < 0 || pd >= NUM_PPP || !pc->openFlag) {
     st = 0;
@@ -1393,6 +1408,11 @@ sifup(int pd)
       netif_set_up(&pc->netif);
       pc->if_up = 1;
       pc->errCode = PPPERR_NONE;
+
+	  /* save netif to pppoe instance block. */
+	  BUG_ON(NULL == pc->linkStatusCtx);
+	  pInstance = (__PPPOE_INSTANCE*)pc->linkStatusCtx;
+	  pInstance->ppif = &pc->netif;
 
       PPPDEBUG(LOG_DEBUG, ("sifup: unit %d: linkStatusCB=%p errCode=%d\n", pd, pc->linkStatusCB, pc->errCode));
       if (pc->linkStatusCB) {
@@ -1580,10 +1600,10 @@ pppOverEthernetInitFailed(int pd)
 
   pppHup(pd);
   pppStop(pd);
-
+  
   pc = &pppControl[pd];
   /* The original code of lwIP as follows,abviously it's a bug. */
-  //pppoe_destroy(&pc->netif);
+  /* pppoe_destroy(&pc->netif); */
   /* We change it as follows. */
   pppoe_destroy(pc->ethif);
   pc->openFlag = 0;

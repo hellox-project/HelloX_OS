@@ -177,6 +177,7 @@
     <ClCompile Include="drivers\x86\IDEHD.C" />
     <ClCompile Include="drivers\x86\KEYBRD.C" />
     <ClCompile Include="drivers\x86\MOUSE.C" />
+    <ClCompile Include="kernel\cfgmgr.c" />
     <ClCompile Include="kernel\chardisp.c" />
     <ClCompile Include="kernel\console.c" />
     <ClCompile Include="kernel\debug.c" />
@@ -204,6 +205,7 @@
     <ClCompile Include="kernel\synobj.c" />
     <ClCompile Include="kernel\synobj2.c" />
     <ClCompile Include="kernel\system.c" />
+    <ClCompile Include="kernel\system2.c" />
     <ClCompile Include="kernel\types.c" />
     <ClCompile Include="kernel\vmm.c" />
     <ClCompile Include="kernel\vmm2.c" />
@@ -219,6 +221,7 @@
     <ClCompile Include="fs\NTFS2.C" />
     <ClCompile Include="fs\NTFSDRV.C" />
     <ClCompile Include="lib\atox.c" />
+    <ClCompile Include="lib\cJSON\cJSON.c" />
     <ClCompile Include="lib\ctype.c" />
     <ClCompile Include="lib\errno.c" />
     <ClCompile Include="lib\getenv.c" />
@@ -230,11 +233,13 @@
     <ClCompile Include="lib\pthread_other.c" />
     <ClCompile Include="lib\rand.c" />
     <ClCompile Include="lib\rdxtree.c" />
+    <ClCompile Include="lib\scanf.c" />
     <ClCompile Include="lib\sched.c" />
     <ClCompile Include="lib\setjmp.c" />
     <ClCompile Include="lib\signal.c" />
     <ClCompile Include="lib\stdio.c" />
     <ClCompile Include="lib\string.c" />
+    <ClCompile Include="lib\strtod.c" />
     <ClCompile Include="lib\sysmem.c" />
     <ClCompile Include="lib\time.c" />
     <ClCompile Include="netcore\dhcp_srv\dhcp_srv.c" />
@@ -244,16 +249,14 @@
     <ClCompile Include="netcore\dpi\dpihttp.c" />
     <ClCompile Include="netcore\dpi\dpiicmp.c" />
     <ClCompile Include="netcore\dpi\dpimgr.c" />
-    <ClCompile Include="netcore\drivers\e1000.c" />
-    <ClCompile Include="netcore\drivers\e1000e.c" />
-    <ClCompile Include="netcore\drivers\e1000_d.c" />
-    <ClCompile Include="netcore\drivers\pcnet.c" />
+    <ClCompile Include="netcore\drivers\e1000ex.c" />
     <ClCompile Include="netcore\drivers\r8152_e.c" />
     <ClCompile Include="netcore\drivers\r8152_fw.c" />
     <ClCompile Include="netcore\drivers\rtl8111.c" />
     <ClCompile Include="netcore\drivers\rtl8152.c" />
     <ClCompile Include="netcore\ebridge\ethbrg.c" />
     <ClCompile Include="netcore\ethentry.c" />
+    <ClCompile Include="netcore\ethio.c" />
     <ClCompile Include="netcore\ethmgr.c" />
     <ClCompile Include="netcore\hx_eth.c" />
     <ClCompile Include="netcore\hx_inet.c" />
@@ -338,6 +341,7 @@
     <ClCompile Include="shell\Telnet.C" />
     <ClCompile Include="shell\telnet2.c" />
     <ClCompile Include="shell\usbvideo.c" />
+    <ClCompile Include="syscall\memxfer.c" />
     <ClCompile Include="syscall\syscall.c" />
     <ClCompile Include="syscall\SYSCALL_IO.C" />
     <ClCompile Include="syscall\SYSCALL_KERNEL.C" />
@@ -382,6 +386,7 @@
     <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="INCLUDE\BUFFMGR.H" />
     <ClInclude Include="include\byteord.h" />
+    <ClInclude Include="include\cfgmgr.h" />
     <ClInclude Include="include\CharDisplay.H" />
     <ClInclude Include="INCLUDE\COMMOBJ.H" />
     <ClInclude Include="include\console.h" />
@@ -414,6 +419,7 @@
     <ClInclude Include="include\ssh\ssh.h" />
     <ClInclude Include="INCLUDE\STATCPU.H" />
     <ClInclude Include="INCLUDE\StdAfx.h" />
+    <ClInclude Include="include\sysinfo.h" />
     <ClInclude Include="include\sysnet.h" />
     <ClInclude Include="INCLUDE\SYSTEM.H" />
     <ClInclude Include="INCLUDE\TYPES.H" />
@@ -428,8 +434,10 @@
     <ClInclude Include="fs\FAT32.H" />
     <ClInclude Include="fs\fsstr.h" />
     <ClInclude Include="fs\NTFS.H" />
+    <ClInclude Include="lib\cJSON\cJSON.h" />
     <ClInclude Include="lib\ctype.h" />
     <ClInclude Include="lib\errno.h" />
+    <ClInclude Include="lib\float.h" />
     <ClInclude Include="lib\io.h" />
     <ClInclude Include="lib\limits.h" />
     <ClInclude Include="lib\math.h" />
@@ -455,16 +463,14 @@
     <ClInclude Include="netcore\dpi\dpihttp.h" />
     <ClInclude Include="netcore\dpi\dpiicmp.h" />
     <ClInclude Include="netcore\dpi\dpimgr.h" />
-    <ClInclude Include="netcore\drivers\e1000.h" />
-    <ClInclude Include="netcore\drivers\e1000e.h" />
-    <ClInclude Include="netcore\drivers\e1000_d.h" />
-    <ClInclude Include="netcore\drivers\pcnet.h" />
+    <ClInclude Include="netcore\drivers\e1000ex.h" />
     <ClInclude Include="netcore\drivers\r8152.h" />
     <ClInclude Include="netcore\drivers\r8152_e.h" />
     <ClInclude Include="netcore\drivers\rtl8111.h" />
     <ClInclude Include="netcore\drivers\usb_ether.h" />
     <ClInclude Include="netcore\ebridge\ethbrg.h" />
     <ClInclude Include="netcore\ethmgr.h" />
+    <ClInclude Include="netcore\genif.h" />
     <ClInclude Include="netcore\hpx\hpx.h" />
     <ClInclude Include="netcore\hx_eth.h" />
     <ClInclude Include="netcore\hx_inet.h" />
@@ -492,6 +498,7 @@
     <ClInclude Include="netcore\pppox\ppp_impl.h" />
     <ClInclude Include="netcore\pppox\randm.h" />
     <ClInclude Include="netcore\pppox\vj.h" />
+    <ClInclude Include="netcore\precfg.h" />
     <ClInclude Include="netcore\proto.h" />
     <ClInclude Include="netcore\tmo.h" />
     <ClInclude Include="network\arch\lwipext.h" />
@@ -518,6 +525,7 @@
     <ClInclude Include="include\arch\sys_arch.h" />
     <ClInclude Include="shell\Telnet.H" />
     <ClInclude Include="shell\usbvideo.h" />
+    <ClInclude Include="syscall\memxfer.h" />
     <ClInclude Include="syscall\syscall.h" />
     <ClInclude Include="usb\ch9.h" />
     <ClInclude Include="usb\ehci.h" />
@@ -549,7 +557,17 @@
     <None Include="revise.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="doc\lock_ord.txt" />
+    <Text Include="doc\proc_del.txt" />
+    <Text Include="doc\rev_recd.txt" />
+    <Text Include="doc\rr_ptmalloc.txt" />
+    <Text Include="doc\pendissu.txt" />
+    <Text Include="doc\syscfg.txt" />
+    <Text Include="doc\todo.txt" />
+    <Text Include="netcore\bug_oe.txt" />
+    <Text Include="netcore\dhcp_srv\dhcp_ms.txt" />
     <Text Include="netcore\pppox\readme.txt" />
+    <Text Include="network\rev_recd.txt" />
     <Text Include="usb\usb.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

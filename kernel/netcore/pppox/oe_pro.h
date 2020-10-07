@@ -35,36 +35,56 @@ BOOL pppoeCanBindInterface(struct tag__NETWORK_PROTOCOL* pProtocol, LPVOID pInte
 LPVOID pppoeAddEthernetInterface(__ETHERNET_INTERFACE* pEthInt);
 
 //Delete a ethernet interface.
-VOID pppoeDeleteEthernetInterface(__ETHERNET_INTERFACE* pEthInt, LPVOID pL3Interface);
+VOID pppoeDeleteEthernetInterface(__ETHERNET_INTERFACE* pEthInt, LPVOID pIfState);
+
+/*
+ * Add a genif to the protocol. The interface specific state
+ * will be returned if bind success,otherwise NULL.
+ */
+LPVOID pppoeAddGenif(__GENERIC_NETIF* pGenif);
+
+/* Add address to genif. */
+BOOL pppoeAddGenifAddress(__GENERIC_NETIF* pGenif,
+	LPVOID pIfState,
+	__COMMON_NETWORK_ADDRESS* comm_addr,
+	int addr_num,
+	BOOL bSecondary);
+
+/* Delete a genif from the protocol. */
+BOOL pppoeDeleteGenif(__GENERIC_NETIF* pGenif, LPVOID pIfState);
+
+/* Check if a incoming packet belong to the protocol. */
+BOOL pppoeMatch(__GENERIC_NETIF* pGenif, LPVOID pIfState, unsigned long type, struct pbuf* pkt);
+
+/* Accept a incoming packet if Match returns TRUE. */
+BOOL pppoeAcceptPacket(__GENERIC_NETIF* pGenif, LPVOID pIfState,
+	struct pbuf* pIncomingPkt);
 
 //Delivery a Ethernet Frame to this protocol,a dedicated L3 interface is also provided.
-BOOL pppoeDeliveryFrame(__ETHERNET_BUFFER* pEthBuff, LPVOID pL3Interface);
+BOOL pppoeDeliveryFrame(__ETHERNET_BUFFER* pEthBuff, LPVOID pIfState);
+
+/* Handler of link's status change. */
+BOOL pppoeLinkStatusChange(LPVOID pIfState, BOOL bLinkDown);
 
 //Set the network address of a given L3 interface.
-BOOL pppoeSetIPAddress(LPVOID pL3Intface, __ETH_IP_CONFIG* addr);
-
-//Shutdown a layer3 interface.
-BOOL pppoeShutdownInterface(LPVOID pL3Interface);
-
-//Unshutdown a layer3 interface.
-BOOL pppoeUnshutdownInterface(LPVOID pL3Interface);
+BOOL pppoeSetIPAddress(LPVOID pIfState, __ETH_IP_CONFIG* addr);
 
 //Reset a layer3 interface.
-BOOL pppoeResetInterface(LPVOID pL3Interface);
+BOOL pppoeResetInterface(LPVOID pIfState);
 
 //Start DHCP protocol on a specific layer3 interface.
-BOOL pppoeStartDHCP(LPVOID pL3Interface);
+BOOL pppoeStartDHCP(LPVOID pIfState);
 
 //Stop DHCP protocol on a specific layer3 interface.
-BOOL pppoeStopDHCP(LPVOID pL3Interface);
+BOOL pppoeStopDHCP(LPVOID pIfState);
 
 //Release the DHCP configuration on a specific layer3 interface.
-BOOL pppoeReleaseDHCP(LPVOID pL3Interface);
+BOOL pppoeReleaseDHCP(LPVOID pIfState);
 
 //Renew the DHCP configuration on a specific layer3 interface.
-BOOL pppoeRenewDHCP(LPVOID pL3Interface);
+BOOL pppoeRenewDHCP(LPVOID pIfState);
 
 //Get the DHCP configuration from a specific layer3 interface.
-BOOL pppoeGetDHCPConfig(LPVOID pL3Interface, __DHCP_CONFIG* pConfig);
+BOOL pppoeGetDHCPConfig(LPVOID pIfState, __DHCP_CONFIG* pConfig);
 
 #endif //__OE_PRO_H__

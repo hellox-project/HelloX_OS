@@ -18,21 +18,24 @@
 
 /* Maximal length of command buffer. */
 #define MAX_BUFFER_LEN 256
-#define MAX_CMD_LEN    64
+#define MAX_CMD_LEN    256
 
 /* History command. */
 typedef struct HIS_CMD_OBJ
 {
-	CHAR CmdStr[64];
+	char CmdStr[MAX_CMD_LEN];
 } HIS_CMD_OBJ;
 
-/* Maximal parameters in one command parameter object. */
+/* 
+ * Maximal parameters in one 
+ * command parameter object. 
+ */
 #define CMD_PARAMETER_COUNT   64
 /* Maximal length of one command string. */
 #define CMD_PARAMETER_LEN     64
 
-#define CMD_MAX_LEN           64            //The max length of one command input. 
-#define HISCMD_MAX_COUNT      16            //The max Count of one history command . 
+/* The max Count of one history command . */
+#define HISCMD_MAX_COUNT      16
 
 /* 
  * Command parameter object,each command line from user's 

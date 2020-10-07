@@ -1,0 +1,31 @@
+System level configurations are put into a json file named syscfg.jsn
+under /syscfg/syscfg.jsn. It's a json file,and hellox kernel only support
+a sub-set of json syntax by using cJSON.
+Kernel threads or user threads could manipulate the system configuration
+file through System Config Manager object.
+Here is the examaple code of using system config management interface to
+retrieve saved configuration:
+
+	HANDLE hCfgProfile = SystemConfigManager.GetConfigProfile("pppoeMain");
+	char value_buff[SYSTEM_CONFIG_MAX_KVLENGTH];
+
+	if (NULL == hCfgProfile)
+	{
+		_hx_printf("[%s]could not get config profile\r\n", __func__);
+	}
+
+	/* Retrieve key-value and show it. */
+	if (SystemConfigManager.GetConfigEntry(hCfgProfile, "session_name", value_buff, 32))
+	{
+		_hx_printf("key[session_name] value [%s]\r\n", value_buff);
+	}
+	if (SystemConfigManager.GetConfigEntry(hCfgProfile, "username", value_buff, 32))
+	{
+		_hx_printf("key[username] value [%s]\r\n", value_buff);
+	}
+	if (SystemConfigManager.GetConfigEntry(hCfgProfile, "password", value_buff, 32))
+	{
+		_hx_printf("key[password] value [%s]\r\n", value_buff);
+	}
+
+	SystemConfigManager.ReleaseConfigProfile(hCfgProfile);

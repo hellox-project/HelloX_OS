@@ -696,7 +696,7 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 	pBuffer = (char*)_hx_malloc(__TMP_FILE_BUFFSZ);
 	if (NULL == pBuffer)
 	{
-		_hx_printf("Out of memory.\r\n");
+		_hx_printf("[%s]: Out of memory.\r\n", __func__);
 		goto __TERMINAL;
 	}
 

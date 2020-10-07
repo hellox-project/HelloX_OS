@@ -17,7 +17,16 @@
 #ifndef __HELLOX_H__
 #define __HELLOX_H__
 
-/* Basic data types. */
+/* 
+ * Basic data types,for HelloX. 
+ * Please be noted that this header file is
+ * self close looped,i.e,any definitions, any
+ * data types, and any data structures or objects
+ * are defined in this file,no need to include
+ * clib or other headers.
+ * This file should be include by c lib or
+ * other wrappers that fitted to hellox.
+ */
 typedef unsigned char BYTE;
 typedef unsigned char UCHAR;
 typedef char CHAR;
@@ -31,14 +40,23 @@ typedef unsigned int UINT;
 typedef unsigned long DWORD;
 typedef unsigned long ULONG;
 typedef long LONG;
+typedef long* LPLONG;
 typedef void* LPVOID;
 typedef void VOID;
 
+typedef unsigned int UINT32;
+typedef unsigned short UINT16;
+typedef unsigned char UINT8;
+
+typedef int INT32;
+typedef short INT16;
+typedef char INT8;
+
+/* atomic int type. */
+typedef volatile unsigned int __atomic_t;
+
 /* All kernel objects are refered by handle. */
 typedef LPVOID HANDLE;
-
-/* size_t. */
-typedef unsigned long size_t;
 
 /* BOOL type. */
 typedef enum {
@@ -186,8 +204,93 @@ typedef enum {
 
 #define VK_PAUSE           19
 #define VK_SCROLL          145
-/* This value is defined by HelloX. */
 #define VK_PRINTSC         6
+
+/*
+ * Extension parameter block of system call to contain input
+ * parameters, handles the scenario that has more than 5
+ * parameters.
+ * At most 16 extension parameters can be supported in current
+ * version,it shoud be enough.
+ */
+typedef struct SYSCALL_PARAM_EXTENSION_BLOCK {
+	UINT32 ext_param0;
+	UINT32 ext_param1;
+	UINT32 ext_param2;
+	UINT32 ext_param3;
+	UINT32 ext_param4;
+	UINT32 ext_param5;
+	UINT32 ext_param6;
+	UINT32 ext_param7;
+}__SYSCALL_PARAM_EXTENSION_BLOCK;
+
+/*
+ * System call parameter block,used to transfer parameters
+ * between user mode and kernel mode.
+ * It's a memory block just same as the stack frame established
+ * when interrupt raise, ret_ptr contains a pointer to a variable
+ * in user mode thread's stack that used to contain return value.
+ * The stack frame after int(x) instruction as follow:
+ * 	uint32_t ebp (return value's ptr)
+ *  uint32_t edi (param0)
+ *  uint32_t esi (param1)
+ *  uint32_t edx (param2)
+ *  uint32_t ecx (param3)
+ *  uint32_t ebx (param4,extblock's ptr)
+ *  uint32_t eax (syscall num)
+ *  uint32_t eip (ret addr)
+ *  uint32_t cs  (cs)
+ *  uint32_t eflags
+ *  ......
+ *
+ * At most 5 parameters under x86 can be transfered from user
+ * to kernel directly,a dedicated parameter extension block
+ * is allocated in caller(syscall's agent) stack to be used
+ * contain ALL parameters if the syscall accepts more than
+ * 5 input parameters,the parameter extension block is pointed
+ * by param_4(ebx) in directly block.
+ * Usage examples:
+ * 1. If the syscall only has 5 or less parameters,just put
+ *    all parameters into general registers except eax/ebp,
+ *    and raise the system call;
+ * 2. If the syscall has 6 or more parameters,then:
+ *    2.1 Define a syscall parameter extension block in
+ *        user thread's stack(local variable),set each
+ *        parameter properly;
+ *    2.2 Move the parameter extension block's base addr
+ *        into ebx(directly param4),and raise the syscall;
+ *    2.3 The handler of system call retrieve extension
+ *        block from param_0,and get all input parameters
+ *        from the block and invoke actual kernel mode routine.
+ */
+typedef struct SYSCALL_PARAM_BLOCK {
+	union {
+		UINT32* param;
+		UINT32 ebp;
+	}ret_ptr;
+	union {
+		UINT32 param;
+		UINT32 edi;
+	}param_0;
+	union {
+		UINT32 param;
+		UINT32 esi;
+	}param_1;
+	union {
+		UINT32 param;
+		UINT32 edx;
+	}param_2;
+	union {
+		UINT32 param;
+		UINT32 ecx;
+	}param_3;
+	union {
+		UINT32 param;
+		UINT32 ebx;
+		__SYSCALL_PARAM_EXTENSION_BLOCK* pExtBlock;
+	}param_4;
+	UINT32 syscall_num;
+}__SYSCALL_PARAM_BLOCK;
 
 /* The vector number of system call under x86. */
 #define SYSCALL_VECTOR 0x7F
@@ -242,6 +345,11 @@ typedef enum {
 #define SYSCALL_CREATEUSERTHREAD      0x41
 #define SYSCALL_DESTROYUSERTHREAD     0x42
 #define SYSCALL_TERMINATEUSERTHREAD   0x43
+#define SYSCALL_GETSYSTEMINFO         0x46
+#define SYSCALL_VIRTUALQUERY          0x47
+#define SYSCALL_GETCURRENTTHREADID    0x48
+
+#define SYSCALL_TESTPARAMXFER         0x49
 
  /* Syscall IDs for I/O subsystem. */
 #define SYSCALL_CREATEFILE            0x101     //CreateFile.
@@ -279,6 +387,15 @@ typedef enum {
 #define SYSCALL_LISTEN                0x20C     //listen
 #define SYSCALL_RECVFROM              0x20D     //recv from
 #define SYSCALL_SENDTO                0x20E     //send to
+#define SYSCALL_GETGENIFINFO          0x20F     //GetGenifInfo
+#define SYSCALL_ADDGENIFADDRESS       0x210     //AddGenifAddress
+#define SYSCALL_GETNETWORKINFO        0x211     //GetNetworkInfo
+
+/* Atomic operations to support user mode spinlock. */
+long __InterlockedCompareExchange(long volatile* destination,
+	long exchange,
+	long comparand);
+long __InterlockedExchange(long volatile* destination, long exchange);
 
 /* Message between thread/kernel or thread/thread. */
 typedef struct _MSG {
@@ -308,7 +425,7 @@ typedef struct {
 } FS_FIND_DATA;
 
 /* Proto-type for thread's entry routine. */
-typedef DWORD(*__KERNEL_THREAD_ROUTINE)(LPVOID);
+typedef DWORD(*__THREAD_START_ROUTINE)(LPVOID);
 /* Proto-type for interrupt handler. */
 typedef BOOL(*__INTERRUPT_HANDLER)(LPVOID lpEsp, LPVOID);
 
@@ -327,19 +444,26 @@ typedef BOOL(*__INTERRUPT_HANDLER)(LPVOID lpEsp, LPVOID);
 #define PRIORITY_LEVEL_LOW              0x00000004
 #define PRIORITY_LEVEL_IDLE             0x00000000
 
-/* APIs to manipulate user thread. */
+/* 
+ * Create a new user thread. 
+ * Note:
+ *   The work routine specified by caller with lpStartRoutine,
+ *   must call ExitThread at end of routine,to return to kernel
+ *   explicity.
+ */
 HANDLE CreateUserThread(
 	DWORD dwStatus,
 	DWORD dwPriority,
-	__KERNEL_THREAD_ROUTINE lpStartRoutine,
+	__THREAD_START_ROUTINE lpStartRoutine,
 	LPVOID lpRoutineParam,
 	char* pszName);
+
 VOID DestroyUserThread(HANDLE hThread);
-DWORD SetLastError(DWORD dwNewError);
-DWORD GetLastError(void);
 DWORD GetThreadID(HANDLE hThread);
 DWORD SetThreadPriority(HANDLE hThread, DWORD dwPriority);
 HANDLE GetCurrentThread(void);
+unsigned long GetCurrentThreadID();
+unsigned long TerminateKernelThread(HANDLE hTarget, int status);
 
 /* Must be called after a thread,to return to OS kernel. */
 void ExitThread(int errCode);
@@ -401,11 +525,21 @@ HANDLE CreateEvent(BOOL bInitialStatus);
 VOID DestroyEvent(HANDLE hEvent);
 DWORD SetEvent(HANDLE hEvent);
 DWORD ResetEvent(HANDLE hEvent);
+
+/* Mutex object operations. */
 HANDLE CreateMutex(void);
 VOID DestroyMutex(HANDLE hMutex);
 DWORD ReleaseMutex(HANDLE hEvent);
+
+/* Wait for kernel objects. */
 DWORD WaitForThisObject(HANDLE hObject);
 DWORD WaitForThisObjectEx(HANDLE hObject, DWORD dwMillionSecond);
+
+/* Return values of WaitForThisObject/Ex. */
+#define OBJECT_WAIT_FAILED           0x00000000
+#define OBJECT_WAIT_RESOURCE         0x00000001
+#define OBJECT_WAIT_TIMEOUT          0x00000002
+#define OBJECT_WAIT_DELETED          0x00000004
 
 /* Virtual area attributes. */
 #define VIRTUAL_AREA_ACCESS_READ        0x00000001
@@ -460,7 +594,7 @@ LPVOID VirtualAlloc(LPVOID lpDesiredAddr,
 	DWORD  dwAllocateFlags,
 	DWORD  dwAccessFlags,
 	CHAR*  lpszRegName);
-VOID VirtualFree(LPVOID lpVirtualAddr);
+BOOL VirtualFree(LPVOID lpVirtualAddr);
 
 /* Access flags for a file. */
 #define FILE_ACCESS_READ         0x00000001
@@ -536,24 +670,55 @@ void PrintChar(char ch);
 void GotoHome();
 void ChangeLine();
 
-/* 
- * Initial length of user heap. 
- * The user agent will allocate and commit
- * this mount of memory to serve process,
- * memory in heap could be allocated by malloc
- * routine and could be released by free routine.
+/*
+ * System info structure,all members are
+ * self-interpretible.
  */
-#define USERHEAP_INIT_LENGTH (256 * 1024)
+typedef struct _SYSTEM_INFO {
+	union {
+		DWORD dwOemId;          // Obsolete field...do not use
+		struct {
+			WORD wProcessorArchitecture;
+			WORD wReserved;
+		} DUMMYSTRUCTNAME;
+	} DUMMYUNIONNAME;
+	DWORD dwPageSize;
+	LPVOID lpMinimumApplicationAddress;
+	LPVOID lpMaximumApplicationAddress;
+	DWORD dwActiveProcessorMask;
+	DWORD dwNumberOfProcessors;
+	DWORD dwProcessorType;
+	DWORD dwAllocationGranularity;
+	WORD wProcessorLevel;
+	WORD wProcessorRevision;
+} SYSTEM_INFO, *LPSYSTEM_INFO, __SYSTEM_INFO;
 
-/* 
- * A structure to manage the user heap. 
- * It will be put into the begining position of
- * user head,to manage whole user heap.
+/* Get system information. */
+BOOL GetSystemInfo(SYSTEM_INFO* pSysInfo);
+
+/*
+ * Structure to contain a block of virtual memory's
+ * attributes,it is used by VirtualQuery routine in
+ * virtual memory manager.
  */
-typedef struct tag__USER_HEAP_DESCRIPTOR {
-	unsigned long total_length;
-	HANDLE hMutex;
-	/* ... */
-}__USER_HEAP_DESCRIPTOR;
+typedef struct _MEMORY_BASIC_INFORMATION {
+	LPVOID BaseAddress;
+	LPVOID AllocationBase;
+	unsigned long AllocationProtect;
+	unsigned long RegionSize;
+	unsigned long State;
+	unsigned long Protect;
+	unsigned long Type;
+} MEMORY_BASIC_INFORMATION, __MEMORY_BASIC_INFORMATION;
+
+/* Query a block of virtual memory's basic information. */
+unsigned long VirtualQuery(LPVOID pStartAddr,
+	MEMORY_BASIC_INFORMATION* pMemInfo,
+	unsigned long info_sz);
+
+/* Test the parameter xfering mechanism of system call. */
+BOOL XferMoreParam(char* pszInfo0, char* pszInfo1, char* pszInfo2,
+	int nInfo3, unsigned int nInfo4, char* pszInfo5, char* pszInfo6,
+	char* pszInfo7);
 
 #endif //__HELLOX_H__

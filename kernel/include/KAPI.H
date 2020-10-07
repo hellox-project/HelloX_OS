@@ -107,12 +107,12 @@ typedef __KERNEL_THREAD_MESSAGE MSG;
 
 //Create a kernel thread by calling this routine.
 HANDLE CreateKernelThread(DWORD dwStackSize,
-						  DWORD dwInitStatus,
-						  DWORD dwPriority,
-						  __KERNEL_THREAD_ROUTINE lpStartRoutine,
-						  LPVOID lpRoutineParam,
-						  LPVOID lpReserved,
-						  LPSTR  lpszName);
+	DWORD dwInitStatus,
+	DWORD dwPriority,
+	__KERNEL_THREAD_ROUTINE lpStartRoutine,
+	LPVOID lpRoutineParam,
+	LPVOID lpReserved,
+	LPSTR lpszName);
 
 //Destroy the kernel thread object created by CreateKernelThread.
 VOID DestroyKernelThread(HANDLE hThread);
@@ -220,8 +220,9 @@ HANDLE CreateSemaphore(int max_count,int curr_count);
  * activate one kernel thread who is waiting for the semaphore
  * object if there is(are). 
  * Previous counter will be returned.
+ * Rescheduling will not be triggered if bNoResched is set.
  */
-int ReleaseSemaphore(HANDLE hSem);
+int ReleaseSemaphore(HANDLE hSem, BOOL bNoResched);
 
 /* Release the semaphore object. */
 VOID DestroySemaphore(HANDLE hSem);

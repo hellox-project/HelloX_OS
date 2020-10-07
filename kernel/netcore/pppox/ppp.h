@@ -152,6 +152,7 @@ int pppOverEthernetOpen(struct netif *ethif, const char *service_name, const cha
 
 /* Close a PPPoE connection. */
 void pppOverEthernetClose(int pd);
+
 #endif /* PPPOE_SUPPORT */
 
 /* for source code compatibility */

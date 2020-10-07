@@ -13,6 +13,7 @@
 //***********************************************************************/
 
 #include "hellox.h"
+#include "stdio.h"
 
 /* Macros to simplify the programming. */
 #define __PARAM_0 edi
@@ -20,6 +21,18 @@
 #define __PARAM_2 edx
 #define __PARAM_3 ecx
 #define __PARAM_4 ebx
+
+/* 
+ * Local structure to pass parameters to user thread 
+ * wrapper routine from CreateUserThread.
+ * The UserThreadWrapper must be used as entry point
+ * when a new user thread is created,in which the
+ * user specified start routine point will be invoked.
+ */
+typedef struct tag__USER_THREAD_WRAPPER_PARAMBLOCK {
+	__THREAD_START_ROUTINE pStartRoutine;
+	LPVOID pRoutineParam;
+}__USER_THREAD_WRAPPER_PARAMBLOCK;
 
 /* 
  * User thread wrapper routine,as the unified 
@@ -35,19 +48,105 @@ static unsigned long __UserThreadWrapper(LPVOID pData)
 	ExitThread(0);
 }
 
-/* APIs to manipulate user thread. */
+/* Create a new user thread. */
 HANDLE CreateUserThread(
 	DWORD dwStatus,
 	DWORD dwPriority,
-	__KERNEL_THREAD_ROUTINE lpStartRoutine,
+	__THREAD_START_ROUTINE lpStartRoutine,
 	LPVOID lpRoutineParam,
-	char* pszName);
+	char* pszName)
+{
+	HANDLE hRet = NULL;
+	HANDLE* pRetHandle = &hRet;
+
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push __PARAM_2
+		push __PARAM_3
+		push __PARAM_4
+		push ebp
+		push eax
+		mov __PARAM_0, dwStatus
+		mov __PARAM_1, dwPriority
+		mov __PARAM_2, lpStartRoutine
+		mov __PARAM_3, lpRoutineParam
+		mov __PARAM_4, pszName
+		mov eax, pRetHandle
+		mov ebp, eax
+		mov eax, SYSCALL_CREATEUSERTHREAD
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_4
+		pop __PARAM_3
+		pop __PARAM_2
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return hRet;
+}
+
 VOID DestroyUserThread(HANDLE hThread);
 DWORD SetLastError(DWORD dwNewError);
 DWORD GetLastError(void);
 DWORD GetThreadID(HANDLE hThread);
 DWORD SetThreadPriority(HANDLE hThread, DWORD dwPriority);
 HANDLE GetCurrentThread(void);
+
+/* Get current thread's ID. */
+unsigned long GetCurrentThreadID()
+{
+	unsigned long thread_id = 0;
+	unsigned long* pthread_id = &thread_id;
+
+	/* 
+	 * emit asm instructions to query current thread's 
+	 * ID from OS kernel. 
+	 */
+	__asm {
+		push ebp
+		push eax
+		mov eax, pthread_id
+		mov ebp, eax
+		mov eax, SYSCALL_GETCURRENTTHREADID
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+	}
+
+	return thread_id;
+}
+
+/* Terminates current kernel thread. */
+unsigned long TerminateKernelThread(HANDLE hTarget, int status)
+{
+	unsigned long ret_val = 0;
+	unsigned long* pret_val = &ret_val;
+
+	/*
+	 * emit asm instructions to terminates the current
+	 * thread.
+	 */
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push ebp
+		push eax
+		mov __PARAM_0, hTarget
+		mov __PARAM_1, status
+		mov eax, pret_val
+		mov ebp, eax
+		mov eax, SYSCALL_TERMINATEKERNELTHREAD
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+
+	return ret_val;
+}
 
 /* Message operation. */
 BOOL GetMessage(MSG* pMsg)
@@ -132,6 +231,7 @@ BOOL Sleep(DWORD dwMillionSecond)
 		pop ebp
 		pop __PARAM_0
 	}
+	return bRet;
 }
 
 HANDLE SetTimer(DWORD dwTimerID,
@@ -143,11 +243,98 @@ HANDLE CreateEvent(BOOL bInitialStatus);
 VOID DestroyEvent(HANDLE hEvent);
 DWORD SetEvent(HANDLE hEvent);
 DWORD ResetEvent(HANDLE hEvent);
-HANDLE CreateMutex(void);
+
+/* Create a new mutex object and returns the handle. */
+HANDLE CreateMutex(void)
+{
+	HANDLE mtx_obj = 0;
+	HANDLE* pmtx_obj = &mtx_obj;
+
+	__asm {
+		push ebp
+		push eax
+		mov eax, pmtx_obj
+		mov ebp, eax
+		mov eax, SYSCALL_CREATEMUTEX
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+	}
+
+	return mtx_obj;
+}
+
+/* Keep space and will be replaced by CloseHandle routine. */
 VOID DestroyMutex(HANDLE hMutex);
-DWORD ReleaseMutex(HANDLE hEvent);
-DWORD WaitForThisObject(HANDLE hObject);
-DWORD WaitForThisObjectEx(HANDLE hObject, DWORD dwMillionSecond);
+
+/* Release a mutex object. */
+DWORD ReleaseMutex(HANDLE hEvent)
+{
+	unsigned long ret_val = 0;
+	unsigned long* pret_val = &ret_val;
+
+	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
+		mov __PARAM_0, hEvent
+		mov eax, pret_val
+		mov ebp, eax
+		mov eax, SYSCALL_RELEASEMUTEX
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
+	}
+	return ret_val;
+}
+
+/* Infinity waiting for a kernel object. */
+DWORD WaitForThisObject(HANDLE hObject)
+{
+	unsigned long ret_val = 0;
+	unsigned long* pret_val = &ret_val;
+
+	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
+		mov __PARAM_0, hObject
+		mov eax, pret_val
+		mov ebp, eax
+		mov eax, SYSCALL_WAITFORTHISOBJECT
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
+	}
+	return ret_val;
+}
+
+/* Timeout waiting for a kernel object. */
+DWORD WaitForThisObjectEx(HANDLE hObject, DWORD dwMillionSecond)
+{
+	unsigned long ret_val = 0;
+	unsigned long* pret_val = &ret_val;
+
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push ebp
+		push eax
+		mov __PARAM_0, hObject
+		mov __PARAM_1, dwMillionSecond
+		mov eax, pret_val
+		mov ebp, eax
+		mov eax, SYSCALL_WAITFORTHISOBJECTEX
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return ret_val;
+}
 
 /* Allocate or free a virtual area from memory space. */
 LPVOID VirtualAlloc(LPVOID lpDesiredAddr,
@@ -188,13 +375,25 @@ LPVOID VirtualAlloc(LPVOID lpDesiredAddr,
 }
 
 /* Release virtual memory allocated by VirtualAlloc. */
-VOID VirtualFree(LPVOID lpVirtualAddr)
+BOOL VirtualFree(LPVOID lpVirtualAddr)
 {
+	BOOL bRet = FALSE;
+	BOOL* pRet = &bRet;
+
 	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
 		mov __PARAM_0, lpVirtualAddr
+		mov eax, pRet
+		mov ebp, eax
 		mov eax, SYSCALL_VIRTUALFREE
 		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
 	}
+	return bRet;
 }
 
 /* Routines to manipulate file or device. */
@@ -455,6 +654,130 @@ void ChangeLine()
 		mov eax, SYSCALL_CHANGELINE
 		int SYSCALL_VECTOR
 	}
+}
+
+/* Get system information. */
+BOOL GetSystemInfo(SYSTEM_INFO* pSysInfo)
+{
+	BOOL bRet = FALSE;
+	BOOL* pRet = &bRet;
+	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
+		mov __PARAM_0, pSysInfo
+		mov eax, pRet
+		mov ebp, eax
+		mov eax, SYSCALL_GETSYSTEMINFO
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
+	}
+	return bRet;
+}
+
+/* Query virtual memory's basic information. */
+unsigned long VirtualQuery(LPVOID pStartAddr,
+	MEMORY_BASIC_INFORMATION* pMemInfo,
+	unsigned long info_sz)
+{
+	size_t ret_val = 0;
+	size_t* pRet = &ret_val;
+
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push __PARAM_2
+		push ebp
+		push eax
+		mov __PARAM_0, pStartAddr
+		mov __PARAM_1, pMemInfo
+		mov __PARAM_2, info_sz
+		mov ebp, pRet
+		mov eax, SYSCALL_VIRTUALQUERY
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_2
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return ret_val;
+}
+
+/*
+ * Exclusively operations for user mode spinlock
+ * and other purpose.
+ */
+long __InterlockedCompareExchange(long volatile* destination,
+	long exchange,
+	long comparand)
+{
+	__asm {
+		mov eax, comparand
+		mov ecx, destination
+		mov edx, exchange
+		lock cmpxchg dword ptr[ecx], edx
+	}
+}
+
+long __InterlockedExchange(long volatile* destination, long exchange)
+{
+	__asm {
+		mov eax, exchange
+		mov ecx, destination
+		lock xchg dword ptr[ecx], eax
+	}
+}
+
+/* Test the parameter xfering mechanism of system call. */
+BOOL XferMoreParam(char* pszInfo0, char* pszInfo1, char* pszInfo2,
+	int nInfo3, unsigned int nInfo4, char* pszInfo5, char* pszInfo6,
+	char* pszInfo7)
+{
+	__SYSCALL_PARAM_EXTENSION_BLOCK ext_block;
+	__SYSCALL_PARAM_EXTENSION_BLOCK* pext_block = &ext_block;
+	BOOL bRet = FALSE;
+	BOOL* pRetPtr = &bRet;
+
+	/* Init extension param block. */
+	ext_block.ext_param0 = (UINT32)pszInfo0;
+	ext_block.ext_param1 = (UINT32)pszInfo1;
+	ext_block.ext_param2 = (UINT32)pszInfo2;
+	ext_block.ext_param3 = (UINT32)nInfo3;
+	ext_block.ext_param4 = (UINT32)nInfo4;
+	ext_block.ext_param5 = (UINT32)pszInfo5;
+	ext_block.ext_param6 = (UINT32)pszInfo6;
+	ext_block.ext_param7 = (UINT32)pszInfo7;
+
+	/* Launch the system call. */
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push __PARAM_2
+		push __PARAM_3
+		push __PARAM_4
+		push ebp
+		push eax
+		mov __PARAM_0, 0
+		mov __PARAM_1, 0
+		mov __PARAM_2, 0
+		mov __PARAM_3, 0
+		mov __PARAM_4, pext_block
+		mov eax, pRetPtr
+		mov ebp, eax
+		mov eax, SYSCALL_TESTPARAMXFER
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_4
+		pop __PARAM_3
+		pop __PARAM_2
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return bRet;
 }
 
 #undef __PARAM_0

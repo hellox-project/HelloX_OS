@@ -17,6 +17,7 @@
 #include "hellox.h"
 #include "fmt_pe.h"
 #include "stdio.h"
+#include "string.h"
 #include "../include/mlayout.h"
 
 /* Helper routine to get a string's length. */
@@ -412,6 +413,12 @@ static __PE_ENTRY_POINT LoadImage(LPVOID pFileHdr, HANDLE hFile)
 		PrintLine("Failed to alloc app memory.");
 		goto __TERMINAL;
 	}
+	/* 
+	 * VERY IMPORTANT: Clear the allocated memory block. 
+	 * .bss section must be initialized to all 0,we just
+	 * do on the whole memory block here.
+	 */
+	memset(pBaseAddr, 0, total_mem);
 
 	/* OK, now load sections into memory one by one. */
 	char* pSectStart = NULL;

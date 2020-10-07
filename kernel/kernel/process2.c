@@ -321,4 +321,324 @@ __TERMINAL:
 	return bResult;
 }
 
+/* Get a handle from handle array. */
+static __HANDLE GetHandle(__PROCESS_OBJECT* pProcess, __COMMON_OBJECT* objectPtr)
+{
+	__HANDLE_ARRAY* pHandleArray = NULL;
+	__HANDLE handle = INVALID_HANDLE_VALUE;
+	__HANDLE_ARRAY_ELEMENT* pArrayElement = NULL;
+	__HANDLE_ARRAY_ELEMENT* pPrev = NULL;
+	unsigned long ulFlags;
+
+	BUG_ON((NULL == pProcess) || (NULL == objectPtr));
+	pHandleArray = &pProcess->handleArray;
+
+	/* Must operate in atomic. */
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	pArrayElement = pHandleArray->pRoot;
+	while (pArrayElement)
+	{
+		for (int i = 0; i < MAX_HANDLE_OBJECT_PTR; i++)
+		{
+			handle++;
+			if (NULL == pArrayElement->objectPtr[i])
+			{
+				/* Found a free slot. */
+				pArrayElement->objectPtr[i] = objectPtr;
+				pHandleArray->handleNum++;
+				if (handle > pHandleArray->maxHandleValue)
+				{
+					pHandleArray->maxHandleValue = handle;
+				}
+				__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+				goto __TERMINAL;
+			}
+		}
+		/* Iterate next array element. */
+		pPrev = pArrayElement;
+		pArrayElement = pArrayElement->pNext;
+	}
+	
+	/* No free handle slot, allocate a new array element. */
+	pArrayElement = (__HANDLE_ARRAY_ELEMENT*)_hx_malloc(
+		sizeof(__HANDLE_ARRAY_ELEMENT));
+	if (NULL == pArrayElement)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		handle = INVALID_HANDLE_VALUE;
+		goto __TERMINAL;
+	}
+	/* Clear the element and link to list. */
+	memset(pArrayElement, 0, sizeof(__HANDLE_ARRAY_ELEMENT));
+	if (NULL == pPrev)
+	{
+		pHandleArray->pRoot = pArrayElement;
+	}
+	else
+	{
+		pPrev->pNext = pArrayElement;
+	}
+	pHandleArray->elementNum++;
+	pHandleArray->handleNum++;
+	handle++;
+	if (handle > pHandleArray->maxHandleValue)
+	{
+		pHandleArray->maxHandleValue = handle;
+	}
+	pArrayElement->objectPtr[0] = objectPtr;
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+
+__TERMINAL:
+	return handle;
+}
+
+/* Return the kernel object ptr given it's handle. */
+static __COMMON_OBJECT* GetObjectByHandle(__PROCESS_OBJECT* pProcess, __HANDLE handle)
+{
+	__HANDLE_ARRAY* pHandleArray = NULL;
+	__COMMON_OBJECT* objectPtr = NULL;
+	__HANDLE_ARRAY_ELEMENT* pArrayElement = NULL;
+	unsigned long ulFlags = 0;
+
+	BUG_ON((NULL == pProcess) || (INVALID_HANDLE_VALUE == handle));
+	pHandleArray = &pProcess->handleArray;
+
+	/* Must operate in atomic. */
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	if (handle > pHandleArray->maxHandleValue)
+	{
+		/* Invalid handle's value. */
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	unsigned int eleIndex = (handle - 1) / MAX_HANDLE_OBJECT_PTR;
+	if (eleIndex >= pHandleArray->elementNum)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	/* Slide to the corresponding array element. */
+	unsigned int eleOffset = (handle - 1) % MAX_HANDLE_OBJECT_PTR;
+	pArrayElement = pHandleArray->pRoot;
+	while (pArrayElement)
+	{
+		if (0 == eleIndex)
+		{
+			break;
+		}
+		eleIndex--;
+		pArrayElement = pArrayElement->pNext;
+	}
+	if (NULL == pArrayElement)
+	{
+		/* No array element matches the given handle. */
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	/* Located the corresponding array index. */
+	objectPtr = pArrayElement->objectPtr[eleOffset];
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+
+__TERMINAL:
+	return objectPtr;
+}
+
+/*
+ * A helper routine to shrink handle array's element,
+ * release the unused array element to save kernel memory.
+ */
+static void ShrinkHandleArray(__PROCESS_OBJECT* pProcess)
+{
+	__HANDLE_ARRAY* pHandleArray = NULL;
+	__HANDLE secndLast = INVALID_HANDLE_VALUE;
+	__HANDLE currHandle = INVALID_HANDLE_VALUE;
+	__HANDLE_ARRAY_ELEMENT* pArrayElement = NULL;
+	unsigned long eleIndex = 0;
+	/* How many array element should be released. */
+	unsigned long freeEleNum = 0;
+	/* How many array element should be preserved. */
+	unsigned long reserveEleNum = 0;
+	/* Start position in list that should be released. */
+	__HANDLE_ARRAY_ELEMENT* pFreeStart = NULL;
+	unsigned long ulFlags;
+	unsigned int i = 0;
+
+	BUG_ON(NULL == pProcess);
+	pHandleArray = &pProcess->handleArray;
+
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	pArrayElement = pHandleArray->pRoot;
+	while (pArrayElement && (currHandle < pHandleArray->maxHandleValue))
+	{
+		/* Travel the whole list to find the second last handle value. */
+		for (i = 0; i < MAX_HANDLE_OBJECT_PTR; i++)
+		{
+			if (pArrayElement->objectPtr[i])
+			{
+				currHandle = eleIndex * MAX_HANDLE_OBJECT_PTR;
+				currHandle += (i + 1);
+				if (currHandle != pHandleArray->maxHandleValue)
+				{
+					secndLast = currHandle;
+				}
+			}
+		}
+		eleIndex++;
+		pArrayElement = pArrayElement->pNext;
+	}
+	/*
+	 * Calculate how many handle array element should be released.
+	 * Handle slot from 0 to second last should be reserved,all others
+	 * can be released.
+	 */
+	reserveEleNum = (secndLast / MAX_HANDLE_OBJECT_PTR);
+	reserveEleNum += ((secndLast % MAX_HANDLE_OBJECT_PTR) ? 1 : 0);
+	BUG_ON(reserveEleNum > pHandleArray->elementNum);
+	freeEleNum = pHandleArray->elementNum - reserveEleNum;
+	/* Locate the start position that should be released. */
+	pFreeStart = pArrayElement = pHandleArray->pRoot;
+	for (i = 0; i < reserveEleNum; i++)
+	{
+		/* pArrayElement points to the last reserved element. */
+		pArrayElement = pFreeStart;
+		pFreeStart = pFreeStart->pNext;
+	}
+	/* Detach the free list from handle array list. */
+	if (pArrayElement)
+	{
+		pArrayElement->pNext = NULL;
+	}
+	/* If all array elements should be released. */
+	if (pFreeStart == pHandleArray->pRoot)
+	{
+		pHandleArray->pRoot = NULL;
+	}
+	/* Update handle array's state. */
+	pHandleArray->elementNum = reserveEleNum;
+	pHandleArray->maxHandleValue = secndLast;
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+
+	/* Release the free handle element list. */
+	while (pFreeStart)
+	{
+		pArrayElement = pFreeStart;
+		pFreeStart = pFreeStart->pNext;
+		_hx_free(pArrayElement);
+	}
+	return;
+}
+
+/* Destroy the kernel object denoted by it's handle. */
+static int CloseHandle(__PROCESS_OBJECT* pProcess, __HANDLE handle)
+{
+	__HANDLE_ARRAY* pHandleArray = NULL;
+	__COMMON_OBJECT* objectPtr = NULL;
+	__HANDLE_ARRAY_ELEMENT* pArrayElement = NULL;
+	unsigned long ulFlags = 0;
+	int result = 0;
+
+	BUG_ON((NULL == pProcess) || (INVALID_HANDLE_VALUE == handle));
+	pHandleArray = &pProcess->handleArray;
+
+	/* Must operate in atomic. */
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	if (handle > pHandleArray->maxHandleValue)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	unsigned int eleIndex = (handle - 1) / MAX_HANDLE_OBJECT_PTR;
+	if (eleIndex >= pHandleArray->elementNum)
+	{
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	unsigned int eleOffset = (handle - 1) % MAX_HANDLE_OBJECT_PTR;
+	/* Slide to the corresponding array element. */
+	pArrayElement = pHandleArray->pRoot;
+	while (pArrayElement)
+	{
+		if (0 == eleIndex)
+		{
+			break;
+		}
+		eleIndex--;
+		pArrayElement = pArrayElement->pNext;
+	}
+	if (NULL == pArrayElement)
+	{
+		/* The corresponding handle array element is not exist. */
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	/*
+	 * Now we located the handle array element,just
+	 * destroy the corresponding kernel object and free
+	 * the handle array element slot.
+	 */
+	objectPtr = pArrayElement->objectPtr[eleOffset];
+	if (NULL == objectPtr)
+	{
+		/* No object in this slot,may caused by invalid handle value. */
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		goto __TERMINAL;
+	}
+	/* Reset the slot. */
+	pArrayElement->objectPtr[eleOffset] = NULL;
+	pHandleArray->handleNum--;
+	if (handle == pHandleArray->maxHandleValue)
+	{
+		/* Potential exists to shrink the handle array. */
+		ShrinkHandleArray(pProcess);
+	}
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+
+	/* Destroy the corresponding kernel object. */
+	ObjectManager.DestroyObject(&ObjectManager, objectPtr);
+	result = 1;
+
+__TERMINAL:
+	return result;
+}
+
+/* 
+ * Helper routine to destroy a handle array,all kernel 
+ * objects associated with it will be destroyed at this
+ * process.
+ * It will be invoked when one process object is to be
+ * destroyed.
+ */
+static void DestroyHandleArray(__PROCESS_OBJECT* pProcess)
+{
+	__HANDLE_ARRAY* pHandleArray = NULL;
+	__HANDLE_ARRAY_ELEMENT* pArrayElementNext = NULL;
+	__HANDLE_ARRAY_ELEMENT* pArrayElementCurr = NULL;
+	__COMMON_OBJECT* pObjectPtr = NULL;
+	unsigned long ulFlags;
+	int i = 0;
+
+	BUG_ON(NULL == pProcess);
+	pHandleArray = &pProcess->handleArray;
+
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	pArrayElementNext = pHandleArray->pRoot;
+	while (pArrayElementNext)
+	{
+		pArrayElementCurr = pArrayElementNext;
+		pArrayElementNext = pArrayElementNext->pNext;
+		/* Destroy all kernel objects in this element. */
+		for (i = 0; i < MAX_HANDLE_OBJECT_PTR; i++)
+		{
+			pObjectPtr = pArrayElementCurr->objectPtr[i];
+			if (pObjectPtr)
+			{
+				ObjectManager.DestroyObject(&ObjectManager, pObjectPtr);
+			}
+		}
+		/* Release the memory of this array element. */
+		KMemFree(pArrayElementCurr, KMEM_SIZE_TYPE_ANY, 0);
+	}
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+}
+
 #endif

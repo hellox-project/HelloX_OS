@@ -246,7 +246,7 @@ DWORD ResetEvent(HANDLE hEvent)
 
 HANDLE CreateMutex()
 {
-	__MUTEX*            lpMutex    = NULL;
+	__MUTEX* lpMutex = NULL;
 
 	lpMutex = (__MUTEX*)ObjectManager.CreateObject(
 		&ObjectManager,
@@ -412,7 +412,7 @@ __TERMINAL:
 * activate one kernel thread who is waiting for the semaphore
 * object if there is(are).
 */
-int ReleaseSemaphore(HANDLE hSem)
+int ReleaseSemaphore(HANDLE hSem, BOOL bNoResched)
 {
 	__SEMAPHORE* pSem = (__SEMAPHORE*)hSem;
 	int count = -1;
@@ -426,7 +426,8 @@ int ReleaseSemaphore(HANDLE hSem)
 	{
 		goto __TERMINAL;
 	}
-	if (pSem->ReleaseSemaphore((__COMMON_OBJECT*)pSem, &count))
+	/* Just delegates to object's member function. */
+	if (pSem->ReleaseSemaphore((__COMMON_OBJECT*)pSem, &count, bNoResched))
 	{
 		goto __TERMINAL;
 	}

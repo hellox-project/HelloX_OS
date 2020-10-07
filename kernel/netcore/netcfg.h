@@ -31,6 +31,9 @@
 /* Maximal link layer header's length,used to allocate pbuf. */
 #define MAX_L2_HEADER_LEN   64
 
+/* Maximal netif name's length. */
+#define MAX_NETIF_NAME_LENGTH 32
+
 /* Enable DHCP Server module. */
 #define __CFG_NET_DHCP_SERVER
 

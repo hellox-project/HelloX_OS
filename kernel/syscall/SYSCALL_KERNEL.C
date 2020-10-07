@@ -46,9 +46,85 @@ static void SC_CreateKernelThread(__SYSCALL_PARAM_BLOCK* pspb)
 #endif
 }
 
+/* Create a new user thread. */
+static void SC_CreateUserThread(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	__PROCESS_OBJECT* pOwnProcess = __CURRENT_PROCESS;
+	unsigned long init_state = 0;
+	__COMMON_OBJECT* pUserThread = NULL;
+	__HANDLE thread_handle = INVALID_HANDLE_VALUE;
+
+	BUG_ON(NULL == pOwnProcess);
+
+	/* Save and validate the requested initial state of the thread. */
+	init_state = (unsigned long)PARAM(0);
+	if ((KERNEL_THREAD_STATUS_SUSPENDED != init_state) &&
+		(KERNEL_THREAD_STATUS_READY != init_state))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Distribute the user thread to proper CPU. */
+	unsigned int affinity = 0;
+#if defined(__CFG_SYS_SMP)
+	affinity = ProcessorManager.GetScheduleCPU();
+#endif
+
+	/* Create the user thread. */
+	pUserThread = (__COMMON_OBJECT*)KernelThreadManager.CreateUserThread(
+		(__COMMON_OBJECT*)&KernelThreadManager,
+		0, /* Use default stack size. */
+		KERNEL_THREAD_STATUS_SUSPENDED, /* Suspend it at first. */
+		(uint32_t)PARAM(1),
+		(__KERNEL_THREAD_ROUTINE)PARAM(2),
+		(LPVOID)PARAM(3),
+		pOwnProcess,
+		(LPSTR)PARAM(4)
+	);
+	if (NULL == pUserThread)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Change it's default affinity. */
+	KernelThreadManager.ChangeAffinity(pUserThread, affinity);
+	/* Resume it if necessary. */
+	if (KERNEL_THREAD_STATUS_READY == init_state)
+	{
+		KernelThreadManager.ResumeKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+			pUserThread);
+	}
+
+	/* Save the thread object into own process's handle slot. */
+	thread_handle = ProcessManager.GetHandle(pOwnProcess, pUserThread);
+	if (INVALID_HANDLE_VALUE == thread_handle)
+	{
+		/* Exception case. */
+		KernelThreadManager.TerminateKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+			pUserThread, 0);
+		goto __TERMINAL;
+	}
+
+__TERMINAL:
+	SYSCALL_RET = (uint32_t)thread_handle;
+	return;
+}
+
+/* 
+ * Destroy a thread(user/kernel) object. 
+ * Just delegates this operation to CloseHandle.
+ */
 static void SC_DestroyKernelThread(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	DestroyKernelThread((HANDLE)PARAM(0));
+	__HANDLE thread_handle = (__HANDLE)PARAM(0);
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+
+	BUG_ON(NULL == pProcess);
+	if (INVALID_HANDLE_VALUE == thread_handle)
+	{
+		return;
+	}
+	ProcessManager.CloseHandle(pProcess, thread_handle);
 }
 
 static void SC_SetLastError(__SYSCALL_PARAM_BLOCK* pspb)
@@ -68,7 +144,7 @@ static void SC_GetThreadID(__SYSCALL_PARAM_BLOCK* pspb)
 
 static void SC_SetThreadPriority(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)SetThreadPriority((HANDLE)PARAM(0),(DWORD)PARAM(1));
+	SYSCALL_RET = (uint32_t)SetThreadPriority((HANDLE)PARAM(0), (DWORD)PARAM(1));
 }
 
 static void SC_GetMessage(__SYSCALL_PARAM_BLOCK* pspb)
@@ -78,7 +154,7 @@ static void SC_GetMessage(__SYSCALL_PARAM_BLOCK* pspb)
 
 static void SC_SendMessage(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)SendMessage((HANDLE)PARAM(0),	(MSG*)PARAM(1));
+	SYSCALL_RET = (uint32_t)SendMessage((HANDLE)PARAM(0), (MSG*)PARAM(1));
 }
 
 static void SC_PeekMessage(__SYSCALL_PARAM_BLOCK* pspb)
@@ -125,29 +201,139 @@ static void SC_ResetEvent(__SYSCALL_PARAM_BLOCK* pspb)
 	SYSCALL_RET = (uint32_t)ResetEvent((HANDLE)PARAM(0));
 }
 
+/* Create a mutex object and return it's handle. */
 static void SC_CreateMutex(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)CreateMutex();
+	__COMMON_OBJECT* pMutex = NULL;
+	__HANDLE mtx_handle = INVALID_HANDLE_VALUE;
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+
+	BUG_ON(NULL == pProcess);
+
+	/* Create mutex object as kernel object. */
+	pMutex = CreateMutex();
+	if (pMutex)
+	{
+		mtx_handle = ProcessManager.GetHandle(pProcess, pMutex);
+		if (INVALID_HANDLE_VALUE == mtx_handle)
+		{
+			/* Exception case,destroy the mutex object and write a log. */
+			DestroyMutex(pMutex);
+			goto __TERMINAL;
+		}
+	}
+
+__TERMINAL:
+	/* Return the handle of mutex object. */
+	SYSCALL_RET = (uint32_t)mtx_handle;
 }
 
+/* 
+ * Destroy a mutex object denoted by it's handle. 
+ * Just delegates the operation to CloseHandle routine.
+ */
 static void SC_DestroyMutex(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	DestroyMutex((HANDLE)PARAM(0));
+	__HANDLE mtx_handle = INVALID_HANDLE_VALUE;
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+
+	BUG_ON(NULL == pProcess);
+
+	mtx_handle = (__HANDLE)PARAM(0);
+	if (INVALID_HANDLE_VALUE == mtx_handle)
+	{
+		goto __TERMINAL;
+	}
+	ProcessManager.CloseHandle(pProcess, mtx_handle);
+
+__TERMINAL:
+	return;
 }
 
+/* Release a mutex object. */
 static void SC_ReleaseMutex(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)ReleaseMutex((HANDLE)PARAM(0));
+	__COMMON_OBJECT* pMutex = NULL;
+	__HANDLE mtx_handle = INVALID_HANDLE_VALUE;
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+	unsigned long rel_result = 0;
+
+	BUG_ON(NULL == pProcess);
+	mtx_handle = (__HANDLE)PARAM(0);
+	if (INVALID_HANDLE_VALUE == mtx_handle)
+	{
+		goto __TERMINAL;
+	}
+	/* Get the corresponding mutex object. */
+	pMutex = ProcessManager.GetObjectByHandle(pProcess, mtx_handle);
+	if (NULL == pMutex)
+	{
+		goto __TERMINAL;
+	}
+	/* Just destroy it. */
+	rel_result = (uint32_t)ReleaseMutex(pMutex);
+
+__TERMINAL:
+	SYSCALL_RET = rel_result;
+	return;
 }
 
+/* Wait for a kernel object infinitely. */
 static void SC_WaitForThisObject(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)WaitForThisObject((HANDLE)PARAM(0));
+	__COMMON_OBJECT* pObject = NULL;
+	__HANDLE obj_handle = INVALID_HANDLE_VALUE;
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+	unsigned long wait_result = OBJECT_WAIT_FAILED;
+
+	BUG_ON(NULL == pProcess);
+	obj_handle = (__HANDLE)PARAM(0);
+	if (INVALID_HANDLE_VALUE == obj_handle)
+	{
+		goto __TERMINAL;
+	}
+	/* Get the corresponding kernel object. */
+	pObject = ProcessManager.GetObjectByHandle(pProcess, obj_handle);
+	if (NULL == pObject)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Now just wait it. */
+	wait_result = WaitForThisObject(pObject);
+
+__TERMINAL:
+	SYSCALL_RET = wait_result;
+	return;
 }
 
+/* Timeout wait for a kernel object. */
 static void SC_WaitForThisObjectEx(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)WaitForThisObjectEx((HANDLE)PARAM(0),(DWORD)PARAM(1),NULL);
+	__COMMON_OBJECT* pObject = NULL;
+	__HANDLE obj_handle = INVALID_HANDLE_VALUE;
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+	unsigned long wait_result = OBJECT_WAIT_FAILED;
+
+	BUG_ON(NULL == pProcess);
+	obj_handle = (__HANDLE)PARAM(0);
+	if (INVALID_HANDLE_VALUE == obj_handle)
+	{
+		goto __TERMINAL;
+	}
+	/* Get the corresponding kernel object. */
+	pObject = ProcessManager.GetObjectByHandle(pProcess, obj_handle);
+	if (NULL == pObject)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Now just wait it. */
+	wait_result = WaitForThisObjectEx(pObject, PARAM(1), NULL);
+
+__TERMINAL:
+	SYSCALL_RET = wait_result;
+	return;
 }
 
 static void SC_ConnectInterrupt(__SYSCALL_PARAM_BLOCK* pspb)
@@ -166,20 +352,43 @@ static void SC_DisConnectInterrupt(__SYSCALL_PARAM_BLOCK* pspb)
 static void SC_VirtualAlloc(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	__PROCESS_OBJECT* pProcess = ProcessManager.GetCurrentProcess((__COMMON_OBJECT*)&ProcessManager);
+	unsigned long ulAllocFlags = 0;
 	__VIRTUAL_MEMORY_MANAGER* pVmmMgr = NULL;
 
 	BUG_ON(NULL == pProcess);
 	pVmmMgr = pProcess->pMemMgr;
 	BUG_ON(NULL == pVmmMgr);
 
+	/* Allocate from user space,set allocation flags accordingly. */
+	ulAllocFlags = (unsigned long)PARAM(2);
+	ulAllocFlags &= (~VIRTUAL_AREA_ALLOCATE_SPACE_MASK);
+	ulAllocFlags |= VIRTUAL_AREA_ALLOCATE_USERSPACE;
+
 	SYSCALL_RET = (uint32_t)pVmmMgr->VirtualAlloc(
 		(__COMMON_OBJECT*)pVmmMgr,
 		(LPVOID)PARAM(0),
 		(DWORD)PARAM(1),
-		(DWORD)PARAM(2),
+		ulAllocFlags,
 		(DWORD)PARAM(3),
 		(UCHAR*)PARAM(4),
 		NULL);
+}
+
+static void SC_VirtualQuery(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	__PROCESS_OBJECT* pProcess = ProcessManager.GetCurrentProcess((__COMMON_OBJECT*)&ProcessManager);
+	unsigned long ulAllocFlags = 0;
+	__VIRTUAL_MEMORY_MANAGER* pVmmMgr = NULL;
+
+	BUG_ON(NULL == pProcess);
+	pVmmMgr = pProcess->pMemMgr;
+	BUG_ON(NULL == pVmmMgr);
+
+	SYSCALL_RET = (uint32_t)pVmmMgr->VirtualQuery(
+		(__COMMON_OBJECT*)pVmmMgr,
+		(LPVOID)PARAM(0),
+		(__MEMORY_BASIC_INFORMATION*)PARAM(1),
+		(size_t)PARAM(2));
 }
 
 static void SC_VirtualFree(__SYSCALL_PARAM_BLOCK* pspb)
@@ -191,7 +400,7 @@ static void SC_VirtualFree(__SYSCALL_PARAM_BLOCK* pspb)
 	pVmmMgr = pProcess->pMemMgr;
 	BUG_ON(NULL == pVmmMgr);
 
-	pVmmMgr->VirtualFree((__COMMON_OBJECT*)pVmmMgr,
+	SYSCALL_RET = pVmmMgr->VirtualFree((__COMMON_OBJECT*)pVmmMgr,
 		(LPVOID)PARAM(0));
 }
 
@@ -205,7 +414,7 @@ static void SC_KMemFree(__SYSCALL_PARAM_BLOCK* pspb)
 	KMemFree((LPVOID)PARAM(0),(DWORD)PARAM(1),(DWORD)PARAM(2));
 }
 
-
+/* Register a new system call into kernel. */
 static void SC_RegisterSystemCall(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	SYSCALL_RET = (uint32_t)RegisterSystemCall(
@@ -222,7 +431,7 @@ static void SC_ReplaceShell(__SYSCALL_PARAM_BLOCK* pspb)
 static void SC_LoadDriver(__SYSCALL_PARAM_BLOCK* pspb)
 {
 #ifdef __CFG_SYS_DDF
-	SYSCALL_RET = (uint32_t)IOManager.LoadDriver(	(__DRIVER_ENTRY)PARAM(0));
+	SYSCALL_RET = (uint32_t)IOManager.LoadDriver((__DRIVER_ENTRY)PARAM(0));
 #endif
 }
 
@@ -230,7 +439,13 @@ static void SC_GetCurrentThread(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	SYSCALL_RET = (uint32_t)__CURRENT_KERNEL_THREAD;
 }
-	
+
+/* Return current thread's ID. */
+static void SC_GetCurrentThreadID(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	SYSCALL_RET = (unsigned long)__CURRENT_KERNEL_THREAD->dwThreadID;
+}
+
 static void SC_GetDevice(__SYSCALL_PARAM_BLOCK* pspb)
 {
 #ifdef __CFG_SYS_DDF
@@ -282,16 +497,62 @@ static void SC_SetCursorPos(__SYSCALL_PARAM_BLOCK* pspb)
 
 static void SC_TerminateKernelThread(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	KernelThreadManager.TerminateKernelThread(
+	__HANDLE thread_handle = (__HANDLE)PARAM(0);
+	__PROCESS_OBJECT* pProcess = __CURRENT_PROCESS;
+	__COMMON_OBJECT* pThread = NULL;
+	unsigned long result = 0;
+
+	BUG_ON(NULL == pProcess);
+	if (INVALID_HANDLE_VALUE == thread_handle)
+	{
+		goto __TERMINAL;
+	}
+	pThread = ProcessManager.GetObjectByHandle(pProcess, thread_handle);
+	if (NULL == pThread)
+	{
+		goto __TERMINAL;
+	}
+	/* Just terminates the thread. */
+	SYSCALL_RET = KernelThreadManager.TerminateKernelThread(
 		(__COMMON_OBJECT*)&KernelThreadManager,
-		(__COMMON_OBJECT*)PARAM(0),
+		pThread,
 		(DWORD)PARAM(1));
+
+	/* Should not call CloseHandle... */
+
+__TERMINAL:
+	SYSCALL_RET = (uint32_t)result;
+	return;
 }
 
 /* Call half bottom part of a process. */
 static void SC_ProcessHalfBottom(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	ProcessManager.ProcessHalfBottom();
+}
+
+/* Get system level information. */
+static void SC_GetSystemInfo(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	__SYSTEM_INFO* pSysInfo = NULL;
+	BOOL bResult = FALSE;
+	
+	/* Map user memory to kernel. */
+	pSysInfo = (__SYSTEM_INFO*)map_to_kernel((void*)PARAM(0), sizeof(__SYSTEM_INFO), __OUT);
+	if (NULL == pSysInfo)
+	{
+		goto __TERMINAL;
+	}
+
+	bResult = System.GetSystemInfo(pSysInfo);
+	if (bResult)
+	{
+		/* Map back to user. */
+		map_to_user((void*)PARAM(0), sizeof(__SYSTEM_INFO), __OUT, pSysInfo);
+	}
+
+__TERMINAL:
+	SYSCALL_RET = bResult;
 }
 
 void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
@@ -341,6 +602,10 @@ void  RegisterKernelEntry(SYSCALL_ENTRY* pSysCallEntry)
 
 	pSysCallEntry[SYSCALL_PEEKMESSAGE] = SC_PeekMessage;
 	pSysCallEntry[SYSCALL_PROCESSHALFBOTTOM] = SC_ProcessHalfBottom;
+	pSysCallEntry[SYSCALL_CREATEUSERTHREAD] = SC_CreateUserThread;
+	pSysCallEntry[SYSCALL_GETSYSTEMINFO] = SC_GetSystemInfo;
+	pSysCallEntry[SYSCALL_VIRTUALQUERY] = SC_VirtualQuery;
+	pSysCallEntry[SYSCALL_GETCURRENTTHREADID] = SC_GetCurrentThreadID;
 }
 
 #undef PARAM

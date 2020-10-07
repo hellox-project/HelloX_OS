@@ -645,7 +645,7 @@ int rtl8152_set_speed(struct r8152 *tp, u8 autoneg, u16 speed, u8 duplex);
 
 //Operation routines of R8152 to fit HelloX.
 BOOL __r8152_init(__ETHERNET_INTERFACE* pEthInt);
-BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt);
+BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pOutFrame);
 __ETHERNET_BUFFER* __r8152_recv(__ETHERNET_INTERFACE* pEthInt);
 BOOL __r8152_control(__ETHERNET_INTERFACE* pEthInt, DWORD dwOperations, LPVOID pData);
 BOOL __r8152_internal_send(__ETHERNET_BUFFER* pEthBuff);

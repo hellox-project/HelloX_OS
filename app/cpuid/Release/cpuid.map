@@ -1,0 +1,525 @@
+ cpuid
+
+ Timestamp is 5f3003b3 (Sun Aug  9 22:09:55 2020)
+
+ Preferred load address is 00400000
+
+ Start         Length     Name                   Class
+ 0001:00000000 00006fe0H .text$mn                CODE
+ 0002:00000000 00000018H .idata$5                DATA
+ 0002:00000018 00000008H .00cfg                  DATA
+ 0002:0000001c 00000000H .gfids$y                DATA
+ 0002:00000020 0000a660H .rdata                  DATA
+ 0002:0000a680 00000000H .edata                  DATA
+ 0002:0000a680 00000164H .rdata$zzzdbg           DATA
+ 0002:0000a7e4 00000014H .idata$2                DATA
+ 0002:0000a7f8 00000014H .idata$3                DATA
+ 0002:0000a80c 00000018H .idata$4                DATA
+ 0002:0000a824 0000008cH .idata$6                DATA
+ 0003:00000000 000013f0H .data                   DATA
+ 0003:000013f0 00000774H .bss                    DATA
+ 0004:00000000 00000060H .rsrc$01                DATA
+ 0004:00000060 00000180H .rsrc$02                DATA
+
+  Address         Publics by Value              Rva+Base       Lib:Object
+
+ 0000:00000000       ___dynamic_value_reloc_table 00000000     <absolute>
+ 0000:00000000       ___hybrid_code_map         00000000     <absolute>
+ 0000:00000000       ___guard_longjmp_count     00000000     <absolute>
+ 0000:00000000       ___guard_fids_table        00000000     <absolute>
+ 0000:00000000       ___guard_iat_count         00000000     <absolute>
+ 0000:00000000       ___hybrid_auxiliary_iat    00000000     <absolute>
+ 0000:00000000       ___guard_iat_table         00000000     <absolute>
+ 0000:00000000       ___hybrid_code_map_count   00000000     <absolute>
+ 0000:00000000       ___safe_se_handler_table   00000000     <absolute>
+ 0000:00000000       ___guard_longjmp_table     00000000     <absolute>
+ 0000:00000000       ___guard_fids_count        00000000     <absolute>
+ 0000:00000000       ___volatile_metadata       00000000     <absolute>
+ 0000:00000000       ___enclave_config          00000000     <absolute>
+ 0000:00000000       ___safe_se_handler_count   00000000     <absolute>
+ 0000:00000100       ___guard_flags             00000100     <absolute>
+ 0001:00000000       _cpuid_exists_by_eflags    00401000 f   asm-bits.obj
+ 0001:00000050       _exec_cpuid                00401050 f   asm-bits.obj
+ 0001:00000080       _set_error                 00401080 f   cpuid_main.obj
+ 0001:00000e30       _cpuid_present             00401e30 f   cpuid_main.obj
+ 0001:00000e40       _cpu_exec_cpuid            00401e40 f   cpuid_main.obj
+ 0001:00000ea0       _cpu_exec_cpuid_ext        00401ea0 f   cpuid_main.obj
+ 0001:00000ec0       _cpuid_get_raw_data        00401ec0 f   cpuid_main.obj
+ 0001:00001230       _cpu_ident_internal        00402230 f   cpuid_main.obj
+ 0001:00001370       _cpu_identify              00402370 f   cpuid_main.obj
+ 0001:000013b0       _cpu_feature_str           004023b0 f   cpuid_main.obj
+ 0001:00001cc0       _cpuid_error               00402cc0 f   cpuid_main.obj
+ 0001:00001e30       _match_features            00402e30 f   libcpuid_util.obj
+ 0001:00001ea0       _warnf                     00402ea0 f   libcpuid_util.obj
+ 0001:00001f00       _debugf                    00402f00 f   libcpuid_util.obj
+ 0001:000020e0       _match_cpu_codename        004030e0 f   libcpuid_util.obj
+ 0001:00002340       _match_pattern             00403340 f   libcpuid_util.obj
+ 0001:00002410       _match_all                 00403410 f   libcpuid_util.obj
+ 0001:00002450       _debug_print_lbits         00403450 f   libcpuid_util.obj
+ 0001:000024e0       __hxmain                   004034e0 f   main.obj
+ 0001:000039a0       _cpuid_identify_amd        004049a0 f   recog_amd.obj
+ 0001:000058a0       _cpuid_get_epc             004068a0 f   recog_intel.obj
+ 0001:00005a20       _cpuid_identify_intel      00406a20 f   recog_intel.obj
+ 0001:00005c00       _CreateMutex               00406c00 f   hellox.obj
+ 0001:00005c40       _ReleaseMutex              00406c40 f   hellox.obj
+ 0001:00005c90       _WaitForThisObject         00406c90 f   hellox.obj
+ 0001:00005ce0       _PrintChar                 00406ce0 f   hellox.obj
+ 0001:00005d20       _GotoHome                  00406d20 f   hellox.obj
+ 0001:00005d30       _ChangeLine                00406d30 f   hellox.obj
+ 0001:00005d40       _GetSystemInfo             00406d40 f   hellox.obj
+ 0001:00005d90       _memcpy                    00406d90 f   memory.obj
+ 0001:00005de0       _memset                    00406de0 f   memory.obj
+ 0001:00006480       __hx_vsprintf              00407480 f   stdio.obj
+ 0001:00006a80       __hx_printf                00407a80 f   stdio.obj
+ 0001:00006be0       _strcmp                    00407be0 f   string.obj
+ 0001:00006c40       _strlen                    00407c40 f   string.obj
+ 0001:00006c70       _strcpy                    00407c70 f   string.obj
+ 0001:00006cb0       _strncpy                   00407cb0 f   string.obj
+ 0001:00006d20       _strstr                    00407d20 f   string.obj
+ 0001:00006da1       @__security_check_cookie@4 00407da1 f   MSVCRT:secchk.obj
+ 0001:00006db2       ___raise_securityfailure   00407db2 f   MSVCRT:gs_report.obj
+ 0001:00006dda       ___report_gsfailure        00407dda f   MSVCRT:gs_report.obj
+ 0001:00006ed3       ___report_rangecheckfailure 00407ed3 f   MSVCRT:gs_report.obj
+ 0001:00006edf       ___report_securityfailure  00407edf f   MSVCRT:gs_report.obj
+ 0001:00006fad       _IsProcessorFeaturePresent@4 00407fad f   kernel32:KERNEL32.dll
+ 0001:00006fc0       __allshl                   00407fc0 f   MSVCRT:llshl.obj
+ 0001:00006fdf       @_guard_check_icall_nop@4  00407fdf f i MSVCRT:guard_support.obj
+ 0002:00000000       __imp__SetUnhandledExceptionFilter@4 00408000     kernel32:KERNEL32.dll
+ 0002:00000004       __imp__GetCurrentProcess@0 00408004     kernel32:KERNEL32.dll
+ 0002:00000008       __imp__TerminateProcess@8  00408008     kernel32:KERNEL32.dll
+ 0002:0000000c       __imp__IsProcessorFeaturePresent@4 0040800c     kernel32:KERNEL32.dll
+ 0002:00000010       __imp__UnhandledExceptionFilter@4 00408010     kernel32:KERNEL32.dll
+ 0002:00000014       \177KERNEL32_NULL_THUNK_DATA 00408014     kernel32:KERNEL32.dll
+ 0002:00000018       ___guard_check_icall_fptr  00408018     MSVCRT:guard_support.obj
+ 0002:00000028       _matchtable                00408028     main.obj
+ 0002:000001e8       _cpudb_amd                 004081e8     recog_amd.obj
+ 0002:000049c0       _amd_code_str              0040c9c0     recog_amd.obj
+ 0002:00004a00       _intel_bcode_str           0040ca00     recog_intel.obj
+ 0002:00004ab8       _cpudb_intel               0040cab8     recog_intel.obj
+ 0002:0000a470       __ctype                    00412470     ctype.obj
+ 0002:0000a5e0       __load_config_used         004125e0     MSVCRT:loadcfg.obj
+ 0002:0000a7e4       __IMPORT_DESCRIPTOR_KERNEL32 004127e4     kernel32:KERNEL32.dll
+ 0002:0000a7f8       __NULL_IMPORT_DESCRIPTOR   004127f8     kernel32:KERNEL32.dll
+ 0003:00000000       ___security_cookie_complement 00413000     MSVCRT:gs_cookie.obj
+ 0003:00000004       ___security_cookie         00413004     MSVCRT:gs_cookie.obj
+ 0003:00000008       __warn_fun                 00413008     libcpuid_util.obj
+ 0003:00001710       _verbose_level             00414710     main.obj
+ 0003:00001714       _need_quiet                00414714     main.obj
+ 0003:00001718       _out_file                  00414718     main.obj
+ 0003:00001818       _raw_data_file             00414818     main.obj
+ 0003:00001918       _need_report               00414918     main.obj
+ 0003:00001b60       __current_verboselevel     00414b60     <common>
+
+ entry point at        0001:000024e0
+
+ Static symbols
+
+ 0000:fffe9000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:fffe9000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:fffe9000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:fffe9000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:fffe9000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0001:00000090       _cpu_id_t_constructor      00401090 f   cpuid_main.obj
+ 0001:000001a0       _get_total_cpus            004011a0 f   cpuid_main.obj
+ 0001:000001f0       _load_features_common      004011f0 f   cpuid_main.obj
+ 0001:000007f0       _cpuid_vendor_identify     004017f0 f   cpuid_main.obj
+ 0001:00000b70       _cpuid_basic_identify      00401b70 f   cpuid_main.obj
+ 0001:00001e80       _default_warn              00402e80 f   libcpuid_util.obj
+ 0001:00001f70       _popcount64                00402f70 f   libcpuid_util.obj
+ 0001:00001fb0       _score                     00402fb0 f   libcpuid_util.obj
+ 0001:00002220       _xmatch_entry              00403220 f   libcpuid_util.obj
+ 0001:00002790       _load_amd_features         00403790 f   recog_amd.obj
+ 0001:00002b20       _decode_amd_cache_info     00403b20 f   recog_amd.obj
+ 0001:00002e90       _decode_amd_number_of_cores 00403e90 f   recog_amd.obj
+ 0001:00003010       _amd_has_turion_modelname  00404010 f   recog_amd.obj
+ 0001:000031d0       _decode_amd_codename_part1 004041d0 f   recog_amd.obj
+ 0001:00003808       $LN25                      00404808     recog_amd.obj
+ 0001:00003830       _decode_amd_codename       00404830 f   recog_amd.obj
+ 0001:000039f0       _load_intel_features       004049f0 f   recog_intel.obj
+ 0001:00003d60       _check_case                00404d60 f   recog_intel.obj
+ 0001:00003e50       $LN12                      00404e50     recog_intel.obj
+ 0001:00003e70       _decode_intel_oldstyle_cache_info 00404e70 f   recog_intel.obj
+ 0001:00004790       _decode_intel_deterministic_cache_info 00405790 f   recog_intel.obj
+ 0001:00004970       _decode_intel_extended_topology 00405970 f   recog_intel.obj
+ 0001:00004a80       _decode_intel_number_of_cores 00405a80 f   recog_intel.obj
+ 0001:00004be0       _get_brand_code_and_bits   00405be0 f   recog_intel.obj
+ 0001:000052e8       $LN51                      004062e8     recog_intel.obj
+ 0001:00005310       _get_model_code            00406310 f   recog_intel.obj
+ 0001:000055b0       $LN37                      004065b0     recog_intel.obj
+ 0001:000055d4       $LN36                      004065d4     recog_intel.obj
+ 0001:000055f0       _decode_intel_sgx_features 004065f0 f   recog_intel.obj
+ 0001:00005e20       _strnlen                   00406e20 f   stdio.obj
+ 0001:00005e70       _skip_atoi                 00406e70 f   stdio.obj
+ 0001:00005ec0       _number                    00406ec0 f   stdio.obj
+ 0001:00006160       _eaddr                     00407160 f   stdio.obj
+ 0001:000062a0       _iaddr                     004072a0 f   stdio.obj
+ 0001:000069e0       $LN75                      004079e0     stdio.obj
+ 0001:000069f8       $LN73                      004079f8     stdio.obj
+ 0001:00006a0c       $LN76                      00407a0c     stdio.obj
+ 0001:00006a3c       $LN74                      00407a3c     stdio.obj
+ 0001:00006fc0       $$000000                   00407fc0     MSVCRT:llshl.obj
+ 0002:00000020       _GS_ExceptionPointers      00408020     MSVCRT:gs_report.obj
+ 0002:0000a8a2       .idata$6                   004128a2     kernel32:KERNEL32.dll
+ 0003:0000000c       $SG4294966697              0041300c     main.obj
+ 0003:00000014       $SG4294966696              00413014     main.obj
+ 0003:00000020       $SG4294966695              00413020     main.obj
+ 0003:0000002c       $SG4294966694              0041302c     main.obj
+ 0003:00000038       $SG4294966693              00413038     main.obj
+ 0003:00000044       $SG4294966692              00413044     main.obj
+ 0003:0000004c       $SG4294966691              0041304c     main.obj
+ 0003:00000058       $SG4294966690              00413058     main.obj
+ 0003:00000064       $SG4294966689              00413064     main.obj
+ 0003:00000070       $SG4294966688              00413070     main.obj
+ 0003:00000078       $SG4294966687              00413078     main.obj
+ 0003:00000084       $SG4294966686              00413084     main.obj
+ 0003:00000094       $SG4294966685              00413094     main.obj
+ 0003:000000a0       $SG4294966684              004130a0     main.obj
+ 0003:000000ac       $SG4294966683              004130ac     main.obj
+ 0003:000000b4       $SG4294966682              004130b4     main.obj
+ 0003:000000c0       $SG4294966681              004130c0     main.obj
+ 0003:000000cc       $SG4294966680              004130cc     main.obj
+ 0003:000000d8       $SG4294966679              004130d8     main.obj
+ 0003:000000e4       $SG4294966678              004130e4     main.obj
+ 0003:000000f0       $SG4294966677              004130f0     main.obj
+ 0003:000000fc       $SG4294966676              004130fc     main.obj
+ 0003:00000108       $SG4294966675              00413108     main.obj
+ 0003:00000114       $SG4294966674              00413114     main.obj
+ 0003:00000124       $SG4294966673              00413124     main.obj
+ 0003:00000134       $SG4294966672              00413134     main.obj
+ 0003:00000144       $SG4294966671              00413144     main.obj
+ 0003:00000154       $SG4294966670              00413154     main.obj
+ 0003:00000164       $SG4294966669              00413164     main.obj
+ 0003:00000170       $SG4294966668              00413170     main.obj
+ 0003:00000178       $SG4294966667              00413178     main.obj
+ 0003:00000180       $SG4294966666              00413180     main.obj
+ 0003:0000018c       $SG4294966665              0041318c     main.obj
+ 0003:0000019c       $SG4294966664              0041319c     main.obj
+ 0003:000001a8       $SG4294966663              004131a8     main.obj
+ 0003:000001b0       $SG4294966662              004131b0     main.obj
+ 0003:000001bc       $SG4294966661              004131bc     main.obj
+ 0003:000001c8       $SG4294966498              004131c8     recog_amd.obj
+ 0003:000001d4       $SG4294966497              004131d4     recog_amd.obj
+ 0003:000001dc       $SG4294966496              004131dc     recog_amd.obj
+ 0003:000001e4       $SG4294966495              004131e4     recog_amd.obj
+ 0003:000001f0       $SG4294966494              004131f0     recog_amd.obj
+ 0003:000001fc       $SG4294966493              004131fc     recog_amd.obj
+ 0003:00000208       $SG4294966492              00413208     recog_amd.obj
+ 0003:00000214       $SG4294966491              00413214     recog_amd.obj
+ 0003:00000220       $SG4294966359              00413220     recog_intel.obj
+ 0003:00000228       $SG4294966358              00413228     recog_intel.obj
+ 0003:00000230       $SG4294966357              00413230     recog_intel.obj
+ 0003:00000238       $SG4294966356              00413238     recog_intel.obj
+ 0003:00000244       $SG4294966355              00413244     recog_intel.obj
+ 0003:00000250       $SG4294966354              00413250     recog_intel.obj
+ 0003:0000025c       $SG4294966353              0041325c     recog_intel.obj
+ 0003:00000268       $SG4294966352              00413268     recog_intel.obj
+ 0003:00000274       $SG4294966351              00413274     recog_intel.obj
+ 0003:00000288       $SG4294966350              00413288     recog_intel.obj
+ 0003:00000294       $SG4294966349              00413294     recog_intel.obj
+ 0003:000002a4       $SG4294966348              004132a4     recog_intel.obj
+ 0003:000002b0       $SG4294966347              004132b0     recog_intel.obj
+ 0003:000002b8       $SG4294966346              004132b8     recog_intel.obj
+ 0003:000002c0       $SG4294966345              004132c0     recog_intel.obj
+ 0003:000002cc       $SG4294966344              004132cc     recog_intel.obj
+ 0003:000002dc       $SG4294966343              004132dc     recog_intel.obj
+ 0003:000002ec       $SG4294966342              004132ec     recog_intel.obj
+ 0003:00000300       $SG4294966341              00413300     recog_intel.obj
+ 0003:0000030c       $SG4294966340              0041330c     recog_intel.obj
+ 0003:0000031c       $SG4294966339              0041331c     recog_intel.obj
+ 0003:0000032c       $SG4294966338              0041332c     recog_intel.obj
+ 0003:00000338       $SG4294966337              00413338     recog_intel.obj
+ 0003:00000344       $SG4294965807              00413344     stdio.obj
+ 0003:0000036c       $SG4294965806              0041336c     stdio.obj
+ 0003:00000394       $SG4294966961              00413394     cpuid_main.obj
+ 0003:000003a4       $SG4294966962              004133a4     cpuid_main.obj
+ 0003:000003b8       $SG4294966964              004133b8     cpuid_main.obj
+ 0003:000003d0       $SG4294966966              004133d0     cpuid_main.obj
+ 0003:000003e4       $SG4294966968              004133e4     cpuid_main.obj
+ 0003:000003f0       $SG4294966970              004133f0     cpuid_main.obj
+ 0003:000003fc       $SG4294966972              004133fc     cpuid_main.obj
+ 0003:0000042c       $SG4294966974              0041342c     cpuid_main.obj
+ 0003:00000454       $SG4294966976              00413454     cpuid_main.obj
+ 0003:00000474       $SG4294966978              00413474     cpuid_main.obj
+ 0003:00000498       $SG4294966980              00413498     cpuid_main.obj
+ 0003:000004b0       $SG4294966982              004134b0     cpuid_main.obj
+ 0003:000004c0       $SG4294966984              004134c0     cpuid_main.obj
+ 0003:000004d0       $SG4294966986              004134d0     cpuid_main.obj
+ 0003:000004ec       $SG4294966988              004134ec     cpuid_main.obj
+ 0003:00000508       $SG4294966990              00413508     cpuid_main.obj
+ 0003:0000052c       $SG4294966992              0041352c     cpuid_main.obj
+ 0003:00000550       $SG4294966994              00413550     cpuid_main.obj
+ 0003:0000055c       $SG4294966998              0041355c     cpuid_main.obj
+ 0003:00000568       $SG4294966997              00413568     cpuid_main.obj
+ 0003:000005cc       $SG4294967000              004135cc     cpuid_main.obj
+ 0003:000005d8       $SG4294967002              004135d8     cpuid_main.obj
+ 0003:000005e4       $SG4294967004              004135e4     cpuid_main.obj
+ 0003:000005e8       $SG4294967006              004135e8     cpuid_main.obj
+ 0003:000005f0       $SG4294967008              004135f0     cpuid_main.obj
+ 0003:000005f4       $SG4294967010              004135f4     cpuid_main.obj
+ 0003:00000600       $SG4294967012              00413600     cpuid_main.obj
+ 0003:0000060c       $SG4294967014              0041360c     cpuid_main.obj
+ 0003:00000614       $SG4294967016              00413614     cpuid_main.obj
+ 0003:00000620       $SG4294967018              00413620     cpuid_main.obj
+ 0003:0000062c       $SG4294967020              0041362c     cpuid_main.obj
+ 0003:00000638       $SG4294967022              00413638     cpuid_main.obj
+ 0003:00000644       $SG4294967024              00413644     cpuid_main.obj
+ 0003:0000064c       $SG4294967026              0041364c     cpuid_main.obj
+ 0003:00000650       $SG4294967028              00413650     cpuid_main.obj
+ 0003:00000654       $SG4294967030              00413654     cpuid_main.obj
+ 0003:0000065c       $SG4294967032              0041365c     cpuid_main.obj
+ 0003:00000664       $SG4294967034              00413664     cpuid_main.obj
+ 0003:0000066c       $SG4294967036              0041366c     cpuid_main.obj
+ 0003:00000670       $SG4294967038              00413670     cpuid_main.obj
+ 0003:00000674       $SG4294967040              00413674     cpuid_main.obj
+ 0003:00000680       $SG4294967042              00413680     cpuid_main.obj
+ 0003:00000684       $SG4294967044              00413684     cpuid_main.obj
+ 0003:0000068c       $SG4294967046              0041368c     cpuid_main.obj
+ 0003:00000694       $SG4294967048              00413694     cpuid_main.obj
+ 0003:00000698       $SG4294967050              00413698     cpuid_main.obj
+ 0003:000006a0       $SG4294967052              004136a0     cpuid_main.obj
+ 0003:000006a8       $SG4294967054              004136a8     cpuid_main.obj
+ 0003:000006ac       $SG4294967056              004136ac     cpuid_main.obj
+ 0003:000006bc       $SG4294967058              004136bc     cpuid_main.obj
+ 0003:000006c8       $SG4294967060              004136c8     cpuid_main.obj
+ 0003:000006d4       $SG4294967062              004136d4     cpuid_main.obj
+ 0003:000006d8       $SG4294967064              004136d8     cpuid_main.obj
+ 0003:000006e0       $SG4294967066              004136e0     cpuid_main.obj
+ 0003:000006e4       $SG4294967068              004136e4     cpuid_main.obj
+ 0003:000006e8       $SG4294967070              004136e8     cpuid_main.obj
+ 0003:000006ec       $SG4294967072              004136ec     cpuid_main.obj
+ 0003:000006f0       $SG4294967074              004136f0     cpuid_main.obj
+ 0003:000006f4       $SG4294967076              004136f4     cpuid_main.obj
+ 0003:000006fc       $SG4294967078              004136fc     cpuid_main.obj
+ 0003:00000704       $SG4294967080              00413704     cpuid_main.obj
+ 0003:00000708       $SG4294967082              00413708     cpuid_main.obj
+ 0003:00000710       $SG4294967084              00413710     cpuid_main.obj
+ 0003:00000720       $SG4294967086              00413720     cpuid_main.obj
+ 0003:00000724       $SG4294967088              00413724     cpuid_main.obj
+ 0003:00000730       $SG4294967090              00413730     cpuid_main.obj
+ 0003:00000738       $SG4294967092              00413738     cpuid_main.obj
+ 0003:0000073c       $SG4294967094              0041373c     cpuid_main.obj
+ 0003:00000748       $SG4294967096              00413748     cpuid_main.obj
+ 0003:00000750       $SG4294967098              00413750     cpuid_main.obj
+ 0003:00000754       $SG4294967100              00413754     cpuid_main.obj
+ 0003:0000075c       $SG4294967102              0041375c     cpuid_main.obj
+ 0003:00000768       $SG4294967104              00413768     cpuid_main.obj
+ 0003:0000076c       $SG4294967106              0041376c     cpuid_main.obj
+ 0003:00000778       $SG4294967108              00413778     cpuid_main.obj
+ 0003:00000780       $SG4294967110              00413780     cpuid_main.obj
+ 0003:00000788       $SG4294967112              00413788     cpuid_main.obj
+ 0003:0000078c       $SG4294967114              0041378c     cpuid_main.obj
+ 0003:00000794       $SG4294967116              00413794     cpuid_main.obj
+ 0003:0000079c       $SG4294967118              0041379c     cpuid_main.obj
+ 0003:000007a0       $SG4294967120              004137a0     cpuid_main.obj
+ 0003:000007a8       $SG4294967122              004137a8     cpuid_main.obj
+ 0003:000007b0       $SG4294967124              004137b0     cpuid_main.obj
+ 0003:000007b8       $SG4294967126              004137b8     cpuid_main.obj
+ 0003:000007bc       $SG4294967128              004137bc     cpuid_main.obj
+ 0003:000007c4       $SG4294967130              004137c4     cpuid_main.obj
+ 0003:000007cc       $SG4294967132              004137cc     cpuid_main.obj
+ 0003:000007d4       $SG4294967134              004137d4     cpuid_main.obj
+ 0003:000007d8       $SG4294967136              004137d8     cpuid_main.obj
+ 0003:000007e0       $SG4294967138              004137e0     cpuid_main.obj
+ 0003:000007e8       $SG4294967140              004137e8     cpuid_main.obj
+ 0003:000007f0       $SG4294967142              004137f0     cpuid_main.obj
+ 0003:000007f4       $SG4294967144              004137f4     cpuid_main.obj
+ 0003:000007fc       $SG4294967146              004137fc     cpuid_main.obj
+ 0003:00000800       $SG4294967148              00413800     cpuid_main.obj
+ 0003:00000804       $SG4294967150              00413804     cpuid_main.obj
+ 0003:00000808       $SG4294967152              00413808     cpuid_main.obj
+ 0003:0000080c       $SG4294967154              0041380c     cpuid_main.obj
+ 0003:00000814       $SG4294967156              00413814     cpuid_main.obj
+ 0003:0000081c       $SG4294967158              0041381c     cpuid_main.obj
+ 0003:00000824       $SG4294967160              00413824     cpuid_main.obj
+ 0003:0000082c       $SG4294967162              0041382c     cpuid_main.obj
+ 0003:00000830       $SG4294967164              00413830     cpuid_main.obj
+ 0003:00000834       $SG4294967166              00413834     cpuid_main.obj
+ 0003:0000083c       $SG4294967168              0041383c     cpuid_main.obj
+ 0003:00000840       $SG4294967170              00413840     cpuid_main.obj
+ 0003:00000844       $SG4294967172              00413844     cpuid_main.obj
+ 0003:00000848       $SG4294967174              00413848     cpuid_main.obj
+ 0003:00000850       $SG4294967176              00413850     cpuid_main.obj
+ 0003:00000854       $SG4294967178              00413854     cpuid_main.obj
+ 0003:0000085c       $SG4294967180              0041385c     cpuid_main.obj
+ 0003:00000860       $SG4294967182              00413860     cpuid_main.obj
+ 0003:00000868       $SG4294967184              00413868     cpuid_main.obj
+ 0003:0000086c       $SG4294967186              0041386c     cpuid_main.obj
+ 0003:00000874       $SG4294967188              00413874     cpuid_main.obj
+ 0003:00000878       $SG4294967190              00413878     cpuid_main.obj
+ 0003:00000880       $SG4294967192              00413880     cpuid_main.obj
+ 0003:00000884       $SG4294967194              00413884     cpuid_main.obj
+ 0003:0000088c       $SG4294967196              0041388c     cpuid_main.obj
+ 0003:00000890       $SG4294967198              00413890     cpuid_main.obj
+ 0003:00000894       $SG4294967200              00413894     cpuid_main.obj
+ 0003:00000898       $SG4294967202              00413898     cpuid_main.obj
+ 0003:000008a0       $SG4294967204              004138a0     cpuid_main.obj
+ 0003:000008a8       $SG4294967206              004138a8     cpuid_main.obj
+ 0003:000008ac       $SG4294967208              004138ac     cpuid_main.obj
+ 0003:000008b0       $SG4294967210              004138b0     cpuid_main.obj
+ 0003:000008b4       $SG4294967212              004138b4     cpuid_main.obj
+ 0003:000008b8       $SG4294967214              004138b8     cpuid_main.obj
+ 0003:000008bc       $SG4294967216              004138bc     cpuid_main.obj
+ 0003:000008c0       $SG4294967218              004138c0     cpuid_main.obj
+ 0003:000008c4       $SG4294967220              004138c4     cpuid_main.obj
+ 0003:000008c8       $SG4294967222              004138c8     cpuid_main.obj
+ 0003:000008cc       $SG4294967224              004138cc     cpuid_main.obj
+ 0003:000008dc       $SG4294967226              004138dc     cpuid_main.obj
+ 0003:000008ec       $SG4294967228              004138ec     cpuid_main.obj
+ 0003:000008fc       $SG4294967230              004138fc     cpuid_main.obj
+ 0003:0000090c       $SG4294967232              0041390c     cpuid_main.obj
+ 0003:0000091c       $SG4294967234              0041391c     cpuid_main.obj
+ 0003:0000092c       $SG4294967236              0041392c     cpuid_main.obj
+ 0003:0000093c       $SG4294967238              0041393c     cpuid_main.obj
+ 0003:0000094c       $SG4294967240              0041394c     cpuid_main.obj
+ 0003:0000095c       $SG4294967242              0041395c     cpuid_main.obj
+ 0003:0000096c       $SG4294967244              0041396c     cpuid_main.obj
+ 0003:0000097c       $SG4294967246              0041397c     cpuid_main.obj
+ 0003:000009a0       $SG4294966732              004139a0     libcpuid_util.obj
+ 0003:000009a4       $SG4294966733              004139a4     libcpuid_util.obj
+ 0003:000009b0       $SG4294966734              004139b0     libcpuid_util.obj
+ 0003:000009b4       $SG4294966736              004139b4     libcpuid_util.obj
+ 0003:000009e4       $SG4294966737              004139e4     libcpuid_util.obj
+ 0003:00000a00       $SG4294966738              00413a00     libcpuid_util.obj
+ 0003:00000a5c       $SG4294966739              00413a5c     libcpuid_util.obj
+ 0003:00000a64       $SG4294966571              00413a64     main.obj
+ 0003:00000a68       $SG4294966572              00413a68     main.obj
+ 0003:00000a6c       $SG4294966573              00413a6c     main.obj
+ 0003:00000a7c       $SG4294966574              00413a7c     main.obj
+ 0003:00000a94       $SG4294966575              00413a94     main.obj
+ 0003:00000ab4       $SG4294966576              00413ab4     main.obj
+ 0003:00000ac8       $SG4294966577              00413ac8     main.obj
+ 0003:00000ad8       $SG4294966578              00413ad8     main.obj
+ 0003:00000af4       $SG4294966579              00413af4     main.obj
+ 0003:00000b10       $SG4294966580              00413b10     main.obj
+ 0003:00000b28       $SG4294966581              00413b28     main.obj
+ 0003:00000b40       $SG4294966582              00413b40     main.obj
+ 0003:00000b58       $SG4294966583              00413b58     main.obj
+ 0003:00000b70       $SG4294966584              00413b70     main.obj
+ 0003:00000b88       $SG4294966585              00413b88     main.obj
+ 0003:00000b9c       $SG4294966586              00413b9c     main.obj
+ 0003:00000bb0       $SG4294966587              00413bb0     main.obj
+ 0003:00000bc4       $SG4294966588              00413bc4     main.obj
+ 0003:00000bdc       $SG4294966589              00413bdc     main.obj
+ 0003:00000bf0       $SG4294966590              00413bf0     main.obj
+ 0003:00000c08       $SG4294966591              00413c08     main.obj
+ 0003:00000c28       $SG4294966592              00413c28     main.obj
+ 0003:00000c48       $SG4294966593              00413c48     main.obj
+ 0003:00000c6c       $SG4294966594              00413c6c     main.obj
+ 0003:00000c78       $SG4294966595              00413c78     main.obj
+ 0003:00000c98       $SG4294966412              00413c98     recog_amd.obj
+ 0003:00000cac       $SG4294966413              00413cac     recog_amd.obj
+ 0003:00000ccc       $SG4294966414              00413ccc     recog_amd.obj
+ 0003:00000cf0       $SG4294966415              00413cf0     recog_amd.obj
+ 0003:00000cfc       $SG4294966416              00413cfc     recog_amd.obj
+ 0003:00000d0c       $SG4294966417              00413d0c     recog_amd.obj
+ 0003:00000d10       $SG4294966419              00413d10     recog_amd.obj
+ 0003:00000d24       $SG4294966421              00413d24     recog_amd.obj
+ 0003:00000d2c       $SG4294966423              00413d2c     recog_amd.obj
+ 0003:00000d34       $SG4294966425              00413d34     recog_amd.obj
+ 0003:00000d3c       $SG4294966427              00413d3c     recog_amd.obj
+ 0003:00000d44       $SG4294966429              00413d44     recog_amd.obj
+ 0003:00000d48       $SG4294966431              00413d48     recog_amd.obj
+ 0003:00000d54       $SG4294966433              00413d54     recog_amd.obj
+ 0003:00000d5c       $SG4294966435              00413d5c     recog_amd.obj
+ 0003:00000d6c       $SG4294966437              00413d6c     recog_amd.obj
+ 0003:00000d7c       $SG4294966439              00413d7c     recog_amd.obj
+ 0003:00000d8c       $SG4294966441              00413d8c     recog_amd.obj
+ 0003:00000d90       $SG4294966443              00413d90     recog_amd.obj
+ 0003:00000d94       $SG4294966445              00413d94     recog_amd.obj
+ 0003:00000d9c       $SG4294966447              00413d9c     recog_amd.obj
+ 0003:00000da4       $SG4294966449              00413da4     recog_amd.obj
+ 0003:00000db0       $SG4294966451              00413db0     recog_amd.obj
+ 0003:00000db8       $SG4294966453              00413db8     recog_amd.obj
+ 0003:00000dc0       $SG4294966455              00413dc0     recog_amd.obj
+ 0003:00000dc8       $SG4294966457              00413dc8     recog_amd.obj
+ 0003:00000dd0       $SG4294966459              00413dd0     recog_amd.obj
+ 0003:00000dd8       $SG4294966461              00413dd8     recog_amd.obj
+ 0003:00000de8       $SG4294966463              00413de8     recog_amd.obj
+ 0003:00000df4       $SG4294966465              00413df4     recog_amd.obj
+ 0003:00000dfc       $SG4294966467              00413dfc     recog_amd.obj
+ 0003:00000e04       $SG4294966469              00413e04     recog_amd.obj
+ 0003:00000e0c       $SG4294966471              00413e0c     recog_amd.obj
+ 0003:00000e18       $SG4294966473              00413e18     recog_amd.obj
+ 0003:00000e28       $SG4294966477              00413e28     recog_amd.obj
+ 0003:00000e2c       $SG4294966479              00413e2c     recog_amd.obj
+ 0003:00000e30       $SG4294966481              00413e30     recog_amd.obj
+ 0003:00000e34       $SG4294966483              00413e34     recog_amd.obj
+ 0003:00000e38       $SG4294966485              00413e38     recog_amd.obj
+ 0003:00000e3c       $SG4294966487              00413e3c     recog_amd.obj
+ 0003:00000e40       $SG4294966489              00413e40     recog_amd.obj
+ 0003:00000e44       $SG4294966288              00413e44     recog_intel.obj
+ 0003:00000e6c       $SG4294966289              00413e6c     recog_intel.obj
+ 0003:00000e8c       $SG4294966290              00413e8c     recog_intel.obj
+ 0003:00000ea4       $SG4294966291              00413ea4     recog_intel.obj
+ 0003:00000ec4       $SG4294966292              00413ec4     recog_intel.obj
+ 0003:00000ee8       $SG4294966293              00413ee8     recog_intel.obj
+ 0003:00000f20       $SG4294966294              00413f20     recog_intel.obj
+ 0003:00000f68       $SG4294966295              00413f68     recog_intel.obj
+ 0003:00000f78       $SG4294966296              00413f78     recog_intel.obj
+ 0003:00000f7c       $SG4294966297              00413f7c     recog_intel.obj
+ 0003:00000f88       $SG4294966298              00413f88     recog_intel.obj
+ 0003:00000f94       $SG4294966299              00413f94     recog_intel.obj
+ 0003:00000fa0       $SG4294966300              00413fa0     recog_intel.obj
+ 0003:00000fa8       $SG4294966301              00413fa8     recog_intel.obj
+ 0003:00000fc8       $SG4294966302              00413fc8     recog_intel.obj
+ 0003:00000fdc       $SG4294966303              00413fdc     recog_intel.obj
+ 0003:00000fe4       $SG4294966305              00413fe4     recog_intel.obj
+ 0003:00000fec       $SG4294966307              00413fec     recog_intel.obj
+ 0003:00000ff4       $SG4294966309              00413ff4     recog_intel.obj
+ 0003:00001004       $SG4294966311              00414004     recog_intel.obj
+ 0003:00001008       $SG4294966313              00414008     recog_intel.obj
+ 0003:00001010       $SG4294966315              00414010     recog_intel.obj
+ 0003:00001020       $SG4294966317              00414020     recog_intel.obj
+ 0003:00001030       $SG4294966319              00414030     recog_intel.obj
+ 0003:00001038       $SG4294966321              00414038     recog_intel.obj
+ 0003:00001048       $SG4294966323              00414048     recog_intel.obj
+ 0003:0000105c       $SG4294966325              0041405c     recog_intel.obj
+ 0003:00001074       $SG4294966327              00414074     recog_intel.obj
+ 0003:00001084       $SG4294966329              00414084     recog_intel.obj
+ 0003:0000109c       $SG4294966331              0041409c     recog_intel.obj
+ 0003:000010b4       $SG4294966333              004140b4     recog_intel.obj
+ 0003:000010c4       $SG4294966335              004140c4     recog_intel.obj
+ 0003:000010f0       $SG4294966336              004140f0     recog_intel.obj
+ 0003:00001138       $SG4294966110              00414138     malloc.obj
+ 0003:00001144       $SG4294966111              00414144     malloc.obj
+ 0003:00001150       $SG4294965979              00414150     sched.obj
+ 0003:00001174       $SG4294965948              00414174     dhcp_srv.obj
+ 0003:000011a4       $SG4294965949              004141a4     dhcp_srv.obj
+ 0003:000011b8       $SG4294965950              004141b8     dhcp_srv.obj
+ 0003:000011d4       $SG4294965951              004141d4     dhcp_srv.obj
+ 0003:00001208       $SG4294965952              00414208     dhcp_srv.obj
+ 0003:00001214       $SG4294965953              00414214     dhcp_srv.obj
+ 0003:00001220       $SG4294965954              00414220     dhcp_srv.obj
+ 0003:00001244       $SG4294965955              00414244     dhcp_srv.obj
+ 0003:00001258       $SG4294965956              00414258     dhcp_srv.obj
+ 0003:0000127c       $SG4294965957              0041427c     dhcp_srv.obj
+ 0003:00001294       $SG4294965958              00414294     dhcp_srv.obj
+ 0003:000012b8       $SG4294965959              004142b8     dhcp_srv.obj
+ 0003:000012cc       $SG4294965960              004142cc     dhcp_srv.obj
+ 0003:000012f8       $SG4294965961              004142f8     dhcp_srv.obj
+ 0003:00001310       $SG4294965962              00414310     dhcp_srv.obj
+ 0003:00001324       $SG4294965963              00414324     dhcp_srv.obj
+ 0003:00001354       $SG4294965964              00414354     dhcp_srv.obj
+ 0003:00001374       $SG4294965965              00414374     dhcp_srv.obj
+ 0003:00001384       $SG4294965969              00414384     dhcp_srv.obj
+ 0003:0000139c       $SG4294965970              0041439c     dhcp_srv.obj
+ 0003:000013bc       $SG4294965861              004143bc     hx_eth.obj
+ 0003:000013dc       _digits                    004143dc     stdio.obj
+ 0003:000013e0       _upper_digits              004143e0     stdio.obj
+ 0003:000013e4       $SG4294965805              004143e4     stdio.obj
+ 0003:000013f0       _GS_ExceptionRecord        004143f0     MSVCRT:gs_report.obj
+ 0003:00001440       _GS_ContextRecord          00414440     MSVCRT:gs_report.obj
+ 0003:0000191c       _hDhcpThread               0041491c     dhcp_srv.obj
+ 0003:00001920       _if_index                  00414920     dhcp_srv.obj
+ 0003:00001921       $SG4294966996              00414921     cpuid_main.obj
+ 0003:00001922       $SG4294966475              00414922     recog_amd.obj
+ 0003:00001924       __libcpiud_errno           00414924     cpuid_main.obj
+ 0003:00001928       _mparams                   00414928     malloc.obj
+ 0003:00001940       __gm_                      00414940     malloc.obj
+ 0003:00001b20       _magic_init_mutex          00414b20     malloc.obj
+ 0003:00001b2c       _if_list_head              00414b2c     dhcp_srv.obj
+ 0003:00001b30       _if_mtx                    00414b30     dhcp_srv.obj
+ 0003:00001b34       _mac_string                00414b34     hx_eth.obj
+ 0003:00001b4c       ?str@?1??ipaddr_ntoa@@9@9  00414b4c     ip_addr.obj
+ 0003:00001b5c       ?hMutex@?1??_hx_printf@@9@9 00414b5c     stdio.obj
+ 0004:00000060       $R000000                   00415060     * linker generated manifest res *

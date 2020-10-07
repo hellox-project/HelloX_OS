@@ -21,18 +21,22 @@
 
 #include <StdAfx.h> /* For HelloX common data types and APIs. */
 #include <TYPES.H>  /* For __atomic_t or other types. */
+#include "netcfg.h"
+#include "genif.h"
 
-//Flags to enable or disable ethernet debugging.
+/* Flags to enable or disable ethernet debugging. */
 //#define __ETH_DEBUG
 
 #ifndef __func__
 #define __func__ __FUNCTION__
 #endif
 
-//Messages that can be sent to Ethernet core thread.The thread is
-//driven by message,and run in background.
-//EthernetManager can launch specified functions by sending these messages
-//to it.
+/*
+ * Messages that can be sent to Ethernet core thread.
+ * The thread is driven by message,and run in background.
+ * EthernetManager can trigger specified functions by 
+ * sending these messages to it.
+ */
 #define ETH_MSG_SEND    0x0001    //Send link level frame.
 #define ETH_MSG_RECEIVE 0x0002    //Receive link level frame.
 #define ETH_MSG_SCAN    0x0004    //Re-scan WiFi hot spot.
@@ -47,30 +51,49 @@
 #define ETH_MSG_POSTFRAME 0x0800  //Post a frame to ethernet core.
 #define ETH_MSG_BROADCAST 0x1000  //Broadcast a ethernet frame to all eth port(s).
 
-#define MAX_ETH_NAME_LEN     31   //Maximal length of ethernet interface's name.
-#define ETH_MAC_LEN          6    //MAC address's length.
-#define ETH_DEFAULT_MTU      1500 //Default maximal transmition unit.
-#define ETH_HEADER_LEN       24   //Ethernet frame header's length,assume 24 bytes to accomadate more data.
-#define ETH_MAX_FRAME_LEN    1600 //Maximal Ethernet frame's length.
+/* Maximal length of ethernet interface's name. */
+#define MAX_ETH_NAME_LEN     MAX_NETIF_NAME_LENGTH
+/* MAC address's length. */
+#define ETH_MAC_LEN          6   
+/* Default maximal transmition unit. */
+#define ETH_DEFAULT_MTU      1500
+/* Ethernet frame header's length,assume 24 bytes to accomadate more data. */
+#define ETH_HEADER_LEN       24  
+/* Maximal Ethernet frame's length. */
+#define ETH_MAX_FRAME_LEN    1600
 
 /* Predefine ethernet interface object. */
 struct tag__ETHERNET_INTERFACE;
 
-//Ethernet buffer object,each ethernet frame corresponding one of this object.
+/*
+ * Ethernet buffer object,contains one ethernet frame 
+ * and it's associated information element in each one
+ * of this buffer.
+ */
 typedef struct tag__ETHERNET_BUFFER{
-	struct tag__ETHERNET_BUFFER* pNext;  //Pointing to next one if has.
-	DWORD      dwSignature;              //Object Indentifier.
-	__u8       srcMAC[ETH_MAC_LEN];      //Source MAC address.
-	__u8       dstMAC[ETH_MAC_LEN];      //Destination MAC address.
-	__u16      frame_type;
-	__u8       Buffer[ETH_DEFAULT_MTU + ETH_HEADER_LEN];  //Actual ethernet frame data.
-	__u16      buff_length;              //Length of frame data,current is not used.
-	__u16      act_length;               //Actual buffer length.
-	__u16      buff_status;              //Status of the Ethernet Buffer.
+	/* Pointing to next one in list. */
+	struct tag__ETHERNET_BUFFER* pNext;
+	/* Signature. */
+	DWORD dwSignature;
+	/* Source MAC address. */
+	__u8 srcMAC[ETH_MAC_LEN];
+	/* Destination MAC address. */
+	__u8 dstMAC[ETH_MAC_LEN];
+	/* Ethernet frame's type. */
+	__u16 frame_type;
+	/* Built in buffer. */
+	__u8 Buffer[ETH_DEFAULT_MTU + ETH_HEADER_LEN];
+	/* Buffer's actual length. */
+	__u16 buff_length;
+	/* How many data bytes in buffer. */
+	__u16 act_length;
+	/* Data offset in buffer. */
+	__u16 data_start;
+	/* Ethernet buffer status. */
+	__u16 buff_status;
 #define ETHERNET_BUFFER_STATUS_FREE        0x00  //Free to use.
 #define ETHERNET_BUFFER_STATUS_INITIALIZED 0x01  //Buffer is initialized.
 #define ETHERNET_BUFFER_STATUS_PENDING     0x02  //Pending in queue.
-	//LPVOID     pEthernetInterface;       //Ethernet Interface this buffer associated to.
 
 	/*
 	 * The incoming interface of the ethernet frame 
@@ -87,21 +110,6 @@ typedef struct tag__ETHERNET_BUFFER{
 	 */
 	struct tag__ETHERNET_INTERFACE* pOutInterface;
 }__ETHERNET_BUFFER;
-
-//Common network address,used to contain any type of network address.
-typedef struct tag__COMMON_NETWORK_ADDRESS{
-	UCHAR AddressType;
-#define NETWORK_ADDRESS_TYPE_ETHMAC    0x01
-#define NETWORK_ADDRESS_TYPE_IPV4      0x02
-#define NETWORK_ADDRESS_TYPE_IPV6      0x04
-#define NETWORK_ADDRESS_TYPE_MASKLEN   0x08
-	union{
-		__u32 ipv4_addr;
-		__u8  eth_mac[6];
-		__u8  ipv6_addr[16];
-		int   mask_length;
-	}Address;
-}__COMMON_NETWORK_ADDRESS;
 
 //A struct used to obtain DHCP configurations.
 typedef struct tag__DHCP_CONFIG{
@@ -185,29 +193,6 @@ struct __PROTO_INTERFACE_BIND{
 	LPVOID pL3Interface;
 };
 
-/* Ethernet interface duplex mode. */
-enum __DUPLEX {
-	half = 0,
-	full = 1
-};
-
-/* Ethernet speed options. */
-enum __ETHERNET_SPEED {
-	_10M = 0,
-	_100M = 1,
-	_1000M = 2,
-	_10G = 3,
-	_40G = 4,
-	_80G = 5,
-	_100G = 6
-};
-
-/* Link status. */
-enum __LINK_STATUS {
-	down = 0,
-	up = 1
-};
-
 /* 
  * Ethernet interface object,represents 
  * an dedicated ethernet interface. 
@@ -234,10 +219,24 @@ typedef struct tag__ETHERNET_INTERFACE{
 	 */
 	volatile size_t nSendingQueueSz;
 
-	//Operations open to HelloX's ethernet framework.
-	BOOL (*SendFrame)(struct tag__ETHERNET_INTERFACE*); //Sending operation.
-	__ETHERNET_BUFFER* (*RecvFrame)(struct tag__ETHERNET_INTERFACE*); //Receive operation.
-	BOOL (*IntControl)(struct tag__ETHERNET_INTERFACE*, DWORD dwOperations, LPVOID);  //Other operations.
+	/* 
+	 * Send a frame out from this interface. 
+	 * Rules to handle the user specified pOutFrame:
+	 *   1. If the sending process success and returns
+	 *      TRUE, the pOutFrame should be destroyed in
+	 *      this routine;
+	 *   2. If FALSE is returned by this routine,then
+	 *      pOutFrame should be kept, since the caller may
+	 *      want to keep it and retry to send later.
+	 */
+	BOOL (*SendFrame)(struct tag__ETHERNET_INTERFACE*, 
+		__ETHERNET_BUFFER* pOutFrame);
+	/* Receive frame from this interface in polling mode. */
+	__ETHERNET_BUFFER* (*RecvFrame)(struct tag__ETHERNET_INTERFACE*);
+	/* Controling operation of this interface. */
+	BOOL (*IntControl)(struct tag__ETHERNET_INTERFACE*, 
+		DWORD dwOperations, 
+		LPVOID pParam);
 	/* 
 	 * Interface specific show out routine.
 	 * will be called when 'showint' command is invoked,
@@ -247,48 +246,85 @@ typedef struct tag__ETHERNET_INTERFACE{
 }__ETHERNET_INTERFACE;
 
 //Operation protypes for convinence.
-typedef BOOL                (*__ETHOPS_SEND_FRAME)(__ETHERNET_INTERFACE*);
-typedef __ETHERNET_BUFFER*  (*__ETHOPS_RECV_FRAME)(__ETHERNET_INTERFACE*);
-typedef BOOL                (*__ETHOPS_INT_CONTROL)(__ETHERNET_INTERFACE*, DWORD, LPVOID);
-typedef BOOL                (*__ETHOPS_INITIALIZE)(__ETHERNET_INTERFACE*);
+typedef BOOL (*__ETHOPS_SEND_FRAME)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);
+typedef __ETHERNET_BUFFER* (*__ETHOPS_RECV_FRAME)(__ETHERNET_INTERFACE*);
+typedef BOOL (*__ETHOPS_INT_CONTROL)(__ETHERNET_INTERFACE*, DWORD, LPVOID);
+typedef BOOL (*__ETHOPS_INITIALIZE)(__ETHERNET_INTERFACE*);
 
-//Default name of Ethernet core thread.
+/* Name of Ethernet core thread. */
 #define ETH_THREAD_NAME  "netCore"
 
-//Timer ID of receiving timer.We use polling mode to receive link level frame
-//in current version,so a timer is used to wakeup the WiFi driver thread
-//periodicly.
+/* 
+ * Timer ID of receiving timer.
+ * We use polling mode to receive link level 
+ * frame in some case,such as the NIC could
+ * not support interrupt.
+ * So a timer is set to wakeup the NIC driver thread
+ * periodicly.
+ */
 #define WIFI_TIMER_ID    0x1024
 
-//The polling time period of receiving,in million-second.
+/* 
+ * The polling time period of receiving
+ * in polling mode.Unit is million second.
+ */
 #define WIFI_POLL_TIME   5000
 
-//Maximal ethernet interfaces can exist in system.
-#define MAX_ETH_INTERFACE_NUM 4
+/* 
+ * Maximal ethernet interfaces can exist 
+ * in system. It's the size of ethernet if array.
+ */
+#define MAX_ETH_INTERFACE_NUM 8
 
-//Maximal ethernet buffer element in receiving list,i.e,the queue size.
-#define MAX_ETH_RXBUFFLISTSZ  256
+/* 
+ * Maximal ethernet buffer element in receiving 
+ * queue(list) of ethernet manager.
+ * If the frames in queue exceed this value,
+ * incoming frames will be droped and loged.
+ */
+#define MAX_ETH_RXBUFFLISTSZ  1024
 
-//Maximal bridging queue list,ethernet frame cause the bridging queue
-//exceed this value will be droped and recorded.
+/* 
+ * Maximal bridging queue list,
+ * ethernet frame cause the bridging queue
+ * exceed this value will be droped and recorded.
+ */
 #define MAX_ETH_BCASTQUEUESZ  128
 
 /*
 * Maximal sending queue length of ethernet driver.
-* Ethernet frame will be droped when the sending queue size exceed
-* this value.
+* Ethernet frame will be droped when the sending queue 
+* size exceed this value.
 */
-#define MAX_ETH_SENDINGQUEUESZ 256
+#define MAX_ETH_SENDINGQUEUESZ 8192
 
-//Ethernet Manager object,the core object of HelloX's ethernet framework.
+/* 
+ * Ethernet Manager object.
+ * It's the core object of HelloX's ethernet 
+ * framework,ethernet functions are implemented
+ * mainly in this object.
+ */
 struct __ETHERNET_MANAGER{
-	__ETHERNET_INTERFACE    EthInterfaces[MAX_ETH_INTERFACE_NUM];
-	int                     nIntIndex;          //Index of free slot in above array.
+	/* All ethernet interfaces in system. */
+	__ETHERNET_INTERFACE EthInterfaces[MAX_ETH_INTERFACE_NUM];
+	/* Index of free slot in above array. */
+	int nIntIndex;
+	/* Ethernet core thread object. */
 	__KERNEL_THREAD_OBJECT* EthernetCoreThread;
-	BOOL                    bInitialized;       //Set to TRUE if successfully initialized.
-	__ETHERNET_BUFFER*      pBufferFirst;       //Received buffer list header.
-	__ETHERNET_BUFFER*      pBufferLast;        //Received buffer list tail.
-	volatile size_t         nBuffListSize;      //How many buffers in queue.
+	/* Set to TRUE if successfully initialized. */
+	BOOL bInitialized;
+
+	/* 
+	 * Receiving buffer list,include it's first, 
+	 * last, number. 
+	 * All incoming ethernet frames are linked 
+	 * in this list and to be processed by ethernet
+	 * core thread.
+	 */
+	__ETHERNET_BUFFER* pBufferFirst;
+	__ETHERNET_BUFFER* pBufferLast;
+	volatile size_t nBuffListSize;
+
 	/* Lock of ethernet manager. */
 #if defined(__CFG_SYS_SMP)
 	__SPIN_LOCK spin_lock;
@@ -297,15 +333,16 @@ struct __ETHERNET_MANAGER{
 	/*
 	 * Ethernet frame list to broadcast out.
 	 */
-	__ETHERNET_BUFFER*      pBroadcastFirst;
-	__ETHERNET_BUFFER*      pBroadcastLast;
+	__ETHERNET_BUFFER* pBroadcastFirst;
+	__ETHERNET_BUFFER* pBroadcastLast;
+
 	/*
 	 * Broadcast list size,use int instead size_t since
 	 * it's value maybe negative in case of bug,size_t
 	 * can not reflect this.
 	 */
-	volatile int            nBroadcastSize;
-	volatile int            nDropedBcastSize;
+	volatile int nBroadcastSize;
+	volatile int nDropedBcastSize;
 
 	/*
 	 * Tracking the ethernet buffer object's counter,
@@ -321,10 +358,16 @@ struct __ETHERNET_MANAGER{
 	 */
 	__atomic_t nDrvSendingQueueSz;
 
-	//Initializer of Ethernet Manager,should be called in process of system initialize.
+	/*
+	 * Initializer of Ethernet Manager,should be 
+	 * called in process of system initialize.
+	 */
 	BOOL (*Initialize)(struct __ETHERNET_MANAGER*);
 
-	//Operations can be called by layer 3 or ethernet drivers.
+	/*
+	 * Operations can be called by layer 3 protocol,such 
+	 * as IP, IPv6, or ethernet NIC drivers.
+	 */
 	__ETHERNET_INTERFACE* (*AddEthernetInterface)(char* ethName,
 		char* mac,
 		LPVOID pIntExtension,
@@ -338,29 +381,62 @@ struct __ETHERNET_MANAGER{
 	BOOL (*ConfigInterface)(char* ethName,__ETH_IP_CONFIG* pConfig);
 	BOOL (*Rescan)(char* ethName);
 	BOOL (*Assoc)(char* ethName, __WIFI_ASSOC_INFO* pInfo);
-	BOOL (*Delivery)(__ETHERNET_INTERFACE* pIf, __ETHERNET_BUFFER* p);  //Called by ethernet device driver.
-	BOOL (*SendFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);  //Called by layer 3 entities.
+	BOOL (*Delivery)(__ETHERNET_INTERFACE* pIf, __ETHERNET_BUFFER* p);
+	BOOL (*SendFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);
 	BOOL (*BroadcastEthernetFrame)(__ETHERNET_BUFFER* pEthBuffer);
-	BOOL (*TriggerReceive)(__ETHERNET_INTERFACE*); //Trigger a receiving poll.
-	BOOL (*PostFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);  //Post ethernet frame.
+	/* Trigger a receiving poll. */
+	BOOL (*TriggerReceive)(__ETHERNET_INTERFACE*);
+	/* Post ethernet frame to thread. */
+	BOOL (*PostFrame)(__ETHERNET_INTERFACE*, __ETHERNET_BUFFER*);
 	VOID (*ShowInt)(char* ethName);
 	BOOL (*ShutdownInterface)(char* ethName);
 	BOOL (*UnshutInterface)(char* ethName);
 	BOOL (*GetEthernetInterfaceState)(__ETH_INTERFACE_STATE* pState, int nIndex, int* pnNextInt);
-	__ETHERNET_BUFFER* (*CreateEthernetBuffer)(int buffer_length);
+	
+	/* Operations to manipulate ethernet buffer object. */
+	__ETHERNET_BUFFER* (*CreateEthernetBuffer)(int buffer_length,
+		int alignment);
 	__ETHERNET_BUFFER* (*CloneEthernetBuffer)(__ETHERNET_BUFFER* pEthBuff);
 	VOID (*DestroyEthernetBuffer)(__ETHERNET_BUFFER* pEthBuff);
+	BOOL (*pbuf_to_ebuf)(struct pbuf* pbuf, __ETHERNET_BUFFER* pEthBuff);
+
+	/* Callback of link status change event. */
 	VOID (*LinkStatusChange)(__ETHERNET_INTERFACE* pEthInt, 
 		enum __LINK_STATUS link_status,
 		enum __DUPLEX duplex, 
 		enum __ETHERNET_SPEED speed);
 };
 
-//Global ethernet manager objects.
+/* Global ethernet manager objects. */
 extern struct __ETHERNET_MANAGER EthernetManager;
 
-//Entry point array of ethernet driver,each ethernet driver should provide an
-//entry in this array,to initialize itself.
+/* Ethernet II frame's header. */
+typedef struct tag__ETHERNET_II_HEADER {
+	char mac_dst[ETH_MAC_LEN];
+	char mac_src[ETH_MAC_LEN];
+	uint16_t frame_type;
+	char payload[0];
+}__ETHERNET_II_HEADER;
+
+/* 
+ * General input process of ethernet,this routine 
+ * could be set as the default genif_input if device
+ * driver does not specify a new one.
+ */
+int general_ethernet_input(__GENERIC_NETIF* pGenif, struct pbuf* p);
+
+/*
+ * General output process of ethernet,this routine
+ * could be set as the default genif_output if device
+ * driver does not specify a new one.
+ */
+int general_ethernet_output(__GENERIC_NETIF* pGenif, struct pbuf* p);
+
+/* 
+ * Entry point array of ethernet driver,
+ * each builtin ethernet driver should provide an
+ * entry in this array,to initialize itself.
+ */
 typedef struct{
 	BOOL(*EthEntryPoint)(LPVOID);
 	LPVOID pData;

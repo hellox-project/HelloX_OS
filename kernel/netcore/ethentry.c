@@ -40,8 +40,8 @@
 #endif
 
 #ifdef __CFG_NET_E1000   //Intel e1000 NIC.
-#include "drivers/e1000_d.h"
-#include "drivers/e1000e.h"
+//#include "drivers/e1000e.h"
+#include "drivers/e1000ex.h"
 #endif
 
 __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] = 
@@ -64,7 +64,8 @@ __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] =
 
 #ifdef __CFG_NET_E1000
 	//{ E1000_Drv_Initialize, NULL },
-	{ E1000E_Drv_Initialize, NULL },
+	//{ E1000E_Drv_Initialize, NULL },
+	{ E1000EX_Drv_Initialize, NULL },
 #endif
 
   //Please add your ethernet driver's entry here.

@@ -422,7 +422,7 @@ static VOID RxInterruptHandler(pcnet_priv_t* priv)
 	//Received a pakcet,post to kernel.
 	if (len > 0)
 	{
-		pEthBuff = EthernetManager.CreateEthernetBuffer(len);
+		pEthBuff = EthernetManager.CreateEthernetBuffer(len, 0);
 		if (NULL == pEthBuff)
 		{
 			_hx_printf("  %s: create ethernet buffer failed.\r\n", __func__);
@@ -883,28 +883,46 @@ static BOOL Ethernet_Ctrl(__ETHERNET_INTERFACE* pInt, DWORD dwOperation, LPVOID 
 	return TRUE;
 }
 
-//Send a ethernet frame out through Marvell wifi interface.The frame's content is in pInt's
-//send buffer.
-static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
+/*
+ * Send a ethernet frame out through physical interface.
+ * The frame to be sent is specified by pOutFrame or stored
+ * in the builtin sending buffer of pInt,pOutFrame is higher
+ * priority than the builtin buffer.
+ */
+static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt, __ETHERNET_BUFFER* pOutFrame)
 {
-	BOOL          bResult = FALSE;
+	BOOL bResult = FALSE;
 	pcnet_priv_t* dev = NULL;
 	__ETHERNET_BUFFER* pEthBuff = NULL;
+	unsigned long frame_len = 0;
+	char* frame_content = NULL;
 
 	if (NULL == pInt)
 	{
 		goto __TERMINAL;
 	}
-	pEthBuff = &pInt->SendBuffer;
-	//No data to send or exceed the MTU(include ethernet frame header).
-	if ((0 == pEthBuff->act_length) || (pEthBuff->act_length > (ETH_DEFAULT_MTU + ETH_HEADER_LEN)))
+
+	if (NULL == pOutFrame)
 	{
-		goto __TERMINAL;
+		pEthBuff = &pInt->SendBuffer;
+		/* Validates the content of builtin buffer. */
+		if ((0 == pEthBuff->act_length) || 
+			(pEthBuff->act_length > (ETH_DEFAULT_MTU + ETH_HEADER_LEN)))
+		{
+			goto __TERMINAL;
+		}
+		frame_len = pEthBuff->act_length;
+		frame_content = &pEthBuff->Buffer[0];
+	}
+	else
+	{
+		frame_len = pOutFrame->act_length;
+		frame_content = &pOutFrame->Buffer[0];
 	}
 
-	//Invoke sending routine of NIC to do actual transmition.
+	/* Drop the frame to link. */
 	dev = pInt->pIntExtension;
-	if (0 == pcnet_send(dev, pEthBuff->Buffer, pEthBuff->act_length))
+	if (0 == pcnet_send(dev, frame_content, frame_len))
 	{
 		goto __TERMINAL;
 	}
@@ -912,6 +930,11 @@ static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
 	bResult = TRUE;
 
 __TERMINAL:
+	/* Destroy the ethernet buffer object. */
+	if (pOutFrame)
+	{
+		EthernetManager.DestroyEthernetBuffer(pOutFrame);
+	}
 	return bResult;
 }
 
@@ -951,7 +974,7 @@ static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 	//Received a pakcet,delivery it to IP stack.
 	if (len > 0)
 	{
-		pEthBuff = EthernetManager.CreateEthernetBuffer(len);
+		pEthBuff = EthernetManager.CreateEthernetBuffer(len, 0);
 		if (NULL == pEthBuff)
 		{
 			_hx_printf("  %s: create ethernet buffer failed.\r\n", __func__);
@@ -984,6 +1007,12 @@ BOOL PCNet_Drv_Initialize(LPVOID pData)
 	pcnet_priv_t* dev = lp;
 	int index = 0;
 	BOOL bResult = FALSE;
+
+	/*
+	 * PCNet's driver is not revised after the changing
+	 * of ethernet manager,so just abort to load.
+	 */
+	return FALSE;
 
 #ifdef __PCNET_DEBUG
 	_hx_printf("\r\n");  //Start a new line.

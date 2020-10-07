@@ -1,0 +1,235 @@
+ examapp
+
+ Timestamp is 5f2f65c8 (Sun Aug  9 10:56:08 2020)
+
+ Preferred load address is 00400000
+
+ Start         Length     Name                   Class
+ 0001:00000000 0000748fH .text$mn                CODE
+ 0002:00000000 00000018H .idata$5                DATA
+ 0002:00000018 00000008H .00cfg                  DATA
+ 0002:0000001c 00000000H .gfids$y                DATA
+ 0002:00000020 00000120H .rdata                  DATA
+ 0002:00000140 00000000H .edata                  DATA
+ 0002:00000140 00000164H .rdata$zzzdbg           DATA
+ 0002:000002a4 00000014H .idata$2                DATA
+ 0002:000002b8 00000014H .idata$3                DATA
+ 0002:000002cc 00000018H .idata$4                DATA
+ 0002:000002e4 0000008cH .idata$6                DATA
+ 0003:00000000 00000638H .data                   DATA
+ 0003:00000638 00000560H .bss                    DATA
+ 0004:00000000 00000060H .rsrc$01                DATA
+ 0004:00000060 00000180H .rsrc$02                DATA
+
+  Address         Publics by Value              Rva+Base       Lib:Object
+
+ 0000:00000000       ___hybrid_code_map_count   00000000     <absolute>
+ 0000:00000000       ___hybrid_code_map         00000000     <absolute>
+ 0000:00000000       ___guard_longjmp_table     00000000     <absolute>
+ 0000:00000000       ___safe_se_handler_count   00000000     <absolute>
+ 0000:00000000       ___volatile_metadata       00000000     <absolute>
+ 0000:00000000       ___guard_fids_count        00000000     <absolute>
+ 0000:00000000       ___guard_fids_table        00000000     <absolute>
+ 0000:00000000       ___safe_se_handler_table   00000000     <absolute>
+ 0000:00000000       ___guard_iat_count         00000000     <absolute>
+ 0000:00000000       ___hybrid_auxiliary_iat    00000000     <absolute>
+ 0000:00000000       ___guard_iat_table         00000000     <absolute>
+ 0000:00000000       ___dynamic_value_reloc_table 00000000     <absolute>
+ 0000:00000000       ___enclave_config          00000000     <absolute>
+ 0000:00000000       ___guard_longjmp_count     00000000     <absolute>
+ 0000:00000100       ___guard_flags             00000100     <absolute>
+ 0001:00000000       __hxmain                   00401000 f   examapp.obj
+ 0001:00000150       _CreateUserThread          00401150 f   hellox.obj
+ 0001:000001b0       _GetCurrentThreadID        004011b0 f   hellox.obj
+ 0001:000001f0       _TerminateKernelThread     004011f0 f   hellox.obj
+ 0001:00000240       _Sleep                     00401240 f   hellox.obj
+ 0001:00000290       _CreateMutex               00401290 f   hellox.obj
+ 0001:000002d0       _ReleaseMutex              004012d0 f   hellox.obj
+ 0001:00000320       _WaitForThisObject         00401320 f   hellox.obj
+ 0001:00000370       _VirtualAlloc              00401370 f   hellox.obj
+ 0001:000003d0       _VirtualFree               004013d0 f   hellox.obj
+ 0001:00000420       _PrintChar                 00401420 f   hellox.obj
+ 0001:00000460       _GotoHome                  00401460 f   hellox.obj
+ 0001:00000470       _ChangeLine                00401470 f   hellox.obj
+ 0001:00000480       _GetSystemInfo             00401480 f   hellox.obj
+ 0001:000004d0       _VirtualQuery              004014d0 f   hellox.obj
+ 0001:00000520       ___InterlockedExchange     00401520 f   hellox.obj
+ 0001:00003200       __hx_malloc                00404200 f   malloc.obj
+ 0001:00003720       __hx_free                  00404720 f   malloc.obj
+ 0001:00004330       _memcpy                    00405330 f   memory.obj
+ 0001:00004380       _memset                    00405380 f   memory.obj
+ 0001:000043c0       _abort                     004053c0 f   sched.obj
+ 0001:00005ad0       _DHCPSrv_Start_Onif        00406ad0 f   dhcp_srv.obj
+ 0001:00005b00       _Eth_MAC_Match             00406b00 f   hx_eth.obj
+ 0001:00005b70       _ethmac_ntoa               00406b70 f   hx_eth.obj
+ 0001:00005bf0       __hx_htonl                 00406bf0 f   hx_inet.obj
+ 0001:00005c30       __hx_htons                 00406c30 f   hx_inet.obj
+ 0001:00005c50       __hx_ntohl                 00406c50 f   hx_inet.obj
+ 0001:00005c70       _ipaddr_addr               00406c70 f   ip_addr.obj
+ 0001:00005cb0       _ipaddr_aton               00406cb0 f   ip_addr.obj
+ 0001:00005fb0       _ipaddr_ntoa               00406fb0 f   ip_addr.obj
+ 0001:00005fd0       _ipaddr_ntoa_r             00406fd0 f   ip_addr.obj
+ 0001:00006110       _lwip_socket               00407110 f   socket.obj
+ 0001:00006160       _lwip_bind                 00407160 f   socket.obj
+ 0001:000061b0       _lwip_select               004071b0 f   socket.obj
+ 0001:00006210       _lwip_setsockopt           00407210 f   socket.obj
+ 0001:00006270       _lwip_sendto               00407270 f   socket.obj
+ 0001:00006300       _lwip_recvfrom             00407300 f   socket.obj
+ 0001:00006390       _GetGenifInfo              00407390 f   socket.obj
+ 0001:000063e0       _AddGenifAddress           004073e0 f   socket.obj
+ 0001:00006440       _GetNetworkInfo            00407440 f   socket.obj
+ 0001:00006af0       __hx_vsprintf              00407af0 f   stdio.obj
+ 0001:000070f0       __hx_sprintf               004080f0 f   stdio.obj
+ 0001:00007130       __hx_printf                00408130 f   stdio.obj
+ 0001:00007290       _strlen                    00408290 f   string.obj
+ 0001:000072c0       _strcpy                    004082c0 f   string.obj
+ 0001:00007300       _strncmp                   00408300 f   string.obj
+ 0001:00007356       @__security_check_cookie@4 00408356 f   MSVCRT:secchk.obj
+ 0001:00007367       ___raise_securityfailure   00408367 f   MSVCRT:gs_report.obj
+ 0001:0000738f       ___report_gsfailure        0040838f f   MSVCRT:gs_report.obj
+ 0001:00007488       _IsProcessorFeaturePresent@4 00408488 f   kernel32:KERNEL32.dll
+ 0001:0000748e       @_guard_check_icall_nop@4  0040848e f i MSVCRT:guard_support.obj
+ 0002:00000000       __imp__SetUnhandledExceptionFilter@4 00409000     kernel32:KERNEL32.dll
+ 0002:00000004       __imp__GetCurrentProcess@0 00409004     kernel32:KERNEL32.dll
+ 0002:00000008       __imp__TerminateProcess@8  00409008     kernel32:KERNEL32.dll
+ 0002:0000000c       __imp__IsProcessorFeaturePresent@4 0040900c     kernel32:KERNEL32.dll
+ 0002:00000010       __imp__UnhandledExceptionFilter@4 00409010     kernel32:KERNEL32.dll
+ 0002:00000014       \177KERNEL32_NULL_THUNK_DATA 00409014     kernel32:KERNEL32.dll
+ 0002:00000018       ___guard_check_icall_fptr  00409018     MSVCRT:guard_support.obj
+ 0002:000000a0       __load_config_used         004090a0     MSVCRT:loadcfg.obj
+ 0002:000002a4       __IMPORT_DESCRIPTOR_KERNEL32 004092a4     kernel32:KERNEL32.dll
+ 0002:000002b8       __NULL_IMPORT_DESCRIPTOR   004092b8     kernel32:KERNEL32.dll
+ 0003:00000000       ___security_cookie_complement 0040a000     MSVCRT:gs_cookie.obj
+ 0003:00000004       ___security_cookie         0040a004     MSVCRT:gs_cookie.obj
+
+ entry point at        0001:00000000
+
+ Static symbols
+
+ 0000:ffff3000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:ffff3000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:ffff3000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:ffff3000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0000:ffff3000       .debug$S                   00400000     kernel32:KERNEL32.dll
+ 0001:00000530       _win32mmap                 00401530 f   malloc.obj
+ 0001:00000570       _win32direct_mmap          00401570 f   malloc.obj
+ 0001:000005b0       _win32munmap               004015b0 f   malloc.obj
+ 0001:00000640       _win32_acquire_lock        00401640 f   malloc.obj
+ 0001:000006c0       _win32_release_lock        004016c0 f   malloc.obj
+ 0001:00000700       _segment_holding           00401700 f   malloc.obj
+ 0001:00000750       _has_segment_link          00401750 f   malloc.obj
+ 0001:000007a0       _init_mparams              004017a0 f   malloc.obj
+ 0001:00000890       _mmap_alloc                00401890 f   malloc.obj
+ 0001:000009b0       _init_top                  004019b0 f   malloc.obj
+ 0001:00000a60       _init_bins                 00401a60 f   malloc.obj
+ 0001:00000ab0       _prepend_alloc             00401ab0 f   malloc.obj
+ 0001:000011e0       _add_segment               004021e0 f   malloc.obj
+ 0001:00001670       _sys_alloc                 00402670 f   malloc.obj
+ 0001:00001de0       _release_unused_segments   00402de0 f   malloc.obj
+ 0001:000023d0       _sys_trim                  004033d0 f   malloc.obj
+ 0001:000025e0       _tmalloc_large             004035e0 f   malloc.obj
+ 0001:00002da0       _tmalloc_small             00403da0 f   malloc.obj
+ 0001:000043f0       _IpAddrIsUsed              004053f0 f   dhcp_srv.obj
+ 0001:00004440       _GetValidIpAddr            00405440 f   dhcp_srv.obj
+ 0001:000044d0       _AssignIpAddrTo            004054d0 f   dhcp_srv.obj
+ 0001:00004590       _GetAssignedIpAddr         00405590 f   dhcp_srv.obj
+ 0001:000045f0       _ReleaseIpAddr             004055f0 f   dhcp_srv.obj
+ 0001:000046a0       _CheckOwner                004056a0 f   dhcp_srv.obj
+ 0001:00004710       __low_level_dhcp_send      00405710 f   dhcp_srv.obj
+ 0001:000047b0       _ShowDhcpMessage           004057b0 f   dhcp_srv.obj
+ 0001:00004810       _dhcp_msg_handler          00405810 f   dhcp_srv.obj
+ 0001:000050b0       _dhcpd_thread_entry        004060b0 f   dhcp_srv.obj
+ 0001:000053c0       ___GetGenifByName          004063c0 f   dhcp_srv.obj
+ 0001:00005510       _InitDhcpIf                00406510 f   dhcp_srv.obj
+ 0001:00005720       _StartDhcpIf               00406720 f   dhcp_srv.obj
+ 0001:00005900       _dhcp_server_start         00406900 f   dhcp_srv.obj
+ 0001:00005a40       _AddOneInterface           00406a40 f   dhcp_srv.obj
+ 0001:00005f90       $LN40                      00406f90     ip_addr.obj
+ 0001:00006490       _strnlen                   00407490 f   stdio.obj
+ 0001:000064e0       _skip_atoi                 004074e0 f   stdio.obj
+ 0001:00006530       _number                    00407530 f   stdio.obj
+ 0001:000067d0       _eaddr                     004077d0 f   stdio.obj
+ 0001:00006910       _iaddr                     00407910 f   stdio.obj
+ 0001:00007050       $LN75                      00408050     stdio.obj
+ 0001:00007068       $LN73                      00408068     stdio.obj
+ 0001:0000707c       $LN76                      0040807c     stdio.obj
+ 0001:000070ac       $LN74                      004080ac     stdio.obj
+ 0002:00000020       _GS_ExceptionPointers      00409020     MSVCRT:gs_report.obj
+ 0002:00000362       .idata$6                   00409362     kernel32:KERNEL32.dll
+ 0003:00000008       $SG4294966854              0040a008     stdio.obj
+ 0003:00000030       $SG4294966853              0040a030     stdio.obj
+ 0003:00000058       $SG4294967244              0040a058     examapp.obj
+ 0003:0000006c       $SG4294967245              0040a06c     examapp.obj
+ 0003:00000080       $SG4294967246              0040a080     examapp.obj
+ 0003:00000094       $SG4294967247              0040a094     examapp.obj
+ 0003:000000b0       $SG4294967248              0040a0b0     examapp.obj
+ 0003:000000c8       $SG4294967249              0040a0c8     examapp.obj
+ 0003:000000dc       $SG4294967159              0040a0dc     malloc.obj
+ 0003:000000e8       $SG4294967160              0040a0e8     malloc.obj
+ 0003:000000f4       $SG4294967027              0040a0f4     sched.obj
+ 0003:00000118       $SG4294966967              0040a118     dhcp_srv.obj
+ 0003:0000013c       $SG4294966968              0040a13c     dhcp_srv.obj
+ 0003:00000158       $SG4294966969              0040a158     dhcp_srv.obj
+ 0003:0000016c       $SG4294966970              0040a16c     dhcp_srv.obj
+ 0003:0000018c       $SG4294966971              0040a18c     dhcp_srv.obj
+ 0003:00000194       $SG4294966972              0040a194     dhcp_srv.obj
+ 0003:000001ac       $SG4294966973              0040a1ac     dhcp_srv.obj
+ 0003:000001c4       $SG4294966974              0040a1c4     dhcp_srv.obj
+ 0003:000001d8       $SG4294966975              0040a1d8     dhcp_srv.obj
+ 0003:000001fc       $SG4294966976              0040a1fc     dhcp_srv.obj
+ 0003:00000214       $SG4294966977              0040a214     dhcp_srv.obj
+ 0003:00000228       $SG4294966978              0040a228     dhcp_srv.obj
+ 0003:00000248       $SG4294966979              0040a248     dhcp_srv.obj
+ 0003:00000270       $SG4294966980              0040a270     dhcp_srv.obj
+ 0003:00000288       $SG4294966981              0040a288     dhcp_srv.obj
+ 0003:00000294       $SG4294966982              0040a294     dhcp_srv.obj
+ 0003:000002ac       $SG4294966983              0040a2ac     dhcp_srv.obj
+ 0003:000002b8       $SG4294966984              0040a2b8     dhcp_srv.obj
+ 0003:000002d0       $SG4294966985              0040a2d0     dhcp_srv.obj
+ 0003:000002e4       $SG4294966986              0040a2e4     dhcp_srv.obj
+ 0003:000002f0       $SG4294966987              0040a2f0     dhcp_srv.obj
+ 0003:00000304       $SG4294966988              0040a304     dhcp_srv.obj
+ 0003:0000031c       $SG4294966989              0040a31c     dhcp_srv.obj
+ 0003:00000330       $SG4294966990              0040a330     dhcp_srv.obj
+ 0003:0000034c       $SG4294966991              0040a34c     dhcp_srv.obj
+ 0003:00000360       $SG4294966992              0040a360     dhcp_srv.obj
+ 0003:0000037c       $SG4294966993              0040a37c     dhcp_srv.obj
+ 0003:00000394       $SG4294966994              0040a394     dhcp_srv.obj
+ 0003:000003a8       $SG4294966995              0040a3a8     dhcp_srv.obj
+ 0003:000003bc       $SG4294966996              0040a3bc     dhcp_srv.obj
+ 0003:000003ec       $SG4294966997              0040a3ec     dhcp_srv.obj
+ 0003:00000400       $SG4294966998              0040a400     dhcp_srv.obj
+ 0003:0000041c       $SG4294966999              0040a41c     dhcp_srv.obj
+ 0003:00000450       $SG4294967000              0040a450     dhcp_srv.obj
+ 0003:0000045c       $SG4294967001              0040a45c     dhcp_srv.obj
+ 0003:00000468       $SG4294967002              0040a468     dhcp_srv.obj
+ 0003:0000048c       $SG4294967003              0040a48c     dhcp_srv.obj
+ 0003:000004a0       $SG4294967004              0040a4a0     dhcp_srv.obj
+ 0003:000004c4       $SG4294967005              0040a4c4     dhcp_srv.obj
+ 0003:000004dc       $SG4294967006              0040a4dc     dhcp_srv.obj
+ 0003:00000500       $SG4294967007              0040a500     dhcp_srv.obj
+ 0003:00000514       $SG4294967008              0040a514     dhcp_srv.obj
+ 0003:00000540       $SG4294967009              0040a540     dhcp_srv.obj
+ 0003:00000558       $SG4294967010              0040a558     dhcp_srv.obj
+ 0003:0000056c       $SG4294967011              0040a56c     dhcp_srv.obj
+ 0003:0000059c       $SG4294967012              0040a59c     dhcp_srv.obj
+ 0003:000005bc       $SG4294967013              0040a5bc     dhcp_srv.obj
+ 0003:000005cc       $SG4294967017              0040a5cc     dhcp_srv.obj
+ 0003:000005e4       $SG4294967018              0040a5e4     dhcp_srv.obj
+ 0003:00000604       $SG4294966908              0040a604     hx_eth.obj
+ 0003:00000624       _digits                    0040a624     stdio.obj
+ 0003:00000628       _upper_digits              0040a628     stdio.obj
+ 0003:0000062c       $SG4294966852              0040a62c     stdio.obj
+ 0003:00000638       _GS_ExceptionRecord        0040a638     MSVCRT:gs_report.obj
+ 0003:00000688       _GS_ContextRecord          0040a688     MSVCRT:gs_report.obj
+ 0003:00000958       _mparams                   0040a958     malloc.obj
+ 0003:00000970       __gm_                      0040a970     malloc.obj
+ 0003:00000b50       _magic_init_mutex          0040ab50     malloc.obj
+ 0003:00000b5c       _if_list_head              0040ab5c     dhcp_srv.obj
+ 0003:00000b60       _if_index                  0040ab60     dhcp_srv.obj
+ 0003:00000b64       _hDhcpThread               0040ab64     dhcp_srv.obj
+ 0003:00000b68       _if_mtx                    0040ab68     dhcp_srv.obj
+ 0003:00000b6c       _mac_string                0040ab6c     hx_eth.obj
+ 0003:00000b84       ?str@?1??ipaddr_ntoa@@9@9  0040ab84     ip_addr.obj
+ 0003:00000b94       ?hMutex@?1??_hx_printf@@9@9 0040ab94     stdio.obj
+ 0004:00000060       $R000000                   0040b060     * linker generated manifest res *

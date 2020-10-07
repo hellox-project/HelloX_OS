@@ -307,14 +307,12 @@ static void __OS_Entry_BSP()
 	EnableVMM(lpVirtualMemoryMgr->lpPageIndexMgr->lpPdAddress);
 #endif
 
-	/* Initialize Ethernet Manager if it is enabled. */
-#ifdef __CFG_NET_ETHMGR
-	if(!EthernetManager.Initialize(&EthernetManager))
+	/* Initializes system config manager object. */
+	if (!SystemConfigManager.Initialize(&SystemConfigManager))
 	{
-		pszErrorMsg = "INIT ERROR: Can not initialize Ethernet Manager.\r\n";
+		pszErrorMsg = "INIT ERROR: Can not initialize system config manager.";
 		goto __TERMINAL;
 	}
-#endif
 
 	/* Initialize USB support if enabled. */
 #ifdef __CFG_SYS_USB

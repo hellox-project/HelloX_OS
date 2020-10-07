@@ -27,6 +27,7 @@
 #include "ethmgr.h"
 #include "proto.h"
 #include "netcfg.h"
+#include "netmgr.h"
 
 #include "kapi.h"
 #include "shell.h"
@@ -62,6 +63,8 @@ static DWORD showdbg(__CMD_PARA_OBJ*);    //Display ethernet related debugging i
 static DWORD assoc(__CMD_PARA_OBJ*);      //Associate to a specified WiFi SSID.
 static DWORD scan(__CMD_PARA_OBJ*);       //Rescan the WiFi networks.
 static DWORD setif(__CMD_PARA_OBJ*);      //Set a given interface's configurations.
+static DWORD showgif(__CMD_PARA_OBJ*);
+static DWORD setgif(__CMD_PARA_OBJ*);
 
 /* DHCP Server control command. */
 #ifdef __CFG_NET_DHCP_SERVER
@@ -100,6 +103,8 @@ static struct __FDISK_CMD_MAP{
 	{ "assoc",      assoc,     "  assoc    : Associate to a specified WiFi SSID."},
 	{ "scan",       scan,      "  scan     : Scan WiFi networks and show result."},
 	{ "setif",      setif,     "  setif    : Set IP configurations to a given interface."},
+	{ "showgif",    showgif,   "  showgif  : Show all generic netif in system."},
+	{ "setgif",     setgif,    "  setgif   : Set configuration of a genif."},
 #ifdef __CFG_NET_DHCP_SERVER
 	{ "dhcpd",      dhcpd,     "  dhcpd    : DHCP Server control commands." },
 #endif
@@ -447,13 +452,15 @@ __TERMINAL:
 	return dwRetVal;
 }
 
-//A helper routine used to dumpout a network interface.
+/* 
+ * Handler of showif command, dumpout a specified 
+ * netif object in system. 
+ */
 static void ShowIf(struct netif* pIf)
 {
-	char    buff[128];
+	char buff[128];
 	
-	//Print out all information about this interface.
-	PrintLine("  --------------------------------------");
+	_hx_printf("  --------------------------------------\r\n");
 	_hx_sprintf(buff,"  Inetface name : %c%c",pIf->name[0],pIf->name[1]);
 	PrintLine(buff);
 	_hx_sprintf(buff,"      IPv4 address   : %s",inet_ntoa(pIf->ip_addr));
@@ -468,22 +475,24 @@ static void ShowIf(struct netif* pIf)
 	PrintLine(buff);
 }
 
-//iflist command's implementation.
+/* Handler of iflist command. */
 static DWORD iflist(__CMD_PARA_OBJ* lpCmdObj)
 {
 	struct netif* pIfList = netif_list;
 	char if_name[MAX_ETH_NAME_LEN];
 
-	if (lpCmdObj->byParameterNum < 2) /* No interface name specified. */
+	if (lpCmdObj->byParameterNum < 2) 
 	{
-		while (pIfList)  //Travel the whole list and dumpout everyone.
+		/* No interface name specified,show all. */
+		while (pIfList)
 		{
 			ShowIf(pIfList);
 			pIfList = pIfList->next;
 		}
 	}
-	else /* Interface name specified. */
+	else 
 	{
+		/* Show out the specified netif. */
 		strncpy(if_name, lpCmdObj->Parameter[1], sizeof(if_name));
 		if (strlen(if_name) < 2)
 		{
@@ -513,7 +522,120 @@ __TERMINAL:
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 
-//showint command,display statistics information of ethernet interface.
+/* Show out all genif in system. */
+static DWORD showgif(__CMD_PARA_OBJ* pCmdObj)
+{
+	int nIndex = -1;
+	int nShowed = 0;
+	
+	if (pCmdObj->byParameterNum < 2)
+	{
+		/* No genif index specified. */
+		nShowed = NetworkManager.ShowGenif(-1);
+	}
+	else
+	{
+		nIndex = atoi(pCmdObj->Parameter[1]);
+		nShowed = NetworkManager.ShowGenif(nIndex);
+	}
+	_hx_printf("  \r\n[%d] genif listed.\r\n", nShowed);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+/* Set configuration to a genif. */
+static DWORD setgif(__CMD_PARA_OBJ* lpCmdObj)
+{
+	DWORD dwRetVal = SHELL_CMD_PARSER_FAILED;
+	char index = 1;
+	char* errmsg = "  Bad parameter(s).\r\n";
+	__COMMON_NETWORK_ADDRESS comm_addr[3];
+	BOOL bAddrOk = FALSE, bMaskOk = FALSE, bGwOk = FALSE;
+	int genif_index = -1;
+
+	if (lpCmdObj->byParameterNum <= 1)
+	{
+		/* Too few inputs. */
+		_hx_printf("setgif gif_index /a ip-addr /m mask /g gw\r\n");
+		dwRetVal = SHELL_CMD_PARSER_SUCCESS;
+		goto __TERMINAL;
+	}
+
+	/* Parse command line. */
+	while (index < lpCmdObj->byParameterNum)
+	{
+		if (strcmp(lpCmdObj->Parameter[index], "/a") == 0)
+		{
+			/* Set IP address. */
+			index++;
+			if (index >= lpCmdObj->byParameterNum)
+			{
+				_hx_printf(errmsg);
+				goto __TERMINAL;
+			}
+			comm_addr[0].AddressType = NETWORK_ADDRESS_TYPE_IPV4;
+			comm_addr[0].Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
+			bAddrOk = TRUE;
+		}
+		else if (strcmp(lpCmdObj->Parameter[index], "/m") == 0)
+		{
+			/* Set IP subnet mask. */
+			index++;
+			if (index >= lpCmdObj->byParameterNum)
+			{
+				_hx_printf(errmsg);
+				goto __TERMINAL;
+			}
+			comm_addr[1].AddressType = NETWORK_ADDRESS_TYPE_IPV4;
+			comm_addr[1].Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
+			bMaskOk = TRUE;
+		}
+		else if (strcmp(lpCmdObj->Parameter[index], "/g") == 0)
+		{
+			/* Set default gateway. */
+			index++;
+			if (index >= lpCmdObj->byParameterNum)
+			{
+				_hx_printf(errmsg);
+				goto __TERMINAL;
+			}
+			comm_addr[2].AddressType = NETWORK_ADDRESS_TYPE_IPV4;
+			comm_addr[2].Address.ipv4_addr = inet_addr(lpCmdObj->Parameter[index]);
+			bGwOk = TRUE;
+		}
+		else
+		{
+			genif_index = atoi(lpCmdObj->Parameter[index]);
+		}
+		index++;
+	}
+
+	/* Just configure the genif if all parameters are OK. */
+	if (bAddrOk && bMaskOk && bGwOk)
+	{
+		int ret_val = NetworkManager.AddGenifAddress(genif_index,
+			NETWORK_PROTOCOL_TYPE_IPV4,
+			comm_addr,
+			3, FALSE);
+		if (ret_val == ERR_OK)
+		{
+			_hx_printf("set genif addr ok.\r\n");
+		}
+		else
+		{
+			_hx_printf("set genif addr fail[%d].\r\n", ret_val);
+		}
+	}
+
+	dwRetVal = SHELL_CMD_PARSER_SUCCESS;
+
+__TERMINAL:
+	return dwRetVal;
+}
+
+/* 
+ * showint command,display statistics 
+ * information of ethernet interface. 
+ */
 static DWORD showint(__CMD_PARA_OBJ* lpCmdObj)
 {
 	char if_name[MAX_ETH_NAME_LEN];
@@ -708,7 +830,6 @@ static DWORD assoc(__CMD_PARA_OBJ* lpCmdObj)
 		goto __TERMINAL;
 	}
 
-	//lpCmdObj[0].Parameter
 	while(index < lpCmdObj->byParameterNum)
 	{		
 		if(strcmp(lpCmdObj->Parameter[index],"/k") == 0) //Key of association.		
@@ -961,8 +1082,11 @@ static void testPPPoE(int times)
 #define PPPOE_DEFAULT_PASSWORD_QD "60767168"
 
 /* Default password and user name,to simplify testing. */
-#define PPPOE_DEFAULT_USERNAME "01012187137"
-#define PPPOE_DEFAULT_PASSWORD "858137"
+#define PPPOE_DEFAULT_USERNAME_BJ "01012187137"
+#define PPPOE_DEFAULT_PASSWORD_BJ "858137"
+
+#define PPPOE_DEFAULT_USERNAME PPPOE_DEFAULT_USERNAME_BJ
+#define PPPOE_DEFAULT_PASSWORD PPPOE_DEFAULT_PASSWORD_BJ
 
 static DWORD pppoe(__CMD_PARA_OBJ* lpCmdObj)
 {

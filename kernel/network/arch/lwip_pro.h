@@ -32,7 +32,30 @@
 //Initializer of the protocol object.
 BOOL lwipInitialize(struct tag__NETWORK_PROTOCOL* pProtocol);
 
-//Check if the protocol can be bind a specific interface.
+/*
+ * Add a genif to the protocol. The interface specific state
+ * will be returned if bind success,otherwise NULL.
+ */
+LPVOID lwipAddGenif(__GENERIC_NETIF* pGenif);
+
+/* Add one IP address to genif. */
+BOOL lwipAddGenifAddress(__GENERIC_NETIF* pGenif,
+	LPVOID pIfState,
+	__COMMON_NETWORK_ADDRESS* comm_addr,
+	int addr_num,
+	BOOL bSecondary);
+
+/* Delete a genif from the protocol. */
+BOOL lwipDeleteGenif(__GENERIC_NETIF* pGenif, LPVOID pIfState);
+
+/* Check if a incoming packet belong to the protocol. */
+BOOL lwipMatch(__GENERIC_NETIF* pGenif, LPVOID pIfState, unsigned long type, struct pbuf* pkt);
+
+/* Accept a incoming packet if Match returns TRUE. */
+BOOL lwipAcceptPacket(__GENERIC_NETIF* pGenif, LPVOID pIfState,
+	struct pbuf* pIncomingPkt);
+
+//Check if the protocol can be bound to a specified network interface.
 BOOL lwipCanBindInterface(struct tag__NETWORK_PROTOCOL* pProtocol, LPVOID pInterface, DWORD* l2proto);
 
 //Add one ethernet interface to the network protocol.The state of the
@@ -44,6 +67,9 @@ VOID lwipDeleteEthernetInterface(__ETHERNET_INTERFACE* pEthInt, LPVOID pL3Interf
 
 //Delivery a Ethernet Frame to this protocol,a dedicated L3 interface is also provided.
 BOOL lwipDeliveryFrame(__ETHERNET_BUFFER* pEthBuff, LPVOID pL3Interface);
+
+/* Handler of link's status change. */
+BOOL lwipLinkStatusChange(LPVOID pIfState, BOOL bLinkDown);
 
 //Set the network address of a given L3 interface.
 BOOL lwipSetIPAddress(LPVOID pL3Intface, __ETH_IP_CONFIG* addr);

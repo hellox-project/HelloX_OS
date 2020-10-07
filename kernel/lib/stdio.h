@@ -14,6 +14,9 @@
 //    Lines number              :
 //***********************************************************************/
 
+#ifndef __STDIO_H__
+#define __STDIO_H__
+
 typedef char* va_list;
 typedef unsigned int size_t;
 
@@ -79,3 +82,10 @@ int _hx_printk(const char* fmt, ...);
 #ifndef printk
 #define printk _hx_printk
 #endif
+
+/*
+ *  sscanf(buf,fmt,va_alist)
+ */
+int sscanf(const char *buf, const char *fmt, ...);
+
+#endif //__STDIO_H__

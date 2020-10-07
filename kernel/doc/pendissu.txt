@@ -1,0 +1,26 @@
+Pending issues:
+1. Deadlock risk in mutex object's timeout waiting,as follows:
+   1.1 Kernel thread's spinlock acquired in WaitingTimerHandler routine;
+   1.2 Mutex object's spinlock is acquired in WaitingTimerHandler->MutexTimeOutCallback;
+   1.3 So the lock order is illegal according lock_ord.txt;
+   1.4 But Release mutex's implementation,follows the lock order;
+   1.5 Suppose the scenario:
+     1.5.1 Timer handler invoked on CPU1,kernel thread's spinlock acquired;
+	 1.5.2 Mutex object's spinlock is acquired in ReleaseMutex, on CPU2;
+	 1.5.3 Then deadlock raise;
+   1.6 All source code in synobj.c file;
+2. Timeout waiting of synchrous objects may hugry to death,since the timeout waiting
+   routine will use the dwMillionSecond as timeout value again when retry;
+3. Race condition may exist in timer object,suppose the following scenario:
+   3.1 A timer is set by a thread,with data object to be manipulated in handler;
+   3.2 The thread will destroy the data object,so it calls CancelTimer to delete timer;
+   3.3 After cancelation of timer,the thread release data object;
+   3.4 In step 3.2,the timer handler may invoked in another CPU,this may lead
+       the accessing of destroyed data object;
+   3.5 Feasible solution?
+   ----CONFIRMED: SetTimer/CancelTimer routines and the procedure of timer object
+       processed all acquire system object's spinlock, the timer's builtin handler
+	   is also protected by this spinlock,so should no problem here.
+4. Race condition may exist in device handler's processing,when a new interrupt
+   object is added or removed from interrupt object list;
+5. Interrupt object should be released but not now in DisconnectInterrupt handler;

@@ -1,0 +1,5 @@
+20200315:
+1. Parameter checking of semaphore/mutex operation changed to BUG_ON from if(...){return FALSE;};
+2. ReleaseMutex revised that only current owner could release it;
+3. DHCP server revised batchly;
+4. MEMP_NUM_NETCONN changed to 16 from 4;

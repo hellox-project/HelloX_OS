@@ -1384,7 +1384,7 @@ __TERMINAL:
 /*
 * Send frame routine expose to OS kernel.
 */
-BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
+BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt, __ETHERNET_BUFFER* pOutFrame)
 {
 	__KERNEL_THREAD_MESSAGE msg;
 	struct ueth_data* ss = NULL;
@@ -1398,21 +1398,31 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 	}
 	ss = (struct ueth_data*)pEthInt->pIntExtension;
 	BUG_ON(NULL == ss);
-	BUG_ON(pEthInt->SendBuffer.buff_length != ETH_DEFAULT_MTU + ETH_HEADER_LEN);
-	BUG_ON(pEthInt->SendBuffer.dwSignature != KERNEL_OBJECT_SIGNATURE);
 
 	if (NULL == ss->pTxThread)  /* Not created yet,in process of initialization. */
 	{
 		return FALSE;
 	}
 
-	/*
-	* Clone a new ethernet buffer to hold the sending content.
-	*/
-	pNewBuff = EthernetManager.CloneEthernetBuffer(&pEthInt->SendBuffer);
-	if (NULL == pNewBuff)
+	if (NULL == pOutFrame)
 	{
-		return FALSE;
+		/*
+		 * Use builtin ethernet buffer, clone a new
+		 * one to hold the sending content,since it will be
+		 * destroyed after sent. Validate it at first.
+		 */
+		BUG_ON(pEthInt->SendBuffer.buff_length != ETH_DEFAULT_MTU + ETH_HEADER_LEN);
+		BUG_ON(pEthInt->SendBuffer.dwSignature != KERNEL_OBJECT_SIGNATURE);
+		pNewBuff = EthernetManager.CloneEthernetBuffer(&pEthInt->SendBuffer);
+		if (NULL == pNewBuff)
+		{
+			return FALSE;
+		}
+	}
+	else {
+		BUG_ON(pOutFrame->buff_length != ETH_DEFAULT_MTU + ETH_HEADER_LEN);
+		BUG_ON(pOutFrame->dwSignature != KERNEL_OBJECT_SIGNATURE);
+		pNewBuff = pOutFrame;
 	}
 
 	/*
@@ -1448,16 +1458,24 @@ BOOL __r8152_send(__ETHERNET_INTERFACE* pEthInt)
 			pEthInt->nSendingQueueSz--;
 			__ATOMIC_DECREASE(&EthernetManager.nDrvSendingQueueSz);
 			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
-			EthernetManager.DestroyEthernetBuffer(pNewBuff);
+			/* Destroy the new cloned ethernet buffer. */
+			if (NULL == pOutFrame)
+			{
+				EthernetManager.DestroyEthernetBuffer(pNewBuff);
+			}
 			return bResult;
 		}
 	}
-	else  //There is buffer element in list already,no need send message.
+	else
 	{
 		if (pEthInt->nSendingQueueSz >= MAX_ETH_SENDINGQUEUESZ)
 		{
 			__LEAVE_CRITICAL_SECTION_SMP(ss->spin_lock, dwFlags);
-			EthernetManager.DestroyEthernetBuffer(pNewBuff);
+			/* Destroy the newly cloned ethernet buffer. */
+			if (NULL == pOutFrame)
+			{
+				EthernetManager.DestroyEthernetBuffer(pNewBuff);
+			}
 			bResult = FALSE;
 		}
 		else
@@ -1527,7 +1545,7 @@ __ETHERNET_BUFFER* __r8152_recv(__ETHERNET_INTERFACE *eth)
 		/*
 		 * Check if the remaind data is enough.
 		 */
-		if (bytes_process + packet_len + sizeof(struct rx_desc) > actual_len)
+		if (bytes_process + packet_len + sizeof(struct rx_desc) > (unsigned int)actual_len)
 		{
 			goto __TERMINAL;
 		}
@@ -1550,7 +1568,7 @@ __ETHERNET_BUFFER* __r8152_recv(__ETHERNET_INTERFACE *eth)
 		}
 
 		/* Allocate an ethernet buffer to hold the content. */
-		pEthBuffer = EthernetManager.CreateEthernetBuffer(packet_len + 8);
+		pEthBuffer = EthernetManager.CreateEthernetBuffer(packet_len + 8, 0);
 		if (NULL == pEthBuffer)
 		{
 			goto __TERMINAL;

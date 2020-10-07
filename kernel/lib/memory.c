@@ -2,11 +2,12 @@
 #include "StdAfx.h"
 #include "string.h"
 
-//------------------------------------------------------------------------
-// Memory manipulating functions,memcpy,memset,...
-//------------------------------------------------------------------------
+/*
+ * Memory manipulating functions,memcpy,
+ * memset, memmove and memcmp...
+ */
 
-void* memcpy (void * dst,const void * src,size_t count)
+void* __memcpy (void * dst,const void * src,size_t count)
 {
 	void * ret = dst;
 
@@ -19,6 +20,57 @@ void* memcpy (void * dst,const void * src,size_t count)
 	}
 
 	return(ret);
+}
+
+/* 
+ * Memory copy,more optimal than just copy 
+ * bytes one by one. 
+ */
+void* memcpy(void* dst, const void* src, size_t len)
+{
+	size_t i;
+
+	/* 
+	 * Apply machine alignment copy if all
+	 * conditions satisfied.
+	 */
+	if ((uintptr_t)dst % sizeof(long) == 0 &&
+		(uintptr_t)src % sizeof(long) == 0 &&
+		len % sizeof(long) == 0)
+	{
+		long* d = dst;
+		const long* s = src;
+		for (i = 0; i < len / sizeof(long); i++)
+		{
+			d[i] = s[i];
+		}
+	}
+	else
+	{
+		if ((uintptr_t)dst % sizeof(short) == 0 &&
+			(uintptr_t)src % sizeof(short) == 0 &&
+			len % sizeof(short) == 0)
+		{
+			/* Word alignment,copy one word each time. */
+			short* d = dst;
+			const short* s = src;
+			for (i = 0; i < len / sizeof(short); i++)
+			{
+				d[i] = s[i];
+			}
+		}
+		else
+		{
+			/* Use byte copy. */
+			char* d = dst;
+			const char* s = src;
+			for (i = 0; i < len; i++)
+			{
+				d[i] = s[i];
+			}
+		}
+	}
+	return dst;
 }
 
 void* memset (void *dst,int val,size_t count)
@@ -63,7 +115,7 @@ int memcmp(const void *buffer1,const void *buffer2,int count)
 	return( *((unsigned char *)buffer1) - *((unsigned char *)buffer2) );
 }
  
-//It can handle the scenario that the dst and src memory overlaped scenario.
+/* Overlap between dst and src could be supported. */
 void *memmove(void *dst,const void *src,int n)
 {
      char *dp = (char *)dst;

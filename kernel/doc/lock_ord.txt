@@ -1,0 +1,14 @@
+Order of acquiring spin lock in kernel:
+1. System;
+2. KernelThreadManager;
+3. Synchrous object(Event/Mutex/Semaphore/Mailbox...);
+4. KernelThreadObject;
+5. PriorityQueue;
+
+Release spin lock in reverse order:
+1. PriorityQueue;
+2. KernelThreadObject;
+3. Synchrous object;
+4. KernelThreadManager;
+5. System;
+

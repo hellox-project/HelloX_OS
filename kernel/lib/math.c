@@ -32,3 +32,14 @@ double floor(double x)
 		return (float)((int)x);
 	}
 }
+
+/* fabs(x) returns the absolute value of x.
+ */
+
+double
+fabs(double x)
+{
+	__HI(x) &= 0x7fffffff;
+	return x;
+} /* fabs */
+

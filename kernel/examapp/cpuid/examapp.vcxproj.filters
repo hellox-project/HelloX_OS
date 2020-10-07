@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\socket">
+      <UniqueIdentifier>{4d36a274-5443-421a-92da-3023b694360c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\socket">
+      <UniqueIdentifier>{66bacafc-1096-44e6-a37d-c70abdcc951a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\cpuid">
+      <UniqueIdentifier>{9a91c9e4-ed32-4da3-b221-d77ad2208e55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\cpuid">
+      <UniqueIdentifier>{f1b88172-87bb-42f6-86fe-b143a6384a38}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="examapp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hellox.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="malloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sched.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rand.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="atox.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="string.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="socket\socket.c">
+      <Filter>Source Files\socket</Filter>
+    </ClCompile>
+    <ClCompile Include="socket\ip_addr.c">
+      <Filter>Source Files\socket</Filter>
+    </ClCompile>
+    <ClCompile Include="socket\hx_inet.c">
+      <Filter>Source Files\socket</Filter>
+    </ClCompile>
+    <ClCompile Include="socket\hx_eth.c">
+      <Filter>Source Files\socket</Filter>
+    </ClCompile>
+    <ClCompile Include="socket\dhcp_srv.c">
+      <Filter>Source Files\socket</Filter>
+    </ClCompile>
+    <ClCompile Include="scanf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\asm-bits.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\cpuid_main.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\libcpuid_util.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\rdtsc.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\recog_amd.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\recog_intel.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="cpuid\main.c">
+      <Filter>Source Files\cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="ctype.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hellox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="malloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="__hxcomm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ctype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="errno.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inttypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ip_addr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="limits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sched.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="setjmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="signal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sockets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdarg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdbool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stddef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="time_pri.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unistd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fcntl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\ip_addr.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\genif.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\hx_inet.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\hx_eth.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\sockets.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\sockopt.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\dhcp_srv.h">
+      <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\asm-bits.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\libcpuid.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\libcpuid_constants.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\libcpuid_internal.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\libcpuid_types.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\libcpuid_util.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\rdtsc.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\recog_amd.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="cpuid\recog_intel.h">
+      <Filter>Header Files\cpuid</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

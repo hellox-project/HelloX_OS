@@ -39,7 +39,7 @@ static unsigned long __UserThreadWrapper(LPVOID pData)
 HANDLE CreateUserThread(
 	DWORD dwStatus,
 	DWORD dwPriority,
-	__KERNEL_THREAD_ROUTINE lpStartRoutine,
+	__THREAD_START_ROUTINE lpStartRoutine,
 	LPVOID lpRoutineParam,
 	char* pszName);
 VOID DestroyUserThread(HANDLE hThread);
@@ -188,7 +188,7 @@ LPVOID VirtualAlloc(LPVOID lpDesiredAddr,
 }
 
 /* Release virtual memory allocated by VirtualAlloc. */
-VOID VirtualFree(LPVOID lpVirtualAddr)
+BOOL VirtualFree(LPVOID lpVirtualAddr)
 {
 	__asm {
 		mov __PARAM_0, lpVirtualAddr

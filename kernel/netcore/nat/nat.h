@@ -107,7 +107,7 @@ typedef enum {
  * will be increased,and if they reach the pre-defined value,
  * then the NAT entry will be purged.
  */
-#define NAT_ENTRY_SCAN_PERIOD    2000 //2s.
+#define NAT_ENTRY_SCAN_PERIOD    10000 //10s.
 
 /* Predefined time out value for different protocol's NAT entry,
  * in millionseconds.

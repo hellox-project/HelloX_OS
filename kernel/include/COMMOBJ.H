@@ -145,17 +145,19 @@ BEGIN_DEFINE_OBJECT(__OBJECT_MANAGER)
 	/* Initializer of object manager. */
 	BOOL (*Initialize)(struct tag__OBJECT_MANAGER*);
 	/* Create a new object. */
-	__COMMON_OBJECT* (*CreateObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*,DWORD);
+	__COMMON_OBJECT* (*CreateObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*,unsigned long);
 	/* Get an object by specifying it's type and ID. */
 	__COMMON_OBJECT* (*GetObject)(struct tag__OBJECT_MANAGER*, unsigned long type, unsigned long _id);
 	/* Get an object by specifying it's ID. */
-	__COMMON_OBJECT* (*GetObjectByID)(struct tag__OBJECT_MANAGER*,DWORD);
+	__COMMON_OBJECT* (*GetObjectByID)(struct tag__OBJECT_MANAGER*, unsigned long);
 	/* Get the specified type's object list header. */
-	__COMMON_OBJECT* (*GetFirstObjectByType)(struct tag__OBJECT_MANAGER*,DWORD);
+	__COMMON_OBJECT* (*GetFirstObjectByType)(struct tag__OBJECT_MANAGER*, unsigned long);
 	/* Destroy one kernel object. */
-	BOOL (*DestroyObject)(struct tag__OBJECT_MANAGER*,__COMMON_OBJECT*);
+	BOOL (*DestroyObject)(struct tag__OBJECT_MANAGER*, __COMMON_OBJECT*);
 	/* Increase kernel object's reference counter. */
 	BOOL (*AddRefCount)(struct tag__OBJECT_MANAGER*, __COMMON_OBJECT*);
+	/* Validates a kernel object. */
+	BOOL (*ValidateObject)(struct tag__OBJECT_MANAGER*, __COMMON_OBJECT*);
 END_DEFINE_OBJECT(__OBJECT_MANAGER)
 
 /* 

@@ -597,13 +597,14 @@ static BOOL validateTCPChksum(struct ip_hdr* p, struct pbuf* pb)
 	pbuf_header(pb, iph_len); /* move back. */
 	if (chksum_new != chksum_old)
 	{
-		__LOG("TCP checksum fail:ip_len = %d,pbuf_tot_len = %d,src_addr:%s\r\n",
+		/* Just show a warning and let the packet go. */
+		__LOG("TCP checksum fail:ip_len = %d,src_addr:%s,old = 0x%X,new = 0x%X\r\n",
 			ip_len,
-			pb->tot_len,
-			inet_ntoa(p->src.addr));
+			inet_ntoa(p->src.addr),
+			chksum_old, chksum_new);
 		IP_STATS_INC(tcp.chkerr);
 		IP_STATS_INC(tcp.drop);
-		return FALSE;
+		//return FALSE;
 	}
 	return TRUE;
 }

@@ -27,10 +27,6 @@
 #include "objqueue.h"
 #include "smp.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 //
 //***********************************************************************
 //
@@ -220,12 +216,18 @@ END_DEFINE_OBJECT(__KERNEL_THREAD_MESSAGE)
 #define PRIORITY_LEVEL_IMPORTANT        PRIORITY_LEVEL_HIGH_1
 #define PRIORITY_LEVEL_LOWEST           PRIORITY_LEVEL_IDLE
 
-//The maximal kernel objects number one kernel thread can wait at the same time.
+/*
+ * The maximal kernel objects number that one 
+ * thread can wait at the same time.
+ */
 #define MAX_MULTIPLE_WAIT_NUM           0x08
 
-//
-//The kernel thread object's definition.
-//
+/*
+ * Kernel thread object.
+ * Any thread(both kernel and user) in OS kernel is
+ * managed by this object,all thread related information
+ * are saved into this object.
+ */
 BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
     INHERIT_FROM_COMMON_OBJECT
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
@@ -305,12 +307,24 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 	/* Name of this thread,in ASCII format. */
 	char KernelThreadName[MAX_THREAD_NAME];
 
-	//Used by synchronous object to indicate the waiting result.
+	/*
+	 * Save waiting result value when wait for synchronization
+	 * kernel object(s).
+	 */
 	volatile DWORD dwWaitingStatus;
-	//Multiple object waiting flags,the object index which first wakeup the thread
-	//also stored in this variable.
+
+	/*
+	 * Multiple object waiting flags,it indicates if
+	 * current kenrel thread is waiting for multiple
+	 * kernel objects,see MULTIPLE_WAITING_STATUS definition.
+	 * The first object's index value who wakeup the thread
+	 * also is stored in this number's low part.
+	 */
 	volatile DWORD dwMultipleWaitFlags;
-	//Kernel object number array the thread is waiting for.
+	/* 
+	 * Kernel object array that the thread is waiting on,
+	 * in waiting for multiple object's scenario.
+	 */
 	__COMMON_OBJECT* MultipleWaitObjectArray[MAX_MULTIPLE_WAIT_NUM];
 
 	//TLS array.
@@ -356,22 +370,38 @@ END_DEFINE_OBJECT(__KERNEL_THREAD_OBJECT)
 #define SUSPEND_FLAG_DISABLE             0x80000000
 #define MAX_SUSPEND_COUNTER              0x0000FFF0
 
-//Flags to control the multiple objects waiting mechanism.
-#define MULTIPLE_WAITING_STATUS          0x80000000  //If set then the kernel is in multiple waiting status.
-#define MULTIPLE_WAITING_WAITALL         0x40000000  //If set then the kernel is waiting for all objects.
+/* 
+ * Flags to control the multiple objects 
+ * waiting mechanism,are set to dwMultipleWaitFlags
+ * value accordingly.
+ */
+/* Set when the thread is in multiple waiting status. */
+#define MULTIPLE_WAITING_STATUS          0x80000000
+/* Set when the thread is waiting for all objects. */
+#define MULTIPLE_WAITING_WAITALL         0x40000000
 
-//A macro to check if the specified thread is in multiple waiting status.
-#define IN_MULTIPLE_WAITING(p)           ((p)->dwMultipleWaitFlags & MULTIPLE_WAITING_STATUS)
+/* 
+ * Helper macro to check if the specified thread 
+ * is in multiple waiting status.
+ */
+#define IN_MULTIPLE_WAITING(p) ((p)->dwMultipleWaitFlags & MULTIPLE_WAITING_STATUS)
 
-//Macros to set and get the signaled object's index,which is the last 8 bits of dwMultipleWaitFlags.
-#define MULTIPLE_WAITING_SETINDEX(p,index)  ((p)->dwMultipleWaitFlags &= 0xFFFFFF00); \
-	((p)->dwMultipleWaitFlags += ((index) & 0x000000FF);
-#define MULTIPLE_WAITING_GETINDEX(p)        ((p)->dwMultipleWaitFlags & 0x000000FF)
+/*
+ * Helper Macros to set or get the signaled object's 
+ * index value from dwMultipleWaitFlags,which is the 
+ * last 8 bits of dwMultipleWaitFlags.
+ */
+#define MULTIPLE_WAITING_SETINDEX(p,index)  ((p)->dwMultipleWaitFlags &= (~0xFF); \
+	((p)->dwMultipleWaitFlags += ((index) & 0xFF);
+#define MULTIPLE_WAITING_GETINDEX(p)        ((p)->dwMultipleWaitFlags & 0xFF)
 
-//Kernel thread object's initialize and uninitialize routine's definition.
+/*
+ * Kernel thread object's initialize and uninitialize 
+ * routines,invoked when a kernel thread object is created
+ * or destroyed.
+ */
 BOOL KernelThreadInitialize(__COMMON_OBJECT* lpThis);
 BOOL KernelThreadUninitialize(__COMMON_OBJECT* lpThis);
-
 
 //Kernel thread's start routine.
 typedef DWORD (*__KERNEL_THREAD_ROUTINE)(LPVOID);
@@ -554,12 +584,13 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 	/* Kernel thread's message queue related operations. */
 	BOOL (*SendMessage)(__COMMON_OBJECT* lpKernelThread,
 		__KERNEL_THREAD_MESSAGE* lpMsg);
+	/* Internal use only. */
+	BOOL (*SendMessageEx)(__COMMON_OBJECT* lpKernelThread,
+		__KERNEL_THREAD_MESSAGE* lpMsg, BOOL bReSched);
 	BOOL (*GetMessage)(__COMMON_OBJECT* lpKernelThread,
 		__KERNEL_THREAD_MESSAGE* lpMsg);
 	BOOL (*PeekMessage)(__COMMON_OBJECT* lpKernelThread,
 		__KERNEL_THREAD_MESSAGE* lpMsg);
-	BOOL (*MsgQueueFull)(__COMMON_OBJECT* lpKernelThread);
-	BOOL (*MsgQueueEmpty)(__COMMON_OBJECT* lpKernelThread);
 
 	//Lock or Unlock kernel thread.
 	BOOL (*LockKernelThread)(__COMMON_OBJECT* lpThis,
@@ -580,6 +611,12 @@ BEGIN_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER)
 	/* Scan killed queue and destroy threads in it. */
 	void (*ProcessKilledQueue)(__COMMON_OBJECT* pThis);
 END_DEFINE_OBJECT(__KERNEL_THREAD_MANAGER) /* End of the kernel thread manager's definition. */
+
+/* Return values of SendMessage routine. */
+#define MESSAGE_SEND_OK                0x00
+#define MESSAGE_SEND_NOTARGET          0x01  /* Invalid target thread. */
+#define MESSAGE_SEND_TARGETTERMINATED  0x02  /* Target thread run over. */
+#define MESSAGE_SEND_QUEUEFULL         0x03  /* Message queue full. */
 
 /* 
  * Check if is a kernel thread. 
@@ -638,9 +675,13 @@ END_DEFINE_OBJECT(__EVENT)
 #define EVENT_STATUS_FREE            0x00000001    //Event status.
 #define EVENT_STATUS_OCCUPIED        0x00000002
 
-//
-//The following values are returned by WaitForThisObjectEx routine.
-//
+/*
+ * Return values of WaitForThisObject/WaitForThisObjectEx and
+ * WaitForMultipleObjects routine,the mask value is used to
+ * separate the dwWaitingStatus of thread object into 2 parts:
+ * the low 16 bits are used to contain waiting status,and the
+ * upper 16 bits are reserved for use in future.
+ */
 #define OBJECT_WAIT_MASK             0x0000FFFF
 #define OBJECT_WAIT_WAITING          0x00000000
 #define OBJECT_WAIT_FAILED           0x00000000
@@ -721,7 +762,4 @@ DWORD WaitForMultipleObjects(
 //Will wait forever,never return if no desired resource can be obtained.
 #define WAIT_TIME_INFINITE   0xFFFFFFFF
 
-#ifdef __cplusplus
-}
-#endif //__cplusplus
 #endif //__KTMGR_H__

@@ -21,6 +21,8 @@
 #include <modmgr.h>
 #include <buffmgr.h>
 #include <mlayout.h>
+#include <stdlib.h>
+#include <cJSON/cJSON.h>
 
 #include "SHELL.H"
 #include "ioctrl_s.h"
@@ -674,8 +676,120 @@ static DWORD Process2(LPVOID pData)
 	return 0;
 }
 
-DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
+static DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
+	HANDLE hCfgProfile = SystemConfigManager.GetConfigProfile("pppoeMain");
+	char value_buff[SYSTEM_CONFIG_MAX_KVLENGTH];
+
+	if (NULL == hCfgProfile)
+	{
+		_hx_printf("[%s]could not get config profile\r\n", __func__);
+	}
+
+	/* Retrieve key-value and show it. */
+	if (SystemConfigManager.GetConfigEntry(hCfgProfile, "session_name", value_buff, 32))
+	{
+		_hx_printf("key[session_name] value [%s]\r\n", value_buff);
+	}
+	if (SystemConfigManager.GetConfigEntry(hCfgProfile, "username", value_buff, 32))
+	{
+		_hx_printf("key[username] value [%s]\r\n", value_buff);
+	}
+	if (SystemConfigManager.GetConfigEntry(hCfgProfile, "password", value_buff, 32))
+	{
+		_hx_printf("key[password] value [%s]\r\n", value_buff);
+	}
+
+	SystemConfigManager.ReleaseConfigProfile(hCfgProfile);
+
+	return SHELL_CMD_PARSER_SUCCESS;
+
+#if 0
+	cJSON* cfgRoot = NULL;
+	const char* cfgFileName = "C:\\syscfg\\syscfg.jsn";
+	unsigned long cfgFileLength = 0;
+	HANDLE hCfgFile = NULL;
+	char* json_buff = NULL;
+	char* json_string = NULL;
+
+	/* Open the system config file. */
+	hCfgFile = CreateFile((char*)cfgFileName, FILE_ACCESS_READWRITE, 0, NULL);
+	if (NULL == hCfgFile)
+	{
+		_hx_printf("[%s]could not open syscfg file.\r\n", __func__);
+		goto __TERMINAL;
+	}
+	/* Load the whole file into a buffer. */
+	cfgFileLength = GetFileSize(hCfgFile, NULL);
+	if (0 == cfgFileLength)
+	{
+		_hx_printf("[%s]could not get file's size\r\n", __func__);
+		goto __TERMINAL;
+	}
+	unsigned long read_sz = 0;
+	json_buff = _hx_malloc(cfgFileLength + 1);
+	if (NULL == json_buff)
+	{
+		_hx_printf("[%s]out of memory\r\n");
+		goto __TERMINAL;
+	}
+	if (!ReadFile(hCfgFile, cfgFileLength, json_buff, &read_sz))
+	{
+		_hx_printf("[%s]could not read file\r\n", __func__);
+		goto __TERMINAL;
+	}
+
+	/* Now parse the system configure json file. */
+	cfgRoot = cJSON_Parse((const char*)json_buff);
+	if (NULL == cfgRoot)
+	{
+		_hx_printf("[%s]could not parse json file\r\n", __func__);
+		goto __TERMINAL;
+	}
+	/* OK,retrieve configuration information from json object. */
+	json_string = cJSON_Print(cfgRoot);
+	if (NULL == json_string)
+	{
+		_hx_printf("[%s]could render json object to string\r\n", __func__);
+		goto __TERMINAL;
+	}
+	_hx_printf("[%s]json string length[%d]\r\n", __func__,
+		strlen(json_string));
+	cJSON* pppoe_profile = cJSON_GetObjectItemCaseSensitive(cfgRoot, "pppoeMain");
+	if (NULL == pppoe_profile)
+	{
+		_hx_printf("[%s]could not get pppoe config profile\r\n", __func__);
+		goto __TERMINAL;
+	}
+	cJSON* session_name = cJSON_GetObjectItemCaseSensitive(pppoe_profile, "session_name");
+	if (NULL == session_name)
+	{
+		_hx_printf("[%s]could not get session name\r\n", __func__);
+		goto __TERMINAL;
+	}
+	/* show session  name. */
+	_hx_printf("pppoe session name[%s]\r\n", session_name->valuestring);
+
+__TERMINAL:
+	if (hCfgFile)
+	{
+		CloseFile(hCfgFile);
+	}
+	if (json_buff)
+	{
+		_hx_free(json_buff);
+	}
+	if (cfgRoot)
+	{
+		cJSON_Delete(cfgRoot);
+	}
+	if (json_string)
+	{
+		_hx_free(json_string);
+	}
+	return SHELL_CMD_PARSER_SUCCESS;
+#endif
+
 #if 0
 	if (NULL == pVmmMgr)
 	{
@@ -730,7 +844,6 @@ DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		pVmmMgr = NULL;
 		/* Test the destruction of virtual memory manager. */
 	}
-#endif
 
 	__PROCESS_OBJECT* pProcess = NULL;
 
@@ -762,6 +875,7 @@ DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager, (__COMMON_OBJECT*)pProcess);
 
 	return SHELL_CMD_PARSER_SUCCESS;
+#endif
 }
 
 static DWORD QueryCmdName(LPSTR pMatchBuf,INT nBufLen)
@@ -903,10 +1017,13 @@ DWORD ShellEntryPoint(LPVOID pData)
 	Shell_Msg_Loop(s_szPrompt,CommandParser,QueryCmdName);
 
 	/*
-	 * When reach here,it means the shell thread will terminate.We will reboot
-	 * the system in current version's implementation,since there is no interact
-	 * mechanism between user and computer in case of no shell.
-	 * NOTE:System clean up operations should be put here if necessary.
+	 * When reach here,it means the shell thread 
+	 * will terminate.We will just brutely reboot
+	 * the system in current version's implementation,
+	 * since there is no interact mechanism between 
+	 * user and computer in case of no shell.
+	 * NOTE:System clean up operations should be put 
+	 * here if necessary.
 	 */
 #ifdef __I386__
 	BIOSReboot();

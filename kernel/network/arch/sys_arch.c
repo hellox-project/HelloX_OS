@@ -335,7 +335,13 @@ u32_t sys_arch_sem_wait(sys_sem_t* sem,u32_t timeout)
 void sys_sem_signal(sys_sem_t* sem)
 {
 	HANDLE hSem = (HANDLE)*sem;
-	ReleaseSemaphore(hSem);
+
+	BUG_ON(NULL == hSem);
+	/* 
+	 * No scheduling is required since this routine 
+	 * is invoked in context of critical section.
+	 */
+	ReleaseSemaphore(hSem, TRUE);
 
 #if 0
 	__SEMAPHORE* pSem = (__SEMAPHORE*)*sem;

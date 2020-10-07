@@ -27,11 +27,11 @@
 //Handler of version command.
 DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	_hx_printf("%s\r\n", HELLOX_VERSION_INFO);
-	_hx_printf("Build date:%s,time:%s\r\n", __DATE__, __TIME__);
-	_hx_printf("%s\r\n", HELLOX_SLOGAN_INFO);
+	_hx_printf("    %s\r\n", HELLOX_VERSION_INFO);
+	_hx_printf("    Build date:%s,time:%s\r\n", __DATE__, __TIME__);
+	_hx_printf("    %s\r\n", HELLOX_SLOGAN_INFO);
 	//_hx_printf("%s\r\n", HELLOX_SPECIAL_INFO);
-	_hx_printf("Default k_thread stack sz: %d\r\n", DEFAULT_STACK_SIZE);
+	//_hx_printf("    Default k_thread stack sz: %d\r\n", DEFAULT_STACK_SIZE);
 	return S_OK;
 }
 
@@ -102,38 +102,38 @@ DWORD  MemHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		pLayout++;
 	}
 
-	return S_OK;
+return S_OK;
 }
 
 //Handler for help command.
 DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's handler.
 {
-	LPSTR strHelpTitle   = "    The following commands are available currently:";
-	LPSTR strHelpVer     = "    version      : Print out the version information.";
-	LPSTR strHelpMem     = "    memory       : Print out current version's memory layout.";
-	LPSTR strSysName     = "    sysname      : Change the system host name.";
-	LPSTR strHelpHelp    = "    help         : Print out this screen.";
-	LPSTR strSupport     = "    support      : Print out technical support information.";
-	LPSTR strTime        = "    time         : Show system date and time.";
-	LPSTR strRunTime     = "    runtime      : Display the total run time since last reboot.";
-	LPSTR strIoCtrlApp   = "    ioctrl       : Start IO control application.";
-	LPSTR strSysDiagApp  = "    sysdiag      : System or hardware diag application.";
-	LPSTR strSysInfo     = "    sysinfo      : Show hardware system information.";
-	LPSTR strFsApp       = "    fs           : File system operating application.";
-	LPSTR strFdiskApp    = "    fdisk        : Hard disk operating application.";
-	LPSTR strUsbVideo    = "    usbvideo     : USB video operations.";
-	LPSTR strNetApp      = "    network      : Network diagnostic application.";
-	LPSTR strLoadappApp  = "    loadapp      : Load application module and execute it.";
-	LPSTR strGUIApp      = "    gui          : Load GUI module and enter GUI mode.";
+	LPSTR strHelpTitle = "    The following commands are available currently:";
+	LPSTR strHelpVer = "    version      : Print out the version information.";
+	LPSTR strHelpMem = "    memory       : Print out current version's memory layout.";
+	LPSTR strSysName = "    sysname      : Change the system host name.";
+	LPSTR strHelpHelp = "    help         : Print out this screen.";
+	LPSTR strSupport = "    support      : Print out technical support information.";
+	LPSTR strTime = "    time         : Show system date and time.";
+	LPSTR strRunTime = "    runtime      : Display the total run time since last reboot.";
+	LPSTR strIoCtrlApp = "    ioctrl       : Start IO control application.";
+	LPSTR strSysDiagApp = "    sysdiag      : System or hardware diag application.";
+	LPSTR strSysInfo = "    sysinfo      : Show hardware system information.";
+	LPSTR strFsApp = "    fs           : File system operating application.";
+	LPSTR strFdiskApp = "    fdisk        : Hard disk operating application.";
+	LPSTR strUsbVideo = "    usbvideo     : USB video operations.";
+	LPSTR strNetApp = "    network      : Network diagnostic application.";
+	LPSTR strLoadappApp = "    loadapp      : Load application module and execute it.";
+	LPSTR strGUIApp = "    gui          : Load GUI module and enter GUI mode.";
 #ifdef __CFG_APP_SSH
-	LPSTR strSSH         = "    ssh          : Start a new SSH session.";
+	LPSTR strSSH = "    ssh          : Start a new SSH session.";
 #endif
 
 #ifdef __CFG_APP_JVM
-	LPSTR strJvmApp      = "    jvm          : Start Java VM to run Java Application.";
+	LPSTR strJvmApp = "    jvm          : Start Java VM to run Java Application.";
 #endif  //__CFG_APP_JVM
-	LPSTR strReboot      = "    reboot       : Reboot the system.";
-	LPSTR strCls         = "    cls          : Clear the whole screen.";
+	LPSTR strReboot = "    reboot       : Reboot the system.";
+	LPSTR strCls = "    cls          : Clear the whole screen.";
 
 	PrintLine(strHelpTitle);              //Print out the help information line by line.
 	PrintLine(strHelpVer);
@@ -164,13 +164,15 @@ DWORD HlpHandler(__CMD_PARA_OBJ* pCmdParaObj)           //Command 'help' 's hand
 	return S_OK;
 }
 
-/* 
- * Load the specified user application and run it. 
+/*
+ * Load the specified user application and run it.
  * The user application runs in user space as process.
  */
 unsigned long LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
 	__PROCESS_OBJECT* pProcess = NULL;
+	char process_name[MAX_THREAD_NAME + 1];
+	BOOL bBackground = FALSE;
 
 	/* A module name must be specified. */
 	if (pCmdParaObj->byParameterNum < 2)
@@ -179,9 +181,9 @@ unsigned long LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		goto __TERMINAL;
 	}
 
-	/* 
-	 * Make sure the length of module's path and name 
-	 * is not too long. 
+	/*
+	 * Make sure the length of module's path and name
+	 * is not too long.
 	 * The module's name as process's default name.
 	 */
 	BUG_ON(NULL == pCmdParaObj->Parameter[1]);
@@ -191,6 +193,24 @@ unsigned long LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		goto __TERMINAL;
 	}
 
+	/* If the application run in background. */
+	if (pCmdParaObj->byParameterNum >= 3)
+	{
+		/*
+		 * If last parameter is '&', means the
+		 * application should run in background.
+		 */
+		int dollor_idx = pCmdParaObj->byParameterNum - 1;
+		if (0 == strcmp("&", pCmdParaObj->Parameter[dollor_idx]))
+		{
+			bBackground = TRUE;
+		}
+	}
+
+	/* use application's name and path as process name. */
+	strncpy(process_name, (const char*)(pCmdParaObj->Parameter[1]), MAX_THREAD_NAME);
+	process_name[MAX_THREAD_NAME] = 0;
+
 	/* Launch a new process to run the module. */
 	pProcess = ProcessManager.CreateProcess(
 		(__COMMON_OBJECT*)&ProcessManager,
@@ -199,24 +219,28 @@ unsigned long LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 		NULL,
 		pCmdParaObj,
 		NULL,
-		"Process");
+		&process_name[0]);
 	if (NULL == pProcess)
 	{
-		_hx_printf("  Failed to launch the application.\r\n");
+		_hx_printf("Create process fail.\r\n");
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
 
-	/*
-	 * Set the main thread as focus thread so as
-	 * user input could be directed to this process.
-	 */
-	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
-		(__COMMON_OBJECT*)pProcess->lpMainThread);
-	pProcess->WaitForThisObject((__COMMON_OBJECT*)pProcess);
-	/* Reset focus thread as default. */
-	DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
-		NULL);
-	ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager, (__COMMON_OBJECT*)pProcess);
+	if (!bBackground)
+	{
+		/*
+		 * Set the main thread as focus thread so as
+		 * user input could be directed to this process.
+		 */
+		DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
+			(__COMMON_OBJECT*)pProcess->lpMainThread);
+		pProcess->WaitForThisObject((__COMMON_OBJECT*)pProcess);
+		/* Reset focus thread as default. */
+		DeviceInputManager.SetFocusThread((__COMMON_OBJECT*)&DeviceInputManager,
+			NULL);
+		ProcessManager.DestroyProcess((__COMMON_OBJECT*)&ProcessManager, 
+			(__COMMON_OBJECT*)pProcess);
+	}
 
 __TERMINAL:
 	return SHELL_CMD_PARSER_SUCCESS;

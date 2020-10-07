@@ -86,6 +86,9 @@ udp_input(struct pbuf *p, struct netif *inp)
   struct udp_hdr *udphdr;
   struct udp_pcb *pcb, *prev;
   struct udp_pcb *uncon_pcb;
+#if SO_BROADCAST_LOCALPREFER
+  struct udp_pcb *localprefer_pcb;
+#endif
   struct ip_hdr *iphdr;
   u16_t src, dest;
   u8_t local_match;
@@ -155,6 +158,9 @@ udp_input(struct pbuf *p, struct netif *inp)
     prev = NULL;
     local_match = 0;
     uncon_pcb = NULL;
+#if SO_BROADCAST_LOCALPREFER
+	localprefer_pcb = NULL;
+#endif
     /* Iterate through the UDP pcb list for a matching pcb.
      * 'Perfect match' pcbs (connected to the remote port & ip address) are
      * preferred. If no perfect match is found, the first unconnected pcb that
@@ -207,11 +213,40 @@ udp_input(struct pbuf *p, struct netif *inp)
         break;
       }
       prev = pcb;
+
+#if SO_BROADCAST_LOCALPREFER
+	  /* 
+	   * pcb with local address same as incoming 
+	   * interface's IP address has higher priority 
+	   * than normal,if the packet is broadcast.
+	   */
+	  if ((local_match != 0) &&
+		  (broadcast) &&
+		  (!ip_addr_isany(&pcb->local_ip) &&
+			  ip_addr_cmp(&(pcb->local_ip), &inp->ip_addr)))
+	  {
+		  localprefer_pcb = pcb;
+	  }
     }
+#endif
+
     /* no fully matching pcb found? then look for an unconnected pcb */
+#if SO_BROADCAST_LOCALPREFER
     if (pcb == NULL) {
-      pcb = uncon_pcb;
+		if (NULL == localprefer_pcb)
+		{
+			pcb = uncon_pcb;
+		}
+		else
+		{
+			pcb = localprefer_pcb;
+		}
     }
+#else
+	if (pcb == NULL) {
+		pcb = uncon_pcb;
+	}
+#endif /* SO_BROADCAST_LOCALPREFER */
   }
 
   /* Check checksum if this is a match or if it was directed at us. */
@@ -416,27 +451,45 @@ udp_send_chksum(struct udp_pcb *pcb, struct pbuf *p,
  */
 err_t
 udp_sendto(struct udp_pcb *pcb, struct pbuf *p,
-  ip_addr_t *dst_ip, u16_t dst_port)
+	ip_addr_t *dst_ip, u16_t dst_port)
 {
 #if LWIP_CHECKSUM_ON_COPY
-  return udp_sendto_chksum(pcb, p, dst_ip, dst_port, 0, 0);
+	return udp_sendto_chksum(pcb, p, dst_ip, dst_port, 0, 0);
 }
 
 /** Same as udp_sendto(), but with checksum */
 err_t
 udp_sendto_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
-                  u16_t dst_port, u8_t have_chksum, u16_t chksum)
+	u16_t dst_port, u8_t have_chksum, u16_t chksum)
 {
 #endif /* LWIP_CHECKSUM_ON_COPY */
-  struct netif *netif;
+	struct netif *netif;
 
-  LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_send\n"));
+	LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_send\n"));
 
-  /* find the outgoing network interface for this packet */
+	/* find the outgoing network interface for this packet */
 #if LWIP_IGMP
-  netif = ip_route((ip_addr_ismulticast(dst_ip))?(&(pcb->multicast_ip)):(dst_ip));
+	/* Use source routing if the destination is broadcast. */
+	if (dst_ip->addr == IPADDR_BROADCAST)
+	{
+		netif = ip_route(&pcb->local_ip);
+	}
+	else
+	{
+		netif = ip_route((ip_addr_ismulticast(dst_ip)) ? (&(pcb->multicast_ip)) : (dst_ip));
+	}
+  //netif = ip_route((ip_addr_ismulticast(dst_ip))?(&(pcb->multicast_ip)):(dst_ip));
 #else
-  netif = ip_route(dst_ip);
+	/* Use source routing if the destination is broadcast. */
+	if (dst_ip->addr == IPADDR_BROADCAST)
+	{
+		netif = ip_route(&pcb->local_ip);
+	}
+	else
+	{
+		netif = ip_route(dst_ip);
+	}
+  //netif = ip_route(dst_ip);
 #endif /* LWIP_IGMP */
 
   /* no outgoing network interface could be found? */

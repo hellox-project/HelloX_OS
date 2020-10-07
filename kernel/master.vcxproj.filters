@@ -674,19 +674,7 @@
     <ClCompile Include="netcore\drivers\rtl8152.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="netcore\drivers\pcnet.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="netcore\drivers\rtl8111.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\e1000.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\e1000_d.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\e1000e.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="netcore\dpi\dpi.c">
@@ -717,6 +705,30 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kernel\process2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\system2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\e1000ex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\ethio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall\memxfer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\scanf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cJSON\cJSON.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\strtod.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\cfgmgr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1183,19 +1195,7 @@
     <ClInclude Include="netcore\drivers\usb_ether.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="netcore\drivers\pcnet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="netcore\drivers\rtl8111.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="netcore\drivers\e1000.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="netcore\drivers\e1000_d.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="netcore\drivers\e1000e.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="netcore\dpi\dpimgr.h">
@@ -1225,6 +1225,30 @@
     <ClInclude Include="include\pmdesc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\sysinfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\genif.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\e1000ex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall\memxfer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\precfg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cJSON\cJSON.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\float.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cfgmgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1248,5 +1272,15 @@
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />
     <Text Include="usb\usb.txt" />
+    <Text Include="doc\rr_ptmalloc.txt" />
+    <Text Include="doc\todo.txt" />
+    <Text Include="doc\lock_ord.txt" />
+    <Text Include="doc\pendissu.txt" />
+    <Text Include="doc\proc_del.txt" />
+    <Text Include="doc\rev_recd.txt" />
+    <Text Include="network\rev_recd.txt" />
+    <Text Include="netcore\dhcp_srv\dhcp_ms.txt" />
+    <Text Include="netcore\bug_oe.txt" />
+    <Text Include="doc\syscfg.txt" />
   </ItemGroup>
 </Project>

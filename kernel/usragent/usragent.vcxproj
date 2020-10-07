@@ -120,13 +120,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="hellox.c" />
+    <ClCompile Include="memory.c" />
     <ClCompile Include="stdio.c" />
+    <ClCompile Include="string.c" />
     <ClCompile Include="usragent.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fmt_pe.h" />
     <ClInclude Include="hellox.h" />
     <ClInclude Include="stdio.h" />
+    <ClInclude Include="string.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -28,8 +28,8 @@ static BOOL InsertIntoQueue(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpObject,DW
 {
     __PRIORITY_QUEUE_ELEMENT* lpElement = NULL;
     __PRIORITY_QUEUE_ELEMENT* lpTmpElement = NULL;
-    __PRIORITY_QUEUE*         lpQueue   = (__PRIORITY_QUEUE*)lpThis;
-    DWORD                     dwFlags   = 0;
+    __PRIORITY_QUEUE* lpQueue = (__PRIORITY_QUEUE*)lpThis;
+    DWORD dwFlags = 0;
 
 	/* Validate parameters. */
 	if((NULL == lpThis) || (NULL == lpObject))
@@ -56,19 +56,22 @@ static BOOL InsertIntoQueue(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpObject,DW
 
     //Now,insert the element into queue list.
     __ENTER_CRITICAL_SECTION_SMP(lpQueue->spin_lock,dwFlags);
-	//Increment element number.
     lpQueue->dwCurrElementNum ++;
     lpTmpElement = lpQueue->ElementHeader.lpPrevElement;
 
-    //Find the appropriate position according to priority to insert.
-    while((lpTmpElement->dwPriority < dwPriority) &&
+    /*
+	 * Locate the proper position according priority.
+	 * The new element will be moved
+	 * to end of elements with same priority.
+	 */
+    while((lpTmpElement->dwPriority <= dwPriority) &&
           (lpTmpElement != &lpQueue->ElementHeader))
     {
         lpTmpElement = lpTmpElement->lpPrevElement;
     }
-    //Insert the element into list.
-    lpElement->lpNextElement   = lpTmpElement->lpNextElement;
-    lpElement->lpPrevElement   = lpTmpElement;
+    /* Just insert it. */
+    lpElement->lpNextElement = lpTmpElement->lpNextElement;
+    lpElement->lpPrevElement = lpTmpElement;
     lpTmpElement->lpNextElement->lpPrevElement = lpElement;
     lpTmpElement->lpNextElement = lpElement;
     __LEAVE_CRITICAL_SECTION_SMP(lpQueue->spin_lock,dwFlags);

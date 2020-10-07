@@ -155,7 +155,7 @@ pppoe_create(struct netif *ethif, int pd, void (*linkStatusCB)(int pd, int up), 
     return ERR_MEM;
   }
   memset(sc, 0, sizeof(struct pppoe_softc));
-
+  
   /* changed to real address later */
   MEMCPY(&sc->sc_dest, ethbroadcast.addr, sizeof(sc->sc_dest));
 
@@ -168,6 +168,10 @@ pppoe_create(struct netif *ethif, int pd, void (*linkStatusCB)(int pd, int up), 
   pppoe_softc_list = sc;
 
   *scptr = sc;
+
+  PPPDEBUG(LOG_DEBUG, ("[%s]:sc = [0x%X], if = %c%c%"U16_F" created\n",
+	  __func__, (unsigned long)sc,
+	  sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num));
 
   return ERR_OK;
 }
@@ -188,7 +192,7 @@ pppoe_destroy(struct netif *ifp)
   }
 
   //sys_untimeout(pppoe_timeout, sc);
-  _hx_sys_untimeout(pppoe_timeout, sc);
+  _hx_sys_untimeout(pppoe_timeout, sc, __line__);
   if (prev == NULL) {
     /* remove sc from the head of the list */
     pppoe_softc_list = sc->next;
@@ -512,7 +516,7 @@ breakbreak:;
       }
       MEMCPY(&sc->sc_dest, ethhdr->src.addr, sizeof(sc->sc_dest.addr));
       //sys_untimeout(pppoe_timeout, sc);
-	  _hx_sys_untimeout(pppoe_timeout, sc);
+	  _hx_sys_untimeout(pppoe_timeout, sc, __line__);
       sc->sc_padr_retried = 0;
       sc->sc_state = PPPOE_STATE_PADR_SENT;
       if ((err = pppoe_send_padr(sc)) != 0) {
@@ -528,7 +532,7 @@ breakbreak:;
       }
       sc->sc_session = session;
       //sys_untimeout(pppoe_timeout, sc);
-	  _hx_sys_untimeout(pppoe_timeout, sc);
+	  _hx_sys_untimeout(pppoe_timeout, sc, __line__);
       PPPDEBUG(LOG_DEBUG, ("pppoe: %c%c%"U16_F": session 0x%x connected\n", sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num, session));
       sc->sc_state = PPPOE_STATE_SESSION;
       pppoe_linkstatus_up(sc); /* notify upper layers */
@@ -832,7 +836,7 @@ pppoe_connect(struct pppoe_softc *sc)
   sc->sc_state = PPPOE_STATE_PADI_SENT;
   sc->sc_padr_retried = 0;
   err = pppoe_send_padi(sc);
-  PPPDEBUG(LOG_DEBUG, ("pppoe: %c%c%"U16_F": failed to send PADI, error=%d\n", sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num, err));
+  PPPDEBUG(LOG_DEBUG, ("pppoe: %c%c%"U16_F": send PADI with error=%d\n", sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num, err));
   //sys_timeout(PPPOE_DISC_TIMEOUT, pppoe_timeout, sc);
   _hx_sys_timeout(pppoeManager.hMainThread, PPPOE_DISC_TIMEOUT, pppoe_timeout, sc);
   return err;
@@ -860,6 +864,7 @@ pppoe_do_disconnect(struct pppoe_softc *sc)
 {
   int err;
 
+  __LOG("[%s]:sc state[%d]\r\n", __func__, sc->sc_state);
   if (sc->sc_state < PPPOE_STATE_SESSION) {
     err = EBUSY;
   } else {
@@ -894,9 +899,17 @@ pppoe_abort_connect(struct pppoe_softc *sc)
 
   sc->sc_linkStatusCB(sc->sc_pd, 0); /* notify upper layers */
 
+  /*
+   * [ISSUE RECORD]
+   * The following 2 lines of code should be commented off
+   * since the sc is already deleted in sc_linkStatusCB routine.
+   * System will crash when these 2 lines of code remain unchanged,
+   * since it will destroy the kernel memory,this kind of issue is
+   * very difficult to trouble shooting.
+   */
   /* clear connection state */
-  MEMCPY(&sc->sc_dest, ethbroadcast.addr, sizeof(sc->sc_dest));
-  sc->sc_state = PPPOE_STATE_INITIAL;
+  /* MEMCPY(&sc->sc_dest, ethbroadcast.addr, sizeof(sc->sc_dest)); */
+  /* sc->sc_state = PPPOE_STATE_INITIAL; */
 }
 
 /* Send a PADR packet */
@@ -1133,7 +1146,7 @@ pppoe_clear_softc(struct pppoe_softc *sc, const char *message)
 
   /* stop timer */
   //sys_untimeout(pppoe_timeout, sc);
-  _hx_sys_untimeout(pppoe_timeout, sc);
+  _hx_sys_untimeout(pppoe_timeout, sc, __line__);
   PPPDEBUG(LOG_DEBUG, ("pppoe: %c%c%"U16_F": session 0x%x terminated, %s\n", sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num, sc->sc_session, message));
 
   /* fix our state */

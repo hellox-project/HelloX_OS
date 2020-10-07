@@ -3,23 +3,10 @@
 //    Original Date             : Nov,06 2004
 //    Module Name               : system.cpp
 //    Module Funciton           : 
-//                                This module countains system mechanism releated objects's
-//                                implementation..
-//                                Including the following aspect:
-//                                1. Interrupt object and interrupt management code;
-//                                2. Timer object and timer management code;
-//                                3. System level parameters management coee,such as
-//                                   physical memory,system time,etc;
-//                                4. Other system mechanism releated objects.
-//
-//                                ************
-//                                This file is one of the most important file of Hello China.
-//                                ************
+//                                OS kernel system mechanism.
 //    Last modified Author      : Garry.Xin
 //    Last modified Date        : 2011/12/16
-//    Last modified Content     : Deleted some commented code from the file,and optimized the
-//                                default exception and interrupt's handler.
-//                                1.
+//    Last modified Content     : 1.
 //                                2.
 //    Lines number              :
 //***********************************************************************/
@@ -37,6 +24,9 @@
 #include "../arch/x86/pic.h"
 #endif
 
+/* Appended part of system source file. */
+#include "system2.c"
+
 /* Performance recorder object used to mesure the performance of timer interrupt. */
 __PERF_RECORDER  TimerIntPr = {
 	U64_ZERO,
@@ -50,7 +40,11 @@ static void __ProcessTimerObject(__TIMER_OBJECT* lpTimerObject)
 {
 	__KERNEL_THREAD_MESSAGE Msg;
 
-	/* Just send a message to the kernel thread if no direct handler specified. */
+	/* 
+	 * Just send a message to the kernel thread 
+	 * who set this timer object
+	 * if no direct handler specified.
+	 */
 	if (NULL == lpTimerObject->DirectTimerHandler)
 	{
 		Msg.wCommand = KERNEL_MESSAGE_TIMER;
@@ -78,15 +72,14 @@ static void __ProcessTimerObject(__TIMER_OBJECT* lpTimerObject)
  *  2. Update the system level variables,such as dwClockTickCounter;
  *  3. Schedule kernel thread(s).
  */
-static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
+static BOOL __TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 {
-	DWORD                     dwPriority        = 0;
-	__TIMER_OBJECT*           lpTimerObject     = 0;
-	//__KERNEL_THREAD_MESSAGE   Msg                   ;
-	__PRIORITY_QUEUE*         lpTimerQueue      = NULL;
-	__PRIORITY_QUEUE*         lpSleepingQueue   = NULL;
-	__KERNEL_THREAD_OBJECT*   lpKernelThread    = NULL;
-	DWORD                     dwFlags           = 0;
+	DWORD dwPriority = 0;
+	__TIMER_OBJECT* lpTimerObject = 0;
+	__PRIORITY_QUEUE* lpTimerQueue = NULL;
+	__PRIORITY_QUEUE* lpSleepingQueue = NULL;
+	__KERNEL_THREAD_OBJECT* lpKernelThread = NULL;
+	DWORD dwFlags = 0;
 	
 	BUG_ON(NULL == lpEsp);
 
@@ -109,9 +102,12 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 		}
 		dwPriority = MAX_DWORD_VALUE - dwPriority;
 		/* 
-		 * Strictly speaking,the dwPriority variable must EQUAL System.dwNextTimerTick,
-		 * but in the implementing of the current version,there may be some error exists,
-		 * so we assume dwPriority equal or less than dwNextTimerTic.
+		 * Strictly speaking,the dwPriority variable must
+		 * EQUAL System.dwNextTimerTick,
+		 * but in the implementing of the current 
+		 * version,there may be some error exists,
+		 * so we assume dwPriority equal or less 
+		 * than dwNextTimerTic.
 		 */
 		while(dwPriority <= System.dwNextTimerTick)
 		{
@@ -206,12 +202,16 @@ static BOOL TimerInterruptHandler(LPVOID lpEsp,LPVOID lpParam)
 	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 
 __WAKEUP_KERNEL_THREAD:
-
 	/*
 	 * Wakes up all kernel thread(s) whose status is SLEEPING and
 	 * the time it(then) set is out.
 	 */
 	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
+	/* 
+	 * Acquire KernelThreadManager's spin lock since it's 
+	 * members will also be updated. 
+	 */
+	__ACQUIRE_SPIN_LOCK(KernelThreadManager.spin_lock);
 	if(System.dwClockTickCounter == KernelThreadManager.dwNextWakeupTick)
 	{
 		lpSleepingQueue = KernelThreadManager.lpSleepingQueue;
@@ -228,11 +228,12 @@ __WAKEUP_KERNEL_THREAD:
 				break;
 			}
 			/* Insert the waked up kernel thread into ready queue. */
+			__ACQUIRE_SPIN_LOCK(lpKernelThread->spin_lock);
 			lpKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_READY;
 			KernelThreadManager.AddReadyKernelThread(
 				(__COMMON_OBJECT*)&KernelThreadManager,
 				lpKernelThread);
-
+			__RELEASE_SPIN_LOCK(lpKernelThread->spin_lock);
 			/* Check next kernel thread in sleeping queue. */
 			lpKernelThread = (__KERNEL_THREAD_OBJECT*)lpSleepingQueue->GetHeaderElement(
 				(__COMMON_OBJECT*)lpSleepingQueue,
@@ -254,6 +255,7 @@ __WAKEUP_KERNEL_THREAD:
 
 	/* Update the system clock interrupt counter. */
 	System.dwClockTickCounter++;
+	__RELEASE_SPIN_LOCK(KernelThreadManager.spin_lock);
 	__LEAVE_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 
 	return TRUE;
@@ -262,7 +264,8 @@ __WAKEUP_KERNEL_THREAD:
 /*
  * ConnectInterrupt routine of Interrupt Object.
  * The routine do the following:
- *  1. Insert the current object into interrupt object array(maintenanced by system object);
+ *  1. Insert the current object into interrupt object 
+ *     array(maintenanced by system object);
  *  2. Set the object's data members correctly.
  */
 static __COMMON_OBJECT* __ConnectInterrupt(__COMMON_OBJECT* lpThis,
@@ -431,12 +434,6 @@ BOOL TimerUninitialize(__COMMON_OBJECT* lpThis)
 	return TRUE;
 }
 
-//-----------------------------------------------------------------------------------
-//
-//              The implementation of system object.
-//
-//------------------------------------------------------------------------------------
-
 /*
  * Initializing routine of system object.
  * The routine do the following:
@@ -487,7 +484,7 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	}
 	lpIntObject->ucVector = INTERRUPT_VECTOR_TIMER;
 	lpIntObject->lpHandlerParam = NULL;
-	lpIntObject->InterruptHandler = TimerInterruptHandler;
+	lpIntObject->InterruptHandler = __TimerInterruptHandler;
 
 #ifdef __CFG_SYS_SYSCALL
 	//Create and initialize system call exception interrupt object.
@@ -584,8 +581,8 @@ static DWORD GetPhysicalMemorySize(__COMMON_OBJECT* lpThis)
  */
 static VOID DefaultIntHandler(LPVOID lpEsp,UCHAR ucVector)
 {
-	CHAR          strBuffer[64];
-	static DWORD  dwTotalNum    = 0;
+	CHAR strBuffer[64];
+	static DWORD dwTotalNum    = 0;
 
 	/* Record this unhandled exception or interrupt. */
 	dwTotalNum ++;
@@ -760,59 +757,73 @@ __RETFROMINT:
  * Show out some debugging information and dive to dead loop,since
  * the unknown exception will lead system crash in most case.
  */
-static VOID DefaultExcepHandler(LPVOID pESP,UCHAR ucVector)
+static VOID DefaultExcepHandler(LPVOID pESP, UCHAR ucVector)
 {
-         __KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
-         DWORD dwFlags;
-         static DWORD totalExcepNum = 0;
-		 unsigned int processor_id = __CURRENT_PROCESSOR_ID;
+	__KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
+	DWORD dwFlags;
+	static unsigned long totalExcepNum = 0;
+	unsigned int processor_id = __CURRENT_PROCESSOR_ID;
 
-         /* Switch to text mode,because the exception maybe caused in GUI mode. */
+	/* 
+	 * Switch to text mode,because the exception maybe 
+	 * raise in GUI mode. 
+	 */
 #ifdef __I386__
-         SwitchToText();
+	SwitchToText();
 #endif
-         _hx_printf("Exception occured: #%d,processor_id: %d\r\n",ucVector, processor_id);
-         totalExcepNum ++;  //Increase total exception number.
+	_hx_printf("  Exception : [#%d] on processor [%d]\r\n", ucVector, processor_id);
+	totalExcepNum++;
 
-         /* 
-		  * Show kernel thread information which lead the exception,if
-		  * the context when exception raise is in kernel thread.
-		  */
-         if(pKernelThread)
-         {
-			 _hx_printf("\tCurrent kthread ID: %d.\r\n",pKernelThread->dwThreadID);
-			 _hx_printf("\tCurrent kthread name: %s.\r\n",pKernelThread->KernelThreadName);
-         }
-         else
-         {
-			 /* In process of system initialization. */
-			 if (IN_SYSINITIALIZATION())
-			 {
-				 _hx_printf("\tException occured in process of initialization.\r\n");
-			 }
-			 else
-			 {
-				 _hx_printf("Current kernel thread is NULL.\r\n");
-			 }
-         }
+	/*
+	 * Show kernel thread information which lead the exception,if
+	 * the context when exception raise is in kernel thread.
+	 */
+	if (pKernelThread)
+	{
+		_hx_printf("  Current kthread ID: %d.\r\n", pKernelThread->dwThreadID);
+		_hx_printf("  Current kthread name: %s.\r\n", pKernelThread->KernelThreadName);
+	}
+	else
+	{
+		/* In process of system initialization. */
+		if (IN_SYSINITIALIZATION())
+		{
+			_hx_printf("  Exception raise in sysinit.\r\n");
+		}
+		else
+		{
+			_hx_printf("  Current thread is NULL.\r\n");
+		}
+	}
 
-         /* Call processor specific exception handler. */
-         PSExcepHandler(pESP,ucVector);
+	/* Call processor specific exception handler. */
+	PSExcepHandler(pESP, ucVector);
 
-		 /* Halt system. */
-         if(totalExcepNum >= 1)
-         {
-			 _hx_printf("Fatal error: Total exception number reached maximal value(%d).\r\n",totalExcepNum);
-			 _hx_printf("Please power off the system and reboot it.\r\n");
-			 __DISABLE_LOCAL_INTERRUPT(dwFlags);
-			 while (1)
-			 {
-				 HaltSystem();
-			 }
-         }
-         return;
+	/* If exception is caused by user thread. */
+	if (pKernelThread && THREAD_IN_USER_MODE(pKernelThread) && !IN_INTERRUPT())
+	{
+		/* Kill the user thread. */
+		pKernelThread->ulThreadFlags |= KERNEL_THREAD_FLAGS_KILLED;
+		KernelThreadManager.ScheduleFromInt((__COMMON_OBJECT*)&KernelThreadManager,
+			pESP);
+	}
+	else
+	{
+		/* Kernel error, just halt system. */
+		if (totalExcepNum >= 1)
+		{
+			_hx_printf("  *** *** ***\r\n");
+			_hx_printf("  Fatal error:exception in kernel.\r\n");
+			_hx_printf("  No other choice but reboot system.\r\n");
+			__DISABLE_LOCAL_INTERRUPT(dwFlags);
+			while (1)
+			{
+				HaltSystem();
+			}
+		}
+	}
+	return;
 }
-
 
 /* 
  * DispatchException,called by GeneralIntHandler to handle exception,
@@ -866,11 +877,11 @@ static __COMMON_OBJECT* __SetTimer(__COMMON_OBJECT* lpThis,
 	LPVOID lpHandlerParam,
 	DWORD dwTimerFlags)
 {
-	__SYSTEM*                    lpSystem           = NULL;
-	__TIMER_OBJECT*              lpTimerObject      = NULL;
-	BOOL                         bResult            = FALSE;
-	DWORD                        dwPriority         = 0;
-	DWORD                        dwFlags            = 0;
+	__SYSTEM* lpSystem = NULL;
+	__TIMER_OBJECT* lpTimerObject = NULL;
+	BOOL bResult = FALSE;
+	DWORD dwPriority = 0;
+	DWORD dwFlags = 0;
 
 	/* Check mandatory parameters. */
 	if((NULL == lpThis) || (NULL == lpKernelThread))
@@ -899,7 +910,7 @@ static __COMMON_OBJECT* __SetTimer(__COMMON_OBJECT* lpThis,
 	}
 
 	/* Create and initialize a timer object. */
-	lpSystem    = (__SYSTEM*)lpThis;
+	lpSystem = (__SYSTEM*)lpThis;
 	lpTimerObject = (__TIMER_OBJECT*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_TIMER);
@@ -970,11 +981,11 @@ __TERMINAL:
  */
 static BOOL __CancelTimer(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpTimer)
 {
-	__SYSTEM*                  lpSystem = NULL;
-	DWORD                      dwPriority = 0;
-	DWORD                      dwFlags;
-	__TIMER_OBJECT*            lpTimerObject = NULL;
-	BOOL                       bDestroyed = FALSE;
+	__SYSTEM* lpSystem = NULL;
+	DWORD dwPriority = 0;
+	DWORD dwFlags;
+	__TIMER_OBJECT* lpTimerObject = NULL;
+	BOOL bDestroyed = FALSE;
 
 	BUG_ON((NULL == lpThis) || (NULL == lpTimer));
 	/* Validate the timer object. */
@@ -1029,24 +1040,34 @@ __DESTROY_TIMER:
 }
 
 /*
- * Called before the OS enter initialization phase.It prepares the initialization evnironment
- * to run initializing code,such as set the initialized flags to FALSE,disable interrupt,and
+ * Called before the OS enter initialization phase.
+ * It prepares the initialization evnironment
+ * to run initializing code,such as set the 
+ * initialized flags to FALSE,disable interrupt,and
  * other essential preparation.
- * This routine must be called in begining of OS_Entry routine.
+ * This routine must be called at the begining 
+ * of OS_Entry routine.
  */
 static BOOL BeginInitialize(__COMMON_OBJECT* lpThis)
 {
 	System.bSysInitialized = FALSE;
-	//Interrupt must be disabled in OS initialization process.
+
+	/* 
+	 * Local interrupt must be disabled in 
+	 * process of system initialization.
+	 */
 	__DISABLE_INTERRUPT();
 	return TRUE;
 }
 
 /* 
- * Architecture specific initialization routine,implemented in arch_xxx.c file and will be called
+ * Architecture specific initialization routine,
+ * implemented in arch_xxx.c file and will be called
  * in HardwareInitialize routine.
- * We make it invisble anywhere except here,by declaring it as external and 
- * do not put it into any header file,to guarantee the routine can not be invoked anywhere else.
+ * We make it invisble anywhere except here,
+ * by declaring it as external and 
+ * do not put it into any header file,to guarantee 
+ * the routine can not be invoked anywhere else.
  */
 extern BOOL __HardwareInitialize(void);
 
@@ -1055,9 +1076,10 @@ extern BOOL __EndHardwareInitialize();
 
 /* 
  * Hardware initialization phase.
- * The arch specific hardware initialization routine,__HardwareInitialize,will be called
- * in this function.
- * HardwareInitialize routine must be implemented in arch specific source code,most case
+ * The arch specific hardware initialization routine,
+ * __HardwareInitialize,will be called in this function.
+ * HardwareInitialize routine must be implemented in 
+ * arch specific source code,most case
  * resides in arch_xxx.c file.
  */
 static BOOL HardwareInitialize(__COMMON_OBJECT* lpThis)
@@ -1113,8 +1135,13 @@ static BOOL EndInitialize(__COMMON_OBJECT* lpThis)
 	return TRUE;
 }
 
-//Return the interrupt vector's statistics information by giving a interrupt vector.
-static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis, UCHAR ucVector, __INTERRUPT_VECTOR_STAT* pStat)
+/* 
+ * Return the interrupt vector's statistics 
+ * information by giving a interrupt vector. 
+ */
+static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis, 
+	UCHAR ucVector, 
+	__INTERRUPT_VECTOR_STAT* pStat)
 {
 	__SYSTEM*           lpSystem = (__SYSTEM*)lpThis;
 	__INTERRUPT_SLOT*   pIntSlot = NULL;
@@ -1181,7 +1208,8 @@ __SYSTEM System = {
 	__DisconnectInterrupt,   //DiskConnectInterrupt.
 	__SetTimer,               //SetTimerRoutine.
 	__CancelTimer,            //CancelTimer.
-	_GetInterruptStat         //GetInterruptStat.
+	_GetInterruptStat,        //GetInterruptStat.
+	__GetSystemInfo           //GetSystemInfo.
 };
 
 //***************************************************************************************

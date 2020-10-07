@@ -406,7 +406,8 @@ static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
 {
 	DWORD excepAddr;
 
-	if (14 == ucVector)  //Page fault.
+	/* Show exception address if page fault. */
+	if (14 == ucVector)
 	{
 #ifdef __GCC__
 		__asm__ __volatile__(
@@ -424,35 +425,38 @@ static VOID ExcepSpecificOps(LPVOID pESP, UCHAR ucVector)
 				pop eax
 		}
 #endif
-		_hx_printf("\tException addr: 0x%X.\r\n", excepAddr);
+		_hx_printf("  Exception addr: 0x%X.\r\n", excepAddr);
 	}
 }
 
 /* Exception handler,for x86. */
-VOID PSExcepHandler(LPVOID pESP, UCHAR ucVector)
+void PSExcepHandler(LPVOID pESP, UCHAR ucVector)
 {
-	if (ucVector >= MAX_EXCEP_TABLE_SIZE)  //Invalid exception number.
+	if (ucVector >= MAX_EXCEP_TABLE_SIZE)
 	{
-		_hx_printf("\tInvalid exception number(#%d) for x86.\r\n", ucVector);
+		/* Unknown exception. */
+		_hx_printf("  Invalid exception number(#%d) for x86.\r\n", ucVector);
 		return;
 	}
-	//Show detail information about the exception.
-	_hx_printf("\tException Desc: %s.\r\n", __ExcepTable[ucVector].description);
+	/* Show general information about the exception. */
+	_hx_printf("  Exception Desc: %s.\r\n", __ExcepTable[ucVector].description);
 	if (__ExcepTable[ucVector].bErrorCode)
 	{
-		_hx_printf("\tError Code: 0x%X.\r\n", *((DWORD*)pESP + 7));
-		_hx_printf("\tEIP: 0x%X.\r\n", *((DWORD*)pESP + 8));
-		_hx_printf("\tCS: 0x%X.\r\n", *((DWORD*)pESP + 9));
-		_hx_printf("\tEFlags: 0x%X.\r\n", *((DWORD*)pESP + 10));
+		/* Error code is pushed into stack by cpu. */
+		_hx_printf("  Error Code: 0x%X.\r\n", *((DWORD*)pESP + 7));
+		_hx_printf("  EIP: 0x%X.\r\n", *((DWORD*)pESP + 8));
+		_hx_printf("  CS: 0x%X.\r\n", *((DWORD*)pESP + 9));
+		_hx_printf("  EFlags: 0x%X.\r\n", *((DWORD*)pESP + 10));
 	}
-	else  //Without error code pushed in stack.
+	else
 	{
-		_hx_printf("\tEIP: 0x%X.\r\n", *((DWORD*)pESP + 7));
-		_hx_printf("\tCS: 0x%X.\r\n", *((DWORD*)pESP + 8));
-		_hx_printf("\tEFlags: 0x%X.\r\n", *((DWORD*)pESP + 9));
+		/* No error code specified. */
+		_hx_printf("  EIP: 0x%X.\r\n", *((DWORD*)pESP + 7));
+		_hx_printf("  CS: 0x%X.\r\n", *((DWORD*)pESP + 8));
+		_hx_printf("  EFlags: 0x%X.\r\n", *((DWORD*)pESP + 9));
 	}
 
-	//Check if specific operation exists for the exception.
+	/* Call exception specific handler. */
 	ExcepSpecificOps(pESP, ucVector);
 	return;
 }
@@ -579,20 +583,25 @@ void __SwitchTo(__KERNEL_THREAD_OBJECT* pPrev, __KERNEL_THREAD_OBJECT* pNext)
 		__pdr = (unsigned long)pPageIdxMgr->lpPdAddress;
 		__switch_pdr(__pdr);
 
+		/*
+		 * Change kernel stack of current processor's TSS
+		 * to this thread's kernel stack.
+		 * This must be done even switch to kernel mode,
+		 * issue raised(system crash) when this was not
+		 * carried out before BUG FIEXED.
+		 */
+		pSpec = ProcessorManager.GetCurrentProcessorSpecific();
+		BUG_ON(NULL == pSpec);
+		pTss = (__X86_TSS*)pSpec->vendorSpec;
+		BUG_ON(NULL == pTss);
+		pTss->esp0 = (uint32_t)pNext->lpInitStackPointer;
+
 		if (THREAD_IN_USER_MODE(pNext))
 		{
 			/*
 			 * The thread may trap into kernel for handling
 			 * interrupt,so we must switch to user space.
-			 * Change kernel stack of current processor's TSS
-			 * to this thread's kernel stack.
 			 */
-			pSpec = ProcessorManager.GetCurrentProcessorSpecific();
-			BUG_ON(NULL == pSpec);
-			pTss = (__X86_TSS*)pSpec->vendorSpec;
-			BUG_ON(NULL == pTss);
-			pTss->esp0 = (uint32_t)pNext->lpInitStackPointer;
-			/* Just fall back to user. */
 			__switchto_user(pNext->lpKernelThreadContext);
 		}
 		else
@@ -606,6 +615,12 @@ void __SwitchTo(__KERNEL_THREAD_OBJECT* pPrev, __KERNEL_THREAD_OBJECT* pNext)
 		/* 
 		 * It's a kernel thread,so we use the system
 		 * memory space to reload the CR3. 
+		 * Please be noted the kernel threads can not see
+		 * user thread's user part memory space,since
+		 * the virtual memory allocated in user space only
+		 * reflected in user thread(process)'s page table,
+		 * access memory in user space by kernel thread may
+		 * raise exception(PAGE FAULT).
 		 */
 		pPageIdxMgr = lpVirtualMemoryMgr->lpPageIndexMgr;
 		__pdr = (unsigned long)pPageIdxMgr->lpPdAddress;
@@ -951,8 +966,9 @@ void InitUserThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 	 * One page of memory in user stack is used as 
 	 * parameter(s) or environment information that 
 	 * transfer to user agent or user application.
-	 * This block of memory is initialized by PrepareProcessCtx
-	 * routine in process module.
+	 * This block of memory is initialized by PrepareUserStack
+	 * routine in process module if the user thread is the
+	 * main thread of own process.
 	 */
 	pUserStack -= PAGE_SIZE;
 
@@ -960,7 +976,7 @@ void InitUserThreadContext(__KERNEL_THREAD_OBJECT* lpKernelThread,
 	__PUSH(lpStackPtr, pUserStack);           //User stack top ptr.
 	__PUSH(lpStackPtr, INIT_EFLAGS_VALUE);    //EFlags.
 	__PUSH(lpStackPtr, 0x00000043);           //User CS.
-	__PUSH(lpStackPtr, KMEM_USERAPP_START);   //Push start address.
+	__PUSH(lpStackPtr, lpStartAddr);          //Push start address.
 	__PUSH(lpStackPtr, 0);                    //Push general purpose registers.
 	__PUSH(lpStackPtr, 0);
 	__PUSH(lpStackPtr, 0);

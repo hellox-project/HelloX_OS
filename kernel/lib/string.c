@@ -441,36 +441,40 @@ void strtrim(char * dst,int flag)
 	
 }
 
-//String copy,array bound is guaranteed.
-char* strncpy(char *dest,const char *src,unsigned int n)
+/* String copy,array bound is guaranteed. */
+char* strncpy(char *dst, const char *src, size_t n)
 {
-	char *strRtn=dest;
-	while(n && (*dest++=*src++))
-	{
-		n--;
-	} 
-	if(n){
-		while(--n)
-			*dest++;  //There may be bug...
-	}  
-    return strRtn;  
-} 
+	char *d;
 
-//String comparation,array bound is guaranteed.
-int strncmp ( char * s1, char * s2, size_t n)
-{
-  if ( !n )
-   return(0);
-
-  while (--n && *s1 && *s1 == *s2)
-  {
-     s1++;
-     s2++;
-  }
-  return( *s1 - *s2 );
+	if (!dst || !src)
+		return (dst);
+	d = dst;
+	for (; *src && n; d++, src++, n--)
+		*d = *src;
+	while (n--)
+		*d++ = '\0';
+	return (dst);
 }
 
-//Find the first bit in a given integer.
+/* String comparation,array bound is guaranteed. */
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+	if (!s1 || !s2)
+		return (0);
+
+	while (n && (*s1 == *s2)) {
+		if (*s1 == 0)
+			return (0);
+		s1++;
+		s2++;
+		n--;
+	}
+	if (n)
+		return (*s1 - *s2);
+	return (0);
+}
+
+/* Find the first bit in a given integer. */
 int ffs(int x)
 {
 	int r = 1;
@@ -890,7 +894,7 @@ strchr (s, c_in)
   return NULL;
 }
 
-char*  strtok(char* string_org, const char* demial)
+char* strtok(char* string_org, const char* demial)
 {
 	static unsigned char* last;
 	unsigned char* str;
@@ -927,4 +931,27 @@ char*  strtok(char* string_org, const char* demial)
 	else{
 		return string_org;
 	}
+}
+
+/*
+ * Span the complement of string s2.
+ */
+size_t strcspn(const char* s1, register const char* s2)
+{
+	register const char *p, *spanp;
+	register char c, sc;
+
+	/*
+	 * Stop as soon as we find any character from s2.  Note that there
+	 * must be a NUL in s2; it suffices to stop when we find that, too.
+	 */
+	for (p = s1;;) {
+		c = *p++;
+		spanp = s2;
+		do {
+			if ((sc = *spanp++) == c)
+				return (p - 1 - s1);
+		} while (sc != 0);
+	}
+	/* NOTREACHED */
 }

@@ -1,0 +1,135 @@
+1. Test the speed of routing only with 2 PCs,the initial test result is 100M(the bottleneck
+   may lead by the physical speed of USB ethernet);
+2. E1000E driver souce code has revised:
+   2.1 Set the maximal sending queue's size to 256 from 64;
+   2.2 Distinguish tx queue full or cloning ethernet buffer failure;
+   2.3 To check if 'txq full or clone eth buff fail' warning still
+       raise;
+3. Start ping test when do intensive performance testing,to check the delay or packet
+   loss;
+4. Apply the following test case:
+   4.1 Pure L3 routing with 2 PCs with GE interfaces;
+   4.2 L3 routing plus NAT;
+5. Trouble shootting the checksum failure of TCP when total packet length is 40(in most case);
+6. easynat source code revised,more information(old checksum and new checksum) will be
+   showed out when checksum validation fail;
+
+ /*
+ * Next step:
+ * 1. Debug the genif hirarchy mechanism under windows;
+ * 2. Revise show int command to show out all genif in hellox;
+ * 3. Implement GetGenifInfo routine;
+ * 4. Connect genif and lwip together using protocol-binding; -- OK
+ * 5. Revise e1000 driver using genif,change name to e1000ex.h/c file;--OK
+ * 6. Create and register genif after AddEthernetInterface routine,check
+ *    the output of showgif; --OK
+ *    20200501: Copy e1000e.h/c file to e1000ex.h/c file,replace the net
+ *              driver entry point in ethentry.c file with _EX_ version;
+ *              Create and register genif after AddEthernetInterface routine
+ *              in e1000ex.c file,input/output routines are added in file;
+ *              showgif command added in shell/network.c file,this will
+ *              replace the showint&iflist routines;
+ * 7. Revise the implementation of lwIP's genif new routines; -- sames OK
+ * 8. Revise e1000ex files to support genif;
+ *    20200502:
+ *    genif added into e1000e's priv structure;
+ *    specific show appended into genif and implemented in e1000ex.c file;
+ *    20200517:
+ *    __process_rx_pkt is revised to support genif;
+ *    memory leak sames exist when the incoming path is diverted to genif;
+ *    TO-DO:
+ *    Revise e1000_genif_output routine as commented in it; --OK
+ *    Make the output path to genif; --OK
+ *    Remove AddEthernetInterface routine and all it's dependencies; --OK
+ *    Test the new e1000e's genif implementation; --sames OK
+ *    TO-DO:
+ *    Revise pppoe's implementation using genif; --sames OK
+ *    Consider enhance the performance of pppoe by distributing rx/tx to
+ *      differnet threads;
+ *    Put dhcp server into user space...
+ *
+ *    20200525:
+ *    AddGenifAddress implemented and tested,sames OK;
+ *    Setgif command added into network program;
+ *    TO-DO:
+ *    Consider how to implement the interactive between user application and
+ *      kernel shell,when a user application is loaded into memory,a dedicated
+ *      thread is created and runs as service,how to call it to shell from background?
+ *    Solve the routing table looking up algorithm's issue,i.e,the interface without
+ *      ip address/mask been set also is included in looking up process;
+ *    Replace netif in dhcpd by using genif;--OK
+ *    Invoke AddGenifAddress to configure ip address in dhcpd;--OK
+ *    Remove dhcpserver flag in netif,use build in data structure to check re-enter;--OK
+ *    Move dhcpd into user space;
+ *    Try to trouble shooting the hang of ping;
+ *    
+ * 9. put GetGenifInfo routine into user space;
+ * 10. Implement AddGenifAddress routine and put it at user space;
+ * 11. Move sockets API into user space;
+ * 12. Move dhcp server code into user space;
+ * 13. Add binding mechanism between genif and layer3 stack; --sames OK
+ * 14. Replace ethernet mechanism by using genif in intel nic driver; --OK
+ * 15. Whole testing through black box;
+ *
+ * 20200608:
+ * DONE:
+ * 1. Implemented the xfer mechanism of syscall when parameters more than 5;
+ * 2. Test the mechanism of above with a additional syscall(SYSCALL_TESTPARAMXFER);
+ * 3. Kernel part of socket API implemented;
+ *
+ * 20200621:
+ * 1. Implemented GetNetworkInfo system call,and tested it in examapp;
+ * 2. Memory leaks(about ~100 bytes) when above app is executed;
+ *
+ * 20200625:
+ * 1. Implemented GetGenifInfo/AddGenifAddress system call,and tested it in examapp;
+ * 2. malloc and string's operation also tested in examapp;
+ *
+ * 20200712:
+ * 1. Socket source code ported to user land;
+ * 2. socket/bind/setsockopt/sendto/recvfrom routines implemented in user land;
+ * 3. The dhcp server code in user land linked OK;
+ *
+ * TODO(After 20200712):
+ * 1. Debug the dhcp server function since it passed linkage,but the entry
+ *    should be revised in examapp.c to direct to dhcp server's entry;
+ * 2. Other socket routines should be implemented,if pass debugging;
+ * 3. Consider simplify the syscall mechanism,use eax as return code,and
+ *    use MACRO(such as SYSCALL_PARAM_XX(vector,ret,param1,...) to simplify coding;
+ * 
+ * TODO:
+ * 1. User part of socket API's implementation; --OK
+ *    1.1 showgif command shows interface's status as DOWN/FULL/1000M when up and down again;
+ * 2. socket/network header files in user mode, should copy some from kernel mode; --OK
+ * 3. Clone dhcp server code into user mode and build as application; --OK
+ * 4. Test the user mode dhcp server in virtual box;
+ *    4.1 Make a configure file of dhcp server,read the port list from it when the server
+ *        initialized;
+ * 5. Optimize the file I/O and fcntl.h accordingly;
+ *    5.1 Consider how to install hellox into harddisk;
+ *    5.2 Consider the alignment of memory when xfer memory block
+ *        between user and kernel;
+ * 6. Port c4 compiler to hellox as user application;
+ * 7. Thoroughly test under black box or new router;
+ * 8. Release version 1.86 and initiate the next version;
+ * 9. Look forward and consider the next BIG BIG step...
+ *    Consider how to implement the interactive between user application and
+ *      kernel shell,when a user application is loaded into memory,a dedicated
+ *      thread is created and runs as service,how to call it to shell from background?
+ *    Solve the routing table looking up algorithm's issue,i.e,the interface without
+ *      ip address/mask been set also is included in looking up process;
+ * 10. dhcp server's if index; --OK,done
+ * 11. Simplify the output of showgif; --OK,done
+ * 12. Backspace/ctrl input of console(COM);
+ * 13. Enhance of ioctrl command; -- OK;
+ * 14. User space application:
+ *     Soleve the issue that pag fault raises when access user space in kernel thread,
+ *     since the kernel thread's page table is global and no user page table installed
+ *     in the global page table.
+ * 15. memcpy in kernel should be optimized to improve efficiency;
+ * 20200816:
+ * 1. user mode dhcp server's interaction with command line;
+ * 2. how to manage dhcp server like services under hellox? --done
+ * 3. Rewrite file system's implementation in hellox,as next step;
+ * 4. loadapp's implementation code has commented partly,should resolve it;
+ */

@@ -320,7 +320,6 @@ struct tm*   	_gmtime (const time_t* timp)
 	// 64除法需要 用的crt库
 	ptb->tm_wday = ((int)(*timp / _DAY_SEC ) + _BASE_DOW) % 7;
 
-	
 	ptb->tm_hour = (int)(caltim / 3600);
 	caltim -= (long)ptb->tm_hour * 3600L;
 
@@ -472,7 +471,7 @@ struct tm*   	_localtime (const time_t* ptime)
  	return NULL;
  }
 
- char*  	_ctime (const time_t* timp)
+ char* _ctime (const time_t* timp)
  {
  	struct tm *tmtemp;
  
@@ -488,14 +487,12 @@ struct tm*   	_localtime (const time_t* ptime)
  		
  }
 
- 
  size_t _strftime (char* s, size_t size , const char* fmt, const struct tm* tp)
  {
  	return 0;
  }
 
- //该函数接口实现再议
-clock_t    clock (void)
+clock_t clock (void)
 {
 	//return _time(NULL);
 	return 0;

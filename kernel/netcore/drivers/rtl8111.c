@@ -371,7 +371,7 @@ static BOOL RTL8111_RX_Interrupt(rtl8111_priv_t* priv)
 		if (buf)
 		{
 			//Received a pakcet,post to kernel.			
-			pEthBuff = EthernetManager.CreateEthernetBuffer(len);
+			pEthBuff = EthernetManager.CreateEthernetBuffer(len, 0);
 			if (NULL == pEthBuff)
 			{
 				_rtl8111_debug("  %s: create ethernet buffer failed.\r\n", __func__);
@@ -759,7 +759,7 @@ static BOOL Ethernet_Ctrl(__ETHERNET_INTERFACE* pInt, DWORD dwOperation, LPVOID 
 
 //Send a ethernet frame out through Marvell wifi interface.The frame's content is in pInt's
 //send buffer.
-static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
+static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt, __ETHERNET_BUFFER* pOutFrame)
 {
 	rtl8111_priv_t*    dev = NULL;
 	__ETHERNET_BUFFER* pEthBuff = NULL;
@@ -823,7 +823,7 @@ static __ETHERNET_BUFFER* Ethernet_RecvFrame(__ETHERNET_INTERFACE* pInt)
 	//Received a pakcet,delivery it to IP stack.
 	if (len > 0)
 	{
-		pEthBuff = EthernetManager.CreateEthernetBuffer(len);
+		pEthBuff = EthernetManager.CreateEthernetBuffer(len, 0);
 		if (NULL == pEthBuff)
 		{
 			_rtl8111_debug("  %s: create ethernet buffer failed.\r\n", __func__);

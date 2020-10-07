@@ -33,3 +33,6 @@ process -i usragent.dll -o usragent.bin
 copy usragent.bin .\import\
 copy ..\kernel\release\examapp.exe
 copy examapp.exe .\import\
+copy ..\app\cpuid\Release\cpuid.exe
+copy cpuid.exe .\import\
+

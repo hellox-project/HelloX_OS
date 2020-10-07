@@ -33,10 +33,13 @@
 #include "pppox/oe_pro.h"
 #endif
 
-//Network protocol array,each layer3 protocol in system should put one entry
-//in this array.
+/*
+ * Network protocol array,each layer3 protocol 
+ * in system should put one entry in this array.
+ */
 __NETWORK_PROTOCOL NetworkProtocolArray[] = {
 #ifdef __CFG_NET_IPv4
+	/* lwIP for IPv4 must be the first one in this array. */
 	{
 		LWIP_PROTOCOL_NAME,                    //protocol's name.
 		NETWORK_PROTOCOL_TYPE_IPV4,            //L3 protocol's type.
@@ -45,10 +48,14 @@ __NETWORK_PROTOCOL NetworkProtocolArray[] = {
 		lwipCanBindInterface,                  //CanBindInterface.
 		lwipAddEthernetInterface,              //AddEthernetInterface.
 		lwipDeleteEthernetInterface,           //DeleteEthernetInterface.
+		lwipAddGenif,                          //AddGenif.
+		lwipDeleteGenif,                       //DeleteGenif.
+		lwipMatch,                             //Match.
+		lwipAcceptPacket,                      //AcceptPacket.
 		lwipDeliveryFrame,                     //DeliveryFrame.
+		lwipLinkStatusChange,                  //LinkStatusChange.
+		lwipAddGenifAddress,                   //AddGenifAddress.
 		lwipSetIPAddress,                      //SetIPAddress.
-		lwipShutdownInterface,                 //ShutdownInterface.
-		lwipUnshutdownInterface,               //UnshutdownInterface.
 		lwipResetInterface,                    //ResetInterface.
 		lwipStartDHCP,                         //StartDHCP.
 		lwipStopDHCP,                          //StopDHCP.
@@ -66,10 +73,14 @@ __NETWORK_PROTOCOL NetworkProtocolArray[] = {
 		pppoeCanBindInterface,                  //CanBindInterface.
 		pppoeAddEthernetInterface,              //AddEthernetInterface.
 		pppoeDeleteEthernetInterface,           //DeleteEthernetInterface.
+		pppoeAddGenif,                          //AddGenif.
+		pppoeDeleteGenif,                       //DeleteGenif.
+		pppoeMatch,                             //Match.
+		pppoeAcceptPacket,                      //AcceptPacket.
 		pppoeDeliveryFrame,                     //DeliveryFrame.
+		pppoeLinkStatusChange,                  //LinkStatusChange.
+		pppoeAddGenifAddress,                   //AddGenifAddress.
 		pppoeSetIPAddress,                      //SetIPAddress.
-		pppoeShutdownInterface,                 //ShutdownInterface.
-		pppoeUnshutdownInterface,               //UnshutdownInterface.
 		pppoeResetInterface,                    //ResetInterface.
 		pppoeStartDHCP,                         //StartDHCP.
 		pppoeStopDHCP,                          //StopDHCP.

@@ -64,8 +64,8 @@ int strcmp(const char* src,const char* dst);
 int strlen(const char* s);
 
 //Array bound guaranteed string operations.
-char* strncpy(char *dest,const char *src,unsigned int n);
-int strncmp ( char * s1, char * s2, size_t n);
+char* strncpy(char *dest, const char *src, size_t n);
+int strncmp (const char * s1, const char * s2, size_t n);
 
 //Flags to control the trimming.
 #define TRIM_LEFT    0x1
@@ -76,7 +76,8 @@ void strtrim(char * dst,int flag);
 
 int strtol(const char *nptr, char **endptr, int base);
 
-char*  strtok(char* string_org, const char* demial);
+char* strtok(char* string_org, const char* demial);
+size_t strcspn(const char* s1, register const char* s2);
 
 void ToCapital(LPSTR lpszString);
 

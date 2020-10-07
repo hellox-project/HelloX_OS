@@ -48,6 +48,12 @@
 //Enable address reusable.
 #define SO_REUSE             1
 
+/*
+ * Enable local interface prefering for broadcast feature, 
+ * see rev_recd.txt file under network directory.
+ */
+#define SO_BROADCAST_LOCALPREFER 1
+
 //Enable or disable TCP functions in lwIP.
 #define LWIP_TCP             1
 
@@ -91,6 +97,8 @@
 //will lead ASSERT failed in ip_reass_free_complete_datagram routine,
 //in ip_frag.c file.
 #define IP_REASS_FREE_OLDEST 0
+
+#define MEMP_NUM_NETCONN 16
 
 //*-----------------------------------------------------------------------
 //*

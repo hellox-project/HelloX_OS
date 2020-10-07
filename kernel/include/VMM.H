@@ -55,9 +55,13 @@ DECLARE_PREDEFINED_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 BEGIN_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
 	/* Pointing back to virtual memory manager. */
     struct tag__VIRTUAL_MEMORY_MANAGER* lpManager;
-	/* Start virtual address. */
+	/* Start and end virtual address. */
     LPVOID lpStartAddr;
 	LPVOID lpEndAddr;
+	/* Size of this block. */
+	unsigned long ulSize;
+	/* Desired address when VirtualAlloc is called. */
+	unsigned long desired_addr;
 	/* Points to next one in list. */
 	struct tag__VIRTUAL_AREA_DESCRIPTOR* lpNext;
 	DWORD dwAccessFlags;   //Access flags.
@@ -123,6 +127,34 @@ END_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
 #define VIRTUAL_AREA_ALLOCATE_IOCOMMIT  0x00000010
 #define VIRTUAL_AREA_ALLOCATE_MAP       0x00000020
 #define VIRTUAL_AREA_ALLOCATE_DEFAULT   VIRTUAL_AREA_ALLOCATE_ALL
+/* Mask for allocate flags. */
+#define VIRTUAL_AREA_ALLOCATE_FLAG_MASK 0x0000FFFF
+
+/* Allocate from user space. */
+#define VIRTUAL_AREA_ALLOCATE_USERSPACE 0x00010000
+/* Allocate from kernel space. */
+#define VIRTUAL_AREA_ALLOCATE_KERNELSPACE 0x00020000
+/* Allocate from IO space. */
+#define VIRTUAL_AREA_ALLOCATE_IOSPACE 0x00040000
+/* Allocate from stack space. */
+#define VIRTUAL_AREA_ALLOCATE_STACK 0x00080000
+/* Mask for allocate space. */
+#define VIRTUAL_AREA_ALLOCATE_SPACE_MASK 0xFFFF0000
+
+/* 
+ * Structure to contain a block of virtual memory's 
+ * attributes,it is used by VirtualQuery routine in
+ * virtual memory manager.
+ */
+typedef struct _MEMORY_BASIC_INFORMATION {
+	LPVOID BaseAddress;
+	LPVOID AllocationBase;
+	unsigned long AllocationProtect;
+	size_t RegionSize;
+	unsigned long State;
+	unsigned long Protect;
+	unsigned long Type;
+} MEMORY_BASIC_INFORMATION, __MEMORY_BASIC_INFORMATION;
 
 /*
  * Switch virtual area number.
@@ -146,7 +178,13 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 	/* AVL tree's root. */
 	__VIRTUAL_AREA_DESCRIPTOR* lpTreeRoot;
 	/* How many virtual areas allocated. */
-	volatile unsigned long dwVirtualAreaNum;
+	__atomic_t va_num;
+
+	/* 
+	 * Commited heap space size,could be changed by brk() 
+	 * system call. 
+	 */
+	volatile long heap_sz;
 
 	/* Operations the virtual memory manager can offer. */
 	/* Allocate a block of virtual memory. */
@@ -158,7 +196,7 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 		char* va_name,
 		LPVOID pReserved);
 	/* Release the memory block allocated by VirtualAlloc. */
-	VOID (*VirtualFree)(__COMMON_OBJECT* pThis, LPVOID pVirtualAddr);
+	BOOL (*VirtualFree)(__COMMON_OBJECT* pThis, LPVOID pVirtualAddr);
 	/* Map a physical memory block into virtual space. */
 	BOOL (*VirtualMap)(__COMMON_OBJECT* pThis, LPVOID pVirtualAddr,
 		LPVOID pPhysicalAddr, unsigned long length, unsigned long access_flags,
@@ -173,6 +211,13 @@ BEGIN_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 		LPVOID pUserStart,
 		unsigned long length,
 		BOOL bUserToKernel);
+	/* sbrk routine,simulates sbrk routine in POSIX. */
+	void* (*sbrk)(__COMMON_OBJECT* pThis, size_t increment);
+	/* Query virtual memory's basic info. */
+	size_t (*VirtualQuery)(__COMMON_OBJECT* pThis,
+		LPVOID pStartAddr,
+		__MEMORY_BASIC_INFORMATION* pMemInfo,
+		size_t info_sz);
 END_DEFINE_OBJECT(__VIRTUAL_MEMORY_MANAGER)
 
 /* Initializer of virtual memory manager. */

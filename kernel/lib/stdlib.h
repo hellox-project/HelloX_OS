@@ -16,6 +16,7 @@
 #define __STDLIB_H__
 
 #include "stddef.h"
+#include "stdint.h"
 
 /**
 * Generate random number,the standard C routine.
@@ -36,6 +37,7 @@ void* _hx_malloc(size_t size);
 void  _hx_free(void* p);
 void* _hx_calloc(size_t n,size_t s);
 void* _hx_alloca(size_t size);  //Allocate memory from STACK.
+void* _hx_realloc(void* ptr, size_t new_sz);
 
 //Environment related routine.
 char *_hx_getenv(char *envvar);
@@ -67,15 +69,44 @@ int atoi(const char *nptr);
 //Convert a int to string.
 char* itoa(int value,char *buf,int radix);
 
+/*
+ *  atob(vp,p,base)
+ *      converts p to binary result in vp, rtn 1 on success
+ */
+int
+atob(uint32_t *vp, char *p, int base);
+
+/*
+ *  char *btoa(dst,value,base)
+ *      converts value to ascii, result in dst
+ */
+char *
+btoa(char *dst, unsigned int value, int base);
+
+/*
+ *  gethex(vp,p,n)
+ *      convert n hex digits from p to binary, result in vp,
+ *      rtn 1 on success
+ */
+int
+gethex(int32_t *vp, char *p, int n);
+
+/*
+ * The C library function double strtod(const char *str, char **endptr) 
+ * converts the string pointed to by the argument str to a floating - point 
+ * number(type double).If endptr is not NULL, a pointer to the character 
+ * after the last character used in the conversion is stored in the 
+ * location referenced by endptr.
+ */
+double strtod(const char *str, char **endptr);
+
 //exit and abort.
 void exit(int state);
 void abort(void);
 
-//Standard C routine,alias of HX version.
-
-//#ifndef malloc
+/* standard C memory manipulating routines. */
 #define malloc _hx_malloc
-//#endif
+#define realloc _hx_realloc
 
 #ifndef calloc
 #define calloc _hx_calloc

@@ -1,0 +1,12 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: The intermediate directory (Release\) contains files shared from another project (examapp.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  main.c
+d:\hellox\personal\hellox_os\app\cpuid\stdint.h(47): warning C4142: 'int32_t': benign redefinition of type
+  d:\hellox\personal\hellox_os\app\cpuid\hellox.h(47): note: see declaration of 'int32_t'
+d:\hellox\personal\hellox_os\app\cpuid\stdint.h(53): warning C4142: 'uint32_t': benign redefinition of type
+  d:\hellox\personal\hellox_os\app\cpuid\hellox.h(41): note: see declaration of 'uint32_t'
+  Generating code
+  20 of 119 functions (16.8%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    16 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  examapp.vcxproj -> D:\HelloX\personal\HelloX_OS\app\cpuid\Release\cpuid.exe

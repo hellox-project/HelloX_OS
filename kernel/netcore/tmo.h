@@ -30,9 +30,10 @@ typedef void(*sys_timeout_handler)(void *arg);
 * in kernel,i.e,SetTimer,CancelTimer,...
 * These routines must be called in a same kernel thread context,since
 * it can not support multiple thread.
+* code_line in untimeout routine is used to debugging.
 */
 void _hx_sys_timeout(HANDLE hTarget, unsigned long msecs, sys_timeout_handler handler, void* arg);
-void _hx_sys_untimeout(sys_timeout_handler handler, void* arg);
+void _hx_sys_untimeout(sys_timeout_handler handler, void* arg, int code_line);
 
 /* Network timer object used to manage all network timers. */
 typedef struct tag__network_timer_object{
@@ -47,5 +48,14 @@ typedef struct tag__network_timer_object{
 
 /* Release a network timer object. */
 void _hx_release_network_tmo(__network_timer_object* pTmo);
+
+/*
+ * Check if a given network timer object is valid,i.e,
+ * this object is in network timer list.
+ * In some race condition, the network timer maybe released
+ * in advance before it's handler is invoked,so the hander
+ * must verify if the network timer object exist.
+ */
+BOOL _hx_sys_validate_timer(__network_timer_object* pTimerObject);
 
 #endif //__TMO_H__

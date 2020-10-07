@@ -1,0 +1,52 @@
+There was a bug in pppoe source code and trouble shooted for almost 1 week,so just record it here.
+Only triggered when pppoe initiate a connection but without peer's response, sequence as follows:
+1. PPPoEStart is invoked in main thread of pppoe;
+2. It will invoke pppOverEthernetOpen and pppoe_create routine;
+3. The pppOverEthernetOpen routine will call pppoe_connect;
+4. pppoe_connect routine send out a PADI frame,then set a timer by _hx_sys_timeout routine;
+5. all above routines return back,pppoe main thread run into idle state and wait for message;
+6. When the timer in step 4 triggered,pppoe main thread will call pppoe_timeout routine;
+7. Then more PADI send out,since no response received;
+8. pppoe_abort_connect called finally in pppoe_timeout routine,to abort the connection;
+9. pppoe_abort_connect's source code(original) as follows:
+/* Connection attempt aborted */
+static void
+pppoe_abort_connect(struct pppoe_softc *sc)
+{
+  sc->sc_state = PPPOE_STATE_CLOSING;
+
+  sc->sc_linkStatusCB(sc->sc_pd, 0); /* notify upper layers */
+
+  /*
+   * [ISSUE RECORD]
+   * The following 2 lines of code should be commented off
+   * since the sc is already deleted in sc_linkStatusCB routine.
+   * System will crash when these 2 lines of code remain unchanged,
+   * since it will destroy the kernel memory,this kind of issue is
+   * very difficult to trouble shooting.
+   */
+  /* clear connection state */
+  /* MEMCPY(&sc->sc_dest, ethbroadcast.addr, sizeof(sc->sc_dest)); */
+  /* sc->sc_state = PPPOE_STATE_INITIAL; */
+}
+10. Because the sc object is destroyed in sc_linkStatusCB routine,so
+    memory operations of the last 2 lines will lead system memory crash.
+
+Sequence of sc object's destroying:
+1. pppoe_abort_connect->sc_linkStatusCB, sc_linkStatusCB is pppOverEthernetLinkStatusCB,it's 
+   source code is:
+   static void
+pppOverEthernetLinkStatusCB(int pd, int up)
+{
+  if(up) {
+    PPPDEBUG(LOG_INFO, ("pppOverEthernetLinkStatusCB: unit %d: Connecting\n", pd));
+    pppStart(pd);
+  } else {
+    pppOverEthernetInitFailed(pd);
+  }
+}
+   pppOverEthernetInitFailed is invoked since pd is 0(connection abort);
+2. pppOverEthernetInitFailed then calls pppHup,pppStop,and pppoe_destroy;
+3. pppHup sets a timer,but pppoe_destroy cancels it immediately;
+4. The timer may triggered between setting and cancelling,so there also
+   is race condition;

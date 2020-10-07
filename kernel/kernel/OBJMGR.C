@@ -144,6 +144,13 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,
 	pObject->Initialize = ObjectInitData[dwLoop].Initialize;
 	pObject->Uninitialize = ObjectInitData[dwLoop].Uninitialize;
 	pObject->lpObjectOwner = lpObjectOwner;
+#if defined(__CFG_SYS_PROCESS)
+	/* Set current process as owner if caller does not specified. */
+	if (NULL == lpObjectOwner)
+	{
+		pObject->lpObjectOwner = (__COMMON_OBJECT*)__CURRENT_PROCESS;
+	}
+#endif
 	/* Set the reference counter as 1. */
 	pObject->refCount = 1;
 
@@ -190,7 +197,12 @@ static BOOL __ValidateObject(__OBJECT_MANAGER* pObjectMgr, __COMMON_OBJECT* pObj
 	__COMMON_OBJECT* pResult = NULL;
 
 	BUG_ON((NULL == pObjectMgr) || (NULL == pObject));
-	BUG_ON(pObject->dwObjectType >= MAX_KERNEL_OBJECT_TYPE);
+	if (pObject->dwObjectType >= MAX_KERNEL_OBJECT_TYPE)
+	{
+		/* Invalid object type value. */
+		return FALSE;
+	}
+
 	pListHdr = &pObjectMgr->ObjectListHeader[pObject->dwObjectType];
 	pResult = pListHdr->lpFirstObject;
 	while (pResult)
@@ -202,6 +214,24 @@ static BOOL __ValidateObject(__OBJECT_MANAGER* pObjectMgr, __COMMON_OBJECT* pObj
 		pResult = pResult->lpNextObject;
 	}
 	return (NULL == pResult) ? FALSE : TRUE;
+}
+
+/*
+ * Check if a given kernel object is a valid
+ * kernel object.
+ * It calls __ValidateObject routine but with
+ * protection of object manager's spin lock.
+ */
+static BOOL _ValidateObject(__OBJECT_MANAGER* pManager, __COMMON_OBJECT* pKernelObject)
+{
+	unsigned long ulFlags;
+	BOOL bResult = FALSE;
+
+	BUG_ON(NULL == pManager);
+	__ENTER_CRITICAL_SECTION_SMP(pManager->spin_lock, ulFlags);
+	bResult = __ValidateObject(pManager, pKernelObject);
+	__LEAVE_CRITICAL_SECTION_SMP(pManager->spin_lock, ulFlags);
+	return bResult;
 }
 
 //
@@ -217,16 +247,15 @@ static BOOL __ValidateObject(__OBJECT_MANAGER* pObjectMgr, __COMMON_OBJECT* pObj
 static __COMMON_OBJECT* GetObjectByID(__OBJECT_MANAGER* lpObjectManager,
 	DWORD dwObjectID)
 {
-	__COMMON_OBJECT*         lpObject     = NULL;
-	DWORD                    dwLoop       = 0;
-	__OBJECT_LIST_HEADER*    lpListHeader = NULL;
-	BOOL                     bFind        = FALSE;
+	__COMMON_OBJECT* lpObject = NULL;
+	DWORD dwLoop = 0;
+	__OBJECT_LIST_HEADER* lpListHeader = NULL;
+	BOOL bFind = FALSE;
+	unsigned long ulFlags;
 
-	if(NULL == lpObjectManager)
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON(NULL == lpObjectManager);
 
+	__ENTER_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock, ulFlags);
 	/* For every object type. */
 	for(dwLoop = 0;dwLoop < MAX_KERNEL_OBJECT_TYPE;dwLoop ++)
 	{
@@ -253,6 +282,7 @@ static __COMMON_OBJECT* GetObjectByID(__OBJECT_MANAGER* lpObjectManager,
 			break;
 		}
 	}
+	__LEAVE_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock, ulFlags);
 
 	/* If can not find the correct object,set the return value to NULL. */
 	if(FALSE == bFind)
@@ -260,7 +290,6 @@ static __COMMON_OBJECT* GetObjectByID(__OBJECT_MANAGER* lpObjectManager,
 		lpObject = NULL;
 	}
 
-__TERMINAL:
 	return lpObject;
 }
 
@@ -276,7 +305,7 @@ __TERMINAL:
 //   Returns the base address of the first object,if failed,returns NULL.
 //
 static __COMMON_OBJECT* GetFirstObjectByType(__OBJECT_MANAGER* lpObjectManager,
-											 DWORD             dwObjectType)
+	DWORD dwObjectType)
 {
 	__COMMON_OBJECT* lpObject = NULL;
 
@@ -528,4 +557,5 @@ __OBJECT_MANAGER ObjectManager = {
 	GetFirstObjectByType,               //GetFirstObjectByType routine.
 	__DestroyObject,                    //DestroyObject routine.
 	__AddRefCount,                      //AddRefCount routine.
+	_ValidateObject,                    //ValidateObject routine.
 };

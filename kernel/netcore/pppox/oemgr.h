@@ -38,6 +38,24 @@
 /* Maximal PPPoE password. */
 #define PPPOE_PASSWORD_LEN 31
 
+/* maximal length of authentication type in string. */
+#define PPPOE_AUTH_TYPE_LEN 31
+
+/* Periodic scanning timer's ID and time spanning. */
+#define PPPOE_PERIODICTIMER_ID 1024
+#define PPPOE_PERIODICTIMER_SPAN (1100 * 5) //(1000 * 5)
+
+/* 
+ * Maximal restart counter of one pppoe session. 
+ * The session will never be restarted by system automatically
+ * when restart_count reach this value.
+ * NOTE: Because of the existing bugs in pppoe source code,
+ *       it will lead system crash after several(>3) times
+ *       of restart on one pppoe instance,so we set this
+ *       restriction,it will be removed when bugs shooted.
+ */
+#define PPPOE_SESSION_RESTART_COUNT 64
+
 /*
  * Authentication types of PPPoE,default is ANY,that is,try the
  * method following ANY one by one,until success or all failed.
@@ -51,8 +69,11 @@ typedef enum tag__PPPOE_AUTH_TYPE{
 
 /* PPPoE session status. */
 typedef enum tag__PPPOE_SESSION_STATUS{
-	SESSION_IDLE,
-	SESSION_RUNNING
+	SESSION_IDLE = 0,      /* Just initialized. */
+	SESSION_CONNECTING,    /* Connecting in progress. */
+	SESSION_CONNECTED,     /* Session established. */
+	SESSION_DISCONNECTED,  /* Session disconnected. */
+	SESSION_DISABLED       /* Disabled manually. */
 }__PPPOE_SESSION_STATUS;
 
 /* Global variables for one PPPoE session,simple to management. */
@@ -60,13 +81,18 @@ typedef struct tag__PPPOE_INSTANCE{
 	struct tag__PPPOE_INSTANCE* pNext;
 	int instance_id;
 	int ppp_session_id; /* ID of PPP session. */
+	int restart_count;
 	__PPPOE_SESSION_STATUS status;
 	__PPPOE_AUTH_TYPE authType;
 	char session_name[PPPOE_SESSION_NAME_LEN + 1];
 	char user_name[PPPOE_USER_NAME_LEN + 1];
 	char password[PPPOE_PASSWORD_LEN + 1];
-	/* Ethernet interface the session based on. */
-	__ETHERNET_INTERFACE* pEthInt;
+	/* Generic netif the session based on. */
+	__GENERIC_NETIF* pGenif;
+	/* netif that the session based on. */
+	struct netif* netif;
+	/* netif created after session connected. */
+	struct netif* ppif;
 }__PPPOE_INSTANCE;
 
 /* Messages PPPoE manager main thread can handle. */
@@ -84,7 +110,7 @@ typedef struct tag__PPPOE_INSTANCE{
 */
 typedef struct tag__PPPOE_POSTFRAME_BLOCK{
 	__PPPOE_INSTANCE* pInstance;
-	__ETHERNET_INTERFACE* pEthInt;
+	//__ETHERNET_INTERFACE* pEthInt;
 	__u16 frame_type;
 	struct pbuf* p;
 	struct tag__PPPOE_POSTFRAME_BLOCK* pNext;
@@ -177,7 +203,18 @@ void ListPPPoE();
  * frame.
  */
 typedef struct tag__PPPOE_ETHIF_BINDING{
-	__ETHERNET_INTERFACE* pEthInt;
+	/* 
+	 * pEthInt Should no usage when genif available. 
+	 * But preserve it for backward compitible,since some
+	 * NIC's driver(such as usb ethernet) is not revised
+	 * to fit genif framework.
+	 */
+	__ETHERNET_INTERFACE* pEthInt; 
+
+	/* The genif that session based on. */
+	__GENERIC_NETIF* pGenif;
+	/* The lwIP netif that session based on. */
+	struct netif* netif;
 	__PPPOE_INSTANCE* pInstance;
 }__PPPOE_ETHIF_BINDING;
 

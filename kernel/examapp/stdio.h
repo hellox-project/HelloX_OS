@@ -1,10 +1,9 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : Oct,22 2006
-//    Module Name               : L_STDIO.H
+//    Module Name               : stdio.h
 //    Module Funciton           : 
 //                                Standard I/O libary header file.
-//                                Please note it's name is a prefix "L_".
 //
 //    Last modified Author      :
 //    Last modified Date        :
@@ -14,18 +13,28 @@
 //    Lines number              :
 //***********************************************************************/
 
+#ifndef __STDIO_H__
+#define __STDIO_H__
+
+/* for size_t. */
+#include "stddef.h"
+/* for va list. */
+#include "stdarg.h"
+
+#if 0
 typedef char* va_list;
+
+#define _INTSIZEOF(n)   ((sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1))
+
+#define va_start(ap,v)  ( ap = (va_list)&v + _INTSIZEOF(v) )
+#define va_arg(ap,t)    ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )
+#define va_end(ap)      ( ap = (va_list)0 )
+#endif
 
 //Flags to control file seeking operation.
 #define SEEK_SET    0
 #define SEEK_CUR    1
 #define SEEK_END    2
-
-#define _INTSIZEOF(n)   ( (sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1) )
-
-#define va_start(ap,v)  ( ap = (va_list)&v + _INTSIZEOF(v) )
-#define va_arg(ap,t)    ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )
-#define va_end(ap)      ( ap = (va_list)0 )
 
 #define MAX_BUFFER_SIZE 512
 
@@ -77,3 +86,10 @@ int _hx_printk(const char* fmt, ...);
 #ifndef printk
 #define printk _hx_printk
 #endif
+
+/*
+ *  sscanf(buf,fmt,va_alist)
+ */
+int sscanf(const char *buf, const char *fmt, ...);
+
+#endif //__STDIO_H__

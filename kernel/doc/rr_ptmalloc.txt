@@ -1,0 +1,236 @@
+Prefix 'rr' means 'revise record'.
+
+This RR describes the revising procedure of HelloX kernel to fit ptmalloc
+lib in user land.
+
+/*
+ * REVISE REQURIED FOR PTMALLOC UNDER HELLOX:
+ * 1. Implement the interlocked routines above in hellox.c file,as
+ *    common support routines and could be used by other modules;
+ * 2. abort() routine should be implemented and put into stdlib.h file;
+ * 3. memset,memcpy,strlen routines should be implemented;
+ * 4. GetCurrentThreadID routine should be implemented in system call;
+ * 5. SleepEx should be replaced by Sleep routine under HelloX,the
+ *    the routine will reschedule all threads if 0 as parameter;
+ * 6. GetSystemInfo routine should be implemented in HelloX as system
+ *    call;
+ * 7. VirtualFree should be implemented to support flags,i.e,RELEASE,
+ *    DECOMMIT,...;
+ * 8. VirtualQuery routine should be implemented in HelloX kernel and
+ *    system call,use MEMORY_BASIC_INFORMATION as output;
+ * 9. VirtualFree should be revised to support return values;
+ * 10. Virtual area's size should be specified when VirtualFree is
+ *    invoked,not the whole bulk of virtual area but a partition of
+ *    it could be released separately. The start address and size
+ *    must be page aligned and the freed virtual area could not span
+ *    2 continues pages;
+ * 11. When VirtualAlloc is invoked in user mode(through system call),
+ *    the virtual area should be allocated from user space.2 dedicated
+ *    flags VIRTUAL_AREA_ALLOCATE_USER/KERNEL could be defined as high
+ *    byte values to tell virtual memory manage where to allocate the
+ *    VA.When USER specified the virtual area should be allocated from
+ *    user space and otherwise should be allocated from kernel space.So
+ *    the combination of USER/IO/IOMAP is invalid;
+ * 12. One virtual area list is used and keep unchanged in virtual 
+ *    memory manager,but start address and end address should specified
+ *    when search free memory space gap,corresponding the USER/KERNEL
+ *    flags;
+ * 13. Procedures of VirtualFree:
+ *    1) Search the corresponding virtual area object from list by specifying
+ *       VirtualFree's start address;
+ *    2) Returns FALSE if no virtual area object is found;
+ *    3) Release the whole block or just release the corresponding page frames
+ *       when DECOMMIT is specified and the virtual area's flag is COMMITED,if
+ *       the start address and size match the virtual area;
+ *    4) Separate the virtual area into 2 blocks,if the required block is in
+ *       front or end part,and do corresponding actions according free flags,
+ *       insert back the unfreed block;
+ *    5) Separate the virtual area into 3 blocks if the required range falls
+ *       into middle part of the virtual area,release or decommit one and insert
+ *       back the others;
+ *    6) Returns TRUE.
+ * 14. VirtualQuery's mechanism should be deepdived again,to check the actions 
+ *    when queried address fall into middle of virtual area;
+ * 15. Coding and debugging above algorithm for managing virtual area under
+ *    windows environment;
+ */
+
+/*
+ * Prototype of VirtualFree:
+ * BOOL VirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
+ * dwFreeType: MEM_RELEASE or MEM_DECOMMIT,can not combined together;
+ * lpAddress must be the returned address of VirtualAlloc and dwSize must
+ * be 0 if MEM_RELEASE
+ * specified,in Windows. We could change this in HelloX;
+ * lpAddress, dwSize must be page aligned in HelloX;
+ * MEM_DECOMMIT could be applid to virtual area with state is RESERVED(
+ * not commited);
+ * Return FALSE if no operation meet or parameters invalid;
+ * 
+ * VirtualQuery in Windows:
+ * SIZE_T VirtualQuery(LPCVOID lpAddress,
+ *     MEMORY_BASIC_INFORMATION* lpBuffer,
+ *     SIZE_T dwLength);
+ * Provides information about a region of consecutive pages beginning at
+ * a specified address that share the following attributes:
+ * 1) The state of all pages is the same(MEM_COMMIT,MEM_RESERVE,MEM_FREE,
+ *    MEM_PRIVATE,MEM_MAPPED or MEM_IMAGE);
+ * 2) If the specified page is not free,all pages in the region are part
+ *    of the same initial allocation of pages created by a single call to
+ *    VirtualAlloc or others;
+ * 3) The access granted to all pages is the same(PAGE_READONLY,PAGE_READWRITE,
+ *    PAGE_NOACCESS,PAGE_WRITECOPY,PAGE_EXECUTE,PAGE_EXECUTE_READ,
+ *    PAGE_EXECUTE_READWRITE,PAGE_EXECUTE_WRITECOPY,PAGE_GUARD or PAGE_NOCACHE);
+ * This functions determines the attributes of the first page in the region
+ * and then scans subsequent pages until it scans the entire range of pages or
+ * until it encounters a page with nonmatching set of attributes.
+ * The function returns the attributes and size of the region of pages with 
+ * matching attributes,in bytes.
+ * HelloX: Windows will report free region but HelloX may not support this
+ * for simplicity currently.The scaning algorithm could be adopted by HelloX.
+ * The lpAddress must be page aliged in HelloX.
+ * We can decommit part of memory allocated by VirtualAlloc by calling 
+ * VirtualFree,so there maybe a hole of RESERVED memory in virtual area,
+ * VirtualQuery is useful in this scenario.
+ * -------------------------------------------------------------------------
+ * 2019/09/01: Simple implementation:
+ * 1. Replace the virtual list manipulation routine; --Just copied OK,should
+      use the new ones to replace the old routines;
+ * 2. Keep VirtualFree unchanged but with return values(TRUE/FALSE);
+      Just OK.
+ * 3. VirtualAlloc should support allocate VA in kernel or user;
+ * 4. If the specified address is not same as VA's start address when
+ *    VirtualFree is called,it should return FALSE;
+ * 5. VirtualQuery could returns the batch memory's information from
+ *    user specified address to the end of the matching VA,does not
+ *    support free gap in space;
+ * 6. Implements the VirtualQuery,GetSystemInfo and other related system calls.
+ * 
+ * 2019-09-09:
+ * 1. Use space flags to control the allocation of virtual area,include IO,
+ *    from kernel space,user space;--OK
+ * 2. Consider dwAllocFlags's value in VAD,set it carefully;--OK
+ * 3. Use USER SPACE flag to control the VirtualAlloc routine when it called
+ *    from user space;--OK
+ * 4. Consider the difference between VIRTUAL_AREA_ALLOCATE_COMMIT and ALL,
+ *    how to initializes desired_addr in VAD;--OK
+ * 5. VirtualQuery could returns the batch memory's information from
+ *    user specified address to the end of the matching VA,does not
+ *    support free gap in space;
+ * 6. Implements the VirtualQuery,GetSystemInfo and other related system calls.
+      -- GetSystemInfo's kernel part implemented,user part is pending...
+	  -- OK(20190928)
+ *
+ * Implement of VirtualQuery routine - 20190928:
+ * Code implemented,corresponding system call implemented,and tested
+ * in example application,seems OK.
+ *
+ * What's next:
+ * 1. Copy ptmalloc's implementation code into example app and pass
+ *    the compiling; --OK
+ * 2. Replace the original windows system calls with HelloX's counterparts,
+ *    and pass the compiling; --OK
+ * 3. Make allocation testing,allocate at 64K memory and fill it with
+ *    0,then release it,show out the footprint; --OK
+ * 4. Check the memory's usage of system after example application exits; --OK
+ * 5. Do some pressure testing and make sure no memory leak;
+ * 6. Intensive allocating in one thread sames OK,should use 2 or more threads
+ *    to test the ptmalloc;
+ * 7. Trouble shootting the intrinsic function problems in examapp when memory.c
+ *    file added into project;
+ * 8. Create log file and write the testing logs into it;
+ * 9. Create several user threads to do mallocation simultanenous to test the
+ *    concurrent of ptmalloc;
+ * 10. Port all C lib into examapp project,and compile a independed lib file
+ *    to use as part of IDE;
+ * 11. Implement socket APIs through system call and C lib;
+ * 12. Use mutex to synchronize the access of printf routine,and call it by
+ *    more than 3 threads;
+ * 13. Port handle mechanism code into process's implementation;
+ * 14. Destroy all kernel objects when process over by enumerate the handle 
+ *    array;
+ * 15. Ask other guys to create a executable image under Linux and GCC by
+ *    using HelloX's app lib,then try to run it under HelloX;
+ *
+ * 20191013:
+ * 1. Create a dedicated user thread to run with main thread will lead crash(UD,
+ *    GP,...); -- Issue solved.
+ * 
+ * 20191103:
+ * 1. Revise CreateUserThread system call's implementation code in kernel side,
+ *    to support distribute user thread to different CPUs;--OK
+ * 2. Check the cleaning code of CreateUserThread in case of no memory,make sure
+ *    no memory leaking exist;--Seems no problem;
+ * 3. 
+ *
+ * 20191206/20191218:
+ * 1. Handle mechanism is implemented in process module,and sames OK;
+ * 2. Mutex object is saved into handle array when created,the memory
+ *    leaking changed from ~200 bytes to ~100 bytes;
+ * 3. To do list:
+ *    3.1 Implement mutex operation using handle array,include wait/release
+ *        and destroy;--OK
+ *    3.2 Implement user thread operation using handle array;
+ *    3.3 Implement all other kernel object's operation with handle array(Event);
+ *    3.4 Add CloseHandle system call;
+ *    3.5 Process object itself should also be implemented using handle
+ *        array,and returns a handle value to caller instead of pointer;
+ *    3.6 SendMessage/GetMessage/PeekMessage routines of system call should
+ *        revised using handle mechanism;
+ * 4. Consider the scenario that CloseHandle failed casued by ObjectManager.
+ *    DestroyObject failure,will lead memory leak;
+ * 5. Consider the race condition that when a kernel thread is forcely
+ *    terminated;
+ * 6. Check the whole terminating thread process,if kernel thread object
+ *    is destroyed implicitly in this process,or should call DestroyKernelThread(or 
+ *    other routines) to destroy it explicity? Redestroying may exist in former case;
+ *    ---- ProcessKilledQueue will destroy all killed threads explicitly currently;
+ *
+ * 7. Handle mechanism should be applied to event,timer,process objects;
+ * 8. Combine CancelTimer and it's destroying into DestroyObject routine,and apply
+ *    handle mechanism to it;
+ * 9. Consider when a process run over,how to close it's handle(DestroyProcess).The
+ *    shell thread creates a process and continue to run(asychronous mode),how to 
+ *    destroy the process's object and release memory?one possible solution is,send
+ *    a message to shell thread and process's object handle as parameter,the shell
+ *    should destroy the process object.Should consider this solution carefully;
+ * 10. Consider the process of kill a process forcely,in case of illegal accessing,
+ *    such as Page Exception or General Protection raise;
+ * 11. Procedure of kill thread:kill->set flags->handle flags->ProcessKilledQueue
+ *    ->__KillCleanUp in Idle->destroy thread object. Thread with status of
+ *    KERNEL_THREAD_STATUS_BLOCKED can not be killed since no chance to push HandleFlags
+ *    routine apply on it;
+ *
+ * 20200202:
+ * Special day.
+ * 1. Save the kernel object(s) that one kernel thread is waiting for into
+ *    kernel thread object;
+ * 2. All kernel object(s) that one process created should be associated with
+ *    it and could be located,and should be destroyed when process run over.No
+ *    need to implement this to kernel thread since it belongs to kernel;
+ * 3. Add refer counter of frame page object;
+ * 4. Revise page table flags(PCD/PWT) carefully;
+ * 5. Revise VirtualAlloc's implementation when IOMAP flag set,the linear
+ *    address also could not same as physical(I/O) address;
+ * 6. Check the atomic operation of following steps when put a thread into
+ *    ready queue:
+ *    1) Set thread's status as READY;
+ *    2) Add it into the ready queue;
+ * 7. Check the suspendKernelThread/ResumeKernelThread's implementation of 
+ *    windows,and revise HelloX's implementation accordingly;A dedicated 
+ *    kernel thread maybe created to handle the suspending/affinity-changing
+ *    operations of kernel thread,consider this carefully;
+ * 8. Check the console's implementation,no write file but ll_output used
+ *    as COM interface's I/O currently;
+ * 9. Time out tick mechanism in synobj2.c file should be re-considered
+ *    carefully,the code section is committed off by '#if #endif' clause.
+ *    The semaphore's timeout wait should be consider the INFINITE scenario;
+ * 10. Consider if the mutex object could be released by other threads than
+ *    the current owning one;-- OK,done;
+ *
+ * PROGRESS:
+ * 1. Add alignment parameter to CreateEthernetBuffer routine;
+ * 2. User specified buffer and builtin buffer are all considered
+ *    in sending routine of NIC drivers;
+ * 3. SendMessageEx routine implemented;
+ */

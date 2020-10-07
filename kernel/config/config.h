@@ -28,8 +28,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.85"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.850(Beta),initiated in 2018/10/24,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.86"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.860(Beta),initiated in 2019/09/09,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
@@ -98,6 +98,13 @@
 //
 #define DEFAULT_STACK_SIZE 0x00008000 //32k bytes.
 
+/*
+ * User stack's default size.
+ * Each user thread has it's own user stack which
+ * is used in user mode.
+ */
+#define DEFAULT_USER_STACK_SIZE 8192
+
 //************************************************************************
 //
 //  System level pre-defined switches.
@@ -154,7 +161,7 @@
 
 //Include console object into kernel.COM input and output functions are implemented
 //in console object.
-//#define __CFG_SYS_CONSOLE
+#define __CFG_SYS_CONSOLE
 
 //************************************************************************
 //
@@ -234,8 +241,14 @@
 //Include IPv4 network protocol in OS.
 #define __CFG_NET_IPv4
 
+//Include IPv6 network protocol in OS.
+//#define __CFG_NET_IPv6
+
+//Include HPX network protocl in OS.
+//#define __CFG_NET_HPX
+
 //Include PCNet driver in OS.
-#define __CFG_NET_PCNET
+//#define __CFG_NET_PCNET
 
 //Include RTL8111 driver in OS.
 //#define __CFG_NET_RTL8111

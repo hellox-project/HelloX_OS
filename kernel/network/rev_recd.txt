@@ -1,0 +1,15 @@
+Revising record for lwIP stack.
+1. UDP local receiving interface is prefered for incoming broadcast,with all other
+   comparation parameters are same:
+   1.1 SO_BROADCAST_LOCALPREFER is defined in lwipopts.h;
+   1.2 udp_input routine of udp.c file is revised,so as that the incoming broadcast
+       packet is delivered to the PCB with local ip address same as the incoming
+	   interface's IP address;
+2. Local interface is prefered for sending UDP broadcast,instead of the default
+   interface in lwIP's original implementation:
+   2.1 udp_sendto routine in udp.c file is revised to support this feature;
+   2.2 If destination IP address is broadcast,then PCB's local ip address(
+       which should same as the outgoing interface) is used to search routing
+	   table instead of the destination IP address;
+   2.3 Destination IP address is used to search routing table if it's not
+       a broadcast address;

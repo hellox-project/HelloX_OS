@@ -113,9 +113,9 @@
 
 //#define TIMEOUT(f, a, t)    do { sys_untimeout((f), (a)); sys_timeout((t)*1000, (f), (a)); } while(0)
 //#define UNTIMEOUT(f, a)     sys_untimeout((f), (a))
-#define TIMEOUT(f, a, t)    do { _hx_sys_untimeout((f), (a)); _hx_sys_timeout(pppoeManager.hMainThread,  \
+#define TIMEOUT(f, a, t)    do { _hx_sys_untimeout((f), (a), __line__); _hx_sys_timeout(pppoeManager.hMainThread,  \
     (t)*1000, (f), (a)); } while(0)
-#define UNTIMEOUT(f, a)     _hx_sys_untimeout((f), (a))
+#define UNTIMEOUT(f, a)     _hx_sys_untimeout((f), (a), __line__)
 
 
 /*

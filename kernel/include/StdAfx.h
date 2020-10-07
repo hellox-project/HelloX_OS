@@ -143,6 +143,10 @@
 #include "chardisplay.h"
 #endif
 
+#ifndef __CFGMGR_H__
+#include "cfgmgr.h"
+#endif
+
 #ifndef __ARCH_H__
 #if defined(__I386__)
 #include "../arch/x86/arch.h"

@@ -3,10 +3,7 @@
 //    Original Date             : Sep,16 2005
 //    Module Name               : TYPES.H
 //    Module Funciton           : 
-//                                This module countains the definition for several types
-//                                supported by Hello China.
-//                                The operating interface,i.e,the function that operate these
-//                                data structures,also be defined here.
+//                                Basic data types used by HelloX kernel.
 //    Last modified Author      : Garry
 //    Last modified Date        : Jun 4,2013
 //    Last modified Content     :
@@ -59,9 +56,18 @@ typedef void*               LPVOID;
 
 typedef unsigned char*      LPBYTE;
 
-//Extra definitions maybe used by some GPL code,or you can
-//add your specific data type definitions here to comply your
-//code requirement,such as __uint8,...
+/* HANDLE in kernel. */
+typedef unsigned long __HANDLE;
+
+/* Invalid HANDLE value. */
+#define INVALID_HANDLE_VALUE (0)
+
+/* 
+ * Extra definitions maybe used by some GPL 
+ * code,or you can add your specific data type 
+ * definitions here to comply your code requirement,
+ * such as __uint8,...
+ */
 typedef unsigned char       __U8;
 typedef unsigned short      __U16;
 typedef unsigned long       __U32;

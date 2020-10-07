@@ -25,6 +25,16 @@
 /* For DOMAIN_NAME_LENGTH. */
 #include "netcfg.h"
 
+/* Structure to contain system network info. */
+typedef struct {
+	char version; /* version of this object. */
+	uint32_t v4dns_p; /* Primary ipv4 dns server. */
+	uint32_t v4dns_s; /* Secondary ipv4 dns server. */
+	int genif_num; /* How many genif in system. */
+	char domain_name[DOMAIN_NAME_LENGTH];
+	char extension[0]; /* Extension future. */
+}__SYSTEM_NETWORK_INFO;
+
 /* Global object that contains all network related global varialbes. */
 typedef struct tag__NETWORK_GLOBAL{
 	ip_addr_t dns_primary;
@@ -36,6 +46,8 @@ typedef struct tag__NETWORK_GLOBAL{
 	/* Operations. */
 	void (*ResetDNSServer)(); /* Reset DNS server to default value. */
 	BOOL (*Initialize)(struct tag__NETWORK_GLOBAL* pNetGlob);
+	/* Get system level network information. */
+	BOOL (*GetNetworkInfo)(__SYSTEM_NETWORK_INFO* pNetInfo);
 }__NETWORK_GLOBAL;
 
 extern __NETWORK_GLOBAL NetworkGlobal;

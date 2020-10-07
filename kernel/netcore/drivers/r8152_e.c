@@ -451,7 +451,7 @@ static __ETHERNET_BUFFER* __r8152_nostop_recv(__ETHERNET_INTERFACE *eth,
 		}
 
 		/* Allocate an ethernet buffer to hold the content. */
-		pEthBuffer = EthernetManager.CreateEthernetBuffer(packet_len + 8);
+		pEthBuffer = EthernetManager.CreateEthernetBuffer(packet_len + 8, 0);
 		if (NULL == pEthBuffer)
 		{
 			goto __TERMINAL;

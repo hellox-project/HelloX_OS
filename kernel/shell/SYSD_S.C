@@ -37,6 +37,7 @@ static DWORD overload(__CMD_PARA_OBJ*);
 static DWORD pcilist(__CMD_PARA_OBJ*);
 static DWORD devinfo(__CMD_PARA_OBJ*);
 static DWORD cpuload(__CMD_PARA_OBJ*);
+static DWORD kvalist(__CMD_PARA_OBJ*);
 static DWORD killthread(__CMD_PARA_OBJ*);
 static DWORD showstk(__CMD_PARA_OBJ*);
 static DWORD devlist(__CMD_PARA_OBJ*);
@@ -63,6 +64,7 @@ static struct __SHELL_CMD_MAP{
 	{"pcilist",           pcilist,          "  pcilist              : List all PCI device(s) of the system."},
 	{"devinfo",           devinfo,          "  devinfo              : Print out information about a PCI device."},
 	{"cpuload",           cpuload,          "  cpuload              : Display CPU statistics information."},
+	{"kvalist",           kvalist,          "  kvalist              : Show all virtual area list in kernel space."},
 	{"kill",              killthread,       "  kill                 : Kill a thread by specifying it's ID."},
 	{"showstk",           showstk,          "  showstk              : Show kernel thread's context information." },
 	{"devlist",           devlist,          "  devlist              : List all devices' information in the system."},
@@ -554,6 +556,7 @@ _END:
 #endif
 }
 
+/* Show out all thread/process in system. */
 static DWORD cpuload(__CMD_PARA_OBJ* pcpo)
 {
 	__KERNEL_THREAD_MESSAGE msg;
@@ -561,6 +564,30 @@ static DWORD cpuload(__CMD_PARA_OBJ* pcpo)
 	msg.wCommand = STAT_MSG_SHOWSTATINFO;
 	KernelThreadManager.SendMessage((__COMMON_OBJECT*)lpStatKernelThread,
 		&msg);
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+/* Show out all virtual area in kernel space. */
+static DWORD kvalist(__CMD_PARA_OBJ* pcpo)
+{
+	__VIRTUAL_AREA_DESCRIPTOR* pVad = NULL;
+	int index = 0;
+
+	pVad = lpVirtualMemoryMgr->lpListHdr;
+	_hx_printf("    index     base        length      flags       name\r\n");
+	_hx_printf("    -------------------------------------\r\n");
+	while (pVad)
+	{
+		/* Print out one VAD. */
+		_hx_printf("    %4d      0x%08X  0x%08X  0x%08X  %s\r\n",
+			index,
+			pVad->lpStartAddr,
+			pVad->ulSize,
+			pVad->dwAllocFlags,
+			pVad->strName);
+		pVad = pVad->lpNext;
+		index++;
+	}
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

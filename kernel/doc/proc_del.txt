@@ -1,0 +1,10 @@
+Procedures when destroy a process:
+1. Destroy all synchrous objects(event/mutex/semaphore...),this will lead
+   the wakeup of all blocked thread(s);
+2. Destroy all timer objects,this makes sure that no timer message(s) to
+   be sent to thread(s);
+3. Remove all threads from sleeping queue;
+4. Destroy all opened files,devices,...;
+5. Then destroy all threads this process own;
+6. Destroy VMM;
+7. Release other resource and switch to other process;

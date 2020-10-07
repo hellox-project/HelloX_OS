@@ -21,7 +21,7 @@
 
 #define  EXIT_SHELL_COMMAND  0x1001
 
-#define  ERROR_STR   "  You entered incorrect command name."
+#define  ERROR_STR   "  Incorrect command name."
 #define  ERROR_STR2  "  Failed to process the command."
 
 typedef struct tag__SHELL_MSG_INFO
@@ -172,7 +172,7 @@ VOID ReleaseParameterObj(__CMD_PARA_OBJ* lpParamObj)
 //load history cmd to current cmd line
 static 	void LoadHisCmd(SHELL_MSG_INFO*  pShellInfo,BOOL bUp)
 {
-	CHAR   szHisCmd[CMD_MAX_LEN] = {0};
+	CHAR   szHisCmd[MAX_CMD_LEN] = {0};
 	WORD   CursorX               = 0;
 	WORD   CursorY               = 0;
 
@@ -184,13 +184,13 @@ static 	void LoadHisCmd(SHELL_MSG_INFO*  pShellInfo,BOOL bUp)
 
 	CD_GetCursorPos(&CursorX,&CursorY);
 	CD_SetCursorPos(strlen(pShellInfo->pPrompt),CursorY);
-	CD_DelString(strlen(pShellInfo->pPrompt),CursorY,CMD_MAX_LEN);
+	CD_DelString(strlen(pShellInfo->pPrompt),CursorY, MAX_CMD_LEN);
 	CD_PrintString(szHisCmd,FALSE);
 }
 
 static INT OnExecCommand(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 {
-	CHAR   szCmdBuf[CMD_MAX_LEN] = {0};		
+	CHAR   szCmdBuf[MAX_CMD_LEN] = {0};		
 	CHAR*  pCountPos             = NULL;
 	INT    nExecCount            = 1;
 	INT    i                     = 0;
@@ -263,7 +263,7 @@ static INT OnAnalyseCommands(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 	pSubCmd = strstr(pCmdPos,";");
 	while(pSubCmd)
 	{
-		CHAR   szOneCmd[CMD_MAX_LEN] = {0};		
+		CHAR   szOneCmd[MAX_CMD_LEN] = {0};		
 
 		strncpy(szOneCmd,pCmdPos,(pSubCmd-pCmdPos));
 		nRet = OnExecCommand(pShellInfo,szOneCmd);
@@ -286,12 +286,11 @@ static INT OnAnalyseCommands(SHELL_MSG_INFO*  pShellInfo,const CHAR* pCmdBuf)
 //key  msg 
 static INT OnKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE   bt )
 {
-
 	switch(bt)
 	{
 		case VK_RETURN:
 		{
-			CHAR   szCmdBuffer[CMD_MAX_LEN] = {0};			
+			CHAR   szCmdBuffer[MAX_CMD_LEN] = {0};			
 			WORD   CursorX                  = 0;
 			WORD   CursorY                  = 0;
 
@@ -354,7 +353,7 @@ static BOOL FindSub(const char*  srcstr,const char* substr)
 
 static BOOL OnAutoName(SHELL_MSG_INFO*  pShellInfo)
 {
-	CHAR   szUserInput[CMD_MAX_LEN] = {0};			
+	CHAR   szUserInput[MAX_CMD_LEN] = {0};			
 	WORD   CursorX                  = 0;
 	WORD   CursorY                  = 0;
 
@@ -366,7 +365,7 @@ static BOOL OnAutoName(SHELL_MSG_INFO*  pShellInfo)
 		pShellInfo->pNameQuery(NULL,0);
 		while(TRUE)
 		{
-			CHAR  szCmdNmae[CMD_MAX_LEN] = {0};
+			CHAR  szCmdNmae[MAX_CMD_LEN] = {0};
 						
 			if(pShellInfo->pNameQuery(szCmdNmae,sizeof(szCmdNmae)) == SHELL_QUERY_CANCEL)
 			{
@@ -381,7 +380,7 @@ static BOOL OnAutoName(SHELL_MSG_INFO*  pShellInfo)
 				}
 
 				CD_SetCursorPos(strlen(pShellInfo->pPrompt),CursorY);
-				CD_DelString(strlen(pShellInfo->pPrompt),CursorY,CMD_MAX_LEN);
+				CD_DelString(strlen(pShellInfo->pPrompt),CursorY, MAX_CMD_LEN);
 				CD_PrintString(szCmdNmae,FALSE);
 
 				break;
@@ -449,7 +448,7 @@ static BOOL OnVkKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE bt)
 		break;
 		case VK_END:
 		{
-			CHAR szCmdBuf[CMD_MAX_LEN] = {0};
+			CHAR szCmdBuf[MAX_CMD_LEN] = {0};
 
 			CursorX = strlen(pShellInfo->pPrompt);
 			CD_GetString(CursorX,CursorY,szCmdBuf,sizeof(szCmdBuf));
@@ -463,8 +462,6 @@ static BOOL OnVkKeyControl(SHELL_MSG_INFO*  pShellInfo,BYTE bt)
 			return FALSE;
 		}
 	}
-
-
 	return TRUE;
 }
 
@@ -510,11 +507,6 @@ DWORD Shell_Msg_Loop2(const char* pPrompt,__SHELL_CMD_HANDLER pCmdRoute,__SHELL_
 			case KERNEL_MESSAGE_VKEYDOWN:
 				{	
 					OnVkKeyControl(pShellInfo,bt);
-				}
-				break;
-			case KERNEL_MESSAGE_TIMER:
-				{
-					_hx_printf("Timer message received.\r\n");
 				}
 				break;
 			case KERNEL_MESSAGE_TERMINAL: 

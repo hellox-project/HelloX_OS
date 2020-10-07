@@ -52,8 +52,7 @@ VOID PrintVirtualArea(__VIRTUAL_MEMORY_MANAGER* lpMemMgr)
 /* Pre-declaration of local(member) routines. */
 static LPVOID __VirtualAlloc(__COMMON_OBJECT*, LPVOID, DWORD, DWORD, DWORD, char*, LPVOID);
 static LPVOID GetPdAddress(__COMMON_OBJECT*);
-static VOID __VirtualFree(__COMMON_OBJECT*, LPVOID);
-static VOID InsertIntoList(__COMMON_OBJECT*, __VIRTUAL_AREA_DESCRIPTOR*);
+static BOOL __VirtualFree(__COMMON_OBJECT*, LPVOID);
 static LPVOID _GetPhysicalAddress(__COMMON_OBJECT*, LPVOID);
 
 /* Initializer of Virtual Memory Manager object. */
@@ -74,9 +73,13 @@ BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 	lpManager->GetPdAddress = GetPdAddress;
 	lpManager->GetPhysicalAddress = _GetPhysicalAddress;
 	lpManager->UserMemoryCopy = __UserMemoryCopy; /* In vmm2.c file. */
-	lpManager->dwVirtualAreaNum = 0;
+	__ATOMIC_INIT(&lpManager->va_num);
 	lpManager->lpListHdr = NULL;
 	lpManager->lpTreeRoot = NULL;
+	lpManager->heap_sz = 0;
+	lpManager->sbrk = __sbrk;
+	lpManager->VirtualQuery = __VirtualQuery;
+
 #if defined(__CFG_SYS_SMP)
 	__INIT_SPIN_LOCK(lpManager->spin_lock, "vmmmgr");
 #endif
@@ -121,6 +124,7 @@ BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 #define SET(member,value) lpVad->member = value
 		SET(lpManager, lpManager);
 		SET(lpStartAddr, KMEM_KERNEL_EXCLUDE_START);
+		SET(ulSize, (KMEM_KERNEL_EXCLUDE_END - KMEM_KERNEL_EXCLUDE_START));
 		SET(lpEndAddr, (LPVOID)(KMEM_KERNEL_EXCLUDE_END - 1));
 		SET(lpNext, NULL);
 		SET(dwAccessFlags, VIRTUAL_AREA_ACCESS_RW);
@@ -133,7 +137,7 @@ BOOL VmmInitialize(__COMMON_OBJECT* lpThis)
 		INIT_ATOMIC(lpVad->Reference);
 		StrCpy((LPSTR)"Kernel_Rsved", (LPSTR)&lpVad->strName[0]);
 		/* Insert the system kernel area into virtual memory manager's list. */
-		InsertIntoList((__COMMON_OBJECT*)lpManager, lpVad);
+		InsertVirtualArea(lpManager, lpVad);
 	}
 	else
 	{
@@ -230,16 +234,13 @@ static LPVOID DoCommit(__COMMON_OBJECT* lpThis,
 
 	BUG_ON(NULL == lpThis);
 	/* This routine only process commit. */
-	if (dwAllocFlags != VIRTUAL_AREA_ALLOCATE_IOCOMMIT)
-	{
-		return NULL;
-	}
+	BUG_ON((dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK) != VIRTUAL_AREA_ALLOCATE_COMMIT);
 
 	__ENTER_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
 		/* Should search in list. */
-		lpVad = GetVaByAddr_l(lpThis, lpDesiredAddr);
+		lpVad = GetVirtualArea(lpThis, lpDesiredAddr);
 	}
 	else
 	{
@@ -266,7 +267,7 @@ static LPVOID DoCommit(__COMMON_OBJECT* lpThis,
 		goto __TERMINAL;
 	}
 	/* Reserves page table entries for this virtual area. */
-	lpVad->dwAllocFlags = VIRTUAL_AREA_ALLOCATE_COMMIT;
+	lpVad->dwAllocFlags = dwAllocFlags;
 	dwPteFlags = PTE_FLAGS_FOR_NORMAL;
 	while(dwSize)
 	{
@@ -329,7 +330,7 @@ static LPVOID DoReserve(__COMMON_OBJECT* lpThis,
 
 	/* Validate parameters. */
 	BUG_ON((NULL == lpThis) || (0 == dwSize));
-	BUG_ON(VIRTUAL_AREA_ALLOCATE_RESERVE != dwAllocFlags);
+	BUG_ON(VIRTUAL_AREA_ALLOCATE_RESERVE != (dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK));
 	lpIndexMgr = lpMemMgr->lpPageIndexMgr;
 	BUG_ON(NULL == lpIndexMgr);
 
@@ -350,15 +351,16 @@ static LPVOID DoReserve(__COMMON_OBJECT* lpThis,
 	{
 		goto __TERMINAL;
 	}
-	lpVad->lpManager       = lpMemMgr;
-	lpVad->lpStartAddr     = NULL;
-	lpVad->lpEndAddr       = NULL;
-	lpVad->lpNext          = NULL;
-	lpVad->dwAccessFlags   = dwAccessFlags;
-	lpVad->dwAllocFlags    = dwAllocFlags;
+	lpVad->lpManager = lpMemMgr;
+	lpVad->lpStartAddr = NULL;
+	lpVad->ulSize = 0;
+	lpVad->lpEndAddr = NULL;
+	lpVad->lpNext = NULL;
+	lpVad->dwAccessFlags = dwAccessFlags;
+	lpVad->dwAllocFlags = dwAllocFlags;
 	INIT_ATOMIC(lpVad->Reference);
-	lpVad->lpLeft          = NULL;
-	lpVad->lpRight         = NULL;
+	lpVad->lpLeft = NULL;
+	lpVad->lpRight = NULL;
 	if(lpVaName)
 	{
 		if (StrLen((LPSTR)lpVaName) > MAX_VA_NAME_LEN)
@@ -379,10 +381,12 @@ static LPVOID DoReserve(__COMMON_OBJECT* lpThis,
 	 * is occupied,if so,then find a new one.
 	 */
 	__ENTER_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, ulFlags);
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
 		/* Should search in the list. */
-		lpStartAddr = SearchVirtualArea_l((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
+		lpStartAddr = SearchVirtualArea((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, 
+			dwSize,
+			dwAllocFlags);
 	}
 	else
 	{
@@ -397,12 +401,13 @@ static LPVOID DoReserve(__COMMON_OBJECT* lpThis,
 	}
 
 	lpVad->lpStartAddr = lpStartAddr;
+	lpVad->ulSize = dwSize;
 	lpVad->lpEndAddr = (LPVOID)((DWORD)lpStartAddr + dwSize -1);
 	lpDesiredAddr = lpStartAddr;
 
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		InsertIntoList((__COMMON_OBJECT*)lpMemMgr, lpVad);
+		InsertVirtualArea(lpMemMgr, lpVad);
 	}
 	else
 	{
@@ -458,7 +463,7 @@ static LPVOID DoReserveAndCommit(__COMMON_OBJECT* lpThis,
 	DWORD dwPteFlags = 0;
 
 	BUG_ON((NULL == lpThis) || (0 == dwSize));
-	if (VIRTUAL_AREA_ALLOCATE_ALL != dwAllocFlags)
+	if (VIRTUAL_AREA_ALLOCATE_ALL != (dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK))
 	{
 		return NULL;
 	}
@@ -482,15 +487,16 @@ static LPVOID DoReserveAndCommit(__COMMON_OBJECT* lpThis,
 		_hx_printf("[%s]:Out of memory.\r\n",__func__);
 		goto __TERMINAL;
 	}
-	lpVad->lpManager       = lpMemMgr;
-	lpVad->lpStartAddr     = NULL;
-	lpVad->lpEndAddr       = NULL;
-	lpVad->lpNext          = NULL;
-	lpVad->dwAccessFlags   = dwAccessFlags;
-	lpVad->dwAllocFlags    = VIRTUAL_AREA_ALLOCATE_COMMIT;
+	lpVad->lpManager = lpMemMgr;
+	lpVad->lpStartAddr = NULL;
+	lpVad->ulSize = 0;
+	lpVad->lpEndAddr = NULL;
+	lpVad->lpNext = NULL;
+	lpVad->dwAccessFlags = dwAccessFlags;
+	lpVad->dwAllocFlags = dwAllocFlags;
 	INIT_ATOMIC(lpVad->Reference);
-	lpVad->lpLeft          = NULL;
-	lpVad->lpRight         = NULL;
+	lpVad->lpLeft = NULL;
+	lpVad->lpRight = NULL;
 	if(lpVaName)
 	{
 		if(StrLen((LPSTR)lpVaName) > MAX_VA_NAME_LEN)
@@ -525,9 +531,11 @@ static LPVOID DoReserveAndCommit(__COMMON_OBJECT* lpThis,
 	 */
 	lpEndAddr = lpStartAddr;
 	__ENTER_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		lpStartAddr = SearchVirtualArea_l((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
+		lpStartAddr = SearchVirtualArea((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, 
+			dwSize,
+			dwAllocFlags);
 	}
 	else
 	{
@@ -540,15 +548,16 @@ static LPVOID DoReserveAndCommit(__COMMON_OBJECT* lpThis,
 	}
 
 	lpVad->lpStartAddr = lpStartAddr;
+	lpVad->ulSize = dwSize;
 	lpVad->lpEndAddr = (LPVOID)((DWORD)lpStartAddr + dwSize - 1);
 	if (!(lpStartAddr == lpEndAddr))
 	{
 		lpDesiredAddr = lpStartAddr;
 	}
 
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		InsertIntoList((__COMMON_OBJECT*)lpMemMgr, lpVad);
+		InsertVirtualArea(lpMemMgr, lpVad);
 	}
 	else
 	{
@@ -627,7 +636,7 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	{
 		return NULL;
 	}
-	if (VIRTUAL_AREA_ALLOCATE_IOCOMMIT != dwAllocFlags)
+	if (VIRTUAL_AREA_ALLOCATE_IOCOMMIT != (dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK))
 	{
 		return NULL;
 	}
@@ -652,10 +661,11 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	}
 	lpVad->lpManager = lpMemMgr;
 	lpVad->lpStartAddr = NULL;
+	lpVad->ulSize = 0;
 	lpVad->lpEndAddr = NULL;
 	lpVad->lpNext = NULL;
 	lpVad->dwAccessFlags = dwAccessFlags;
-	lpVad->dwAllocFlags = VIRTUAL_AREA_ALLOCATE_IOCOMMIT; //dwAllocFlags;
+	lpVad->dwAllocFlags = dwAllocFlags;
 	INIT_ATOMIC(lpVad->Reference);
 	lpVad->lpLeft = NULL;
 	lpVad->lpRight = NULL;
@@ -697,9 +707,11 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	 */
 	lpEndAddr = lpStartAddr;    
 	__ENTER_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		lpStartAddr = SearchVirtualArea_l((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
+		lpStartAddr = SearchVirtualArea((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, 
+			dwSize,
+			dwAllocFlags);
 	}
 	else
 	{
@@ -712,15 +724,16 @@ static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	}
 
 	lpVad->lpStartAddr = lpStartAddr;
+	lpVad->ulSize = dwSize;
 	lpVad->lpEndAddr = (LPVOID)((DWORD)lpStartAddr + dwSize - 1);
 	if (!(lpStartAddr == lpEndAddr))
 	{
 		lpDesiredAddr = lpStartAddr;
 	}
 
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		InsertIntoList((__COMMON_OBJECT*)lpMemMgr, lpVad);
+		InsertVirtualArea(lpMemMgr, lpVad);
 	}
 	else
 	{
@@ -794,7 +807,7 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	{
 		return NULL;
 	}
-	BUG_ON(VIRTUAL_AREA_ALLOCATE_IO != dwAllocFlags);
+	BUG_ON(VIRTUAL_AREA_ALLOCATE_IO != (dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK));
 
 	/* Obtain the page index manager object. */
 	lpIndexMgr = lpMemMgr->lpPageIndexMgr;
@@ -820,15 +833,16 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	{
 		goto __TERMINAL;
 	}
-	lpVad->lpManager       = lpMemMgr;
-	lpVad->lpStartAddr     = NULL;
-	lpVad->lpEndAddr       = NULL;
-	lpVad->lpNext          = NULL;
-	lpVad->dwAccessFlags   = dwAccessFlags;
-	lpVad->dwAllocFlags    = dwAllocFlags;
+	lpVad->lpManager = lpMemMgr;
+	lpVad->lpStartAddr = NULL;
+	lpVad->ulSize = 0;
+	lpVad->lpEndAddr = NULL;
+	lpVad->lpNext = NULL;
+	lpVad->dwAccessFlags = dwAccessFlags;
+	lpVad->dwAllocFlags = dwAllocFlags;
 	INIT_ATOMIC(lpVad->Reference);
-	lpVad->lpLeft          = NULL;
-	lpVad->lpRight         = NULL;
+	lpVad->lpLeft = NULL;
+	lpVad->lpRight = NULL;
 	if(lpVaName)
 	{
 		/* Set the virtual area's name. */
@@ -849,10 +863,12 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	 * is occupied,if so,then find a new one.
 	 */
 	__ENTER_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
 		/* Should search in the list. */
-		lpStartAddr = SearchVirtualArea_l((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, dwSize);
+		lpStartAddr = SearchVirtualArea((__COMMON_OBJECT*)lpMemMgr, lpStartAddr, 
+			dwSize,
+			dwAllocFlags);
 	}
 	else
 	{
@@ -866,11 +882,12 @@ static LPVOID DoIoMap(__COMMON_OBJECT* lpThis,
 	}
 
 	lpVad->lpStartAddr = lpStartAddr;
+	lpVad->ulSize = dwSize;
 	lpVad->lpEndAddr = (LPVOID)((DWORD)lpStartAddr + dwSize -1);
 
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		InsertIntoList((__COMMON_OBJECT*)lpMemMgr, lpVad);
+		InsertVirtualArea(lpMemMgr, lpVad);
 	}
 	else
 	{
@@ -915,6 +932,35 @@ __TERMINAL:
 	return lpDesiredAddr;
 }
 
+/* 
+ * Helper routine to validate allocation flags value,
+ * invoked by VirtualAlloc routine. 
+ */
+static BOOL ValidateAllocFlags(unsigned long ulAllocFlags)
+{
+	if (0 == (ulAllocFlags & VIRTUAL_AREA_ALLOCATE_SPACE_MASK))
+	{
+		return TRUE;
+	}
+	if (VIRTUAL_AREA_ALLOCATE_USERSPACE == (ulAllocFlags & VIRTUAL_AREA_ALLOCATE_SPACE_MASK))
+	{
+		return TRUE;
+	}
+	if (VIRTUAL_AREA_ALLOCATE_IOSPACE == (ulAllocFlags & VIRTUAL_AREA_ALLOCATE_SPACE_MASK))
+	{
+		return TRUE;
+	}
+	if (VIRTUAL_AREA_ALLOCATE_KERNELSPACE == (ulAllocFlags & VIRTUAL_AREA_ALLOCATE_SPACE_MASK))
+	{
+		return TRUE;
+	}
+	if (VIRTUAL_AREA_ALLOCATE_STACK == (ulAllocFlags & VIRTUAL_AREA_ALLOCATE_SPACE_MASK))
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * Allocate virtual memory region from current process's
  * lineary space.It will call the corresponding worker
@@ -928,7 +974,13 @@ static LPVOID __VirtualAlloc(__COMMON_OBJECT* lpThis,
 	char* lpVaName,
 	LPVOID lpReserved)
 {
-	switch(dwAllocFlags)
+	/* Validates allocation flags value. */
+	if (!ValidateAllocFlags(dwAllocFlags))
+	{
+		return NULL;
+	}
+	
+	switch(dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK)
 	{
 	case VIRTUAL_AREA_ALLOCATE_IO:
 		return DoIoMap(lpThis,
@@ -974,51 +1026,6 @@ static LPVOID __VirtualAlloc(__COMMON_OBJECT* lpThis,
 		return NULL;
 	}
 	return NULL;
-}
-
-//
-//A helper routine,used to delete a virtual area descriptor object from list.
-//
-static VOID DelVaFromList(__COMMON_OBJECT* lpThis,__VIRTUAL_AREA_DESCRIPTOR* lpVad)
-{
-	__VIRTUAL_MEMORY_MANAGER*      lpMemMgr  = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
-	__VIRTUAL_AREA_DESCRIPTOR*     lpNext    = NULL;
-	__VIRTUAL_AREA_DESCRIPTOR*     lpPrev    = NULL;
-
-	if((NULL == lpThis) || (NULL == lpVad)) //Invalidate parameters.
-		return;
-	lpPrev = lpMemMgr->lpListHdr;
-	lpNext = lpMemMgr->lpListHdr;
-	if(NULL == lpPrev)
-	{
-		/* There is not any VAD in list. */
-		return;
-	}
-	if(lpPrev == lpVad)
-	{
-		/* The vad to be deleted is the first one. */
-		lpMemMgr->lpListHdr = lpPrev->lpNext;
-		lpMemMgr->dwVirtualAreaNum --;
-		return;
-	}
-	while(lpPrev)
-	{
-		if (lpVad == lpPrev)
-		{
-			break;
-		}
-		lpNext = lpPrev;
-		lpPrev = lpPrev->lpNext;
-	}
-	if (NULL == lpPrev)
-	{
-		/* Can not find the virtual area descriptor object in list. */
-		return;
-	}
-	/* Delete the VAD object. */
-	lpNext->lpNext = lpPrev->lpNext;
-	lpMemMgr->dwVirtualAreaNum --;
-	return;
 }
 
 //
@@ -1104,9 +1111,13 @@ static VOID ReleaseIoMap(__COMMON_OBJECT* lpThis,__VIRTUAL_AREA_DESCRIPTOR* lpVa
  * This routine frees the virtual area allocated by VirtualAlloc,and
  * frees any resource,such as physical memory page,page table entries,
  * and virtual area descriptor objects,associated with the virtual
- * area object.
+ * area object,then returns TRUE.
+ * If no virtual area found that matches the user specified lpVirtualAddr,
+ * then FALSE will be returned.
+ * The start address of the matching VA must be same as virtual address
+ * user specified(lpVirtualAddr).
  */
-static VOID __VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
+static BOOL __VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 {
 	__VIRTUAL_MEMORY_MANAGER* lpMemMgr = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
 	__VIRTUAL_AREA_DESCRIPTOR* lpVad = NULL;
@@ -1117,9 +1128,9 @@ static VOID __VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 	BUG_ON(NULL == lpThis);
 
 	__ENTER_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
 	{
-		lpVad = GetVaByAddr_l(lpThis, lpVirtualAddr);
+		lpVad = GetVirtualArea(lpThis, lpVirtualAddr);
 	}
 	else
 	{
@@ -1131,13 +1142,18 @@ static VOID __VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 		__LEAVE_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
 		goto __TERMINAL;
 	}
-	/*
-	 * Now,we have got the virtual area descriptor object,so,
-	 * first delete it from list or tree.
-	 */
-	if (lpMemMgr->dwVirtualAreaNum < SWITCH_VA_NUM)
+
+	/* Check if the specified address is same as VA's start addr. */
+	if (lpVad->lpStartAddr != lpVirtualAddr)
 	{
-		DelVaFromList(lpThis, lpVad);
+		__LEAVE_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
+		goto __TERMINAL;
+	}
+
+	/* Delete it from list or tree. */
+	if (lpMemMgr->va_num < SWITCH_VA_NUM)
+	{
+		DeleteVirtualArea(lpMemMgr, lpVad);
 	}
 	else
 	{
@@ -1145,9 +1161,10 @@ static VOID __VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 	}
 
 	/* According to different allocating type,to do the different actions. */
-	switch(lpVad->dwAllocFlags)
+	switch(lpVad->dwAllocFlags & VIRTUAL_AREA_ALLOCATE_FLAG_MASK)
 	{
 	case VIRTUAL_AREA_ALLOCATE_COMMIT:
+	case VIRTUAL_AREA_ALLOCATE_ALL:
 		ReleaseCommit(lpThis, lpVad);
 		/* Release the memory occupied by virtual area descriptor.*/
 		KMemFree((LPVOID)lpVad, KMEM_SIZE_TYPE_ANY, 0);
@@ -1165,13 +1182,15 @@ static VOID __VirtualFree(__COMMON_OBJECT* lpThis,LPVOID lpVirtualAddr)
 		KMemFree((LPVOID)lpVad, KMEM_SIZE_TYPE_ANY, 0);
 		break;
 	default:
+		/* Should not reach here. */
+		BUG_ON(TRUE);
 		break;
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(lpMemMgr->spin_lock, dwFlags);
 	bResult = TRUE;
 
 __TERMINAL:
-	return;
+	return bResult;
 }
 
 /* This routine returns the physical address of page directory. */

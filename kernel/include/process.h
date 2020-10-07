@@ -5,22 +5,6 @@
 //    Module Funciton           : 
 //                                Process mechanism related data types and
 //                                operations.
-//                                As a embedded operating system,it's no
-//                                strong need to implement process,since it
-//                                should be supported by VMM mechanism,and
-//                                VMM feature is not supported in most
-//                                embedded OS.But a clear difference is exist
-//                                between traditional embedded OS and HelloX
-//                                that HelloX will support more powerful smart
-//                                devices than legacy embedded OS,and JamVM
-//                                also requires some process features,such as
-//                                signaling and TLS,so we implements part of
-//                                process mechanism here,to support current's
-//                                application.
-//                                It's worth noting that the architecture of
-//                                HelloX's process framework is extensible and
-//                                add new features in the future according to
-//                                real application.
 //    Last modified Author      :
 //    Last modified Date        :
 //    Last modified Content     :
@@ -215,24 +199,45 @@
 #define __PROCESS_H__
 
 #include "types.h"
-#include "commobj.h"
+#include "commobj.h" /* For __COMMON_OBJECT. */
 
 /* 
- * Kernel stack's default size. 
- * Each process has one kernel stack,is used
- * when trap into kernel mode.
+ * Link list node used to contain all kernel objects 
+ * belong to one process.
  */
-#define DEFAULT_USER_STACK_SIZE 8192
-
-//Link list node used to contain all kernel objects belong to on process.
 typedef struct tag__KOBJ_LIST_NODE{
 	__COMMON_OBJECT*            pKernelObject;
 	struct tag__KOBJ_LIST_NODE* prev;
 	struct tag__KOBJ_LIST_NODE* next;
 } __KOBJ_LIST_NODE;
 
-//Process object,the main object to manage a process in HelloX,like task
-//control block in tradition OS.
+/* Maximal handle number in one handle array element. */
+#define MAX_HANDLE_OBJECT_PTR 16
+
+/* Handle array element to contain handles. */
+typedef struct tag__HANDLE_ARRAY_ELEMENT {
+	__COMMON_OBJECT* objectPtr[MAX_HANDLE_OBJECT_PTR];
+	struct tag__HANDLE_ARRAY_ELEMENT* pNext;
+}__HANDLE_ARRAY_ELEMENT;
+
+/* 
+ * Handle array object. 
+ * Each process has one handle array object,all kernel
+ * objects this process own will be put into this array,
+ * and the index of the object ptr will be returned to 
+ * user,to avoid user space seeing kernel object directly.
+ */
+typedef struct tag__HANDLE_ARRAY {
+	__HANDLE_ARRAY_ELEMENT* pRoot;
+	unsigned long maxHandleValue;
+	unsigned long elementNum;
+	unsigned long handleNum;
+}__HANDLE_ARRAY;
+
+/* 
+ * Process object,the main object to manage a process 
+ * under HelloX,like task control block in tradition OS.
+ */
 BEGIN_DEFINE_OBJECT(__PROCESS_OBJECT)
 	INHERIT_FROM_COMMON_OBJECT
 	INHERIT_FROM_COMMON_SYNCHRONIZATION_OBJECT
@@ -275,6 +280,9 @@ BEGIN_DEFINE_OBJECT(__PROCESS_OBJECT)
 #if defined(__CFG_SYS_SMP)
 	__SPIN_LOCK spin_lock;
 #endif
+
+	/* Handle array of this process. */
+	__HANDLE_ARRAY handleArray;
 END_DEFINE_OBJECT(__PROCESS_OBJECT)
 
 //Process status.
@@ -367,6 +375,20 @@ BEGIN_DEFINE_OBJECT(__PROCESS_MANAGER)
 	 * through the maner of system call. 
 	 */
 	void (*ProcessHalfBottom)();
+
+	/* Routines to operate handle array of process. */
+	/*
+	 * Save the specified kernel object into handle
+	 * array and returns the index(HANDLE) of the slot.
+	 */
+	__HANDLE (*GetHandle)(__PROCESS_OBJECT* pProcess, __COMMON_OBJECT* pObject);
+
+	/* Close a handle value. */
+	int (*CloseHandle)(__PROCESS_OBJECT* pProcess, __HANDLE handle);
+
+	/* Return the kernel object given it's handle. */
+	__COMMON_OBJECT* (*GetObjectByHandle)(__PROCESS_OBJECT* pProcess, __HANDLE handle);
+
 END_DEFINE_OBJECT(__PROCESS_MANAGER)
 
 /* A macro to get the current process object. */

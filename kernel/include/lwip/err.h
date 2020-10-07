@@ -68,6 +68,7 @@ typedef s8_t err_t;
 #define ERR_CONN       -13   /* Not connected.           */
 #define ERR_ARG        -14   /* Illegal argument.        */
 #define ERR_IF         -15   /* Low-level netif error    */
+#define ERR_BIND       -16   /* Binding error.           */
 #define ERR_UNKNOWN    -32   /* Unknown error.           */
 
 #ifdef LWIP_DEBUG

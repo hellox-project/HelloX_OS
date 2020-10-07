@@ -31,9 +31,8 @@
 #include "ktmgr2.h"
 #include "kmemmgr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* For SYSTEM_INFO structure. */
+#include "sysinfo.h"
 
 /* Interrupt handler's pro-type. */
 typedef BOOL (*__INTERRUPT_HANDLER)(LPVOID lpEsp,LPVOID);
@@ -59,12 +58,12 @@ typedef BOOL (*__INTERRUPT_HANDLER)(LPVOID lpEsp,LPVOID);
 
 //Interrupt object.
 BEGIN_DEFINE_OBJECT(__INTERRUPT_OBJECT)
-    INHERIT_FROM_COMMON_OBJECT
-	struct tag__INTERRUPT_OBJECT*           lpPrevInterruptObject;
-    struct tag__INTERRUPT_OBJECT*           lpNextInterruptObject;
-	UCHAR                         ucVector;
-	BOOL                          (*InterruptHandler)(LPVOID lpParam,LPVOID lpEsp);
-	LPVOID                        lpHandlerParam;
+INHERIT_FROM_COMMON_OBJECT
+	struct tag__INTERRUPT_OBJECT* lpPrevInterruptObject;
+    struct tag__INTERRUPT_OBJECT* lpNextInterruptObject;
+	UCHAR ucVector;
+	BOOL (*InterruptHandler)(LPVOID lpParam,LPVOID lpEsp);
+	LPVOID lpHandlerParam;
 END_DEFINE_OBJECT(__INTERRUPT_OBJECT)
 
 /* Interrupt object's initializing routine. */
@@ -96,8 +95,10 @@ BEGIN_DEFINE_OBJECT(__TIMER_OBJECT)
 	DWORD                       dwTimerFlags;
 END_DEFINE_OBJECT(__TIMER_OBJECT)
 
-BOOL  TimerInitialize(__COMMON_OBJECT* lpThis);    //Initializing routine of timer object.
-BOOL  TimerUninitialize(__COMMON_OBJECT* lpThis);  //Uninitializing routine of timer object.
+/* Initializing routine of timer object. */
+BOOL TimerInitialize(__COMMON_OBJECT* lpThis);
+/* Uninitializing routine of timer object. */
+BOOL TimerUninitialize(__COMMON_OBJECT* lpThis);
 
 //Determine interrupt types:interrupt or exception.
 //In some platform,only exception exists,so we must adjust the target platform
@@ -119,16 +120,17 @@ BEGIN_DEFINE_OBJECT(__INTERRUPT_SLOT)
 	__INTERRUPT_OBJECT* lpFirstIntObject; //First interrupt object belong to this slot.
 END_DEFINE_OBJECT(__INTERRUPT_SLOT)
 
-//Contains interrupt related statistics information for a specified interrupt vector.
+/*
+ * Contains interrupt related statistics 
+ * information for a specified interrupt vector.
+ */
 BEGIN_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
     DWORD dwTotalInt;
 	DWORD dwSuccHandledInt;
 	DWORD dwTotalIntObject;
 END_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
 
-//
-//The following is the definition of system object.
-//
+/* System object's definition. */
 BEGIN_DEFINE_OBJECT(__SYSTEM)
     __PRIORITY_QUEUE* lpTimerQueue;
 	__INTERRUPT_SLOT InterruptSlotArray[MAX_INTERRUPT_VECTOR];
@@ -216,7 +218,13 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 	VOID (*DisconnectInterrupt)(__COMMON_OBJECT* lpThis,
 		__COMMON_OBJECT* lpIntObj);
 
-	/* Set a timer. */
+	/* 
+	 * Set a timer. 
+	 * Note: DirectTimerHandler is invoked in context
+	 * of system clock interrupt,and also in holding of
+	 * system's spinlock,so it must be short and effective
+	 * enough.
+	 */
 	__COMMON_OBJECT* (*SetTimer)(__COMMON_OBJECT* lpThis,
 		__KERNEL_THREAD_OBJECT* lpKernelThread,
 		DWORD dwTimerID,
@@ -229,8 +237,11 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 		__COMMON_OBJECT* lpTimer);
 
 	/* Get interrupt statistics information. */
-	BOOL(*GetInterruptStat)(__COMMON_OBJECT* lpThis, UCHAR ucVector,
+	BOOL (*GetInterruptStat)(__COMMON_OBJECT* lpThis, UCHAR ucVector,
 		__INTERRUPT_VECTOR_STAT* pStat);
+
+	/* Return system level information. */
+	BOOL (*GetSystemInfo)(__SYSTEM_INFO* pSysInfo);
 END_DEFINE_OBJECT(__SYSTEM)
 
 /* 
@@ -254,12 +265,6 @@ END_DEFINE_OBJECT(__SYSTEM)
 /* The one shot timer is fired. */
 #define TIMER_FLAGS_FIRED       0x00000008
 
-/**************************************************************************************
-***************************************************************************************
-***************************************************************************************
-***************************************************************************************
-**************************************************************************************/
-
 /* Global system object,only one in system. */
 extern __SYSTEM System;
 
@@ -275,9 +280,5 @@ extern __PERF_RECORDER  TimerIntPr;
  * It is mainly invoked by mini kernel.
  */
 VOID GeneralIntHandler(DWORD dwVector,LPVOID lpEsp);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  //__SYSTEM_H__

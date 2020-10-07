@@ -3,18 +3,12 @@
 //    Original Date             : Mar,09 2005
 //    Module Name               : memmgr.h
 //    Module Function           : 
-//                                This module countains memory manager pro-type's
-//                                definition.
+//                                This module countains paged physical memory 
+//                                management functions,objects,and data structures.
 //    Last modified Author      : Garry
 //    Last modified Date        : Jun 11 of 2013
 //    Last modified Content     :
-//                                1. MemoryManager's definition and it's related declaration,
-//                                   are deleted.MenoryManager is an old and obsoleted object,
-//                                   it's function only worked a short period of time before
-//                                   Hello China version 1.0.
-//                                   MemoryManager related code can be found in version V1.75 or
-//                                   even old versions,in this file.
-//                                2.
+//                                1.
 //    Lines number              :
 //***********************************************************************/
 
@@ -24,10 +18,11 @@
 /* For __CFG_SYS_SMP. */
 #include "config.h"
 
-//
-//The definition of __PAGE_FRAME object.
-//This object is used to manage a page frame.
-//
+/*
+ * __PAGE_FRAME object.
+ * Each physical page frame corresponding to one
+ * of this object.
+ */
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME)
     struct tag__PAGE_FRAME* lpNextFrame;
     struct tag__PAGE_FRAME* lpPrevFrame;
@@ -35,45 +30,45 @@ BEGIN_DEFINE_OBJECT(__PAGE_FRAME)
 	DWORD dwFrameFlag;
 END_DEFINE_OBJECT(__PAGE_FRAME)
 
-/* One page frame's size,in current version is 4K. */
-#define PAGE_FRAME_SIZE     4096
+/* Alias of arch page frame size. */
+#define PAGE_FRAME_SIZE ARCH_PAGE_FRAME_SIZE
 
+/* Generic page frame flags. */
 #define PAGE_FRAME_FLAG_READONLY  0x00000001
 #define PAGE_FRAME_FLAG_WRITE     0x00000002
 #define PAGE_FRAME_READWRITE      0x00000003
 #define PAGE_FRAME_EXECUTABLE     0x00000004
 
-#define PAGE_FRAME_BLOCK_SIZE_4K    1024*4
-#define PAGE_FRAME_BLOCK_SIZE_8K    1024*8
-#define PAGE_FRAME_BLOCK_SIZE_16K   1024*16
-#define PAGE_FRAME_BLOCK_SIZE_32K   1024*32
-#define PAGE_FRAME_BLOCK_SIZE_64K   1024*64
-#define PAGE_FRAME_BLOCK_SIZE_128K  1024*128
-#define PAGE_FRAME_BLOCK_SIZE_256K  1024*256
-#define PAGE_FRAME_BLOCK_SIZE_512K  1024*512
-#define PAGE_FRAME_BLOCK_SIZE_1024K 1024*1024
-#define PAGE_FRAME_BLOCK_SIZE_2048K 1024*2048
-#define PAGE_FRAME_BLOCK_SIZE_4096K 1024*4096
-#define PAGE_FRAME_BLOCK_SIZE_8192K 1024*8192
+/* Block size of each allocation, from paging pool. */
+#define PAGE_FRAME_BLOCK_SIZE_4K    (1024 * 4)
+#define PAGE_FRAME_BLOCK_SIZE_8K    (1024 * 8)
+#define PAGE_FRAME_BLOCK_SIZE_16K   (1024 * 16)
+#define PAGE_FRAME_BLOCK_SIZE_32K   (1024 * 32)
+#define PAGE_FRAME_BLOCK_SIZE_64K   (1024 * 64)
+#define PAGE_FRAME_BLOCK_SIZE_128K  (1024 * 128)
+#define PAGE_FRAME_BLOCK_SIZE_256K  (1024 * 256)
+#define PAGE_FRAME_BLOCK_SIZE_512K  (1024 * 512)
+#define PAGE_FRAME_BLOCK_SIZE_1024K (1024 * 1024)
+#define PAGE_FRAME_BLOCK_SIZE_2048K (1024 * 2048)
+#define PAGE_FRAME_BLOCK_SIZE_4096K (1024 * 4096)
+#define PAGE_FRAME_BLOCK_SIZE_8192K (1024 * 8192)
 
 #define PAGE_FRAME_BLOCK_NUM  12
 
-/* Aligment at 4k boundary. */
-#define DEFAULT_PAGE_ALIGMENT 4096
-
-//
-//The definition of Page Frame Block object.
-//This object is used to describe one page frame block.
-//
+/*
+ * Page Frame Block object.
+ * This object is used to describe one page frame block.
+ */
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME_BLOCK)
     __PAGE_FRAME*         lpNextBlock;
     __PAGE_FRAME*         lpPrevBlock;
 	DWORD*                lpdwBitmap;
 END_DEFINE_OBJECT(__PAGE_FRAME_BLOCK)
 
-//
-//The definition of object Page Frame Manager.
-//
+/*
+ * Page frame manager object.
+ * All physical memory pages are managed by this object.
+ */
 BEGIN_DEFINE_OBJECT(__PAGE_FRAME_MANAGER)
     __PAGE_FRAME* lpPageFrameArray;
     __PAGE_FRAME_BLOCK FrameBlockArray[PAGE_FRAME_BLOCK_NUM];
@@ -105,14 +100,11 @@ END_DEFINE_OBJECT(__PAGE_FRAME_MANAGER)
  */
 #define MEM_MAX_PAGEPOOL_LEN (1024 * 1024 * 1024)
 
-/*************************************************************************
-**************************************************************************
-**************************************************************************
-*************************************************************************/
-
-//
-//Declare the global object PageFrameManager.
-//
+/*
+ * Global page frame manager object.
+ * Only one page frame manager object in system,since
+ * HelloX can support the UMA architecture.
+ */
 #ifdef __CFG_SYS_VMM
 extern __PAGE_FRAME_MANAGER PageFrameManager;
 #endif

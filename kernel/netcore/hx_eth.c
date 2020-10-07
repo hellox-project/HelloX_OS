@@ -133,11 +133,11 @@ char* ethmac_ntoa(uint8_t* mac)
 #define MAC_STRING_FORMAT "%02X-%02X-%02X-%02X-%02X-%02X"
 	_hx_sprintf(mac_string,
 		MAC_STRING_FORMAT,
-		mac[0],
-		mac[1],
-		mac[2],
-		mac[3],
-		mac[4],
-		mac[5]);
+		(unsigned char)mac[0],
+		(unsigned char)mac[1],
+		(unsigned char)mac[2],
+		(unsigned char)mac[3],
+		(unsigned char)mac[4],
+		(unsigned char)mac[5]);
 	return mac_string;
 }

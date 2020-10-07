@@ -308,7 +308,7 @@ __THREAD_HOOK_ROUTINE SetThreadHook(DWORD dwHookType,
 	__THREAD_HOOK_ROUTINE lpRoutine)
 {
 	__THREAD_HOOK_ROUTINE lpOldRoutine = NULL;
-	DWORD                 dwFlags;
+	DWORD dwFlags;
 
 	/* Can not be interrupted,use KernelThreadManager's spin lock for protection. */
 	__ENTER_CRITICAL_SECTION_SMP(KernelThreadManager.spin_lock, dwFlags);

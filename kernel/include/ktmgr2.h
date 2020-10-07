@@ -61,7 +61,14 @@ BEGIN_DEFINE_OBJECT(__SEMAPHORE)
 	 * kernel thread.
 	 */
 	BOOL (*SetSemaphoreCount)(__COMMON_OBJECT*,DWORD,DWORD); 
-	BOOL (*ReleaseSemaphore)(__COMMON_OBJECT*,DWORD* pdwPrevCount);
+	/* 
+	 * Release occupied semaphore resource,previous counter
+	 * before this routine called will be returned.
+	 * Rescheduling will not be triggered if bNoResched set,
+	 * this is mainly used in interrupt context of critical
+	 * sections,since rescheduling is not allowed.
+	 */
+	BOOL (*ReleaseSemaphore)(__COMMON_OBJECT*, DWORD* pdwPrevCount, BOOL bNoResched);
 	DWORD (*WaitForThisObjectEx)(__COMMON_OBJECT*,DWORD dwMillionSecond,DWORD* pdwWait);
 END_DEFINE_OBJECT(__SEMAPHORE)
 

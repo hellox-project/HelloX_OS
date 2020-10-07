@@ -14,11 +14,14 @@
 
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
+
 #include "types.h"
+#include "memxfer.h"
 
 /*
- * System call numbers.The dispatch routine(SyscallHandler) will dispatch
- * each system call to specific service routine by using this value.
+ * System call numbers.The dispatch routine(SyscallHandler) 
+ * will dispatch each system call to the corresponding service 
+ * routine using this value.
  */
 #define SYSCALL_CREATEKERNELTHREAD    0x01     //CreateKernelThread.
 #define SYSCALL_DESTROYKERNELTHREAD   0x02     //DestroyKernelThread.
@@ -64,11 +67,17 @@
 #define SYSCALL_SETCURSORPOS          0x3C
 #define SYSCALL_TERMINATEKERNELTHREAD 0x3D
 #define SYSCALL_GOTOPREV              0x3E
-#define SYSCALL_PEEKMESSAGE           0x3F     //Peek the message queue.
+#define SYSCALL_PEEKMESSAGE           0x3F /* Peek message queue. */
 #define SYSCALL_PROCESSHALFBOTTOM     0x40
 #define SYSCALL_CREATEUSERTHREAD      0x41
 #define SYSCALL_DESTROYUSERTHREAD     0x42
 #define SYSCALL_TERMINATEUSERTHREAD   0x43
+#define SYSCALL_BRK                   0x44
+#define SYSCALL_SBRK                  0x45
+#define SYSCALL_GETSYSTEMINFO         0x46
+#define SYSCALL_VIRTUALQUERY          0x47
+#define SYSCALL_GETCURRENTTHREADID    0x48
+#define SYSCALL_TESTPARAMXFER         0x49
 
  /* Syscall IDs for I/O subsystem. */
 #define SYSCALL_CREATEFILE            0x101     //CreateFile.
@@ -106,12 +115,16 @@
 #define SYSCALL_LISTEN                0x20C     //listen
 #define SYSCALL_RECVFROM              0x20D     //recv from
 #define SYSCALL_SENDTO                0x20E     //send to
+#define SYSCALL_GETGENIFINFO          0x20F     //GetGenifInfo
+#define SYSCALL_ADDGENIFADDRESS       0x210     //AddGenifAddress
+#define SYSCALL_GETNETWORKINFO        0x211     //GetNetworkInfo
 
 /* Maximal system call ID. */
 #define SYSCALL_MAX_COUNT             0x400
 
 /* 
- * Dispatch entry in other kernel module,used to dispatch a system call
+ * Dispatch entry in other kernel module.
+ * used to dispatch a system call
  * to it's service routine.
  */
 typedef BOOL (*__SYSCALL_DISPATCH_ENTRY)(LPVOID,LPVOID);

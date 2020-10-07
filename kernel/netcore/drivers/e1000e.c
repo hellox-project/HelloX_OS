@@ -3,8 +3,8 @@
 //    Original Date             : Oct 10,2018
 //    Module Name               : e1000e.h
 //    Module Funciton           : 
-//                                Source code of E1000E ethernet controller's driver,
-//                                for HelloX OS.
+//                                Source code of E1000E ethernet controller's 
+//                                driver, for HelloX OS.
 //    Last modified Author      :
 //    Last modified Date        :
 //    Last modified Content     :
@@ -341,6 +341,7 @@ static int net_i825xx_tx_poll(i825xx_device_t *priv, void *pkt, uint16_t length)
 	return retry_times;
 }
 
+#if 0
 /* 
  * Submit a tx request to NIC. 
  * It try to find a free tx descriptor and link the frame
@@ -422,6 +423,7 @@ __TERMINAL:
 	}
 	return bResult;
 }
+#endif
 
 /* Check if the tx descriptors queue is empty. */
 static BOOL txq_empty(i825xx_device_t* priv)
@@ -452,19 +454,12 @@ static BOOL txq_full(i825xx_device_t* priv)
 * transmit in tx interrupt handler,where tx descriptors
 * will be released and available.
 */
-static BOOL _submit_tx_request(i825xx_device_t* priv, __ETHERNET_BUFFER* pBuffer)
+static BOOL _submit_tx_request(i825xx_device_t* priv, __ETHERNET_BUFFER* pSendingPkt)
 {
 	BOOL bResult = FALSE;
-	__ETHERNET_BUFFER* pSendingPkt = NULL;
 	unsigned long ulFlags;
 
-	BUG_ON((NULL == priv) || (NULL == pBuffer));
-	/* Clone a new ethernet buffer from the given one. */
-	pSendingPkt = EthernetManager.CloneEthernetBuffer(pBuffer);
-	if (NULL == pSendingPkt)
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON((NULL == priv) || (NULL == pSendingPkt));
 
 	/* Atomic operation. */
 	__ENTER_CRITICAL_SECTION_SMP(priv->spin_lock, ulFlags);
@@ -505,7 +500,7 @@ static BOOL _submit_tx_request(i825xx_device_t* priv, __ETHERNET_BUFFER* pBuffer
 		* It will be transmited in tx interrupt handler when tx
 		* hardware resource is available.
 		*/
-		if (priv->txlist_size >= MAX_ETH_SENDINGQUEUESZ / 4)
+		if (priv->txlist_size >= MAX_ETH_SENDINGQUEUESZ)
 		{
 			/* Sending list full,give up. */
 			priv->txq_full_times++;
@@ -530,21 +525,25 @@ static BOOL _submit_tx_request(i825xx_device_t* priv, __ETHERNET_BUFFER* pBuffer
 __TERMINAL:
 	if (!bResult)
 	{
-		/*
-		* May caused by tx list full,just destroy
-		* the new cloned ethernet buffer.
-		*/
 		if (pSendingPkt)
 		{
-			EthernetManager.DestroyEthernetBuffer(pSendingPkt);
+			/*
+			 * May caused by pending tx list full, show a warning.
+			 */
+			uint32_t tdh = mmio_read32(i825xx_REG_TDH);
+			uint32_t tdt = mmio_read32(i825xx_REG_TDT);
+			__LOG("%s:Tx queue full[card = %d,tx_tail = %d,old_tail = %d,tdh = %d,tdt = %d].\r\n",
+				__func__,
+				priv->cardnum,
+				priv->tx_tail,
+				priv->old_tail,
+				tdh, tdt);
 		}
-		uint32_t tdh = mmio_read32(i825xx_REG_TDH);
-		uint32_t tdt = mmio_read32(i825xx_REG_TDT);
-		__LOG("%s:clone eth_buf failed or txq full[tx_tail = %d,old_tail = %d,tdh = %d, tdt = %d].\r\n",
-			__func__,
-			priv->tx_tail,
-			priv->old_tail,
-			tdh, tdt);
+		else
+		{
+			/* Caused by cloning ethernet buffer failure. */
+			__LOG("%s:Clone eth buff failed.\r\n", __func__);
+		}
 	}
 	return bResult;
 }
@@ -662,7 +661,7 @@ static void _process_rx_pkt(__ETHERNET_INTERFACE* pEthInt, unsigned char* packet
 		return;
 	}
 
-	pEthBuff = EthernetManager.CreateEthernetBuffer(length);
+	pEthBuff = EthernetManager.CreateEthernetBuffer(length, 0);
 	if (NULL == pEthBuff)
 	{
 		_hx_printf("  %s:failed to create eth_buff.\r\n", __func__);
@@ -818,7 +817,10 @@ static BOOL i825xx_interrupt_handler(LPVOID *ctx, LPVOID pIntParam)
 	icr = mmio_read32(priv->mmio_address + 0xC0);
 	if (0 == (icr & 0xFFFF))
 	{
-		/* No interrupt pending,maybe raised by other NICs. */
+		/* 
+		 * No interrupt of this NIC pending,maybe raised 
+		 * by other NIC or devices with same interrupt line.
+		 */
 		return FALSE;
 	}
 
@@ -969,37 +971,84 @@ static BOOL Ethernet_Ctrl(__ETHERNET_INTERFACE* pInt, DWORD dwOperation, LPVOID 
 }
 
 /*
-* Send a ethernet frame out through ethernet interface.
-* The frame's content is in pInt's sending buffer.
+* Send a ethernet frame out through a user specified 
+* ethernet interface.
+* The frame to be sent is contained in interface's
+* builtin ethernet buffer or a user specified ethernet
+* buffer object,so the sending procedure is combined
+* by two parts:
+* 1. Builtin bufffer: A new ethernet buffer is cloned
+*    from the builtin buffer,and send out then;
+* 2. User specified buffer object,validate it and send
+*    out directly.
 */
-static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt)
+static BOOL Ethernet_SendFrame(__ETHERNET_INTERFACE* pInt, __ETHERNET_BUFFER* pOutFrame)
 {
 	i825xx_device_t* dev = NULL;
 	__ETHERNET_BUFFER* pEthBuff = NULL;
+	__ETHERNET_BUFFER* pNewBuff = NULL;
 	BOOL bResult = FALSE;
 
 	if (NULL == pInt)
 	{
 		goto __TERMINAL;
 	}
-	pEthBuff = &pInt->SendBuffer;
-	//No data to send or exceed the MTU(include ethernet frame header).
-	if ((0 == pEthBuff->act_length) || (pEthBuff->act_length > (ETH_DEFAULT_MTU + ETH_HEADER_LEN)))
-	{
-		goto __TERMINAL;
-	}
 
-	//Invoke sending routine of NIC to do actual transmition.
-	dev = pInt->pIntExtension;
-	//if (0 == net_i825xx_tx_poll(dev, pEthBuff->Buffer, pEthBuff->act_length))
-	if(!_submit_tx_request(dev,pEthBuff))
+	/* Two scenarios. */
+	if (NULL == pOutFrame)
 	{
-		goto __TERMINAL;
+		/* Frame stored in builtin buffer. */
+		pEthBuff = &pInt->SendBuffer;
+		/* Validates the ethernet buffer. */
+		if ((0 == pEthBuff->act_length) || 
+			(pEthBuff->act_length > (ETH_DEFAULT_MTU + ETH_HEADER_LEN)))
+		{
+			goto __TERMINAL;
+		}
+
+		/* Clone a new one from the builtin. */
+		pNewBuff = EthernetManager.CloneEthernetBuffer(pEthBuff);
+		if (NULL == pNewBuff)
+		{
+			goto __TERMINAL;
+		}
+
+		/* Drop to link. */
+		dev = pInt->pIntExtension;
+		if (!_submit_tx_request(dev, pNewBuff))
+		{
+			goto __TERMINAL;
+		}
+		pInt->ifState.dwFrameSendSuccess += 1;
+		bResult = TRUE;
 	}
-	pInt->ifState.dwFrameSendSuccess += 1;
-	bResult = TRUE;
+	else {
+		/* User specified a buffer object. */
+		if ((0 == pOutFrame->act_length) ||
+			(pOutFrame->act_length > (ETH_DEFAULT_MTU + ETH_HEADER_LEN)))
+		{
+			goto __TERMINAL;
+		}
+
+		/* Drop to link. */
+		dev = pInt->pIntExtension;
+		if (!_submit_tx_request(dev, pOutFrame))
+		{
+			goto __TERMINAL;
+		}
+		pInt->ifState.dwFrameSendSuccess += 1;
+		bResult = TRUE;
+	}
 
 __TERMINAL:
+	if (!bResult)
+	{
+		/* Destroy the new cloned ethernet buffer if failure. */
+		if ((NULL == pOutFrame) && pNewBuff)
+		{
+			EthernetManager.DestroyEthernetBuffer(pNewBuff);
+		}
+	}
 	return bResult;
 }
 

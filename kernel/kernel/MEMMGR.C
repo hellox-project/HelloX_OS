@@ -55,16 +55,13 @@ static DWORD FrameBlockSize[] = {
 	(DWORD)(address) % PAGE_FRAME_SIZE) : (DWORD)(address))
 
 /* Set one bit in bit map,the bit's position is determined by dwBitPos. */
-static VOID SetBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
+static VOID SetBitmapBit(DWORD* lpdwBitmap, DWORD dwBitPos)
 {
-	DWORD*    lpdwMap    = NULL;
-	DWORD     dwPos      = 0;
-	DWORD     dwBitZero  = 0x00000001;
+	DWORD* lpdwMap = NULL;
+	DWORD dwPos = 0;
+	DWORD dwBitZero = 0x00000001;
 
-	if (NULL == lpdwBitmap)
-	{
-		return;
-	}
+	BUG_ON(NULL == lpdwBitmap);
 
 	lpdwMap  = lpdwBitmap;
 	lpdwMap += dwBitPos / (sizeof(DWORD)*8);  //Now,lpdwMap pointes to the
@@ -76,16 +73,13 @@ static VOID SetBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 }
 
 /* Clear one bit in bit map,the bit's position is determined by dwBitPos. */
-static VOID ClearBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
+static VOID ClearBitmapBit(DWORD* lpdwBitmap, DWORD dwBitPos)
 {
-	DWORD*    lpdwMap    = NULL;
-	DWORD     dwPos      = 0;
-	DWORD     dwBitZero  = 0x00000001;
+	DWORD* lpdwMap = NULL;
+	DWORD dwPos = 0;
+	DWORD dwBitZero = 0x00000001;
 
-	if (NULL == lpdwBitmap)
-	{
-		return;
-	}
+	BUG_ON(NULL == lpdwBitmap);
 
 	lpdwMap  = lpdwBitmap;
 	lpdwMap += dwBitPos / (sizeof(DWORD)*8);  //Now,lpdwMap pointes to the
@@ -97,26 +91,23 @@ static VOID ClearBitmapBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 }
 
 /*
- * The routine tests the bit whose position is indicated by dwBitPos,if the bit is one,then
- * returns TRUE,else,returns FALSE.
+ * The routine tests the bit whose position is indicated by 
+ * dwBitPos,if the bit is one,then returns TRUE,else,returns FALSE.
  */
 static BOOL TestBit(DWORD* lpdwBitmap,DWORD dwBitPos)
 {
-	DWORD*                 lpdwMap     = NULL;
-	DWORD                  dwBitZero   = 0x00000001;
-	DWORD                  dwPos       = 0;
+	DWORD* lpdwMap = NULL;
+	DWORD dwBitZero = 0x00000001;
+	DWORD dwPos = 0;
 
-	if (NULL == lpdwBitmap)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpdwBitmap);
 
 	lpdwMap = lpdwBitmap;
 	dwPos   = dwBitPos;
 
 	lpdwMap += dwPos / (sizeof(DWORD) * 8);  //Now,lpdwMap pointes to the double word
 	                                         //that the bit to be tested exists.
-	dwPos      %= (sizeof(DWORD) * 8);
+	dwPos %= (sizeof(DWORD) * 8);
 	dwBitZero <<= dwPos;
 
 	if (*lpdwMap & dwBitZero)  //Bit is one.
@@ -388,19 +379,22 @@ static BOOL __Initialize(__COMMON_OBJECT* pThis)
 	return bResult;
 }
 
-//
-//FrameAlloc routine of PageFrameManager.
-//The routine does the following:
-// 1. Try to find a page frame block statisfy the request;
-// 2. If can not find this kind of block,return NULL;
-// 3. If can find this kind of block,then split the block into more small block(if
-//    need),and insert the more small block into appropriate block list;
-// 4. Update the appropriate bit of bitmap;
-// 5. Return the result.
-//
-//CAUTION: The dwSize parameter must equal to the corresponding parameter of
-//FrameFree routine of Page Frame Manager.
-//
+/*
+ * Allocates one or more page frames from paged 
+ * physical memory pool. dwSize specifies the desired
+ * size of physical paged memory.
+ * The routine does the following:
+ *  1. Try to find a page frame block statisfy the request;
+ *  2. If can not find this kind of block,return NULL;
+ *  3. If can find this kind of block,then splitter the block 
+ *     into more small block(if need),and insert the block
+*      with small size into appropriate block list;
+ *  4. Update the appropriate bit of bitmap;
+ *  5. Return the result,i.e,the physical address of page frames.
+ * 
+ * The dwSize parameter must equal to the corresponding parameter of
+ * FrameFree routine in page frame manager object.
+ */
 static LPVOID __FrameAlloc(__COMMON_OBJECT* lpThis,
 	DWORD dwSize,
 	DWORD dwPageFrameFlag)
@@ -460,12 +454,13 @@ static LPVOID __FrameAlloc(__COMMON_OBJECT* lpThis,
 		goto __TERMINAL;
 	}
 
-	//
-	//Now,we have found the block list countains the feasible block,so we 
-	//delete the first block from the block list,spit it into more small
-	//blocks,insert the less block into appropriate block list,and return
-	//to the caller.
-	//
+	/*
+	 * Now,we have found the block list countains the 
+	 * feasible block,so we delete the first block from 
+	 * the block list,spit it into more smaller blocks,
+	 * insert the less block into appropriate block list,
+	 * and return to the caller.
+	 */
 	lpPageFrame = lpFrameManager->FrameBlockArray[j].lpNextBlock;
 	if (NULL != lpPageFrame->lpNextFrame)
 	{
@@ -708,9 +703,9 @@ __PAGE_FRAME_MANAGER PageFrameManager = {
 #if defined(__CFG_SYS_SMP)
 	SPIN_LOCK_INIT_VALUE,                  //spin_lock.
 #endif
-	__Initialize,                            //Initialize routine.
-	__FrameAlloc,                            //FrameAlloc routine.
-	__FrameFree                              //FrameFree routine.
+	__Initialize,                          //Initialize routine.
+	__FrameAlloc,                          //FrameAlloc routine.
+	__FrameFree                            //FrameFree routine.
 };
 
 #endif

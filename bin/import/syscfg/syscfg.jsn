@@ -1,0 +1,15 @@
+{
+"pppoeMain" :  {
+    "session_name" : "hellox",
+    "username" : "01012187137",
+    "password" : "858137",
+    "authentication" : "pap",
+    "bear_if" : "g1000_if_0"
+},
+"dhcpd" : {
+    "default_if_no" : "3",
+    "default_if_1" : "g1000_if_3",
+    "default_if_2" : "g1000_if_2",
+    "default_if_3" : "g1000_if_1"
+}
+}

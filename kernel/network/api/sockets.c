@@ -1241,7 +1241,6 @@ return_copy_fdsets:
     *exceptset = lexceptset;
   }
 
-
   return nready;
 }
 

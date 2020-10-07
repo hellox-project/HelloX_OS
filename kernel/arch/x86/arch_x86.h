@@ -25,6 +25,9 @@
 #define DEFAULT_CACHE_LINE_SIZE 64
 #define ARCH_DMA_MINALIGN DEFAULT_CACHE_LINE_SIZE
 
+/* Page frame's size in x86. */
+#define ARCH_PAGE_FRAME_SIZE 4096
+
 /* 
  * Unaligned memory accessing.
  * The following macros must be adapted according CPU
@@ -130,10 +133,62 @@ __asm{    \
 	nop   \
 }
 
+/* 
+ * Extension parameter block of system call to contain input 
+ * parameters, handles the scenario that has more than 5
+ * parameters.
+ * At most 16 extension parameters can be supported in current
+ * version,it shoud be enough.
+ */
+typedef struct SYSCALL_PARAM_EXTENSION_BLOCK{
+	uint32_t ext_param0;
+	uint32_t ext_param1;
+	uint32_t ext_param2;
+	uint32_t ext_param3;
+	uint32_t ext_param4;
+	uint32_t ext_param5;
+	uint32_t ext_param6;
+	uint32_t ext_param7;
+}__SYSCALL_PARAM_EXTENSION_BLOCK;
+
 /*
- * System call parameter block,used to transfer parameters between user mode
- * and kernel mode.
- * It's just same as the stack frame established when interrupt raise.
+ * System call parameter block,used to transfer parameters 
+ * between user mode and kernel mode.
+ * It's a memory block just same as the stack frame established 
+ * when interrupt raise, ret_ptr contains a pointer to a variable
+ * in user mode thread's stack that used to contain return value.
+ * The stack frame after int(x) instruction as follow:
+ * 	uint32_t ebp (return value's ptr)
+ *  uint32_t edi (param0)
+ *  uint32_t esi (param1)
+ *  uint32_t edx (param2)
+ *  uint32_t ecx (param3)
+ *  uint32_t ebx (param4,extblock's ptr)
+ *  uint32_t eax (syscall num)
+ *  uint32_t eip (ret addr)
+ *  uint32_t cs  (cs)
+ *  uint32_t eflags
+ *  ......
+ *
+ * At most 5 parameters under x86 can be transfered from user
+ * to kernel directly,a dedicated parameter extension block
+ * is allocated in caller(syscall's agent) stack to be used
+ * contain ALL parameters if the syscall accepts more than
+ * 5 input parameters,the parameter extension block is pointed
+ * by param_4(ebx) in directly block.
+ * Usage examples:
+ * 1. If the syscall only has 5 or less parameters,just put
+ *    all parameters into general registers except eax/ebp,
+ *    and raise the system call;
+ * 2. If the syscall has 6 or more parameters,then:
+ *    2.1 Define a syscall parameter extension block in
+ *        user thread's stack(local variable),set each
+ *        parameter properly;
+ *    2.2 Move the parameter extension block's base addr
+ *        into ebx(directly param4),and raise the syscall;
+ *    2.3 The handler of system call retrieve extension
+ *        block from param_0,and get all input parameters
+ *        from the block and invoke actual kernel mode routine.
  */
 typedef struct SYSCALL_PARAM_BLOCK {
 	union {
@@ -159,23 +214,9 @@ typedef struct SYSCALL_PARAM_BLOCK {
 	union {
 		uint32_t param;
 		uint32_t ebx;
+		__SYSCALL_PARAM_EXTENSION_BLOCK* pExtBlock;
 	}param_4;
 	uint32_t syscall_num;
-#if 0
-	DWORD ebp;
-	DWORD edi;
-	DWORD esi;
-	DWORD edx;
-	DWORD ecx;
-	DWORD ebx;
-	DWORD eax;
-	DWORD eip;
-	DWORD cs;
-	DWORD eflags;
-	DWORD dwSyscallNum;
-	LPVOID lpRetValue;
-	LPVOID lpParams[1];
-#endif
 }__SYSCALL_PARAM_BLOCK;
 
 #endif //__ARCH_X86_H__

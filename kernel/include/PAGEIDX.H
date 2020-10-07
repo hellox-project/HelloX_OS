@@ -106,7 +106,15 @@
 #define PD_SIZE            1024  //How many page directory entries in one page directory,
                                  //for Intel CPU.
 #define PT_SIZE            1024  //How many page table entries in one page table,for IA32.
-#define PAGE_SIZE          4096  //One page memory's size,4K.
+
+/* Alias of arch page frame size. */
+#define PAGE_SIZE ARCH_PAGE_FRAME_SIZE
+
+/* Check if a given address is page aligned. */
+#ifndef PAGE_ALIGNED
+#define PAGE_ALIGNED(addr) ((unsigned long)addr % PAGE_SIZE == 0)
+#endif
+
 /* First level PD's total size of the linear space. */
 #define PD_FULL_SIZE (1024 * sizeof(__PDE))
 
