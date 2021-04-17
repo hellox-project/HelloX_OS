@@ -20,6 +20,7 @@
 #include <commobj.h>
 #include <heap.h>
 #include <hellocn.h>
+#include <stdio.h>
 
 /* Change semaphore's default counter value. */
 static BOOL SetSemaphoreCount(__COMMON_OBJECT* pSemaphore, DWORD dwMaxSem, DWORD dwCurrSem)
@@ -428,12 +429,38 @@ BOOL SemUninitialize(__COMMON_OBJECT* pSemaphore)
 //**
 //**------------------------------------------------------------------------------------------------
 
-//WaitForMailboxObject's implementation,this is a empty implementation since it's not allowed
-//to wait a mailbox object.
-//static
+/*
+ * WaitForMailboxObject's implementation,this is a empty implementation 
+ * since it's not allowed to wait a mailbox object.
+ */
 DWORD WaitForMailboxObject(__COMMON_OBJECT* pMailbox)
 {
 	return OBJECT_WAIT_FAILED;
+}
+
+/* Show out a mailbox object for kernel's debugging. */
+void __ShowMailboxObject(__COMMON_OBJECT* pObject)
+{
+	__MAIL_BOX* pMailbox = (__MAIL_BOX*)pObject;
+	unsigned long getq_num = 0, sendq_num = 0;
+	unsigned long object_id, max_msg_num, curr_msg_num;
+	unsigned long ulFlags;
+
+	BUG_ON(NULL == pMailbox);
+	/* Lock the mailbox object and get all it's state. */
+	__ENTER_CRITICAL_SECTION_SMP(pMailbox->spin_lock, ulFlags);
+	getq_num = pMailbox->lpGettingQueue->dwCurrElementNum;
+	sendq_num = pMailbox->lpSendingQueue->dwCurrElementNum;
+	object_id = pMailbox->dwObjectID;
+	max_msg_num = pMailbox->dwMaxMessageNum;
+	curr_msg_num = pMailbox->dwCurrMessageNum;
+	__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, ulFlags);
+
+	/* Then show out. */
+	_hx_printf("Mailbox: id[%d], max_msg_num[%d], curr_msg_num[%d], gq_num[%d], sq_num[%d]\r\n",
+		object_id, max_msg_num, curr_msg_num,
+		getq_num, sendq_num);
+	return;
 }
 
 /*
@@ -510,30 +537,26 @@ __TERMINAL:
 
 /*
  * Get a message from mailbox.
- * The kernel thread will be blocked if no message in box,tiemout will be returned
- * if dwMillionSecond is set and no message available after this period of time.
- * The processing time from the call emit to successful return will be set if pdwWait
- * is not NULL.
+ * The kernel thread will be blocked if no message in box,
+ * tiemout will be returned if dwMillionSecond is set and 
+ * no message available after this period of time.
+ * The processing time from the call emit to successful return 
+ * will be set if pdwWait is not NULL.
  */
-static DWORD _GetMail(__COMMON_OBJECT* pMailboxObj, LPVOID* ppMessage, DWORD dwMillionSecond, DWORD* pdwWait)
+static DWORD _GetMail(__COMMON_OBJECT* pMailboxObj, LPVOID* ppMessage, 
+	DWORD dwMillionSecond, DWORD* pdwWait)
 {
-	__MAIL_BOX*               pMailbox = (__MAIL_BOX*)pMailboxObj;
-	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
-	unsigned long             dwFlags, dwFlags1;
-	DWORD                     dwCalledTick = System.dwClockTickCounter;
-	DWORD                     dwTimeOutTick = 0;
-	DWORD                     dwTimeoutWait = 0;
-	DWORD                     dwRetValue = OBJECT_WAIT_FAILED;
+	__MAIL_BOX* pMailbox = (__MAIL_BOX*)pMailboxObj;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned long dwFlags, dwFlags1;
+	DWORD dwCalledTick = System.dwClockTickCounter;
+	DWORD dwTimeOutTick = 0;
+	DWORD dwTimeoutWait = 0;
+	DWORD dwRetValue = OBJECT_WAIT_FAILED;
 
 	//Parameters checking.
-	if ((NULL == pMailbox) || (NULL == ppMessage))
-	{
-		goto __TERMINAL;
-	}
-	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON((NULL == pMailbox) || (NULL == ppMessage));
+	BUG_ON(pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE);
 
 	//Calculate the timeout tick counter.
 	if (WAIT_TIME_INFINITE != dwMillionSecond)
@@ -552,8 +575,11 @@ __TRY_AGAIN:
 	__ENTER_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
 	if (pMailbox->dwCurrMessageNum)
 	{
-		//There maybe blocked kernel thread waiting to send mail to box,so wake up one
-		//if there exist.
+		/*
+		 * There maybe blocked kernel thread(s) waiting 
+		 * to send mail to box,so wake up ALL of them since at least
+		 * one slot is free after get mail.
+		 */
 		if (pMailbox->dwCurrMessageNum == pMailbox->dwMaxMessageNum)
 		{
 			pKernelThread = (__KERNEL_THREAD_OBJECT*)pMailbox->lpSendingQueue->GetHeaderElement(
@@ -573,12 +599,12 @@ __TRY_AGAIN:
 					(__COMMON_OBJECT*)pMailbox->lpSendingQueue, NULL);
 			}
 		}
-		//Return the first message and update status variables.
+		/* Return the first message. */
 		*ppMessage = pMailbox->pMessageArray[pMailbox->dwMessageHeader].pMessage;
 		pMailbox->dwCurrMessageNum--;
 		pMailbox->dwMessageHeader += 1;
 		pMailbox->dwMessageHeader = pMailbox->dwMessageHeader % pMailbox->dwMaxMessageNum;
-		//Return waiting time if necessary.
+		/* Return waiting time if necessary. */
 		if (pdwWait)
 		{
 			*pdwWait = (System.dwClockTickCounter - dwCalledTick) * SYSTEM_TIME_SLICE;
@@ -616,9 +642,9 @@ __TRY_AGAIN:
 		pKernelThread = __CURRENT_KERNEL_THREAD;
 		__ENTER_CRITICAL_SECTION_SMP(pKernelThread->spin_lock, dwFlags1);
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
-		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
+		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
-		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX_GET;
 		//Add into Mailbox's getting queue.
 		pMailbox->lpGettingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpGettingQueue,
@@ -637,7 +663,7 @@ __TRY_AGAIN:
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
-		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX_GET;
 		//Add current kernel thread into mailbox's getting queue.
 		pMailbox->lpGettingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpGettingQueue,
@@ -734,25 +760,20 @@ static VOID __SendMail(__MAIL_BOX* pMailbox, LPVOID pMessage, DWORD dwPriority)
  * even in case of failure(queue full,timeout flag will be returned).
  * The waited time will be returned if pdwWait is set(not NULL).
  */
-static DWORD _SendMail(__COMMON_OBJECT* pMailboxObj, LPVOID pMessage, DWORD dwPriority, DWORD dwMillionSecond, DWORD* pdwWait)
+static DWORD _SendMail(__COMMON_OBJECT* pMailboxObj, LPVOID pMessage, DWORD dwPriority, 
+	DWORD dwMillionSecond, DWORD* pdwWait)
 {
-	__MAIL_BOX*               pMailbox = (__MAIL_BOX*)pMailboxObj;
-	__KERNEL_THREAD_OBJECT*   pKernelThread = NULL;
-	unsigned long             dwFlags, dwFlags1;
-	DWORD                     dwCalledTick = System.dwClockTickCounter;
-	DWORD                     dwTimeOutTick = 0;
-	DWORD                     dwTimeoutWait = 0;
-	DWORD                     dwRetValue = OBJECT_WAIT_FAILED;
+	__MAIL_BOX* pMailbox = (__MAIL_BOX*)pMailboxObj;
+	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	unsigned long dwFlags, dwFlags1;
+	DWORD dwCalledTick = System.dwClockTickCounter;
+	DWORD dwTimeOutTick = 0;
+	DWORD dwTimeoutWait = 0;
+	DWORD dwRetValue = OBJECT_WAIT_FAILED;
 
 	//Parameters checking.
-	if (NULL == pMailbox)
-	{
-		goto __TERMINAL;
-	}
-	if (pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON(NULL == pMailbox);
+	BUG_ON(pMailbox->dwObjectSignature != KERNEL_OBJECT_SIGNATURE);
 
 	/*
 	 * Calculate the timeout tick counter,when the operation
@@ -813,7 +834,7 @@ __TRY_AGAIN:
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;  //Set waiting flag.
 		pKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
-		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX_PUT;
 		/* Add into Mailbox's sending queue. */
 		pMailbox->lpSendingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpSendingQueue,
@@ -832,7 +853,7 @@ __TRY_AGAIN:
 		pKernelThread->dwWaitingStatus &= ~OBJECT_WAIT_MASK;
 		pKernelThread->dwWaitingStatus |= OBJECT_WAIT_WAITING;
 		pKernelThread->dwThreadStatus = KERNEL_THREAD_STATUS_BLOCKED;
-		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX;
+		pKernelThread->ucAligment = KERNEL_THREAD_WAITTAG_MAILBOX_PUT;
 		//Add current kernel thread into mailbox's getting queue.
 		pMailbox->lpSendingQueue->InsertIntoQueue(
 			(__COMMON_OBJECT*)pMailbox->lpSendingQueue,

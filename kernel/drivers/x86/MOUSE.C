@@ -211,7 +211,9 @@ BOOL MouseDrvEntry(__DRIVER_OBJECT* lpDriverObject)
 	__DEVICE_OBJECT*  lpDevObject = NULL;
 	BOOL              bResult     = FALSE;
 
-	g_hIntHandler = ConnectInterrupt(MouseIntHandler,
+	g_hIntHandler = ConnectInterrupt(
+		"int_mouse",
+		MouseIntHandler,
 		NULL,
 		MOUSE_INT_VECTOR);
 	if(NULL == g_hIntHandler)  //Can not connect interrupt.

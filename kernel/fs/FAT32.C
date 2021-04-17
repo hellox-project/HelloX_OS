@@ -142,49 +142,49 @@ __TERMINAL:
 	return bResult;
 }
 
-//Initialize FAT32 partition,this routine is called by CheckPartition,which is then
-//called by CreateDevice of IOManager.
+/*
+ * Initialize FAT32 partition,this routine is invoked
+ * by CheckPartition routine, which is then called by 
+ * CreateDevice of IOManager, when a partition object 
+ * is registered into system. 
+ */
 static __FAT32_FS* InitFat32(__COMMON_OBJECT* pPartObj)
 {
 	__DEVICE_OBJECT*  pPartition  = (__DEVICE_OBJECT*)pPartObj;
 	__FAT32_FS*       pFatObject = NULL;
 	BYTE              buff[SECTOR_SIZE];
 
-	if(NULL == pPartition)
+	BUG_ON(NULL == pPartition);
+
+	if(DEVICE_OBJECT_SIGNATURE != pPartition->dwSignature)
 	{
 		goto __TERMINAL;
 	}
 
-	//Check the validity of partition device object.
-	if(DEVICE_OBJECT_SIGNATURE != pPartition->dwSignature)  //Invalid signature.
-	{
-		goto __TERMINAL;
-	}
-
+	/* Load and analyze the 1st sector. */
 	if(!ReadDeviceSector(pPartObj,
-		0,
-		1,
-		buff))
+		0, 1, buff))
 	{
-		PrintLine("Can not read sector 0.");
+		_hx_printf("[%s]Can not read sector 0.\r\n", __func__);
 		goto __TERMINAL;
 	}
 	pFatObject = (__FAT32_FS*)CREATE_OBJECT(__FAT32_FS);
-	if(NULL == pFatObject)  //Can not create FAT32 object.
+	if(NULL == pFatObject)
 	{
 		goto __TERMINAL;
 	}
-	pFatObject->pPartition = pPartObj;    //Very important.
-	//Initialize the FAT32 file system.
+	pFatObject->pPartition = pPartObj;
+	/* Initialize the FAT32 file system. */
 	if(!Fat32Init(pFatObject,buff))
 	{
-		PrintLine("Can not initialize the FAT32 file system.");
-		RELEASE_OBJECT(pFatObject);       //Release it.
+		_hx_printf("[%s]Init FAT fs fail.\r\n", __func__);
+		RELEASE_OBJECT(pFatObject);
 		pFatObject = NULL;
 		goto __TERMINAL;
 	}
-	GetVolumeLbl(pFatObject,pFatObject->VolumeLabel);  //This operation may failed,but we no
-	                                                   //need to concern it.
+
+	/* Load volume label. */
+	GetVolumeLbl(pFatObject,pFatObject->VolumeLabel);
 	DumpFat32(pFatObject);
 __TERMINAL:
 	return pFatObject;
@@ -301,69 +301,67 @@ static BOOL _CreateDirectory(__COMMON_OBJECT* lpDev,
 	dwDirCluster <<= 16;
 	dwDirCluster +=  DirShortEntry.wFirstClusLow;
 	
-
-	return CreateFatDir((__FAT32_FS*)pFatDevice->lpDevExtension,	dwDirCluster,SubDirName,FILE_ATTR_DIRECTORY);
+	return CreateFatDir((__FAT32_FS*)pFatDevice->lpDevExtension, 
+		dwDirCluster,SubDirName,FILE_ATTR_DIRECTORY);
 }
 
-//Implementation of CreateFile for FAT file system.
+/* Open a file object. */
 static __COMMON_OBJECT* FatDeviceOpen(__COMMON_OBJECT* lpDrv,
-									  __COMMON_OBJECT* lpDev,
-									  __DRCB* lpDrcb)   //Open file.
+	__COMMON_OBJECT* lpDev,
+	__DRCB* lpDrcb)
 {
-	__FAT32_FILE*       pFat32File    = NULL;
-	__FAT32_FS*         pFat32Fs      = NULL;
-	__COMMON_OBJECT*    pFileDevice   = NULL;
+	__FAT32_FILE*       pFat32File = NULL;
+	__FAT32_FS*         pFat32Fs = NULL;
+	__COMMON_OBJECT*    pFileDevice = NULL;
 	CHAR                FileName[MAX_FILE_NAME_LEN];
 	__FAT32_SHORTENTRY  ShortEntry;
-	DWORD               dwDirClus     = 0;
-	DWORD               dwDirOffset   = 0;
+	DWORD               dwDirClus = 0;
+	DWORD               dwDirOffset = 0;
 	DWORD               dwFlags;
-	static CHAR         NameIndex     = 0;
-	BOOL                bResult       = FALSE;
+	static CHAR         NameIndex = 0;
+	BOOL                bResult = FALSE;
 	CHAR                FileDevName[16];
 
-	if((NULL == lpDrv) || (NULL == lpDev))
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON((NULL == lpDrv) || (NULL == lpDev));
+
 	pFat32Fs = (__FAT32_FS*)(((__DEVICE_OBJECT*)lpDev)->lpDevExtension);
-	//strcpy(FileName,(LPSTR)lpDrcb->lpInputBuffer);
-	StrCpy((LPSTR)lpDrcb->lpInputBuffer,FileName);
+	StrCpy((LPSTR)lpDrcb->lpInputBuffer, FileName);
 	ToCapital(FileName);
-	if(!GetDirEntry(pFat32Fs,&FileName[0],&ShortEntry,&dwDirClus,&dwDirOffset))
-	{		
+	if (!GetDirEntry(pFat32Fs, &FileName[0], &ShortEntry, &dwDirClus, &dwDirOffset))
+	{
 		goto __TERMINAL;
 	}
-	
-	if(FILE_ATTR_DIRECTORY & ShortEntry.FileAttributes)  //Is a directory.
+
+	if (FILE_ATTR_DIRECTORY & ShortEntry.FileAttributes)
 	{
+		/* Target file is directory. */
 		goto __TERMINAL;
 	}
 	//Create a file object.
 	pFat32File = (__FAT32_FILE*)CREATE_OBJECT(__FAT32_FILE);
-	if(NULL == pFat32File)
+	if (NULL == pFat32File)
 	{
 		goto __TERMINAL;
 	}
-	pFat32File->Attributes     = ShortEntry.FileAttributes;
-	pFat32File->dwClusOffset   = 0;
-	pFat32File->bInRoot        = FALSE;          //Caution,not check currently.
-	pFat32File->dwCurrClusNum  = ((DWORD)ShortEntry.wFirstClusHi << 16)
+	pFat32File->Attributes = ShortEntry.FileAttributes;
+	pFat32File->dwClusOffset = 0;
+	pFat32File->bInRoot = FALSE;          //Caution,not check currently.
+	pFat32File->dwCurrClusNum = ((DWORD)ShortEntry.wFirstClusHi << 16)
 		+ (DWORD)ShortEntry.wFirstClusLow;
-	pFat32File->dwCurrPos      = 0;
-	pFat32File->dwFileSize     = ShortEntry.dwFileSize;
-	pFat32File->dwOpenMode     = lpDrcb->dwInputLen;     //dwInputLen is used to contain open mode.
-	pFat32File->dwShareMode    = lpDrcb->dwOutputLen;    //dwOutputLen is used to contain share mode.
+	pFat32File->dwCurrPos = 0;
+	pFat32File->dwFileSize = ShortEntry.dwFileSize;
+	pFat32File->dwOpenMode = lpDrcb->dwInputLen;     //dwInputLen is used to contain open mode.
+	pFat32File->dwShareMode = lpDrcb->dwOutputLen;    //dwOutputLen is used to contain share mode.
 	pFat32File->dwStartClusNum = pFat32File->dwCurrClusNum;
-	pFat32File->pFileSystem    = pFat32Fs;
-	pFat32File->pPartition     = pFat32Fs->pPartition;   //CAUTION!!!
-	pFat32File->dwParentClus   = dwDirClus;              //Save parent directory's information.
+	pFat32File->pFileSystem = pFat32Fs;
+	pFat32File->pPartition = pFat32Fs->pPartition;   //CAUTION!!!
+	pFat32File->dwParentClus = dwDirClus;              //Save parent directory's information.
 	pFat32File->dwParentOffset = dwDirOffset;
-	pFat32File->pNext          = NULL;
-	pFat32File->pPrev          = NULL;
+	pFat32File->pNext = NULL;
+	pFat32File->pPrev = NULL;
 	//Now insert the file object to file system object's file list.
 	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
-	if(pFat32Fs->pFileList == NULL)  //Not any file object in list yet.
+	if (pFat32Fs->pFileList == NULL)  //Not any file object in list yet.
 	{
 		pFat32Fs->pFileList = pFat32File;
 		pFat32File->pNext = NULL;
@@ -380,9 +378,9 @@ static __COMMON_OBJECT* FatDeviceOpen(__COMMON_OBJECT* lpDrv,
 	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	//Now create file device object.
 	//strcpy(FileDevName,FAT32_FILE_NAME_BASE);
-	StrCpy(FAT32_FILE_NAME_BASE,FileDevName);
+	StrCpy(FAT32_FILE_NAME_BASE, FileDevName);
 	FileDevName[13] += NameIndex;
-	NameIndex ++;
+	NameIndex++;
 	pFileDevice = (__COMMON_OBJECT*)IOManager.CreateDevice((__COMMON_OBJECT*)&IOManager,
 		FileDevName,
 		DEVICE_TYPE_FILE,
@@ -391,19 +389,19 @@ static __COMMON_OBJECT* FatDeviceOpen(__COMMON_OBJECT* lpDrv,
 		DEVICE_BLOCK_SIZE_ANY,
 		pFat32File,
 		(__DRIVER_OBJECT*)lpDrv);
-	if(NULL == pFileDevice)
+	if (NULL == pFileDevice)
 	{
 		goto __TERMINAL;
 	}
 	bResult = TRUE;
 __TERMINAL:
-	if(!bResult)  //The transaction has failed.
+	if (!bResult)
 	{
-		if(pFat32File)
+		if (pFat32File)
 		{
 			RELEASE_OBJECT(pFat32File);
 		}
-		if(pFileDevice)
+		if (pFileDevice)
 		{
 			IOManager.DestroyDevice((__COMMON_OBJECT*)&IOManager,
 				(__DEVICE_OBJECT*)pFileDevice);
@@ -413,38 +411,38 @@ __TERMINAL:
 	return pFileDevice;
 }
 
-//Implementation of DeviceClose routine.
+/* Close a file object. */
 static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
-							__COMMON_OBJECT* lpDev,
-							__DRCB* lpDrcb)
+	__COMMON_OBJECT* lpDev,
+	__DRCB* lpDrcb)
 {
-	__DEVICE_OBJECT*        pDeviceObject    = (__DEVICE_OBJECT*)lpDev;
-	__FAT32_FS*             pFat32Fs         = NULL;
-	__FAT32_FILE*           pFileObject      = NULL;
+	__DEVICE_OBJECT*        pDeviceObject = (__DEVICE_OBJECT*)lpDev;
+	__FAT32_FS*             pFat32Fs = NULL;
+	__FAT32_FILE*           pFileObject = NULL;
 	unsigned long ulFlags;
 
-	if((NULL == pDeviceObject) || (NULL == lpDrcb))
+	if ((NULL == pDeviceObject) || (NULL == lpDrcb))
 	{
 		return 0;
 	}
 	pFileObject = (__FAT32_FILE*)pDeviceObject->lpDevExtension;
-	pFat32Fs    = pFileObject->pFileSystem;
+	pFat32Fs = pFileObject->pFileSystem;
 	//Delete the fat32 file object from file system.
 	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, ulFlags);
-	if((pFileObject->pPrev == NULL) && (pFileObject->pNext == NULL))
+	if ((pFileObject->pPrev == NULL) && (pFileObject->pNext == NULL))
 	{
 		pFat32Fs->pFileList = NULL;
 	}
 	else
 	{
-		if(pFileObject->pPrev == NULL)  //This is the first object in file list.
+		if (pFileObject->pPrev == NULL)  //This is the first object in file list.
 		{
 			pFat32Fs->pFileList = pFileObject->pNext;
 			pFileObject->pNext->pPrev = NULL;
 		}
 		else  //Not the fist file in list.
 		{
-			if(NULL == pFileObject->pNext)  //This is the last one in list.
+			if (NULL == pFileObject->pNext)  //This is the last one in list.
 			{
 				pFileObject->pPrev->pNext = NULL;
 			}
@@ -460,7 +458,7 @@ static DWORD FatDeviceClose(__COMMON_OBJECT* lpDrv,
 	RELEASE_OBJECT(pFileObject);
 
 	//Destroy file device object.
-	IOManager.DestroyDevice((__COMMON_OBJECT*)&IOManager,pDeviceObject);
+	IOManager.DestroyDevice((__COMMON_OBJECT*)&IOManager, pDeviceObject);
 
 	return 0;
 }
@@ -702,8 +700,14 @@ __FIND:
 	return bResult;
 }
 
-//Implementation of _fat32FindFirstFile.
-static __COMMON_OBJECT* _fat32FindFirstFile(__COMMON_OBJECT* lpThis,CHAR*  pszFileName,FS_FIND_DATA* pFindData)
+/* 
+ * Begin of the iteration of dump a directory.
+ * FindFirstFile will return the find handle, then
+ * FindNextFile could be invoked to get all files
+ * under the directory.
+ */
+static __COMMON_OBJECT* _fat32FindFirstFile(__COMMON_OBJECT* lpThis, 
+	CHAR*  pszFileName, FS_FIND_DATA* pFindData)
 {
 	__FAT32_FIND_HANDLE*      pFindHandle = NULL;
 	__DEVICE_OBJECT*          pDevice     = (__DEVICE_OBJECT*)lpThis;

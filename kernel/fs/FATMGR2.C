@@ -47,11 +47,19 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	}
 	pDrvObject = pDevObject->lpDriverObject;
 
-	pDrcb = (__DRCB*)CREATE_OBJECT(__DRCB);
-	if(NULL == pDrcb)
+	/* New a drcb object to carry request. */
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+		NULL,
+		OBJECT_TYPE_DRCB);
+	if (NULL == pDrcb)
 	{
 		goto __TERMINAL;
 	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
+		goto __TERMINAL;
+	}
+
 	if(DEVICE_OBJECT_SIGNATURE != pDevObject->dwSignature)
 	{
 		PrintLine("Invalid device object encountered.");
@@ -79,9 +87,9 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	bResult = TRUE;
 
 __TERMINAL:
-	if(pDrcb)  //Should release it.
+	if(pDrcb)
 	{
-		RELEASE_OBJECT(pDrcb);
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 	}
 	return bResult;
 }
@@ -105,12 +113,18 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	}
 	pDrvObject = pDevObject->lpDriverObject;
 
-	/* Create a DRCB object and initialize it. */
-	pDrcb = (__DRCB*)CREATE_OBJECT(__DRCB);
-	if(NULL == pDrcb)
+	/* New a drcb object to carry request. */
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+		NULL, OBJECT_TYPE_DRCB);
+	if (NULL == pDrcb)
 	{
 		goto __TERMINAL;
 	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
+		goto __TERMINAL;
+	}
+
 	ssi.dwBufferLen   = dwSectorNum * pDevObject->dwBlockSize;
 	ssi.lpBuffer      = pBuffer;
 	ssi.dwStartSector = dwStartSector;
@@ -134,7 +148,7 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 __TERMINAL:
 	if(pDrcb)
 	{
-		RELEASE_OBJECT(pDrcb);
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 	}
 	return bResult;
 }
@@ -143,28 +157,27 @@ __TERMINAL:
  * Initialize one FAT32 file system given the first sector data.
  * Return TRUE if sucessfully.
  */
-BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
+BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 {
 	UCHAR*    pStart         = (UCHAR*)pSector0;
 	BOOL      bResult        = FALSE;
 	DWORD     dwCluster      = 0;
-	WORD      RootDirSector  = 0;  //Following variables are used to judge the FAT type.
+	WORD      RootDirSector  = 0;
 	WORD      wRootEntryCnt  = 0;
 	DWORD     FATSz          = 0;
 	DWORD     TotSec         = 0;
 	DWORD     DataSec        = 0;
 	DWORD     CountOfCluster = 0;
 
-	if((NULL == pFat32Fs) || (NULL == pSector0)) //Invalid parameters.
+	BUG_ON((NULL == pFat32Fs) || (NULL == pSector0));
+	/* Verify the signature of sector. */
+	if((0x55 != pStart[510]) || (0xAA != pStart[511]))
 	{
+		_hx_printf("[%s]Invalid partition.\r\n", __func__);
 		goto __TERMINAL;
 	}
-	if((0x55 != pStart[510]) || (0xAA != pStart[511]))  //Check the signature.
-	{
-		return FALSE;
-	}
 
-	//Initialize the FAT32 extension object,pFat32Fs.
+	/* Initialize the FAT32 extension object,pFat32Fs. */
 	pFat32Fs->dwAttribute         = FILE_SYSTEM_TYPE_FAT32;
 	pFat32Fs->SectorPerClus       = pStart[BPB_SecPerClus];
 	pFat32Fs->wReservedSector     = *(WORD*)(pStart + BPB_RsvdSecCnt);
@@ -178,18 +191,27 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 	pFat32Fs->dwClusterSize       = pFat32Fs->dwBytePerSector * pFat32Fs->SectorPerClus;
 	pFat32Fs->pFileList           = NULL;
 
-	if(0 == pFat32Fs->dwBytePerSector)
+	if(STORAGE_DEFAULT_SECTOR_SIZE != pFat32Fs->dwBytePerSector)
 	{
-		PrintLine("In Fat32Init: byte per sector is zero.");
+		_hx_printf("[%s]invalid byte/sector value[%d].\r\n", 
+			__func__, pFat32Fs->dwBytePerSector);
+		goto __TERMINAL;
+	}
+	if (0 == pFat32Fs->SectorPerClus)
+	{
+		_hx_printf("[%s]invalid sector/clus value[%d].\r\n",
+			__func__, pFat32Fs->SectorPerClus);
 		goto __TERMINAL;
 	}
 
-	//Now check if this partition is ACTUALLY a FAT32 partition.
+	/* Check the partition type, only FAT32 is supported. */
 	wRootEntryCnt = *(WORD*)(pStart + BPB_RootEntCnt);
 	wRootEntryCnt *= 32;
 	wRootEntryCnt += (WORD)pFat32Fs->dwBytePerSector - 1;
-	RootDirSector = wRootEntryCnt / (WORD)pFat32Fs->dwBytePerSector;  //Get root directory's sector num.
+	/* Get root directory's sector num. */
+	RootDirSector = wRootEntryCnt / (WORD)pFat32Fs->dwBytePerSector;
 
+	/* According FAT file system specification. */
 	if(*(WORD*)(pStart + BPB_FATSz16) != 0)
 	{
 		FATSz = (DWORD)(*(WORD*)(pStart + BPB_FATSz16));
@@ -208,18 +230,20 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs,BYTE* pSector0)
 		TotSec = *(DWORD*)(pStart + BPB_TotSec32);
 	}
 
+	/* Get the data sector number. */
 	DataSec  = TotSec - (DWORD)pFat32Fs->wReservedSector;
 	DataSec -= (FATSz * pFat32Fs->FatNum);
-	DataSec -= RootDirSector;  //We now have got the data sector number.
-	CountOfCluster = DataSec / pFat32Fs->SectorPerClus;  //Get the total cluster counter.
+	DataSec -= RootDirSector;
+	/* Get the total cluster counter. */
+	CountOfCluster = DataSec / pFat32Fs->SectorPerClus;
 
-	/* Can not support FAT12 yet,just return fail. */
+	/* Can not support FAT12/FAT16 yet. */
 	if(CountOfCluster < 4085)
 	{
+		_hx_printf("[%s]only FAT32 supported.\r\n", __func__);
 		goto __TERMINAL;
 	}
 	
-	//The FAT partition is FAT32.
 	bResult = TRUE;
 
 __TERMINAL:

@@ -548,7 +548,9 @@ DWORD Hyptrm2(LPVOID lpData)
 	be21.wBasePort       = COM1_BASE;
 
 	//Connect interrupt handler.
-	hIntHandler = ConnectInterrupt(ComIntHandler,(LPVOID)&be21,COM1_INT_VECTOR);
+	hIntHandler = ConnectInterrupt(
+		"int_com1",
+		ComIntHandler, (LPVOID)&be21, COM1_INT_VECTOR);
 	if(NULL == hIntHandler)
 	{
 		PrintLine("Can not set COM's interrupt handler.");

@@ -22,9 +22,9 @@
 #include "shell.h"
 #include "fs.h"
 
-#define  FS_PROMPT_STR   "[fs_view]"
+#define FS_PROMPT_STR "[fs_view]"
 
-static HISOBJ            s_hHiscmdInoObj   = NULL;
+static HISOBJ s_hHiscmdInoObj = NULL;
 
 static struct __FS_GLOBAL_DATA{
 	__FS_ARRAY_ELEMENT  FsArray[FILE_SYSTEM_NUM];
@@ -32,14 +32,12 @@ static struct __FS_GLOBAL_DATA{
 	CHAR                CurrentDir[MAX_FILE_NAME_LEN];
 	BOOL                bInitialized;              //Flag indicates if this structure has been inited.
 }FsGlobalData = {0};
-static CHAR   Buffer[256] = {0};                   //Local buffer used by this thread to print info out.
+static char Buffer[256] = {0};
 
-//
-//Pre-declare routines.
-//
+/* command handler functions. */
 static DWORD CommandParser(LPCSTR);
-static DWORD help(__CMD_PARA_OBJ*);        //help sub-command's handler.
-static DWORD fs_exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
+static DWORD help(__CMD_PARA_OBJ*);
+static DWORD fs_exit(__CMD_PARA_OBJ*);
 static DWORD fslist(__CMD_PARA_OBJ*);
 static DWORD dir(__CMD_PARA_OBJ*);
 static DWORD cd(__CMD_PARA_OBJ*);
@@ -52,11 +50,10 @@ static DWORD ren(__CMD_PARA_OBJ*);
 static DWORD type(__CMD_PARA_OBJ*);
 static DWORD copy(__CMD_PARA_OBJ*);
 static DWORD use(__CMD_PARA_OBJ*);
-static DWORD init();                     //Initialize routine.
+/* Initialize routine of fs command. */
+static DWORD init();
 
-//
-//The following is a map between command and it's handler.
-//
+/* A map between command and it's handler. */
 static struct __FDISK_CMD_MAP{
 	LPSTR                lpszCommand;
 	DWORD                (*CommandHandler)(__CMD_PARA_OBJ*);
@@ -149,7 +146,6 @@ static DWORD CommandParser(LPCSTR lpszCmdLine)
 		}
 	}
 
-//__TERMINAL:
 	if(NULL != lpCmdParamObj)
 	{
 		ReleaseParameterObj(lpCmdParamObj);
@@ -160,7 +156,7 @@ static DWORD CommandParser(LPCSTR lpszCmdLine)
 
 DWORD fsEntry(LPVOID p)
 {
-	if(0 == init())  //Can not finish the initialization work.
+	if(0 == init())
 	{
 		PrintLine("  Can not initialize the FS thread.");
 		return 0;
@@ -206,7 +202,7 @@ static DWORD fslist(__CMD_PARA_OBJ* pcpo)
 
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
-		if(0 == FsGlobalData.FsArray[i].FileSystemIdentifier)  //Not used yet.
+		if(0 == FsGlobalData.FsArray[i].FileSystemIdentifier)
 		{
 			continue;
 		}
@@ -257,7 +253,7 @@ static DWORD dir(__CMD_PARA_OBJ* pCmdObj)
 	pFindHandle = IOManager.FindFirstFile((__COMMON_OBJECT*)&IOManager,	Buffer,	&ffd);
 	if(NULL == pFindHandle)
 	{		
-		_hx_printf("Can not open directory.\r\n");
+		_hx_printf("Can not open directory[%s].\r\n", Buffer);
 		goto __TERMINAL;
 	}
 
@@ -501,27 +497,82 @@ __TERMINAL:
 #endif
 }
 
-static DWORD type(__CMD_PARA_OBJ* pCmdObj)
+/* 
+ * Local helper to check that a user 
+ * specified string is a device's name
+ * or a regular file's name.
+ */
+static BOOL __is_device_name(const char* file_name)
+{
+	BUG_ON(NULL == file_name);
+
+	/* Device name's prefix is "\\.\". */
+	if (strlen(file_name) < 4)
+	{
+		return FALSE;
+	}
+	if (('\\' == file_name[0]) && ('\\' == file_name[1]) &&
+		('.' == file_name[2]) && ('\\' == file_name[3]))
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ * Show out a file's or similiar object's
+ * such as partion, storage disk, content
+ * into screen.
+ */
+#define TYPE_READ_BLOCK_LENGTH 1024
+
+static unsigned long type(__CMD_PARA_OBJ* pCmdObj)
 {
 #ifdef __CFG_SYS_DDF
 	HANDLE hFile = NULL;
-	CHAR Buffer[128];
-	DWORD dwReadSize = 0, dwTotalRead = 0;
+	char FullName[MAX_FILE_NAME_LEN];
+	char* pBuffer = NULL;
+	unsigned long dwReadSize = 0, dwTotalRead = 0;
+	unsigned long total_show = -1;
 	unsigned int i = 0;
-	CHAR FullName[MAX_FILE_NAME_LEN];
-	WORD ch = 0x0700;
+	unsigned short ch = 0x0700;
 	MSG msg;
 
 	if(pCmdObj->byParameterNum < 2)
 	{
-		_hx_printf("  No file name specified.\r\n");
+		_hx_printf("  No file specified.\r\n");
 		goto __TERMINAL;
 	}
-	strcpy(FullName,FsGlobalData.CurrentDir);
-	strcat(FullName,pCmdObj->Parameter[1]);
+	if (pCmdObj->byParameterNum > 2)
+	{
+		/* How many bytes to show is specified. */
+		total_show = atoi(pCmdObj->Parameter[2]);
+	}
+
+	/* 
+	 * If the target file is not device, 
+	 * then append the current opened dir
+	 * in front of file's name. 
+	 */
+	if (!__is_device_name(pCmdObj->Parameter[1]))
+	{
+		strcpy(FullName, FsGlobalData.CurrentDir);
+		strcat(FullName, pCmdObj->Parameter[1]);
+	}
+	else {
+		/* Device name. */
+		strcpy(FullName, pCmdObj->Parameter[1]);
+	}
 	ToCapital(FullName);
-		
-	//Try to open the target file.
+
+	/* Allocate temporary buffer to hold file data. */
+	pBuffer = (char*)_hx_malloc(TYPE_READ_BLOCK_LENGTH);
+	if (NULL == pBuffer)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Try to open the target file or device. */
 	hFile = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
 		FullName,
 		FILE_ACCESS_READ,
@@ -529,17 +580,18 @@ static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 		NULL);
 	if(NULL == hFile)
 	{
-		_hx_printf("  File is not exist.\r\n");
+		_hx_printf("  Can not open[%s].\r\n", FullName);
 		goto __TERMINAL;
 	}
-	//Try to read the target file and display it.
+
+	/* Read and display it's content into console. */
 	GotoHome();
 	ChangeLine();
 	do{
 		if(!IOManager.ReadFile((__COMMON_OBJECT*)&IOManager,
 			hFile,
-			128,
-			Buffer,
+			TYPE_READ_BLOCK_LENGTH,
+			pBuffer,
 			&dwReadSize))
 		{
 			_hx_printf("  Failed to read file.\r\n");
@@ -547,21 +599,39 @@ static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 		}
 		for(i = 0;i < dwReadSize;i ++)
 		{
-			if('\r' == Buffer[i])
+			if('\r' == pBuffer[i])
 			{
 				GotoHome();
 				continue;
 			}
-			if('\n' == Buffer[i])
+			if('\n' == pBuffer[i])
 			{
 				ChangeLine();
 				continue;
 			}
-			ch += Buffer[i];
+			if ('\t' == pBuffer[i])
+			{
+				/* Show a 'tab' key. */
+				ch += ' ';
+				PrintCh(ch);
+				PrintCh(ch);
+				PrintCh(ch);
+				PrintCh(ch);
+				ch = 0x0700;
+				continue;
+			}
+			ch += pBuffer[i];
 			PrintCh(ch);
 			ch = 0x0700;
+
+			total_show--;
+			if (0 == total_show)
+			{
+				goto __TERMINAL;
+			}
 		}
 		dwTotalRead += dwReadSize;
+
 		/* Check if user want to break. */
 		while (KernelThreadManager.PeekMessage(NULL, &msg))
 		{
@@ -570,17 +640,22 @@ static DWORD type(__CMD_PARA_OBJ* pCmdObj)
 				goto __TERMINAL;
 			}
 		}
-	}while(dwReadSize == 128);
+	}while(dwReadSize == TYPE_READ_BLOCK_LENGTH);
 
 	GotoHome();
 	ChangeLine();
-	_hx_printf("%d byte(s) read.",dwTotalRead);
+	_hx_printf("%d byte(s) read.", dwTotalRead);
 
 __TERMINAL:
 	if(NULL != hFile)
 	{
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
 			hFile);
+	}
+	if (pBuffer)
+	{
+		/* Release temp file buffer. */
+		_hx_free(pBuffer);
 	}
 	return SHELL_CMD_PARSER_SUCCESS;;
 #else
@@ -606,26 +681,39 @@ static BOOL IsRelative(char* pszFileName)
 		}
 		return FALSE;
 	}
+	if (strlen(pszFileName) > 4)
+	{
+		/* Device name also is not relative. */
+		if ((pszFileName[0] == '\\') &&
+			(pszFileName[1] == '\\') &&
+			(pszFileName[2] == '.') &&
+			(pszFileName[3] == '\\'))
+		{
+			return FALSE;
+		}
+	}
+	/* All other cases are relative path. */
 	return TRUE;
 }
 
-static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
+/*
+ * Copy the content in source file to destination file.
+ * Device, such as partition, also could be duplicated
+ * by this command.
+ */
+static unsigned long copy(__CMD_PARA_OBJ* pCmdObj)
 {
-#ifdef __CFG_SYS_DDF
-	HANDLE   hSourceFile = NULL;
-	HANDLE   hDestinationFile = NULL;
-	char*    pBuffer = NULL;
-	DWORD    dwReadSize = 0;
-	DWORD    dwWriteSize = 0;
-	DWORD    dwTotalRead = 0;
-	char     srcFullName[MAX_FILE_NAME_LEN];
-	char     dstFullName[MAX_FILE_NAME_LEN];
-	DWORD    dwFileSize = 0;
-	DWORD    dwBatSize = 0;
+	HANDLE hSourceFile = NULL, hDestinationFile = NULL;
+	char* pBuffer = NULL;
+	DWORD dwReadSize = 0, dwWriteSize = 0, dwTotalRead = 0;
+	char srcFullName[MAX_FILE_NAME_LEN];
+	char dstFullName[MAX_FILE_NAME_LEN];
+	unsigned long file_sz_high = 0;
+	unsigned long long total_size = 0, batch_size = 0;
 
 	if (pCmdObj->byParameterNum < 3)
 	{
-		_hx_printf("No source or destination file specified.\r\n");
+		_hx_printf("  No files specified.\r\n");
 		goto __TERMINAL;
 	}
 	/* Construct source file's full name. */
@@ -657,7 +745,7 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 	/* Can not copy one file to itself. */
 	if (0 == strcmp(srcFullName, dstFullName))
 	{
-		_hx_printf("Can not copy a file to it's self.\r\n");
+		_hx_printf("  Files are same.\r\n");
 		goto __TERMINAL;
 	}
 
@@ -669,8 +757,7 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 		NULL);
 	if (NULL == hSourceFile)
 	{
-		_hx_printf("Can not open the source file[%s].\r\n",
-			srcFullName);
+		_hx_printf("  Can not open[%s].\r\n", srcFullName);
 		goto __TERMINAL;
 	}
 
@@ -682,17 +769,22 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 		NULL);
 	if (NULL == hDestinationFile)
 	{
-		_hx_printf("Can not open the target file[%s].\r\n",
+		_hx_printf("  Can not open[%s].\r\n",
 			dstFullName);
 		goto __TERMINAL;
 	}
 
 	/* Get the source file's size. */
-	dwFileSize = GetFileSize(hSourceFile, NULL);
-	dwBatSize = dwFileSize / 20;
+	total_size = GetFileSize(hSourceFile, &file_sz_high);
+	if (0 == total_size)
+	{
+		goto __TERMINAL;
+	}
+	total_size += (unsigned long long)file_sz_high << 32;
+	batch_size = total_size / 64;
 
 	/* Allocate a buffer to hold the file's data. */
-#define __TMP_FILE_BUFFSZ (64 * 1024)
+#define __TMP_FILE_BUFFSZ (128 * 1024)
 	pBuffer = (char*)_hx_malloc(__TMP_FILE_BUFFSZ);
 	if (NULL == pBuffer)
 	{
@@ -709,39 +801,45 @@ static DWORD copy(__CMD_PARA_OBJ* pCmdObj)
 			pBuffer,
 			&dwReadSize))
 		{
-			_hx_printf("Can not read the source file.\r\n");
+			_hx_printf("  Read file failure.\r\n");
 			goto __TERMINAL;
 		}
 
-		/* Write the data block into destination file. */
-		if (!IOManager.WriteFile((__COMMON_OBJECT*)&IOManager,
-			hDestinationFile,
-			dwReadSize,
-			pBuffer,
-			&dwWriteSize))
+		/* 
+		 * Write the data block into destination file. 
+		 * read size maybe 0 in case of EOF.
+		 */
+		if (dwReadSize)
 		{
-			_hx_printf("Failed to write data into target file.\r\n");
-			goto __TERMINAL;
+			if (!IOManager.WriteFile((__COMMON_OBJECT*)&IOManager,
+				hDestinationFile,
+				dwReadSize,
+				pBuffer,
+				&dwWriteSize))
+			{
+				_hx_printf("  Write file failure\r\n");
+				goto __TERMINAL;
+			}
+			dwTotalRead += dwReadSize;
 		}
-		dwTotalRead += dwReadSize;
 
 		/* Show out copying progress. */
-		if (dwBatSize < dwReadSize)
+		if (batch_size < dwReadSize)
 		{
 			_hx_printf(".");
-			dwBatSize = dwFileSize / 20;
+			batch_size = total_size / 64;
 		}
 		else
 		{
-			dwBatSize -= dwReadSize;
+			batch_size -= dwReadSize;
 		}
 	} while (dwReadSize == __TMP_FILE_BUFFSZ);
 #undef __TMP_FILE_BUFFSZ
 
+__TERMINAL:
 	_hx_printf("\r\n");
 	_hx_printf("[copy]: %d byte(s) copied.\r\n", dwTotalRead);
 
-__TERMINAL:
 	if (NULL != hSourceFile)
 	{
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
@@ -757,9 +855,6 @@ __TERMINAL:
 		_hx_free(pBuffer);
 	}
 	return SHELL_CMD_PARSER_SUCCESS;;
-#else
-	return FS_CMD_FAILED;
-#endif
 }
 
 static DWORD use(__CMD_PARA_OBJ* pCmdObj)
@@ -769,7 +864,7 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 	BOOL     bMatched = FALSE;
 	CHAR*    strError = "  Please specify a valid file system identifier.";
 
-	if(1 == pCmdObj->byParameterNum)  //Without any parameter.
+	if(1 == pCmdObj->byParameterNum)
 	{
 		Info[0] = FsGlobalData.CurrentFs;
 		Info[1] = ':';
@@ -779,7 +874,7 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 		goto __TERMINAL;
 	}
 	//Parse the user input.
-	if(strlen(pCmdObj->Parameter[1]) > 2)  //File system identifier can not exceed 2 characters.
+	if(strlen(pCmdObj->Parameter[1]) > 2)
 	{
 		PrintLine(strError);
 		goto __TERMINAL;
@@ -795,13 +890,13 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
-		if(FsGlobalData.FsArray[i].FileSystemIdentifier == Info[0])  //FS is in system now.
+		if(FsGlobalData.FsArray[i].FileSystemIdentifier == Info[0])
 		{
 			bMatched = TRUE;
 			break;
 		}
 	}
-	if(!bMatched)  //The specified file system identifier is not in system now.
+	if(!bMatched)
 	{
 		PrintLine("  The specified file system is not present.");
 		goto __TERMINAL;
@@ -821,16 +916,16 @@ __TERMINAL:
 static DWORD init()
 {
 #ifdef __CFG_SYS_DDF
-	if(!FsGlobalData.bInitialized)  //FS array is not initialized yet,initialize it first.
+	if(!FsGlobalData.bInitialized)
 	{
 		memcpy((char*)&FsGlobalData.FsArray[0],(const char*)&IOManager.FsArray[0],sizeof(__FS_ARRAY_ELEMENT) * FILE_SYSTEM_NUM);
-		if(FsGlobalData.FsArray[0].FileSystemIdentifier)  //Set the first available FS as current one.
+		if(FsGlobalData.FsArray[0].FileSystemIdentifier)
 		{
 			FsGlobalData.CurrentFs     = FsGlobalData.FsArray[0].FileSystemIdentifier;
 			FsGlobalData.CurrentDir[0] = FsGlobalData.FsArray[0].FileSystemIdentifier;
 			FsGlobalData.CurrentDir[1] = ':';
 			FsGlobalData.CurrentDir[2] = '\\';
-			FsGlobalData.CurrentDir[3] = 0;     //Set string's terminator.
+			FsGlobalData.CurrentDir[3] = 0;
 		}
 	}
 	return 1;

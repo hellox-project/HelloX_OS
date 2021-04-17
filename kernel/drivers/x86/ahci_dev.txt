@@ -1,0 +1,112 @@
+/*
+ * TO DO:
+ * 1. Define SATA port object,to manage one SATA port; --OK
+ * 2. request list should be defined in port object,any request
+ *    should be linked into this list;--OK
+ * 3. SATA controller object should hang the list of HBA port;--OK
+ * 4. Implement the reading routine of HBA,according the osdev's case;--OK
+ * 5. Writing functions;--OK
+ * 6. Link interrupt functions to the whole SATA system;--OK
+ * 7. Test the throughput of r/w from background thread;--OK
+ * 8. Link the sata storage into IOManager of kernel;
+ * 9. Optimize the fat fs's implementation to improve performance;
+ * ......
+ * 
+ * 10. Solve the mapping issue between virtual address, physical
+ *     address(which is used by device), and cache disabled region.The
+ *     physical address and virtual address must be same;
+ *
+ * Progress in 20210116:
+ * 1. Read/write command seems OK;
+ * 2. Interrupt status handled;
+ *
+ * TODO 20210116:
+ * 1. Optimize the r/w operations through interrupt mechanism; --OK
+ * 2. Optimize the whole process of ahci's reset/init/ready to work; --OK
+ * 3. Implement the identify command, hook disk into fs; --OK
+ * 4. Consider the whole process of drcb request, optimize it and link to ahci; --OK
+ * 5. Create device for each port/disk, use new created driver object, and link into system; --OK
+ * 6. Access disk using CreateFile/Read/Write... operations, the partition name as a file; --OK
+ * 7. Test the throughput of raw r/w; --OK
+ * 8. Exam the fs's source code to optimize it, use format command to format a new disk;
+ * 9. Revise code in ahcidrv.c and invoke it, it should attach the device into system as
+ *    partition,since these code lines are copied from general HD driver. Check with devlist
+ *    command in sysdiag, if there are more partitions in system, it works. --OK
+ *    -- partition added into system,but start sector and sector counter error...
+ *    -- sames resolved,lead by raw writting of disk;
+ * 10. Add physical disk object into system, in InitPortStorage routine. Get disk information
+ *     by invoking IDENTIFY command of disk, so should implement it at first;
+ *     -- IDENTIFY command implemented and sames OK;
+ *     -- TO DO: create disk object and mount it into system;--OK
+ *     -- TO DO: Implement the read/write sector dispatch routines in driver object; --OK
+ * 11. Revise code in fdisk.c file, include disklist, partlist, pardadd, partdel, format, and
+ *     other commands that could operate one disk, make them workable, thus we could have 
+ *     enough tools to manage one disk;
+ * 12. Switch read/write operation of AHCI into interrupt mode; then continue above todo list;
+ *     --OK
+ * 13. Debugging on DELL PC:
+ *     1. No drive detected in 2 ports if apply controller reset; --solved;
+ *     2. One drive found on 1 port if no controller reset; --solved;
+ *     3. Disk operation sames OK in case 2; --solved;
+ * 
+ * 14. Use disk lead printing of "Not formated yet" message, but work; --OK
+ * 15. Accumulate counters of I/O sectors in port object; --OK
+ * 16. Switch to github so as to commit instantly and increase commit counters;
+ * 17. Implement __CloseDevice routine in CloseFile, if the file is a device; --OK
+ * 18. Implement __DeviceOpen, __DeviceClose routine of partition, increase/d open counter; --OK
+ * 19. Implement __DeviceRead/Write to both partition and raw disk; --OK
+ * 20. Implement copy of 2 partitions, or disks, use copy command; --OK
+ * 21. pending issue: Copy 2 partitions by using copy, if the copy chunk size larger than
+ *     device's max readable size, it will fail(just run command:
+ *     copy \\.\ATAPART2 \\.\ATAPART5
+ *     maybe caused by write file in I/O manager. --OK
+ * 
+ * 22. copy file to partition will lead failure of write file, caused
+ *     by unalignment writting of WriteFile routine, should revise it;
+ * 23. 
+ */
+
+ /*
+  * Progress:
+  * 1. write file updated to support any size writting, convert
+  *    the unaligned request to device block;
+  * 2. Device xfer for read/write has issue, read/write failure,
+  *    should trouble shooting it(copy file to partition/disk fail); --OK
+  */
+
+  /*
+   * Progress:
+   * 1. Format a partition seems success by using fdisk/format;
+   * 2. Copy a file from C: to new formated fs seems OK;
+   * 3. It shows the existing fs could work but with poor 
+   *    performance, should be optimized;
+   *
+   * Move to the work of optimizing the fs/fdisk applications:
+   * 1. Dir command could not open directory if no file in root;
+   * 2. Performance of fat32 FS is too low;
+   * 3. Optimize the FS source code, such as using batch
+   *    sectors R/W instead of one by one;
+   * 4. Implement the super large disk(>127G)'s management;
+   * 5. Turn on/off light of AHCI(disk) when I/O is carrying;
+   * 6. Improve FS performance by using temporary buffer,such
+   *    as FAT buffer;
+   * 7. Protect the FS object by using mutex or other mechanism;
+   * 8. Implement the logging service in kernel;
+   * 9. Save all log into storage for trouble shooting or others;
+   *
+   * Next to do:
+   * 1. Create some new partitions under thinkpad PC;
+   * 2. Type the harddisk/partition on thinkpad;
+   * 3. Copy a file from USB into partition and check it
+   *    by type command;
+   * 4. Format a partition with fdisk/format command;
+   * 5. Reload the PC to check if the partition could be
+   *    recognized by hellox;
+   * 6. Copy existing files into thinkpad's partition
+   *    and check it by reset PC;
+   * 7. Unknown interrupt raise with is = 1, maybe caused by
+   *    DPS and DHRS interrupts raise at the same time but a little
+   *    earlier of DPS. Clear the i bit in PRD when commit port
+   *    request. Pending to test under thinkpad PC;
+   * 8. Memory leak in fs operations, should troulbe shooting it;
+   */

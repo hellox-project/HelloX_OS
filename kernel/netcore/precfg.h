@@ -6,7 +6,7 @@
 #define __PRECFG_H__
 
 /* Enable the pre-configured parameters. */
-#define NET_PRECONFIG_ENABLE 0
+#define NET_PRECONFIG_ENABLE 1
 
  /* Default password and user name,to simplify testing. */
 #define PPPOE_DEFAULT_USERNAME_QD "053202039989"

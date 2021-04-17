@@ -571,7 +571,7 @@ static void __OS_Entry_AP()
 	void* ptr = NULL;
 
 	/* Show a banner. */
-	_hx_printk("Start processor[%d] and intialize it...\r\n", cpuID);
+	//_hx_printk("Start processor[%d] and intialize it...\r\n", cpuID);
 
 #if defined(__CFG_SYS_VMM)
 	/* Enable paging mechanism. */

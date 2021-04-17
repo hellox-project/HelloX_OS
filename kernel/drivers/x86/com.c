@@ -557,6 +557,7 @@
 		 }
 		 //Connect each COM interface's interrupt.
 		 ComCtrlBlock[i].hInterrupt = ConnectInterrupt(
+			 "int_com",
 			 COMIntHandler,
 			 (LPVOID)&ComCtrlBlock[i],
 			 ComCtrlBlock[i].IntVector);

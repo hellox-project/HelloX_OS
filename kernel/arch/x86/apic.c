@@ -208,7 +208,9 @@ static BOOL SetupIPI()
 	/* Setup interrupt handler for IPI. */
 	if (NULL == pIpiInt)
 	{
-		pIpiInt = (__COMMON_OBJECT*)ConnectInterrupt(IPI_Handler_IS, 
+		pIpiInt = (__COMMON_OBJECT*)ConnectInterrupt(
+			"int_ipi",
+			IPI_Handler_IS, 
 			NULL, 
 			INTERRUPT_VECTOR_IPI_IS);
 		if (NULL == pIpiInt)
@@ -258,8 +260,8 @@ static BOOL SetupAPICTimer(__INTERRUPT_CONTROLLER* pIntCtrl)
 		_hx_printk("Local APIC[%d] may fail,give up.\r\n", __CURRENT_PROCESSOR_ID);
 		goto __TERMINAL;
 	}
-	_hx_printk("APIC ticks in time[%dms] = 0x%X\r\n",
-		SYSTEM_TIME_SLICE * 16, apic_freq);
+	//_hx_printk("APIC ticks in time[%dms] = 0x%X\r\n",
+	//	SYSTEM_TIME_SLICE * 16, apic_freq);
 	apic_freq /= 16;
 
 	/* 
@@ -271,7 +273,9 @@ static BOOL SetupAPICTimer(__INTERRUPT_CONTROLLER* pIntCtrl)
 	{
 		/* Current processor must be BSP. */
 		BUG_ON(!__CURRENT_PROCESSOR_IS_BSP());
-		pTmrInt = (__COMMON_OBJECT*)ConnectInterrupt(APICTimerIntHandler, NULL, INTERRUPT_VECTOR_APICTMR);
+		pTmrInt = (__COMMON_OBJECT*)ConnectInterrupt(
+			"int_apic",
+			APICTimerIntHandler, NULL, INTERRUPT_VECTOR_APICTMR);
 		if (NULL == pTmrInt)
 		{
 			_hx_printk("%s:failed to connect interrupt.\r\n", __func__);

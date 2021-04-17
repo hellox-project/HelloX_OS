@@ -42,6 +42,8 @@ static DWORD killthread(__CMD_PARA_OBJ*);
 static DWORD showstk(__CMD_PARA_OBJ*);
 static DWORD devlist(__CMD_PARA_OBJ*);
 static DWORD showint(__CMD_PARA_OBJ*);
+static DWORD showdev(__CMD_PARA_OBJ*);
+static DWORD kobjshow(__CMD_PARA_OBJ*);
 #ifdef __CFG_SYS_USB
 static DWORD usblist(__CMD_PARA_OBJ*);
 static DWORD usbdev(__CMD_PARA_OBJ*);
@@ -69,6 +71,8 @@ static struct __SHELL_CMD_MAP{
 	{"showstk",           showstk,          "  showstk              : Show kernel thread's context information." },
 	{"devlist",           devlist,          "  devlist              : List all devices' information in the system."},
 	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
+	{"showdev",           showdev,          "  showdev              : show device specific information." },
+	{"kobjshow",          kobjshow,         "  kobjshow             : Display kernel object information" },
 #ifdef __CFG_SYS_USB
 	{"usblist",           usblist,          "  usblist              : Show all USB device(s) in system." },
 	{"usbdev",            usbdev,           "  usbdev               : Show a specified USB device's detail info." },
@@ -285,7 +289,7 @@ static struct __PCI_DEV_DESC{
 	{0x0102,     "Floppy disk controller."},
 	{0x0103,     "IPI Bus controller."},
 	{0x0104,     "RAID controller."},
-	{0x0106, "SATA controller."},
+	{0x0106,     "SATA controller."},
 	{0x0180,     "Mass storage controller."},
 
 	{0x0200,     "Ethernet controller."},
@@ -594,29 +598,29 @@ static DWORD kvalist(__CMD_PARA_OBJ* pcpo)
 /* Kill a thread by specifying it's ID value. */
 static DWORD killthread(__CMD_PARA_OBJ* pParaObj)
 {
-	unsigned long thread_id = 0;
-	__KERNEL_THREAD_OBJECT* pThread = NULL;
+unsigned long thread_id = 0;
+__KERNEL_THREAD_OBJECT* pThread = NULL;
 
-	if (pParaObj->byParameterNum < 2)
-	{
-		_hx_printf("  No thread ID specified.\r\n");
-		return SHELL_CMD_PARSER_SUCCESS;
-	}
-	thread_id = atol(pParaObj->Parameter[1]);
-
-	/* Fetch the thread object by it's ID. */
-	pThread = (__KERNEL_THREAD_OBJECT*)ObjectManager.GetObject(&ObjectManager,
-		OBJECT_TYPE_KERNEL_THREAD, thread_id);
-	if (NULL == pThread)
-	{
-		_hx_printf("  No thread found.\r\n");
-		return SHELL_CMD_PARSER_SUCCESS;
-	}
-	/* Kill the thread. */
-	KernelThreadManager.TerminateKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
-		(__COMMON_OBJECT*)pThread,
-		0);
+if (pParaObj->byParameterNum < 2)
+{
+	_hx_printf("  No thread ID specified.\r\n");
 	return SHELL_CMD_PARSER_SUCCESS;
+}
+thread_id = atol(pParaObj->Parameter[1]);
+
+/* Fetch the thread object by it's ID. */
+pThread = (__KERNEL_THREAD_OBJECT*)ObjectManager.GetObject(&ObjectManager,
+	OBJECT_TYPE_KERNEL_THREAD, thread_id);
+if (NULL == pThread)
+{
+	_hx_printf("  No thread found.\r\n");
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+/* Kill the thread. */
+KernelThreadManager.TerminateKernelThread((__COMMON_OBJECT*)&KernelThreadManager,
+(__COMMON_OBJECT*)pThread,
+0);
+return SHELL_CMD_PARSER_SUCCESS;
 }
 
 static DWORD showstk(__CMD_PARA_OBJ* pcpo)
@@ -639,28 +643,78 @@ static DWORD devlist(__CMD_PARA_OBJ* pcpo)
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 
+/* Show kernel object information. */
+static DWORD kobjshow(__CMD_PARA_OBJ* pParam)
+{
+	if (pParam->byParameterNum < 2)
+	{
+		_hx_printf("No kobj type specified.\r\n");
+	}
+	else
+	{
+		/*
+		 * Just show out all this kind of kernel
+		 * object's information by invoking object
+		 * manager's routine.
+		 */
+		ObjectManager.ShowKernelObject(atol(pParam->Parameter[1]));
+	}
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
 //Show interrupt statistics information.
 static DWORD showint(__CMD_PARA_OBJ* pParamObj)
 {
 	__INTERRUPT_VECTOR_STAT ivs;
-	int i = 0;
+	unsigned long i = 0;
 
 	_hx_printf("    Int Vector\t  Total Obj\t  Total Num\t  Succ Num\r\n");
-	for (i = 0; i < MAX_INTERRUPT_VECTOR; i++)
+	memset(&ivs, 0, sizeof(__INTERRUPT_VECTOR_STAT));
+	if (pParamObj->byParameterNum < 2)
 	{
-		if (!System.GetInterruptStat((__COMMON_OBJECT*)&System,
-			(UCHAR)i, &ivs))
+		/* Show all interrupt objects. */
+		for (i = 0; i < MAX_INTERRUPT_VECTOR; i++)
 		{
-			break;
+			if (!System.GetInterruptStat((__COMMON_OBJECT*)&System,
+				(UCHAR)i, &ivs))
+			{
+				break;
+			}
+			//Only dumpout the interrupt statistics info for used vector.
+			if (ivs.dwTotalIntObject)
+			{
+				_hx_printf("    %8d\t  %8d\t  %8d\t  %8d\r\n",
+					i,
+					ivs.dwTotalIntObject,
+					ivs.dwTotalInt,
+					ivs.dwSuccHandledInt);
+			}
 		}
-		//Only dumpout the interrupt statistics info for used vector.
-		if (ivs.dwTotalIntObject)
+	}
+	else {
+		/* Just show the user specified vector. */
+		unsigned int vector = atol(pParamObj->Parameter[1]);
+		if (vector < 256)
 		{
-			_hx_printf("    %8d\t  %8d\t  %8d\t  %8d\r\n",
-				i,
-				ivs.dwTotalIntObject,
-				ivs.dwTotalInt,
-				ivs.dwSuccHandledInt);
+			if (System.GetInterruptStat((__COMMON_OBJECT*)&System,
+				(UCHAR)vector, &ivs))
+			{
+				_hx_printf("    %8d\t  %8d\t  %8d\t  %8d\r\n",
+					vector,
+					ivs.dwTotalIntObject,
+					ivs.dwTotalInt,
+					ivs.dwSuccHandledInt);
+				_hx_printf("    Interrupt name(s):\r\n");
+				for (i = 0; i < ivs.dwTotalIntObject; i++)
+				{
+					_hx_printf("    [%d]: %s\r\n", i, ivs.int_name[i]);
+					if (i > 8)
+					{
+						/* Show 8 names at most. */
+						break;
+					}
+				}
+			}
 		}
 	}
 
@@ -675,6 +729,55 @@ static DWORD showint(__CMD_PARA_OBJ* pParamObj)
 	_hx_printf("    %03d: IDE Harddisk.\r\n", INTERRUPT_VECTOR_IDE);
 	_hx_printf("    %03d: System Call Entry.\r\n", EXCEPTION_VECTOR_SYSCALL);
 #endif
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+/* Show device object information. */
+static DWORD showdev(__CMD_PARA_OBJ* pParam)
+{
+	__DEVICE_OBJECT* pDevice = NULL;
+	__DRIVER_OBJECT* pDriver = NULL;
+
+	if (pParam->byParameterNum < 2)
+	{
+		_hx_printf("No device name specified.\r\n");
+	}
+	else
+	{
+		/*
+		 * Get the device and invoke device
+		 * specific show routine in driver.
+		 */
+		pDevice = IOManager.GetDevice((__COMMON_OBJECT*)&IOManager,
+			pParam->Parameter[1]);
+		if (NULL == pDevice)
+		{
+			_hx_printf("No matched device.\r\n");
+			goto __TERMINAL;
+		}
+		pDriver = pDevice->lpDriverObject;
+		if (NULL == pDriver)
+		{
+			_hx_printf("No driver bound.\r\n");
+			goto __TERMINAL;
+		}
+		if (NULL == pDriver->DeviceSpecificShow)
+		{
+			_hx_printf("No specific show routine.\r\n");
+			goto __TERMINAL;
+		}
+		/* Invoke the specific routine. */
+		pDriver->DeviceSpecificShow((__COMMON_OBJECT*)pDriver,
+			(__COMMON_OBJECT*)pDevice,
+			NULL);
+	}
+
+__TERMINAL:
+	if (pDevice)
+	{
+		/* Release it. */
+		IOManager.ReleaseDevice((__COMMON_OBJECT*)&IOManager, (__COMMON_OBJECT*)pDevice);
+	}
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

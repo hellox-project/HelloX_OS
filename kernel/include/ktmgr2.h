@@ -106,12 +106,21 @@ BEGIN_DEFINE_OBJECT(__MAIL_BOX)
 		                     DWORD dwMillionSecond,DWORD* pdwWait);  //Get a mail from mail box.
 END_DEFINE_OBJECT(__MAIL_BOX)
 
-//Initializer and Uninitializer of mail box object.
+/* Initializer and Uninitializer of mail box object. */
 BOOL MailboxInitialize(__COMMON_OBJECT* pMailbox);
 BOOL MailboxUninitialize(__COMMON_OBJECT* pMailbox);
 
 /* 
- * Definition of __CONDITION object.This object is conforms POSIX standard pthread_cond_xxx
+ * Helper routine to show out a mail box's 
+ * internal state. This routine is invoked by
+ * ShowKernelObject routine of object manager,
+ * for kernel's debugging.
+ */
+void __ShowMailboxObject(__COMMON_OBJECT* pMailbox);
+
+/* 
+ * Definition of __CONDITION object.
+ * This object is conforms POSIX standard pthread_cond_xxx
  * operations,to fit the requirement of JamVM's porting.
  */
 BEGIN_DEFINE_OBJECT(__CONDITION)

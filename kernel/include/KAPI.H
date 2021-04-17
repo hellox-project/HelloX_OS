@@ -257,7 +257,9 @@ VOID DestroyCondition(HANDLE hCond);
 
 //Bind interrupt handler and vector together,so that the handler can be
 //called when the specified interrupt is raised.
-HANDLE ConnectInterrupt(__INTERRUPT_HANDLER lpInterruptHandler,
+HANDLE ConnectInterrupt(
+	const char* int_name,
+	__INTERRUPT_HANDLER lpInterruptHandler,
 	LPVOID lpHandlerParam,
 	UCHAR ucVector);
 

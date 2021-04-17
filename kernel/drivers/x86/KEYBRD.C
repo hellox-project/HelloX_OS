@@ -597,7 +597,9 @@ BOOL KBDriverEntry(__DRIVER_OBJECT* lpDriverObject)
 		goto __TERMINAL;
 	}
 
-	g_hIntHandler = ConnectInterrupt(KBIntHandler,
+	g_hIntHandler = ConnectInterrupt(
+		"int_keybrd",
+		KBIntHandler,
 		NULL,
 		KB_INT_VECTOR);
 	if(NULL == g_hIntHandler)  //Can not connect interrupt.

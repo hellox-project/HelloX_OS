@@ -1378,7 +1378,9 @@ static BOOL _Check_E1000E_Nic(struct pci_device_id* id)
 		set_mac_type(priv);
 
 		/* Install the corresponding interrupt handler. */
-		priv->hInterrupt = ConnectInterrupt(i825xx_interrupt_handler,
+		priv->hInterrupt = ConnectInterrupt(
+			"int_i825xx",
+			i825xx_interrupt_handler,
 			priv,
 			intVector + INTERRUPT_VECTOR_BASE);
 		if (NULL == priv->hInterrupt)

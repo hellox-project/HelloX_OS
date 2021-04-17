@@ -17,21 +17,17 @@
 #ifndef __IOMGR_H__
 #define __IOMGR_H__
 
-
 #include "commobj.h"
 #include "ktmgr.h"
+#include "ata.h" /* for harddisk, partition. */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//Partition type,indicates which kind of file system is used
-//for this partition.
+/* Partition types. */
 #define PARTITION_TYPE_FAT32     0x0B
 #define PARTITION_TYPE_NTFS      0x07
 #define PARTITION_TYPE_FAT16     0x06
 #define PARTITION_TYPE_EXTENSION 0x0F
-#define PARTITION_TYPE_RAW       0x0E  //The physical hard disk.
+/* The physical hard disk. */
+#define PARTITION_TYPE_RAW       0x0E
 
 #define FILE_SYSTEM_TYPE_UNKNOWN 0x00
 #define FILE_SYSTEM_TYPE_FAT32   PARTITION_TYPE_FAT32
@@ -45,21 +41,10 @@ extern "C" {
 #define FILE_ATTR_VOLUMEID    0x08
 #define FILE_ATTR_DIRECTORY   0x10
 #define FILE_ATTR_ARCHIVE     0x20
-#define FILE_ATTR_LONGNAME    0x0F //Combination of READONLY/HIDDEN/SYSTEM/VOLUMEID
+/* Combination of READONLY/HIDDEN/SYSTEM/VOLUMEID */
+#define FILE_ATTR_LONGNAME    0x0F
 
-//A extension object used to describe the partition device object.
-BEGIN_DEFINE_OBJECT(__PARTITION_EXTENSION)
-    BYTE            BootIndicator;  //Boot indicator.
-    BYTE            PartitionType;  //The partition type.
-    DWORD           dwStartSector;  //The start position of this partition.
-	DWORD           dwSectorNum;    //How many sectors this partition occupied.
-	DWORD           dwCurrPos;      //Current pointer position,read or write
-	                                //operation will be launched from here.
-	int             nDiskNum;       //Disk number where this partition resides.
-END_DEFINE_OBJECT(__PARTITION_EXTENSION)
-
-#define PARTITION_NAME_BASE "\\\\.\\PARTITION0"
-
+/* Max length of file name. */
 #define MAX_FILE_NAME_LEN 256
 
 //FILETIME struct,used to store file related date and time.
@@ -83,88 +68,91 @@ BEGIN_DEFINE_OBJECT(FS_FIND_DATA)
 	CHAR               cAlternateFileName[13];
 END_DEFINE_OBJECT(FS_FIND_DATA)
 
-//Helper macros to simply the developing process.
+/* Helper macros. */
 #ifndef CREATE_OBJECT
-//#define CREATE_OBJECT(type) KMemAlloc(sizeof(type),KMEM_SIZE_TYPE_ANY)
 #define CREATE_OBJECT(type) _hx_calloc(1,sizeof(type))
 #endif
 
 #ifndef RELEASE_OBJECT
-//#define RELEASE_OBJECT(ptr) KMemFree((LPVOID)(ptr),KMEM_SIZE_TYPE_ANY,0)
 #define RELEASE_OBJECT(ptr) _hx_free(ptr)
 #endif
 
-//
-//Constants used by this module(IOManager).
-//
+/* Maximal length of device's name. */
+#define MAX_DEV_NAME_LEN 256
 
-#define MAX_DEV_NAME_LEN    256    //The maximal length of device object's name.
+/* routine protype for drcb. */
+typedef unsigned long (*DRCB_WAITING_ROUTINE)(__COMMON_OBJECT*);
+typedef unsigned long (*DRCB_COMPLETION_ROUTINE)(__COMMON_OBJECT*);
+typedef unsigned long (*DRCB_CANCEL_ROUTINE)(__COMMON_OBJECT*);
+typedef void (*DRCB_RESET_ROUTINE)(__COMMON_OBJECT*);
 
-//
-//The definition of DRCB(Device Request Control Block).
-//This object is used to trace the device request operations,it is the core object
-//used by IOManager and device drivers to communicate,and also the core object used
-//between device drivers to communicate each other.
-//
-
-typedef DWORD (*DRCB_WAITING_ROUTINE)(__COMMON_OBJECT*);
-typedef DWORD (*DRCB_COMPLETION_ROUTINE)(__COMMON_OBJECT*);
-typedef DWORD (*DRCB_CANCEL_ROUTINE)(__COMMON_OBJECT*);
-
-//BEGIN_DEFINE_OBJECT(__DRCB)
+/*
+ * DRCB(Device Request Control Block) object.
+ * It's used to trace the device request operations,
+ * and is the core object of i/o system.
+ */
 typedef struct tag__DRCB{
     INHERIT_FROM_COMMON_OBJECT
-	__EVENT*                          lpSynObject;      //Used to synchronize the access.
-    __KERNEL_THREAD_OBJECT*           lpKernelThread;   //The kernel thread who originates
-	                                                    //the device access.
-	DWORD                             dwStatus;
-	DWORD                             dwRequestMode;    //Read,write,io control,etc.
-	DWORD                             dwCtrlCommand;    //If the request mode is io control,
-	                                                    //then is variable is used to indicate
-	                                                    //the control command.
 
-	DWORD                             dwOutputLen;      //Output buffer's length.
-	LPVOID                            lpOutputBuffer;   //Output buffer.
+	/* Wake up the drcb. */
+	__EVENT* lpSynObject;
+	/* thread this drcb belonging. */
+    __KERNEL_THREAD_OBJECT* lpKernelThread;
+	/* drcb status. */
+	unsigned long dwStatus;
+	/* request mode,r/w... */
+	unsigned long dwRequestMode;
+	/* command for iocontrol. */
+	unsigned long dwCtrlCommand;
 
-	DWORD                             dwInputLen;
-	LPVOID                            lpInputBuffer;
+	/* Output buffer and it's length. */
+	unsigned long dwOutputLen;
+	LPVOID lpOutputBuffer;
 
-	struct tag__DRCB*                           lpNext;
-	struct tag__DRCB*                           lpPrev;
+	/* Input buffer and it's length. */
+	unsigned long dwInputLen;
+	LPVOID lpInputBuffer;
 
-	DRCB_WAITING_ROUTINE              WaitForCompletion;  //Called when waiting the current
-	                                                      //device request to finish.
-	DRCB_COMPLETION_ROUTINE           OnCompletion;       //Called when the current request
-	                                                      //is over.
-	DRCB_CANCEL_ROUTINE               OnCancel;
+	/* Link list pointers. */
+	struct tag__DRCB* lpNext;
+	struct tag__DRCB* lpPrev;
 
-	DWORD                             dwExtraParam1;      //Extra parameter,very useful in some cases.
-	DWORD                             dwExtraParam2;      //Extra parameter.
-	LPVOID                            lpDrcbExtension;    //Extension pointer,pointing to specific data.
+	/* Wait the drcb to finish. */
+	DRCB_WAITING_ROUTINE WaitForCompletion;
+	/* Invoked when request finish, must in device driver. */
+	DRCB_COMPLETION_ROUTINE OnCompletion;
+	/* Invoked when drcb canceled. */
+	DRCB_CANCEL_ROUTINE OnCancel;
+	/* Must invoke when reuse. */
+	DRCB_RESET_ROUTINE Reset;
+
+	/* Extra parameters used in rare case. */
+	unsigned long dwExtraParam1;
+	unsigned long dwExtraParam2;
+
+	/* Extension,contains specific object. */
+	LPVOID lpDrcbExtension;
 }__DRCB;
 
-//Default wait time for DRCB request.If the physical operations can not be finished in
-//this time,the DRCB will give up.
-#define DRCB_DEFAULT_WAIT_TIME   10000 //10 seconds.
+/* 
+ * Default wait time for DRCB request in ms.
+ * The request will giveup if not finish in this
+ * period of time.
+ */
+#define DRCB_DEFAULT_WAIT_TIME   10000
 
-//
-//Initialize routine and Uninitialize routine's definition.
-//
+/* Init and deinit of drcb. */
 BOOL DrcbInitialize(__COMMON_OBJECT*);
 BOOL DrcbUninitialize(__COMMON_OBJECT*);
 
-//
-//DRCB status definition.
-//
+/* drcb status. */
 #define DRCB_STATUS_INITIALIZED       0x00000000
 #define DRCB_STATUS_FAIL              0x00000001  //The DRCB has not been handled.  
 #define DRCB_STATUS_SUCCESS           0x00000002  //The DRCB has been handled successfully.
 #define DRCB_STATUS_PENDING           0x00000004  //The DRCB is pended to handle.
 #define DRCB_STATUS_CANCELED          0x00000008  //The DRCB has been canceled.
 
-//
-//DRCB request mode definition.
-//
+/* drcb request type. */
 #define DRCB_REQUEST_MODE_READ        0x00000001        //Read operations.
 #define DRCB_REQUEST_MODE_WRITE       0x00000002        //Write operations.
 #define DRCB_REQUEST_MODE_OPEN        0x00000004        //Open operations.
@@ -176,9 +164,7 @@ BOOL DrcbUninitialize(__COMMON_OBJECT*);
 #define DRCB_REQUEST_MODE_IOCTRL      0x00000100        //IOControl operations.
 #define DRCB_REQUEST_MODE_SIZE        0x00000200        //GetFileSize
 
-//
-//The following definitions are used to indicate the appropriate I/O control command.
-//
+/* command for iocontrol routine. */
 #define IOCONTROL_GET_READ_BLOCK_SIZE    0x00000001  //Get read block size.
 #define IOCONTROL_GET_WRITE_BLOCK_SIZE   0x00000002  //Get write block size.
 #define IOCONTROL_READ_SECTOR            0x00000004  //Read one or several sectors from
@@ -197,131 +183,149 @@ BOOL DrcbUninitialize(__COMMON_OBJECT*);
 #define IOCONTROL_FS_FINDNEXTFILE        0x00001000  //Find next file.
 #define IOCONTROL_FS_REMOVEDIR           0x00002000  //Remove directory.
 
-//This object is used to transfer parameter in case of IOCONTROL_WRITE_SECTOR.
+/* Transfer parameters of write sector command. */
 BEGIN_DEFINE_OBJECT(__SECTOR_INPUT_INFO)
-    DWORD    dwStartSector;       //Start position to write.
-    DWORD    dwBufferLen;         //How many sector to write.
-	LPVOID   lpBuffer;            //Data to write.
+    unsigned long dwStartSector;
+    unsigned long dwBufferLen;
+	LPVOID   lpBuffer;
 END_DEFINE_OBJECT(__SECTOR_INPUT_INFO)
 
-//
-//The definition of __RESOURCE_DESCRIPTOR.
-//This object is used to describe system resource,such as input/output port,DMA channel,
-//interrupt vector,etc.
-//
+/* 
+ * This object is used to describe hardware 
+ * resources, such as input/output port,DMA channel,
+ * interrupt vector,etc.
+ */
 typedef struct tag__RESOURCE_DESCRIPTOR{
-    struct tag__RESOURCE_DESCRIPTOR*    lpNext;      //Pointes to next descriptor.
-    struct tag__RESOURCE_DESCRIPTOR*    lpPrev;      //Pointes to previous descriptor.
+	/* List pointers. */
+    struct tag__RESOURCE_DESCRIPTOR* lpNext;
+    struct tag__RESOURCE_DESCRIPTOR* lpPrev;
 
-    DWORD              dwStartPort;
-    DWORD              dwEndPort;
-	DWORD              dwDmaChannel;
-	DWORD              dwInterrupt;
-	LPVOID             lpMemoryStartAddr;
-	DWORD              dwMemoryLen;
+    unsigned long dwStartPort;
+    unsigned long dwEndPort;
+	unsigned long dwDmaChannel;
+	unsigned long dwInterrupt;
+	LPVOID lpMemoryStartAddr;
+	unsigned long dwMemoryLen;
 }__RESOURCE_DESCRIPTOR;
 
-//
-//The definition of __DRIVER_OBJECT.
-//
-//BEGIN_DEFINE_OBJECT(__DRIVER_OBJECT)
-typedef struct tag__DRIVER_OBJECT{
-    INHERIT_FROM_COMMON_OBJECT
+/* Device driver object. */
+typedef struct tag__DRIVER_OBJECT {
+	INHERIT_FROM_COMMON_OBJECT
+	
+	/* Bidirectional link list pointers. */
+	struct tag__DRIVER_OBJECT* lpPrev;
+	struct tag__DRIVER_OBJECT* lpNext;
 
-	struct tag__DRIVER_OBJECT*            lpPrev;
-    struct tag__DRIVER_OBJECT*            lpNext;
+	/* Read from device. */
+	DWORD (*DeviceRead)(__COMMON_OBJECT*  lpDrv,
+		__COMMON_OBJECT*  lpDev,
+		__DRCB*           lpDrcb);
 
-	DWORD          (*DeviceRead)(__COMMON_OBJECT*  lpDrv,    //Read routine.
-	                             __COMMON_OBJECT*  lpDev,
-								 __DRCB*           lpDrcb);
+	/* Write into device. */
+	DWORD (*DeviceWrite)(__COMMON_OBJECT*  lpDrv,
+		__COMMON_OBJECT*  lpDev,
+		__DRCB*           lpDrcb);
 
-    DWORD          (*DeviceWrite)(__COMMON_OBJECT*  lpDrv,   //Write routine.
-		                          __COMMON_OBJECT*  lpDev,
-								  __DRCB*           lpDrcb);
-	DWORD          (*DeviceSize)(__COMMON_OBJECT*   lpDrv,
-		                         __COMMON_OBJECT*   lpDev,
-		                         __DRCB*            lpDrcb);
+	/* Get Device's size. */
+	DWORD (*DeviceSize)(__COMMON_OBJECT*   lpDrv,
+		__COMMON_OBJECT*   lpDev,
+		__DRCB*            lpDrcb);
 
-	DWORD          (*DeviceCtrl)(__COMMON_OBJECT*  lpDrv,
-		                         __COMMON_OBJECT*  lpDev,
-								 __DRCB*           lpDrcb);
+	/* Device specific control. */
+	DWORD (*DeviceCtrl)(__COMMON_OBJECT*  lpDrv,
+		__COMMON_OBJECT*  lpDev,
+		__DRCB*           lpDrcb);
 
-	DWORD          (*DeviceFlush)(__COMMON_OBJECT*  lpDrv,
-		                          __COMMON_OBJECT*  lpDev,
-								  __DRCB*           lpDrcb);
+	/* Flush in memory content into device. */
+	DWORD (*DeviceFlush)(__COMMON_OBJECT*  lpDrv,
+		__COMMON_OBJECT*  lpDev,
+		__DRCB*           lpDrcb);
 
-	DWORD          (*DeviceSeek)(__COMMON_OBJECT*   lpDrv,
-		                         __COMMON_OBJECT*   lpDev,
-								 __DRCB*            lpDrcb);
+	/* Move device pointer. */
+	DWORD (*DeviceSeek)(__COMMON_OBJECT*   lpDrv,
+		__COMMON_OBJECT*   lpDev,
+		__DRCB*            lpDrcb);
 
+	/* Open a device. */
 	__COMMON_OBJECT* (*DeviceOpen)(__COMMON_OBJECT*   lpDrv,
-		                         __COMMON_OBJECT*   lpDev,
-								 __DRCB*            lpDrcb);
+		__COMMON_OBJECT*   lpDev,
+		__DRCB*            lpDrcb);
 
-	DWORD          (*DeviceClose)(__COMMON_OBJECT*  lpDrv,
-		                          __COMMON_OBJECT*  lpDev,
-								  __DRCB*           lpDrcb);
+	/* Close the opened device. */
+	DWORD (*DeviceClose)(__COMMON_OBJECT*  lpDrv,
+		__COMMON_OBJECT*  lpDev,
+		__DRCB*           lpDrcb);
 
-	DWORD          (*DeviceCreate)(__COMMON_OBJECT*  lpDrv,
-		                           __COMMON_OBJECT*  lpDev,
-								   __DRCB*           lpDrcb);
+	/* Create a new device. */
+	DWORD (*DeviceCreate)(__COMMON_OBJECT*  lpDrv,
+		__COMMON_OBJECT*  lpDev,
+		__DRCB*           lpDrcb);
 
-	DWORD          (*DeviceDestroy)(__COMMON_OBJECT* lpDrv,
-		                            __COMMON_OBJECT* lpDev,
-									__DRCB*          lpDrcb);
+	/* Destroy the created device. */
+	DWORD (*DeviceDestroy)(__COMMON_OBJECT* lpDrv,
+		__COMMON_OBJECT* lpDev,
+		__DRCB*          lpDrcb);
+
+	/* Show out device specific information. */
+	unsigned long (*DeviceSpecificShow)(__COMMON_OBJECT* lpDrv,
+		__COMMON_OBJECT* lpDev,
+		__DRCB*          lpDrcb);
 }__DRIVER_OBJECT;
-//END_DEFINE_OBJECT(__DRIVER_OBJECT) //End definition of __DRIVER_OBJECT.
 
-//
-//Initialize routine and Uninitialize routine's definition.
-//
+/* Init and deinit routines of drv object. */
 BOOL DrvObjInitialize(__COMMON_OBJECT*);
 BOOL DrvObjUninitialize(__COMMON_OBJECT*);
 
-//
-//The definition of __DEVICE_OBJECT.
-//
+/* Device object signature. */
 #define DEVICE_OBJECT_SIGNATURE 0xAA55AA55
 
-//BEGIN_DEFINE_OBJECT(__DEVICE_OBJECT)
-typedef struct tag__DEVICE_OBJECT{
-    INHERIT_FROM_COMMON_OBJECT
 
-	DWORD                       dwSignature;  //Used to validate the object's validation.
-	struct tag__DEVICE_OBJECT*            lpPrev;
-    struct tag__DEVICE_OBJECT*            lpNext;
+/* Device object. */
+typedef struct tag__DEVICE_OBJECT {
+	INHERIT_FROM_COMMON_OBJECT
 
-	CHAR                        DevName[MAX_DEV_NAME_LEN + 1];
-	DWORD                       dwAttribute;
-	DWORD                       dwBlockSize;
-	DWORD                       dwMaxReadSize;
-	DWORD                       dwMaxWriteSize;
+	/* Device signature,valid the device. */
+	unsigned long dwSignature;
 
-	/* 
+	/* Bidirectional link list. */
+	struct tag__DEVICE_OBJECT* lpPrev;
+	struct tag__DEVICE_OBJECT* lpNext;
+
+	/* device name. */
+	char DevName[MAX_DEV_NAME_LEN + 1];
+
+	/* Device attributes, block size. */
+	unsigned long dwAttribute;
+	unsigned long dwBlockSize;
+	unsigned long dwMaxReadSize;
+	unsigned long dwMaxWriteSize;
+
+	/*
 	 * Current position pointer of the device.
 	 * It will be moved forward when reading operation performed,
 	 * and can be changed by calling SetFilePointer routine
 	 * of IOManager.
 	 */
-	DWORD                       dwCurrentPos;
+	unsigned long dwCurrentPos;
 
-	__DRIVER_OBJECT*            lpDriverObject;    //Point back to this device's driver.
-	DWORD                       dwTotalReadSector; //How many sectors has been read.
-	DWORD                       dwTotalWrittenSector; //How many sectors has been written.
-	DWORD                       dwInterrupt;       //How many interrupts raised by this
-	                                               //device.
-	LPVOID                      lpDevExtension;
+	/* Point back to this device's driver. */
+	__DRIVER_OBJECT* lpDriverObject;
+	/* How many sectors has been r/w. */
+	unsigned long dwTotalReadSector;
+	unsigned long dwTotalWrittenSector;
+
+	/* How many interrupt raised by this device. */
+	unsigned long dwInterrupt;
+	
+	/* Device extension. */
+	LPVOID lpDevExtension;
 }__DEVICE_OBJECT;
 
-//
-//Initialize routine and Uninitialize routine's definition.
-//
+/* Init and deinit routines. */
 BOOL DevObjInitialize(__COMMON_OBJECT*);
 BOOL DevObjUninitialize(__COMMON_OBJECT*);
 
-//
-//Device type definition.
-//
+/* Device types. */
 #define DEVICE_TYPE_NORMAL             0x00000000         //Normal devices.
 #define DEVICE_TYPE_FILESYSTEM         0x00000001         //File system object.
 #define DEVICE_TYPE_STORAGE            0x00000002         //Storage devices.
@@ -345,17 +349,17 @@ BOOL DevObjUninitialize(__COMMON_OBJECT*);
                                                           //be accessed,it can specifiy this
                                                           //value.
 
-//
-//Driver entry routine.
-//All device drivers must implement this routine,this routine is the entry point
-//of a device driver.
-//
+/*
+ * Driver entry routine.
+ * All device drivers must implement this routine,
+ * it's the entry point of a device driver.
+ */
 typedef BOOL (*__DRIVER_ENTRY)(__DRIVER_OBJECT*);
 
-//A array object to manage the drivers in system.
+/* Built in driver's array element. */
 typedef struct{
 	__DRIVER_ENTRY Entry;
-	char*          pszDriverName;
+	char* pszDriverName;
 }__DRIVER_ENTRY_ARRAY;
 
 //
@@ -373,7 +377,8 @@ typedef struct{             //NEWLY ADDED.
 	BYTE              VolumeLbl[VOLUME_LBL_LEN];   //Volumne ID.
 }__FS_ARRAY_ELEMENT;
 
-#define FS_CTRL_NUM 4       //How many file system controller,such as NTFS,FAT,etc.
+/* How many file system,such as NTFS,FAT,etc. */
+#define FS_CTRL_NUM 4
 
 /* 
  * IO Manager object,all IO functions are offered by 
@@ -499,6 +504,14 @@ typedef struct tag__IO_MANAGER{
 		LPVOID lpDevExtension,
 		__DRIVER_OBJECT* lpDrvObject);
 
+	/* Return a device object given it's name. */
+	__DEVICE_OBJECT* (*GetDevice)(__COMMON_OBJECT* lpThis,
+		char* device_name);
+
+	/* Release the device got by GetDevice. */
+	BOOL (*ReleaseDevice)(__COMMON_OBJECT* lpThis,
+		__COMMON_OBJECT* pDeviceObject);
+
 	/* Destroy a device object. */
 	VOID (*DestroyDevice)(__COMMON_OBJECT* lpThis,
 		__DEVICE_OBJECT* lpDevObj);
@@ -521,38 +534,31 @@ typedef struct tag__IO_MANAGER{
 		__COMMON_OBJECT* lpFileSystem);
 }__IO_MANAGER;
 
-//
-//The following macros are used by CreateFile.
-//
-#define FILE_ACCESS_READ         0x00000001    //Read access.
-#define FILE_ACCESS_WRITE        0x00000002    //Write access.
-#define FILE_ACCESS_READWRITE    0x00000003    //Read and write access.
-#define FILE_ACCESS_CREATE       0x00000004    //Create a new file.
+/* Flags to control file accessing. */
+/* read only access. */
+#define FILE_ACCESS_READ         0x00000001
+/* Write only access. */
+#define FILE_ACCESS_WRITE        0x00000002
+/* Both read and write. */
+#define FILE_ACCESS_READWRITE    0x00000003
+/* Create a new file. */
+#define FILE_ACCESS_CREATE       0x00000004
+/* Create a new file if the specified isn't exist. */
+#define FILE_OPEN_ALWAYS         0x80000000
+/* Create a new file,overwrite existing one. */
+#define FILE_OPEN_NEW            0x40000000
+/* Open a existing file. */
+#define FILE_OPEN_EXISTING       0x20000000
 
-#define FILE_OPEN_ALWAYS         0x80000000    //If can not open one,create a new one then open it.
-#define FILE_OPEN_NEW            0x40000000    //Create a new file,overwrite existing if.
-#define FILE_OPEN_EXISTING       0x20000000    //Open a existing file,return fail if does not exist.
-
-//
-//The following macros are used by SetFilePointer routine.
-//
+/*
+ * Used by SetFilePointer routine to control 
+ * moving direction.
+ */
 #define FILE_FROM_BEGIN        0x00000001
 #define FILE_FROM_CURRENT      0x00000002
 #define FILE_FROM_END          0x00000003
 
-/*************************************************************************
-**************************************************************************
-**************************************************************************
-**************************************************************************
-*************************************************************************/
-
-//
-//The declaration of IOManager object.
-//
+/* Global I/O manager. */
 extern __IO_MANAGER IOManager;
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif    //iomgr.h
+#endif    //__IOMGR_H__

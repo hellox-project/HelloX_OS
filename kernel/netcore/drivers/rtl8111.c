@@ -642,7 +642,9 @@ static BOOL RTL8111_Start(rtl8111_priv_t* priv)
 		RTL_W16(IntrMask, rtl8111_intr_mask);
 	}
 
-	priv->hInterrupt = ConnectInterrupt(RTL8111_Interrupt,
+	priv->hInterrupt = ConnectInterrupt(
+		"int_rtl8111",
+		RTL8111_Interrupt,
 		global_nic,
 		priv->intVector + INTERRUPT_VECTOR_BASE);
 	if (NULL == priv->hInterrupt)

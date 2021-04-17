@@ -339,6 +339,7 @@ __TERMINAL:
 static void SC_ConnectInterrupt(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	SYSCALL_RET = (uint32_t)ConnectInterrupt(
+		"int_user",
 		(__INTERRUPT_HANDLER)PARAM(0),
 		(LPVOID)PARAM(1),
 		(UCHAR)PARAM(2));

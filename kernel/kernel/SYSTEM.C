@@ -269,6 +269,7 @@ __WAKEUP_KERNEL_THREAD:
  *  2. Set the object's data members correctly.
  */
 static __COMMON_OBJECT* __ConnectInterrupt(__COMMON_OBJECT* lpThis,
+	const char* int_name,
 	__INTERRUPT_HANDLER lpInterruptHandler,
 	LPVOID lpHandlerParam,
 	UCHAR ucVector,
@@ -315,6 +316,7 @@ static __COMMON_OBJECT* __ConnectInterrupt(__COMMON_OBJECT* lpThis,
 	lpInterrupt->ucVector = ucVector;
 	lpInterrupt->InterruptHandler = lpInterruptHandler;
 	lpInterrupt->lpHandlerParam = lpHandlerParam;
+	strncpy(lpInterrupt->int_name, int_name, MAX_INTERRUPT_NAME_LENGTH - 1);
 
 	__ENTER_CRITICAL_SECTION_SMP(System.spin_lock, dwFlags);
 	lpObjectRoot = lpSystem->InterruptSlotArray[ucVector].lpFirstIntObject;
@@ -380,14 +382,14 @@ static VOID __DisconnectInterrupt(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpInt
 /* Initializer of interrupt object. */
 BOOL InterruptInitialize(__COMMON_OBJECT* lpThis)
 {
-	__INTERRUPT_OBJECT* lpInterrupt = NULL;
+	__INTERRUPT_OBJECT* lpInterrupt = (__INTERRUPT_OBJECT*)lpThis;
 
-	if(NULL == lpThis)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpInterrupt);
 
-	lpInterrupt = (__INTERRUPT_OBJECT*)lpThis;
+#if defined(__CFG_SYS_SMP)
+	__INIT_SPIN_LOCK(lpInterrupt->spin_lock, "interrupt");
+#endif
+	lpInterrupt->int_name[0] = 0;
 	lpInterrupt->lpPrevInterruptObject = NULL;
 	lpInterrupt->lpNextInterruptObject = NULL;
 	lpInterrupt->InterruptHandler      = NULL;
@@ -485,6 +487,7 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	lpIntObject->ucVector = INTERRUPT_VECTOR_TIMER;
 	lpIntObject->lpHandlerParam = NULL;
 	lpIntObject->InterruptHandler = __TimerInterruptHandler;
+	strncpy(lpIntObject->int_name, "int_systimer", MAX_INTERRUPT_NAME_LENGTH - 1);
 
 #ifdef __CFG_SYS_SYSCALL
 	//Create and initialize system call exception interrupt object.
@@ -504,6 +507,7 @@ static BOOL SystemInitialize(__COMMON_OBJECT* lpThis)
 	lpExpObject->ucVector = EXCEPTION_VECTOR_SYSCALL;
 	lpExpObject->lpHandlerParam = NULL;
 	lpExpObject->InterruptHandler = SyscallHandler;
+	strncpy(lpExpObject->int_name, "int_except", MAX_INTERRUPT_NAME_LENGTH - 1);
 
 	//Register all system calls into call array.
 	RegisterSysCallEntry();
@@ -1143,9 +1147,10 @@ static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis,
 	UCHAR ucVector, 
 	__INTERRUPT_VECTOR_STAT* pStat)
 {
-	__SYSTEM*           lpSystem = (__SYSTEM*)lpThis;
-	__INTERRUPT_SLOT*   pIntSlot = NULL;
+	__SYSTEM* lpSystem = (__SYSTEM*)lpThis;
+	__INTERRUPT_SLOT* pIntSlot = NULL;
 	__INTERRUPT_OBJECT* pIntObject = NULL;
+	int max_obj = 0;
 
 	if (NULL == lpSystem)
 	{
@@ -1168,6 +1173,16 @@ static BOOL _GetInterruptStat(__COMMON_OBJECT* lpThis,
 	while (pIntObject)
 	{
 		pStat->dwTotalIntObject ++;
+		/*
+		 * Return all interrupt objects' name, at most
+		 * 8 names are returned.
+		 */
+		if (max_obj < 8)
+		{
+			strncpy(&pStat->int_name[max_obj][0], (const char*)&pIntObject->int_name[0], 
+				MAX_INTERRUPT_NAME_LENGTH);
+			max_obj++;
+		}
 		pIntObject = pIntObject->lpNextInterruptObject;
 	}
 	return TRUE;

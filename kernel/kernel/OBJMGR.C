@@ -79,7 +79,7 @@ END_DECLARE_INIT_DATA()
  *    If successfully,returns the base address of new created object,
  *    otherwise,returns NULL.
  */
-static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,
+static __COMMON_OBJECT* __CreateObject(__OBJECT_MANAGER* lpObjectManager,
 	__COMMON_OBJECT* lpObjectOwner,
 	DWORD dwType)
 {
@@ -137,7 +137,7 @@ static __COMMON_OBJECT* CreateObject(__OBJECT_MANAGER* lpObjectManager,
 	/* Initialize the new created object. */
 	__ENTER_CRITICAL_SECTION_SMP(lpObjectManager->spin_lock,dwFlags);
 	pObject->dwObjectID = lpObjectManager->dwCurrentObjectID;
-	lpObjectManager->dwCurrentObjectID ++;     //Now,update the Object Manager's status.
+	lpObjectManager->dwCurrentObjectID ++;
 
 	pObject->dwObjectSize = dwObjectSize;
 	pObject->dwObjectType = dwType;
@@ -541,6 +541,47 @@ __TERMINAL:
 	return bResult;
 }
 
+/* Show out all specified kind kernel object's information. */
+static void __ShowKernelObject(unsigned long kobj_type)
+{
+	__COMMON_OBJECT* pObject = NULL;
+	__COMMON_OBJECT* pNext = NULL;
+
+	if (kobj_type >= MAX_KERNEL_OBJECT_TYPE)
+	{
+		return;
+	}
+	switch (kobj_type)
+	{
+	case OBJECT_TYPE_MAILBOX:
+		pObject = ObjectManager.ObjectListHeader[OBJECT_TYPE_MAILBOX].lpFirstObject;
+		while (pObject)
+		{
+			/* Lock the object first. */
+			if (__AddRefCount(&ObjectManager, pObject))
+			{
+				__ShowMailboxObject(pObject);
+				pNext = pObject->lpNextObject;
+				/* Release the object. */
+				__DestroyObject(&ObjectManager, pObject);
+				pObject = pNext;
+			}
+			else {
+				/* 
+				 * Add refcount failed, the kernel object 
+				 * maybe destroyed after we got it's pointer.
+				 * Just give up in this case.
+				 */
+				break;
+			}
+		}
+		break;
+	default:
+		break;
+	}
+	return;
+}
+
 /* Object Manager,all kernel objects are managed by this object. */
 __OBJECT_MANAGER ObjectManager = {
 	1,									//Initial object ID value.
@@ -551,11 +592,12 @@ __OBJECT_MANAGER ObjectManager = {
 
 	/* Member routines. */
 	__Initialize,                       //Initialize routine.
-	CreateObject,                       //CreateObject routine.
+	__CreateObject,                     //CreateObject routine.
 	__GetObject,                        //GetObject routine.
 	GetObjectByID,                      //GetObjectByID routine.
 	GetFirstObjectByType,               //GetFirstObjectByType routine.
 	__DestroyObject,                    //DestroyObject routine.
 	__AddRefCount,                      //AddRefCount routine.
 	_ValidateObject,                    //ValidateObject routine.
+	__ShowKernelObject,                 //ShowKernelObject.
 };

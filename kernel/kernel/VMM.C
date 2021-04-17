@@ -605,13 +605,19 @@ __TERMINAL:
 
 /*
  * DoIoCommit routine.
- * When VirtualAlloc is called with VIRTUAL_AREA_ALLOCATE_IOCOMMIT,
- * this is routine is called by VirtualAlloc.It allocates a virtual area,initializes it,
- * insert it into virtual area list and reserve memory page for it.
- * The difference between this and DoReserveAndCommit is,the Page Table's cache flags is
- * set to disabled in this routine,thus the memory synchronization is guaranteed.
- * Must code lines are same between this and DoReserveAndCommit,we will combine them as
- * one routine in the future,but not now,just because of my lazy...:-)
+ * This routine is invoked when VIRTUAL_AREA_ALLOCATE_IOCOMMIT
+ * flat is set when VirtualAlloc is called.
+ * It allocates a virtual area,initializes it,
+ * insert it into virtual area list and reserve
+*  memory page for it.
+ * The difference between this and DoReserveAndCommit 
+ * is,the Page Table's cache disable flag(PCD) is 
+ * set to disable page caching, and is suit for device
+ * I/O in most scenarios.
+ * Must code lines are same between this and 
+ * DoReserveAndCommit routine,we will combine them as
+ * one routine in the future,but not now,
+ * just because of my lazy...:-)
  */
 static LPVOID DoIoCommit(__COMMON_OBJECT* lpThis,
 	LPVOID lpDesiredAddr,

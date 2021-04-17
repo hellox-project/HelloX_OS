@@ -1,9 +1,9 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : 01 FEB,2009
-//    Module Name               : FDISK.CPP
+//    Module Name               : fdisk.c
 //    Module Funciton           : 
-//    Description               : Implementation code of fdisk application.
+//    Description               : Hard disk operation tools as DOS's fdisk.
 //    Last modified Author      :
 //    Last modified Date        : 
 //    Last modified Content     :
@@ -13,11 +13,7 @@
 //    Extra comment             : 
 //***********************************************************************/
 
-#ifndef __STDAFX_H__
 #include "StdAfx.h"
-#endif
-
-
 #include "kapi.h"
 #include "string.h"
 #include "stdio.h"
@@ -28,199 +24,214 @@
 
 #define  FDISK_PROMPT_STR   "[fdisk_view]"
 
-//
-//Pre-declare routines.
-//
+/* Routines invoked in this module. */
 static DWORD CommandParser(LPSTR);
-static DWORD disklist(__CMD_PARA_OBJ*);    //disklist sub-command's handler.
-static DWORD use(__CMD_PARA_OBJ*);         //use sub-command's handler.
-static DWORD partlist(__CMD_PARA_OBJ*);    //partlist sub-commnad's handler.
-static DWORD partadd(__CMD_PARA_OBJ*);     //partadd sub-command's handler.
-static DWORD partdel(__CMD_PARA_OBJ*);     //partdel sub-command's handler.
-static DWORD help(__CMD_PARA_OBJ*);        //help sub-command's handler.
-static DWORD _exit(__CMD_PARA_OBJ*);        //exit sub-command's handler.
+static DWORD disklist(__CMD_PARA_OBJ*);
+static DWORD use(__CMD_PARA_OBJ*);
+static DWORD partlist(__CMD_PARA_OBJ*);
+static DWORD partadd(__CMD_PARA_OBJ*);
+static DWORD partdel(__CMD_PARA_OBJ*);
+static DWORD help(__CMD_PARA_OBJ*);
+static DWORD _exit(__CMD_PARA_OBJ*);
 static DWORD pdevlist(__CMD_PARA_OBJ*);
-extern DWORD format(__CMD_PARA_OBJ*);      //Implemented in FDISK2.CPP.
+extern DWORD format(__CMD_PARA_OBJ*);
 
-//
-//The following is a map between command and it's handler.
-//
+/* Command and handler's map. */
 static struct __SHELL_CMD_PARSER_MAP{
-	LPSTR                lpszCommand;
-	DWORD                (*CommandHandler)(__CMD_PARA_OBJ*);
-	LPSTR                lpszHelpInfo;
+	LPSTR lpszCommand;
+	unsigned long (*CommandHandler)(__CMD_PARA_OBJ*);
+	LPSTR lpszHelpInfo;
 }SysDiagCmdMap[] = {
-	{"disklist",   disklist,  "  disklist : List all disk(s) information in current system."},
-	{"use",        use,       "  use      : Select the current operational disk."},
-	{"partlist",   partlist,  "  partlist : List all partition(s) in current disk."},
-	{"pdevlist",   pdevlist,  "  pdevlist : List all partition object(s) in system."},
-	{"format",     format,    "  format   : Use a specified file system to format one partition."},
-	{"partadd",    partadd,   "  partadd  : Add one partition to current disk."},
-	{"partdel",    partdel,   "  partdel  : Delete one partition from current disk."},
-	{"exit",       _exit,     "  exit     : Exit the application."},
+	{"disklist",   disklist,  "  disklist : List all available disk(s)."},
+	{"use",        use,       "  use      : Select current disk."},
+	{"partlist",   partlist,  "  partlist : List all partition(s)."},
+	{"pdevlist",   pdevlist,  "  pdevlist : List all partition object(s)."},
+	{"format",     format,    "  format   : Format one partition."},
+	{"partadd",    partadd,   "  partadd  : Add one partition."},
+	{"partdel",    partdel,   "  partdel  : Delete one partition."},
+	{"exit",       _exit,     "  exit     : Exit."},
 	{"help",       help,      "  help     : Print out this screen."},
 	{NULL,		   NULL,      NULL}
 };
 
-//Partition table in MBR.
+/* Partition table entry in MBR. */
+#pragma pack(push, 1)
 typedef struct{
-	UCHAR      IfActive;            //80 is active,00 is inactive.
-	UCHAR      StartCHS1;           //Start cylinder,sector and track.
+	/* 80 is active,00 is inactive. */
+	UCHAR      IfActive;
+	/* Start cylinder,sector and track. */
+	UCHAR      StartCHS1;
 	UCHAR      StartCHS2;
 	UCHAR      StartCHS3;
-	UCHAR      PartitionType;       //Partition type,such as FAT32,NTFS.
-	UCHAR      EndCHS1;             //End cylinder,sector and track.
+	/* Partition type. */
+	UCHAR      PartitionType;
+	/* End cylinder,sector and track. */
+	UCHAR      EndCHS1;
 	UCHAR      EndCHS2;
 	UCHAR      EndCHS3;
-	DWORD      dwStartSector;       //Start logical sector.
-	DWORD      dwTotalSector;       //Sector number occupied by this partition.
+	/* Start logical sector, LBA mode. */
+	uint32_t dwStartSector;
+	/* Total sector number. */
+	uint32_t dwTotalSector;
 }__PARTITION_TABLE_ENTRY;
+#pragma pack(pop)
 
-//Free gap in disk.
-typedef struct{
-	DWORD dwStartSectorNum;         //Start sector number of a free gap.
-	DWORD dwEndSectorNum;           //End sector number of a free gap.
-}__DISK_FREE_GAP;
-
-//A block of global data used to operate current disk.
+/* Helper structure to operate disk. */
 static struct __MBR_CONTROL_BLOCK{
-	__PARTITION_TABLE_ENTRY TableEntry[4];  //One for each partition table entry.
-	__COMMON_OBJECT*        pCurrentDisk;   //Current operational disk object.
-	__DISK_FREE_GAP         FreeGap[5];     //At most 5 gaps in case of 4 partitions.
-	DWORD                   dwDiskSector;   //Sector counter of current disk.
-	UCHAR                   DiskName[MAX_DEV_NAME_LEN + 1]; //Current disk's name.
-	UCHAR                   SectorBuffer[512]; //MBR buffer.
+	/* Partition entry table. */
+	__PARTITION_TABLE_ENTRY TableEntry[4];
+	/* Current disk object. */
+	__DEVICE_OBJECT* pCurrentDisk;
+	/* Sector counter of current disk. */
+	unsigned long dwDiskSector;
+	UCHAR DiskName[MAX_DEV_NAME_LEN + 1];
+	/* Buffer holds current disk's MBR. */
+	unsigned char* pMbrBuffer;
 }MbrControlBlock = {0};
 
-//A helper routine convert LBA address to CHS address.
-static VOID LBAtoCHS(DWORD dwLbaAddr,UCHAR* pchs1,UCHAR* pchs2,UCHAR* pchs3)
+/* Helper routine convert LBA address to CHS address. */
+static VOID LBAtoCHS(DWORD dwLbaAddr, UCHAR* pchs1, UCHAR* pchs2, UCHAR* pchs3)
 {
 	DWORD  CS = 0;
 	DWORD  HS = 0;
 	DWORD  SS = 1;
 	DWORD  PS = 63;
 	DWORD  PH = 255;
-	DWORD  c,h,s;
+	DWORD  c, h, s;
 
 	c = dwLbaAddr / (PH * PS) + CS;
 	h = dwLbaAddr / PS - (c - CS) * PS + HS;
 	s = dwLbaAddr - (c - CS) * PH * PS - (h - HS) * PS + SS;
 
-	*pchs1 =  (UCHAR)h;           //Header number.
-	*pchs2 =  (UCHAR)(s & 0x3F);  //Sector number,occupy low 6 bits.
+	*pchs1 = (UCHAR)h;           //Header number.
+	*pchs2 = (UCHAR)(s & 0x3F);  //Sector number,occupy low 6 bits.
 	*pchs2 &= (UCHAR)((c >> 2) & 0xC0);  //Cylinder number,high 2 bits.
-	*pchs3 =  (UCHAR)c;           //Cylinder number,low 8 bits.
+	*pchs3 = (UCHAR)c;           //Cylinder number,low 8 bits.
 }
 
-//Two helper routines used to read or write sector(s) from or into disk.
-//Read one or several sector(s) from device object.
-//This is the lowest level routine used by all FAT32 driver code.
-static BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
-					  DWORD            dwStartSector,
-					  DWORD            dwSectorNum,   //How many sector to read.
-					  BYTE*            pBuffer)       //Must equal or larger than request.
+/*
+ * Two helper routines used to read or write sector(s) 
+ * from or into a parttion or hard disk.
+ * These 2 routines are used by the whole fdisk app,
+ * include other code modules in other source file.
+ */
+BOOL __ReadDeviceSector(__COMMON_OBJECT* pPartition,
+	DWORD dwStartSector,
+	DWORD dwSectorNum,
+	BYTE* pBuffer)
 {
-	BOOL              bResult        = FALSE;
-	__DRIVER_OBJECT*  pDrvObject     = NULL;
-	__DEVICE_OBJECT*  pDevObject     = (__DEVICE_OBJECT*)pPartition;
-	__DRCB*           pDrcb          = NULL;
+	BOOL bResult = FALSE;
+	__DRIVER_OBJECT* pDrvObject = NULL;
+	__DEVICE_OBJECT* pDevObject = (__DEVICE_OBJECT*)pPartition;
+	__DRCB* pDrcb = NULL;
 
-	if((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))  //Invalid parameters.
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer));
 	pDrvObject = pDevObject->lpDriverObject;
 
-	pDrcb = (__DRCB*)CREATE_OBJECT(__DRCB);
-	if(NULL == pDrcb)
+	/* New a drcb object to carry request. */
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+		NULL, OBJECT_TYPE_DRCB);
+	if (NULL == pDrcb)
 	{
 		goto __TERMINAL;
 	}
-	if(DEVICE_OBJECT_SIGNATURE != pDevObject->dwSignature)
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
 	{
-		PrintLine("Invalid device object encountered.");
 		goto __TERMINAL;
 	}
-	//Initialize the DRCB object.
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;
-	pDrcb->dwCtrlCommand   = IOCONTROL_READ_SECTOR;
-	pDrcb->dwInputLen      = sizeof(DWORD);
-	pDrcb->lpInputBuffer   = (LPVOID)&dwStartSector;    //Input buffer stores the start position pointer.
-	pDrcb->dwOutputLen     = dwSectorNum * (pDevObject->dwBlockSize);
-	pDrcb->lpOutputBuffer  = pBuffer;
-	//Issue the IO control command to read data.
-	if(0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
+
+	/* Initializes DRCB object. */
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
+	pDrcb->dwCtrlCommand = IOCONTROL_READ_SECTOR;
+	pDrcb->dwInputLen = sizeof(DWORD);
+	/* Use input buffer to store the start sector. */
+	pDrcb->lpInputBuffer = (LPVOID)&dwStartSector;
+	pDrcb->dwOutputLen = dwSectorNum * 512; //(pDevObject->dwBlockSize);
+	pDrcb->lpOutputBuffer = pBuffer;
+	/* Issue read sector command to device. */
+	if (0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
 		(__COMMON_OBJECT*)pDevObject,
-		pDrcb))  //Can not read.
+		pDrcb))
 	{
+		/* Read fail. */
 		goto __TERMINAL;
 	}
-	bResult = TRUE;  //Indicate read successfully.
+	bResult = TRUE;
 
 __TERMINAL:
-	if(pDrcb)  //Should release it.
+	if (pDrcb)
 	{
-		RELEASE_OBJECT(pDrcb);
+		/* Release DRCB. */
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 	}
 	return bResult;
 }
 
-//Write one or several sector(s) to device.
-static BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
-					  DWORD            dwStartSector,
-					  DWORD            dwSectorNum,   //How many sector to write.
-					  BYTE*            pBuffer)       //Must equal or larger than request.
+/* 
+ * Helper routine that writes 
+ * one or several sector(s) to a disk or
+ * partition device. 
+ */
+BOOL __WriteDeviceSector(__COMMON_OBJECT* pPartition,
+	DWORD dwStartSector,
+	DWORD dwSectorNum,
+	BYTE* pBuffer)
 {
-	BOOL              bResult        = FALSE;
-	__DRIVER_OBJECT*  pDrvObject     = NULL;
-	__DEVICE_OBJECT*  pDevObject     = (__DEVICE_OBJECT*)pPartition;
-	__DRCB*           pDrcb          = NULL;
+	BOOL bResult = FALSE;
+	__DRIVER_OBJECT* pDrvObject = NULL;
+	__DEVICE_OBJECT* pDevObject = (__DEVICE_OBJECT*)pPartition;
+	__DRCB* pDrcb = NULL;
 	__SECTOR_INPUT_INFO ssi;
 
-	if((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))  //Invalid parameters.
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer));
 	pDrvObject = pDevObject->lpDriverObject;
 
-	pDrcb = (__DRCB*)CREATE_OBJECT(__DRCB);
-	if(NULL == pDrcb)
+	/* New a drcb object to carry request. */
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+		NULL, OBJECT_TYPE_DRCB);
+	if (NULL == pDrcb)
 	{
 		goto __TERMINAL;
 	}
-	ssi.dwBufferLen   = dwSectorNum * pDevObject->dwBlockSize;
-	ssi.lpBuffer      = pBuffer;
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
+		goto __TERMINAL;
+	}
+
+	/* use SSI to xfer input information. */
+	ssi.dwBufferLen = dwSectorNum * STORAGE_DEFAULT_SECTOR_SIZE;
+	ssi.lpBuffer = pBuffer;
 	ssi.dwStartSector = dwStartSector;
-	//Initialize the DRCB object.
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;
-	pDrcb->dwCtrlCommand   = IOCONTROL_WRITE_SECTOR;
-	pDrcb->dwInputLen      = sizeof(__SECTOR_INPUT_INFO);
-	pDrcb->lpInputBuffer   = (LPVOID)&ssi;
-	pDrcb->dwOutputLen     = 0;
-	pDrcb->lpOutputBuffer  = NULL;
-	//Issue the IO control command to read data.
-	if(0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
+	/* Initializes DRCB object. */
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
+	pDrcb->dwCtrlCommand = IOCONTROL_WRITE_SECTOR;
+	pDrcb->dwInputLen = sizeof(__SECTOR_INPUT_INFO);
+	pDrcb->lpInputBuffer = (LPVOID)&ssi;
+	pDrcb->dwOutputLen = 0;
+	pDrcb->lpOutputBuffer = NULL;
+
+	/* Issue write sector command to device. */
+	if (0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
 		(__COMMON_OBJECT*)pDevObject,
-		pDrcb))  //Can not read.
+		pDrcb))
 	{
+		/* Write fail. */
 		goto __TERMINAL;
 	}
-	bResult = TRUE;  //Indicate read successfully.
+	bResult = TRUE;
 
 __TERMINAL:
-	if(pDrcb)  //Should release it.
+	if (pDrcb)
 	{
-		RELEASE_OBJECT(pDrcb);
+		/* Release DRCB. */
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 	}
 	return bResult;
 }
 
-
-
-//
-//The following routine processes the input command string.
+/* Process user's input string. */
 static DWORD QueryCmdName(LPSTR pMatchBuf,INT nBufLen)
 {
 	static DWORD dwIndex = 0;
@@ -243,24 +254,25 @@ static DWORD QueryCmdName(LPSTR pMatchBuf,INT nBufLen)
 	return SHELL_QUERY_CONTINUE;	
 }
 
-//
+/* Command line's parser routine. */
 static DWORD CommandParser(LPSTR lpszCmdLine)
 {
-	DWORD                  dwRetVal          = SHELL_CMD_PARSER_INVALID;
-	DWORD                  dwIndex           = 0;
-	__CMD_PARA_OBJ*        lpCmdParamObj     = NULL;
+	DWORD dwRetVal = SHELL_CMD_PARSER_INVALID;
+	DWORD dwIndex = 0;
+	__CMD_PARA_OBJ* lpCmdParamObj = NULL;
 
-	if((NULL == lpszCmdLine) || (0 == lpszCmdLine[0]))    //Parameter check
+	if((NULL == lpszCmdLine) || (0 == lpszCmdLine[0]))
 		return SHELL_CMD_PARSER_INVALID;
 
 	lpCmdParamObj = FormParameterObj(lpszCmdLine);
-	if(NULL == lpCmdParamObj)    //Can not form a valid command parameter object.
+	if(NULL == lpCmdParamObj)
 	{
 		return SHELL_CMD_PARSER_FAILED;
 	}
 
-	if(0 == lpCmdParamObj->byParameterNum)  //There is not any parameter.
+	if(0 == lpCmdParamObj->byParameterNum)
 	{
+		/* No parameter specified. */
 		return SHELL_CMD_PARSER_FAILED;
 	}
 
@@ -276,8 +288,9 @@ static DWORD CommandParser(LPSTR lpszCmdLine)
 			dwRetVal = SHELL_CMD_PARSER_INVALID;
 			break;
 		}
-		if(StrCmp(SysDiagCmdMap[dwIndex].lpszCommand,lpCmdParamObj->Parameter[0]))  //Find the handler.
+		if(StrCmp(SysDiagCmdMap[dwIndex].lpszCommand,lpCmdParamObj->Parameter[0]))
 		{
+			/* Handler located. */
 			dwRetVal = SysDiagCmdMap[dwIndex].CommandHandler(lpCmdParamObj);
 			break;
 		}
@@ -287,91 +300,97 @@ static DWORD CommandParser(LPSTR lpszCmdLine)
 		}
 	}
 
-//__TERMINAL:
 	if(NULL != lpCmdParamObj)
 		ReleaseParameterObj(lpCmdParamObj);
 
 	return dwRetVal;
 }
 
-//
-//This is the application's entry point.
-//
-DWORD fdiskEntry(LPVOID pParam)
+/* Entry point of fdisk tool. */
+unsigned long fdiskEntry(LPVOID pParam)
 {
-	return Shell_Msg_Loop(FDISK_PROMPT_STR,CommandParser,QueryCmdName);	
+	/* Allocate MBR buffer. */
+	MbrControlBlock.pMbrBuffer = (unsigned char*)_hx_malloc(512);
+	if (NULL == MbrControlBlock.pMbrBuffer)
+	{
+		return SHELL_CMD_PARSER_TERMINAL;
+	}
+	memset(MbrControlBlock.pMbrBuffer, 0, 512);
+
+	return Shell_Msg_Loop(FDISK_PROMPT_STR, CommandParser, QueryCmdName);	
 }
 
-//
-//The exit command's handler.
-//
+/* exit command's handler. */
 static DWORD _exit(__CMD_PARA_OBJ* lpCmdObj)
 {
 #ifdef __CFG_SYS_DDF
-	if(MbrControlBlock.pCurrentDisk)  //Should close it.
+	if(MbrControlBlock.pCurrentDisk)
 	{
+		/* Close the opened current disk. */
 		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
-			MbrControlBlock.pCurrentDisk);
+			(__COMMON_OBJECT*)MbrControlBlock.pCurrentDisk);
 	}
-	memzero(&MbrControlBlock,sizeof(MbrControlBlock));  //Clear all global information.
+	if (MbrControlBlock.pMbrBuffer)
+	{
+		_hx_free(MbrControlBlock.pMbrBuffer);
+	}
+	memzero(&MbrControlBlock, sizeof(MbrControlBlock));
 	return SHELL_CMD_PARSER_TERMINAL;
 #else
 	return SHELL_CMD_PARSER_TERMINAL;
 #endif
 }
 
-//
-//The help command's handler.
-//
-static DWORD help(__CMD_PARA_OBJ* lpCmdObj)
+/* Handler of help command. */
+static unsigned long help(__CMD_PARA_OBJ* lpCmdObj)
 {
-	DWORD               dwIndex = 0;
+	unsigned long dwIndex = 0;
 
 	while(TRUE)
 	{
 		if(NULL == SysDiagCmdMap[dwIndex].lpszHelpInfo)
 			break;
-
 		PrintLine(SysDiagCmdMap[dwIndex].lpszHelpInfo);
 		dwIndex ++;
 	}
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 
-//A helper routine to print out disk information.
+/* Local helper to show out one disk object. */
 static VOID DumpDisk(__DEVICE_OBJECT* pDevObj)
 {
-	CHAR Buffer[256];
-	__PARTITION_EXTENSION* pPe = (__PARTITION_EXTENSION*)pDevObj->lpDevExtension;
+	char Buffer[256];
+	__ATA_DISK_OBJECT* pDisk = (__ATA_DISK_OBJECT*)pDevObj->lpDevExtension;
 
+	BUG_ON(NULL == pDisk);
 	_hx_sprintf(Buffer,"    %20s    %9d    0x%X",
 		pDevObj->DevName,
-		pPe->dwSectorNum,
+		pDisk->total_sectors,
 		pDevObj->dwAttribute);
 	PrintLine(Buffer);
 }
 
-//disklist sub-command's handler.
+/* Show out all disks in system. */
 static DWORD disklist(__CMD_PARA_OBJ* pcpo)
 {
 #ifdef __CFG_SYS_DDF
-	__DEVICE_OBJECT*  pDevList = (__DEVICE_OBJECT*)IOManager.lpDeviceRoot;
-	//UCHAR             DevName[MAX_DEV_NAME_LEN + 1];
-	//BYTE              Buffer[512];         //Sector buffer.
-	//BOOL              bFound = FALSE;
+	__DEVICE_OBJECT* pDevList = (__DEVICE_OBJECT*)IOManager.lpDeviceRoot;
 
+	/* Table header. */
 	PrintLine("    DiskName                 SectorNum    Attribute");
+	/* Travel the whole device list. */
 	while(pDevList)
 	{
-		if(pDevList->dwSignature != DEVICE_OBJECT_SIGNATURE)  //Invalid device object.
+		if(pDevList->dwSignature != DEVICE_OBJECT_SIGNATURE)
 		{
 			break;
 		}
-		if(pDevList->dwAttribute & DEVICE_TYPE_HARDDISK)  //This is a hard disk.
+		if(pDevList->dwAttribute & DEVICE_TYPE_HARDDISK)
 		{
+			/* Hard disk object,show it. */
 			DumpDisk(pDevList);
-			StrCpy((CHAR*)&(pDevList->DevName[0]),
-				(CHAR*)&MbrControlBlock.DiskName[0]);  //Get the device name as current disk.
+			/* Save as current disk. */
+			StrCpy((CHAR*)&(pDevList->DevName[0]), (CHAR*)&MbrControlBlock.DiskName[0]);
 		}
 		pDevList = pDevList->lpNext;
 	}
@@ -381,11 +400,11 @@ static DWORD disklist(__CMD_PARA_OBJ* pcpo)
 #endif
 }
 
-//A helper routine to dumpout partition device object information.
+/* Show out a partition object. */
 static VOID DumpPartDev(__DEVICE_OBJECT* pPartDev)
 {
-	__PARTITION_EXTENSION*  ppe = (__PARTITION_EXTENSION*)pPartDev->lpDevExtension;
-	CHAR    Buffer[128];
+	__PARTITION_EXTENSION* ppe = (__PARTITION_EXTENSION*)pPartDev->lpDevExtension;
+	CHAR Buffer[128];
 
 	_hx_sprintf(Buffer,"    %16s    %12d    %12d    %8X",
 		pPartDev->DevName,
@@ -398,17 +417,18 @@ static VOID DumpPartDev(__DEVICE_OBJECT* pPartDev)
 static DWORD pdevlist(__CMD_PARA_OBJ* pcpo)
 {
 #ifdef __CFG_SYS_DDF
-	__DEVICE_OBJECT*  pDevList = (__DEVICE_OBJECT*)IOManager.lpDeviceRoot;
+	__DEVICE_OBJECT* pDevList = (__DEVICE_OBJECT*)IOManager.lpDeviceRoot;
 	
 	PrintLine("       PartitionName     StartSector    SectorNumber    PartType");
 	while(pDevList)
 	{
-		if(pDevList->dwSignature != DEVICE_OBJECT_SIGNATURE)  //Invalid device object.
+		if(pDevList->dwSignature != DEVICE_OBJECT_SIGNATURE)
 		{
 			break;
 		}
-		if(pDevList->dwAttribute & DEVICE_TYPE_PARTITION)  //This is a hard disk.
+		if(pDevList->dwAttribute & DEVICE_TYPE_PARTITION)
 		{
+			/* Partition object, show it. */
 			DumpPartDev(pDevList);
 		}
 		pDevList = pDevList->lpNext;
@@ -419,71 +439,105 @@ static DWORD pdevlist(__CMD_PARA_OBJ* pcpo)
 #endif
 }
 
-//A helper routine to check if a partiton table entry is valid.
+/* Helper routine used to check partition table entry. */
 static BOOL IsValidPte(__PARTITION_TABLE_ENTRY* ppte)
 {
 	if(ppte->dwTotalSector == 0)
 	{
 		return FALSE;
 	}
-	if(ppte->dwStartSector == 0)  //First sector should not occupied by partition.
+	if(ppte->dwStartSector == 0)
 	{
 		return FALSE;
 	}
 	return TRUE;
 }
 
-//use sub-command's handler.
-static DWORD use(__CMD_PARA_OBJ* pCmdObj)
+/* Helper routine to show out MBR. */
+static void __show_mbr(char* pMbr)
+{
+	_hx_printf("\r\n");
+	for (int i = 0; i < 16; i++)
+	{
+		for (int j = 0; j < 32; j++)
+		{
+			_hx_printf("%02X", pMbr[i * 32 + j]);
+		}
+		_hx_printf("\r\n");
+	}
+}
+
+/* 
+ * use sub-command's handler. 
+ * Select current disk object that other
+ * operation will apply on.
+ */
+static unsigned long use(__CMD_PARA_OBJ* pCmdObj)
 {
 #ifdef __CFG_SYS_DDF
-	__PARTITION_EXTENSION*     pPe = NULL;
-	__PARTITION_TABLE_ENTRY*   ppte = NULL;
-	int                        i;
+	__PARTITION_EXTENSION* pPe = NULL;
+	__PARTITION_TABLE_ENTRY* ppte = NULL;
+	int i = 0;
+	char disk_name[MAX_FILE_NAME_LEN];
 
-	if(NULL != MbrControlBlock.pCurrentDisk)  //Opened yet.
+	/* Init the disk name to be opened. */
+	if (pCmdObj->byParameterNum < 2)
 	{
-		PrintLine("  The disk already opened yet.");
-		return SHELL_CMD_PARSER_SUCCESS;
+		strncpy(disk_name, &MbrControlBlock.DiskName[0], MAX_FILE_NAME_LEN - 1);
 	}
-	//Try to open the disk whose name is MbrControlBlock.DevName.
-	MbrControlBlock.pCurrentDisk = IOManager.CreateFile(
+	else {
+		strncpy(disk_name, pCmdObj->Parameter[1], MAX_FILE_NAME_LEN);
+	}
+
+	if(NULL != MbrControlBlock.pCurrentDisk)
+	{
+		/* Disk already opened, close it. */;
+		IOManager.DestroyDevice((__COMMON_OBJECT*)&IOManager,
+			(__DEVICE_OBJECT*)MbrControlBlock.pCurrentDisk);
+	}
+
+	/* Open the disk object. */
+	MbrControlBlock.pCurrentDisk = (__DEVICE_OBJECT*)IOManager.CreateFile(
 		(__COMMON_OBJECT*)&IOManager,
-		(LPSTR)&MbrControlBlock.DiskName[0],
+		&disk_name[0],
 		FILE_ACCESS_READWRITE,
-		0,
-		NULL);
-	if(NULL == MbrControlBlock.pCurrentDisk)  //Failed to open the disk.
+		0, NULL);
+	if(NULL == MbrControlBlock.pCurrentDisk)
 	{
-		PrintLine("  Can not open the target disk object.");
+		_hx_printf("  Can not open disk.\r\n");
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	//Try to read MBR of the disk.
-	if(!ReadDeviceSector(
-		MbrControlBlock.pCurrentDisk,
-		0,
-		1,
-		(BYTE*)MbrControlBlock.SectorBuffer))
+
+	/* Read MBR from the disk into MBR buffer. */
+	if(!__ReadDeviceSector(
+		(__COMMON_OBJECT*)MbrControlBlock.pCurrentDisk,
+		0, 1,
+		MbrControlBlock.pMbrBuffer))
 	{
-		PrintLine("  Can not read the MBR of target disk.");
+		_hx_printf("  Read MBR fail.\r\n");
 		IOManager.DestroyDevice((__COMMON_OBJECT*)&IOManager,
 			(__DEVICE_OBJECT*)MbrControlBlock.pCurrentDisk);
 		MbrControlBlock.pCurrentDisk = NULL;
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	if((0x55 != MbrControlBlock.SectorBuffer[510]) || (0xAA != MbrControlBlock.SectorBuffer[511]))
+
+	if((0x55 != MbrControlBlock.pMbrBuffer[510]) || 
+		(0xAA != MbrControlBlock.pMbrBuffer[511]))
 	{
-		PrintLine("  Disk has not been formatted yet.");
+		_hx_printf("  Not formated yet.\r\n");
 	}
-	pPe = (__PARTITION_EXTENSION*)((__DEVICE_OBJECT*)MbrControlBlock.pCurrentDisk)->lpDevExtension;
-	MbrControlBlock.dwDiskSector = pPe->dwSectorNum;
-	ppte = (__PARTITION_TABLE_ENTRY*)(MbrControlBlock.SectorBuffer + 0x1BE);
-	for(i = 0;i < 4;i ++)
+
+	/* Get disk's size. */
+	__ATA_DISK_OBJECT* pDisk = (__ATA_DISK_OBJECT*)MbrControlBlock.pCurrentDisk->lpDevExtension;
+	BUG_ON(NULL == pDisk);
+	MbrControlBlock.dwDiskSector = pDisk->total_sectors;
+
+	/* Locate the partition table entry. */
+	ppte = (__PARTITION_TABLE_ENTRY*)(MbrControlBlock.pMbrBuffer + 0x1be);
+	for (i = 0; i < 4; i++)
 	{
-		if(IsValidPte(ppte))  //Is a valid partition table entry.
-		{
-			MbrControlBlock.TableEntry[i] = *ppte;  //Copy to MBR control block.
-		}
+		/* Valid partition table entry. */
+		MbrControlBlock.TableEntry[i] = *ppte;
 		ppte += 1;
 	}
 	return SHELL_CMD_PARSER_SUCCESS;
@@ -492,15 +546,15 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 #endif
 }
 
-//partlist sub-commnad's handler.    
+/* List all partitions on current disk. */
 static DWORD partlist(__CMD_PARA_OBJ* pcpo)
 {
-	CHAR Buffer[256];   //Temporary buffer to print out information.
+	CHAR Buffer[256];
 	int  i;
 
 	if(NULL == MbrControlBlock.pCurrentDisk)
 	{
-		PrintLine("  Current disk is not specified yet.");
+		PrintLine("  No current disk specified.");
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
 	PrintLine("     partNum    startsector   totalsector   parttype     actflag");
@@ -526,133 +580,165 @@ static void partaddusage()
 {
 	PrintLine("  usage: partadd partnum parttype startsector sectornum [primary]");
 	PrintLine("  where:");
-	PrintLine("    partnum     : Partition number,from 0 to 3.");
-	PrintLine("    parttype    : File system type in this part,fat32 is available now.");
-	PrintLine("    startsector : Start sector number of this partition.");
-	PrintLine("    sectornum   : How many sector this partition occupies.");
-	PrintLine("    primary     : Active partition if specified.");
+	PrintLine("    partnum     : Partition number,from 0 to 3;");
+	PrintLine("    parttype    : File system type;");
+	PrintLine("    startsector : Start sector number;");
+	PrintLine("    sectornum   : Sector counter;");
+	PrintLine("    primary     : Active partition.");
 }
 
-//partadd sub-command's handler.
+/*
+ * Add one partition entry into partition table of
+ * a harddisk, the corresponding old one will be
+ * overwrited by the new one.
+ */
 static DWORD partadd(__CMD_PARA_OBJ* pCmdParam)
 {
-	DWORD    dwPartNum    = 0;
-	UCHAR    fstype       = PARTITION_TYPE_FAT32;  //Default is FAT32.
-	DWORD    dwStartSect  = 0;
-	DWORD    dwSectorNum  = 0;
-	BOOL     bIsActive    = FALSE;
-	BYTE     Buffer[512]  = {0};    //Used to fill the first sector of a partition.
+	unsigned long dwPartNum = 0;
+	UCHAR fstype = PARTITION_TYPE_FAT32;
+	unsigned long dwStartSect = 0, dwSectorNum = 0;
+	BOOL bIsActive = FALSE;
 
-	__PARTITION_TABLE_ENTRY* ppte = (__PARTITION_TABLE_ENTRY*)(MbrControlBlock.SectorBuffer + 0x1be);
-
-	if(pCmdParam->byParameterNum < 5)  //At least 4 parameter.
+	if (pCmdParam->byParameterNum < 5)
 	{
+		/* No enough command parameters. */
 		partaddusage();
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
 
-	if(NULL == MbrControlBlock.pCurrentDisk)
+	if (NULL == MbrControlBlock.pCurrentDisk)
 	{
-		PrintLine("  Current disk is not specified yet.");
+		PrintLine("  No current disk.");
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
 
-	//Now try to interpret the parameters.
-	/*if(!Str2Hex(pCmdParam->Parameter[1],&dwPartNum))
-	{
-		partaddusage();
-		return SHELL_CMD_PARSER_SUCCESS;
-	}*/
+	__PARTITION_TABLE_ENTRY* ppte = (__PARTITION_TABLE_ENTRY*)(MbrControlBlock.pMbrBuffer + 0x1be);
+
+	/* Partition number(index in partition table). */
 	dwPartNum = atoi(pCmdParam->Parameter[1]);
-	if(dwPartNum > 3)  //Invalid parameter.
+	if (dwPartNum > 3)
 	{
 		partaddusage();
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	if(!StrCmp("fat32",pCmdParam->Parameter[2]))
+	/* Partition type, only FAT32 is supported. */
+	if ((0 != strcmp("fat32", pCmdParam->Parameter[2])) &&
+		(0 != strcmp("FAT32", pCmdParam->Parameter[2])))
 	{
 		partaddusage();
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	/*if(!Str2Hex(pCmdParam->Parameter[3],&dwStartSect))
-	{
-		partaddusage();
-		return SHELL_CMD_PARSER_SUCCESS;
-	}*/
+
+	/* Start sector of the partition on disk. */
 	dwStartSect = atoi(pCmdParam->Parameter[3]);
-	if(dwStartSect >= MbrControlBlock.dwDiskSector)
+	if (dwStartSect >= MbrControlBlock.dwDiskSector)
 	{
 		partaddusage();
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	/*
-	if(!Str2Hex(pCmdParam->Parameter[4],&dwSectorNum))
-	{
-		partaddusage();
-		return SHELL_CMD_PARSER_SUCCESS;
-	}*/
+
+	/* Total sector number of this partition. */
 	dwSectorNum = atoi(pCmdParam->Parameter[4]);
-	if(dwSectorNum > MbrControlBlock.dwDiskSector)  //Invalid sector number.
+	if (dwSectorNum > MbrControlBlock.dwDiskSector)
 	{
 		partaddusage();
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	if(dwStartSect + dwSectorNum > MbrControlBlock.dwDiskSector)
+
+	if (dwStartSect + dwSectorNum > MbrControlBlock.dwDiskSector)
 	{
 		partaddusage();
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	if(pCmdParam->byParameterNum == 6)  //primary maybe specified.
+
+	if (pCmdParam->byParameterNum == 6)
 	{
-		if('p' != pCmdParam->Parameter[5][0])
+		/* Primary partition flag is specified. */
+		if ('p' != pCmdParam->Parameter[5][0])
 		{
 			partaddusage();
 			return SHELL_CMD_PARSER_SUCCESS;
 		}
 		bIsActive = TRUE;
 	}
-	//Now all parameters have been interpretted,carry out the partition function now.
+
+	/* Construct the partition table entry. */
 	ppte += dwPartNum;
-	memzero(ppte,sizeof(__PARTITION_TABLE_ENTRY));
-	ppte->dwStartSector   = dwStartSect;
-	ppte->dwTotalSector   = dwSectorNum;
-	ppte->PartitionType   = PARTITION_TYPE_FAT32;
-	if(bIsActive)
+	memzero(ppte, sizeof(__PARTITION_TABLE_ENTRY));
+	ppte->dwStartSector = dwStartSect;
+	ppte->dwTotalSector = dwSectorNum;
+	ppte->PartitionType = PARTITION_TYPE_FAT32;
+	if (bIsActive)
 	{
 		ppte->IfActive = 0x80;
 	}
-	LBAtoCHS(dwStartSect,&ppte->StartCHS1,&ppte->StartCHS2,&ppte->StartCHS3);
-	LBAtoCHS(dwStartSect + dwSectorNum,&ppte->EndCHS1,&ppte->EndCHS2,&ppte->EndCHS3);
+	LBAtoCHS(dwStartSect, &ppte->StartCHS1, &ppte->StartCHS2, &ppte->StartCHS3);
+	LBAtoCHS(dwStartSect + dwSectorNum, &ppte->EndCHS1, &ppte->EndCHS2, &ppte->EndCHS3);
 
-	//Set the terminate flags.
-	MbrControlBlock.SectorBuffer[510] = 0x55;
-	MbrControlBlock.SectorBuffer[511] = 0xAA;
-	if(!WriteDeviceSector(MbrControlBlock.pCurrentDisk,
-		0,
-		1,
-		(BYTE*)MbrControlBlock.SectorBuffer))
+	/* Set terminal flags of MBR. */
+	MbrControlBlock.pMbrBuffer[510] = 0x55;
+	MbrControlBlock.pMbrBuffer[511] = 0xAA;
+	if (!__WriteDeviceSector((__COMMON_OBJECT*)MbrControlBlock.pCurrentDisk,
+		0, 1, MbrControlBlock.pMbrBuffer))
 	{
-		PrintLine("  Add partition failed,please try again.");
+		_hx_printf("  Add partition failed.\r\n");
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
-	//Now overwrite the first sector of the partition created just now.
-	if(!WriteDeviceSector(MbrControlBlock.pCurrentDisk,
-		dwStartSect,
-		1,
-		Buffer))
-	{
-		PrintLine("  Can not overwrite the first sector of the new partition.");
-	}
 
-	PrintLine("  Add partition successfully.");
-	//Save to global variable.
+	_hx_printf("  Done.\r\n");
+	/* Save to global array. */
 	MbrControlBlock.TableEntry[dwPartNum] = *ppte;
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 
-//partdel sub-command's handler.
+/*
+ * Delete a partition from disk. It 
+ * just delete the corresponding partition table
+ * entry in current disk.
+ */
 static DWORD partdel(__CMD_PARA_OBJ* pcpo)
 {
+	unsigned long dwPartNum = 0;
+
+	if (pcpo->byParameterNum < 2)
+	{
+		/* No enough command parameters. */
+		_hx_printf("  No part number specified.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+
+	if (NULL == MbrControlBlock.pCurrentDisk)
+	{
+		_hx_printf("  No current disk specified.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+
+	__PARTITION_TABLE_ENTRY* ppte = (__PARTITION_TABLE_ENTRY*)(MbrControlBlock.pMbrBuffer + 0x1be);
+
+	/* Partition number(index in partition table). */
+	dwPartNum = atoi(pcpo->Parameter[1]);
+	if (dwPartNum > 3)
+	{
+		_hx_printf("  Invalid part number.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+
+	/* Clear the corresponding partition table entry. */
+	ppte += dwPartNum;
+	memzero(ppte, sizeof(__PARTITION_TABLE_ENTRY));
+
+	/* Set terminal flags of MBR. */
+	MbrControlBlock.pMbrBuffer[510] = 0x55;
+	MbrControlBlock.pMbrBuffer[511] = 0xAA;
+	if (!__WriteDeviceSector((__COMMON_OBJECT*)MbrControlBlock.pCurrentDisk,
+		0, 1, MbrControlBlock.pMbrBuffer))
+	{
+		_hx_printf("  Del partition failed.\r\n");
+		return SHELL_CMD_PARSER_SUCCESS;
+	}
+
+	_hx_printf("  Done.\r\n");
+	/* Save to global array. */
+	MbrControlBlock.TableEntry[dwPartNum] = *ppte;
 	return SHELL_CMD_PARSER_SUCCESS;
 }
-

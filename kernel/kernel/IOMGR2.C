@@ -14,183 +14,181 @@
 //    Lines number              :
 //***********************************************************************/
 
-#include "StdAfx.h"
-#include "stdio.h"
+#include <StdAfx.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-//Only Device Driver Framework is enabled the following code will be included
-//in OS kernel.
+/*
+ * The following code will be included
+ * in OS kernel only Device Driver Framework is 
+ * enabled in config file.
+ */
 #ifdef __CFG_SYS_DDF
 
-//
-//In front of this file,we implement three call back routines first,these three
-//call back routines are called by device driver(s) to report some events to IOManager.
-//These three routines are members of DRCB object,i.e,their base addresses are countained 
-//in DRCB object.
-//The first routine is WaitForCompletion,this routine is called when device driver(s) 
-//submit a device operation transaction,such as READ or WRITE,and to wait the operation
-//over,in this situation,device driver(s) calls this this routine,put the current kernel
-//thread to BLOCKED queue.
-//The second routine is OnCompletion,this routine is called when device request operation
-//over,to indicate the IOManager this event,and wakeup the kernel thread which is blocked
-//in WaitForCompletion routine.
-//The third routine is OnCancel,which is called when an IO operation is canceled.
-//
+/*
+ * In front of this file,we implement three call back routines first,these three
+ * call back routines are called by device driver(s) to report some events to IOManager.
+ * These three routines are members of DRCB object,i.e,their base addresses are countained 
+ * in DRCB object.
+ * The first routine is WaitForCompletion,this routine is called when device driver(s) 
+ * submit a device operation transaction,such as READ or WRITE,and to wait the operation
+ * over,in this situation,device driver(s) calls this this routine,put the current kernel
+ * thread to BLOCKED queue.
+ * The second routine is OnCompletion,this routine is called when device request operation
+ * over,to indicate the IOManager this event,and wakeup the kernel thread which is blocked
+ * in WaitForCompletion routine.
+ * The third routine is OnCancel,which is called when an IO operation is canceled.
+ */
 
-//
-//The implementation of WaitForCompletion.
-//This routine does the following:
-// 1. Check the validation of parameter(s);
-// 2. Block the current kernel thread.
-//
-DWORD WaitForCompletion(__COMMON_OBJECT* lpThis)
+/*
+ * Wait for completion of drcb.
+ * This routine does the following:
+ *  1. Check the validation of parameter(s);
+ *  2. Block the current kernel thread.
+ */
+unsigned long WaitForCompletion(__COMMON_OBJECT* lpThis)
 {
-	__DRCB*               lpDrcb           = NULL;
-	__EVENT*              lpEvent          = NULL;
-	DWORD                 dwWaitResult     = OBJECT_WAIT_TIMEOUT;
+	__DRCB* lpDrcb = NULL;
+	__EVENT* lpEvent = NULL;
+	unsigned long dwWaitResult = OBJECT_WAIT_TIMEOUT;
 
-	if(NULL == lpThis) //Invalid parameter.
+	BUG_ON(NULL == lpThis);
+	lpDrcb = (__DRCB*)lpThis;
+	lpEvent = lpDrcb->lpSynObject;
+
+	/* Just block the current thread on event object. */
+	dwWaitResult = lpEvent->WaitForThisObjectEx((__COMMON_OBJECT*)lpEvent, 
+		DRCB_DEFAULT_WAIT_TIME);
+	if (OBJECT_WAIT_RESOURCE != dwWaitResult)
 	{
-		return 0;
-	}
-	lpDrcb   = (__DRCB*)lpThis;
-	lpEvent  = lpDrcb->lpSynObject;
-	
-	dwWaitResult = lpEvent->WaitForThisObjectEx((__COMMON_OBJECT*)lpEvent,DRCB_DEFAULT_WAIT_TIME);  //Block the current kernel thread.
-	if(OBJECT_WAIT_RESOURCE != dwWaitResult)  //Can not wait operation result before time out or other case.
-	{
+		/* timeout, or drcb destroyed. */
 		lpDrcb->dwStatus = DRCB_STATUS_CANCELED;
 	}
 	return dwWaitResult;
 }
 
-//
-//The implementation of OnCompletion.
-//This routine does the following:
-// 1. Check the parameter's validation;
-// 2. Wakeup the kernel thread who waiting for the current device operation.
-//
-DWORD OnCompletion(__COMMON_OBJECT* lpThis)
+/*
+ * OnCompletion routine of drcb.
+ * This routine does the following:
+ *  1. Check the parameter's validation;
+ *  2. Wakeup the kernel thread who waiting for the current device operation.
+ */
+unsigned long OnCompletion(__COMMON_OBJECT* lpThis)
 {
-	__EVENT*              lpEvent          = NULL;
+	__EVENT* lpEvent = NULL;
 
-	if(NULL == lpThis)
-	{
-		return 0;
-	}
-
+	BUG_ON(NULL == lpThis);
 	lpEvent = ((__DRCB*)lpThis)->lpSynObject;
-	lpEvent->SetEvent((__COMMON_OBJECT*)lpEvent);  //Wakeup kernel thread.
+	/* Wake up the pending thread. */
+	lpEvent->SetEvent((__COMMON_OBJECT*)lpEvent);
 	return 1;
 }
 
-//
-//The implementation of OnCancel.
-//This routine does the following:
-// 1. 
-//
-DWORD OnCancel(__COMMON_OBJECT* lpThis)
+/*
+ * Default implementaion of OnCancel.
+ * Device drivers could specify a new one
+ * corresponding the device.
+ */
+unsigned long OnCancel(__COMMON_OBJECT* lpThis)
 {
-	if(NULL == lpThis)    //Parameter check.
-	{
-		return 0;
-	}
+	BUG_ON(NULL == lpThis);
 	return 1;
 }
 
-//
-//The Initialize routine and UnInitialize routine of DRCB.
-//
-BOOL DrcbInitialize(__COMMON_OBJECT*  lpThis)
+/*
+ * Reset one DRCB object to initial state.
+ * It must be called when a drcb is resued
+ * again.
+ */
+static void DrcbReset(__COMMON_OBJECT* pThis)
 {
-	__EVENT*          lpSynObject     = NULL;
-	__DRCB*           lpDrcb          = NULL;
+	__DRCB* pDrcb = (__DRCB*)pThis;
 
-	if(NULL == lpThis)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == pDrcb);
+	/* Reset the event object. */
+	pDrcb->lpSynObject->ResetEvent((__COMMON_OBJECT*)pDrcb->lpSynObject);
+}
 
+/* Initializer of drcb object. */
+BOOL DrcbInitialize(__COMMON_OBJECT* lpThis)
+{
+	__EVENT* lpSynObject = NULL;
+	__DRCB* lpDrcb = NULL;
+
+	BUG_ON(NULL == lpThis);
 	lpDrcb = (__DRCB*)lpThis;
 
+	/* Create and init the binding event object. */
 	lpSynObject = (__EVENT*)ObjectManager.CreateObject(
 		&ObjectManager,
 		NULL,
 		OBJECT_TYPE_EVENT);
-	if(NULL == lpSynObject)    //Failed to create event object.
+	if (NULL == lpSynObject)
 	{
 		return FALSE;
 	}
-
-	if(!lpSynObject->Initialize((__COMMON_OBJECT*)lpSynObject)) //Failed to initialize.
+	if (!lpSynObject->Initialize((__COMMON_OBJECT*)lpSynObject))
 	{
-		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)lpSynObject);
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)lpSynObject);
 		return FALSE;
 	}
 
-	lpDrcb->lpSynObject        = lpSynObject;
+	lpDrcb->lpSynObject = lpSynObject;
 	lpDrcb->lpKernelThread = __CURRENT_KERNEL_THREAD;
-	lpDrcb->dwStatus           = DRCB_STATUS_INITIALIZED;
-	lpDrcb->dwRequestMode      = 0;
-	lpDrcb->dwCtrlCommand      = 0;
+	lpDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	lpDrcb->dwRequestMode = 0;
+	lpDrcb->dwCtrlCommand = 0;
 
-	lpDrcb->dwOutputLen        = 0;
-	lpDrcb->lpOutputBuffer     = NULL;
-	lpDrcb->dwInputLen         = 0;
-	lpDrcb->lpInputBuffer      = NULL;
+	lpDrcb->dwOutputLen = 0;
+	lpDrcb->lpOutputBuffer = NULL;
+	lpDrcb->dwInputLen = 0;
+	lpDrcb->lpInputBuffer = NULL;
 
-	lpDrcb->lpNext             = NULL;
-	lpDrcb->lpPrev             = NULL;
+	lpDrcb->lpNext = NULL;
+	lpDrcb->lpPrev = NULL;
 
-	//lpDrcb->WaitForCompletion  = NULL;
-	//lpDrcb->OnCompletion       = NULL;
-	//lpDrcb->OnCancel           = NULL;
-	lpDrcb->WaitForCompletion  = WaitForCompletion;
-	lpDrcb->OnCompletion       = OnCompletion;
-	lpDrcb->OnCancel           = OnCancel;
+	/* Use default routines to init drcb. */
+	lpDrcb->WaitForCompletion = WaitForCompletion;
+	lpDrcb->OnCompletion = OnCompletion;
+	lpDrcb->OnCancel = OnCancel;
+	lpDrcb->Reset = DrcbReset;
 
-	lpDrcb->lpDrcbExtension    = NULL;
+	lpDrcb->lpDrcbExtension = NULL;
 	return TRUE;
 }
 
-//
-//The Uninitialize of DRCB.
-//
-BOOL DrcbUninitialize(__COMMON_OBJECT*  lpThis)
+/* Uninitializer of drcb. */
+unsigned long DrcbUninitialize(__COMMON_OBJECT*  lpThis)
 {
-	__DRCB*           lpDrcb            = NULL;
+	__DRCB*           lpDrcb = NULL;
 
 	BUG_ON(NULL == lpThis);
 
 	lpDrcb = (__DRCB*)lpThis;
-
-	if(lpDrcb->lpSynObject != NULL)
+	/* Destroy the binding event object. */
+	if (lpDrcb->lpSynObject != NULL)
 	{
-		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)(lpDrcb->lpSynObject));
+		ObjectManager.DestroyObject(&ObjectManager, 
+			(__COMMON_OBJECT*)(lpDrcb->lpSynObject));
 	}
 	return TRUE;
 }
 
-//
-//The implementation of driver object's initialize routine.
-//
-BOOL DrvObjInitialize(__COMMON_OBJECT*  lpThis)
+/* Initializer of driver object. */
+BOOL DrvObjInitialize(__COMMON_OBJECT* lpThis)
 {
-	__DRIVER_OBJECT*       lpDrvObj     = NULL;
+	__DRIVER_OBJECT* lpDrvObj     = NULL;
 
-	if(NULL == lpThis)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpThis);
 
 	lpDrvObj = (__DRIVER_OBJECT*)lpThis;
-	lpDrvObj->lpPrev            = NULL;
-	lpDrvObj->lpNext            = NULL;
+	lpDrvObj->lpPrev = NULL;
+	lpDrvObj->lpNext = NULL;
 	return TRUE;
 }
 
-//
-//The implementation of driver object's Uninitialize routine.
-//
+/* deinit of driver object. */
 BOOL DrvObjUninitialize(__COMMON_OBJECT* lpThis)
 {
 	return TRUE;
@@ -199,12 +197,9 @@ BOOL DrvObjUninitialize(__COMMON_OBJECT* lpThis)
 /* Initialize a device object. */
 BOOL DevObjInitialize(__COMMON_OBJECT* lpThis)
 {
-	__DEVICE_OBJECT*          lpDevObject = NULL;
+	__DEVICE_OBJECT* lpDevObject = NULL;
 
-	if(NULL == lpThis)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == lpThis);
 
 	lpDevObject = (__DEVICE_OBJECT*)lpThis;
 	lpDevObject->lpPrev           = NULL;
@@ -221,11 +216,49 @@ BOOL DevObjInitialize(__COMMON_OBJECT* lpThis)
 	return TRUE;
 }
 
-//
-//Device object's Uninitialize routine.
-//
+/* 
+ * Uninit routine of driver object. 
+ * It removes the device object from IOManager's
+ * device list.
+ */
 BOOL DevObjUninitialize(__COMMON_OBJECT* lpThis)
 {
+	unsigned long ulFlags;
+	__DEVICE_OBJECT* pDeviceObject = (__DEVICE_OBJECT*)lpThis;
+	__IO_MANAGER* lpIoManager = &IOManager;
+
+	BUG_ON(NULL == pDeviceObject);
+
+	/* Remove the device from list. */
+	__ENTER_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, ulFlags);
+	if (NULL == pDeviceObject->lpPrev)
+	{
+		/* First device object. */
+		if (NULL == pDeviceObject->lpNext)
+		{
+			/* Last device object. */
+			lpIoManager->lpDeviceRoot = NULL;
+		}
+		else
+		{
+			pDeviceObject->lpNext->lpPrev = NULL;
+			lpIoManager->lpDeviceRoot = pDeviceObject->lpNext;
+		}
+	}
+	else {
+		if (NULL == pDeviceObject->lpNext)
+		{
+			/* Last device object. */
+			pDeviceObject->lpPrev->lpNext = NULL;
+		}
+		else
+		{
+			pDeviceObject->lpPrev->lpNext = pDeviceObject->lpNext;
+			pDeviceObject->lpNext->lpPrev = pDeviceObject->lpPrev;
+		}
+	}
+	__LEAVE_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, ulFlags);
+
 	return TRUE;
 }
 
@@ -407,83 +440,133 @@ static DWORD __SetFilePointer_Local(__COMMON_OBJECT* lpThis,
 	return dwResult;
 }
 
-//
-//The WriteFile's implementation.
-//The routine does the following:
-// 1. Create a DRCB object,and initialize it;
-// 2. Commit the write transaction by calling DeviceWrite routine;
-// 3. According to the result,set appropriate return value(s).
-//
-BOOL _WriteFile(__COMMON_OBJECT*  lpThis,
-					  __COMMON_OBJECT*  lpFileObj,
-					  DWORD             dwWriteSize,
-					  LPVOID            lpBuffer,
-					  DWORD*            lpWrittenSize)
+/*
+ * Write into file or device, the unified routine of
+ * device or file's writting access.
+ * If the caller specified write size is not align
+ * with the block size of device, this routine will
+ * pad zeros at the end of user specified data buffer,
+ * and make sure the writting request is align with
+ * device's block size.
+ */
+BOOL _WriteFile(__COMMON_OBJECT*  lpThis, __COMMON_OBJECT* lpFileObj,
+	DWORD dwWriteSize, LPVOID input_buffer, DWORD* lpWrittenSize)
 {
-	BOOL              bResult           = FALSE;
-	__DRCB*           lpDrcb            = NULL;
-	__DEVICE_OBJECT*  lpDevObject       = NULL;
-	__DRIVER_OBJECT*  lpDrvObject       = NULL;
-	DWORD             dwWriteBlockSize  = 0;
-	DWORD             dwTotalSize       = 0;
-	DWORD             dwWrittenSize     = 0;
-	DWORD             dwTotalWritten    = 0;
+	BOOL bResult = FALSE;
+	char* lpBuffer = (char*)input_buffer;
+	__DRCB* lpDrcb = NULL;
+	__DEVICE_OBJECT* lpDevObject = NULL;
+	__DRIVER_OBJECT* lpDrvObject = NULL;
+	unsigned long max_write_size = 0, total_size = 0, write_size = 0;
+	unsigned long pad_size = 0, request_ret = 0;
+	char* pad_buffer = NULL;
 
-	if((NULL == lpThis) || (NULL == lpFileObj) || (0 == dwWriteSize) ||
-	  (NULL == lpBuffer))    //Parameters check.
+	if ((NULL == lpThis) || (NULL == lpFileObj) ||
+		(0 == dwWriteSize) || (NULL == lpBuffer))
 	{
-	  return bResult;
+		/* Loose verification. */
+		goto __TERMINAL;
 	}
 
 	lpDevObject = (__DEVICE_OBJECT*)lpFileObj;
 	lpDrvObject = lpDevObject->lpDriverObject;
+	BUG_ON(NULL == lpDrvObject);
 
 	lpDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
-		NULL,
-		OBJECT_TYPE_DRCB);
-	if(NULL == lpDrcb)  //Failed to create DRCB object.
+		NULL, OBJECT_TYPE_DRCB);
+	if (NULL == lpDrcb)
 	{
 		goto __TERMINAL;
 	}
-	if(!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb)) //Failed to initialize.
+	if (!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))
 	{
 		goto __TERMINAL;
 	}
 
-	dwTotalSize           = dwWriteSize;
-	lpDrcb->dwStatus      = DRCB_STATUS_INITIALIZED;
+	total_size = dwWriteSize;
+	lpDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
 	lpDrcb->dwRequestMode = DRCB_REQUEST_MODE_WRITE;
-	dwWriteBlockSize      = lpDevObject->dwMaxWriteSize;
+	max_write_size = lpDevObject->dwMaxWriteSize;
 
-	while(TRUE)
+	while (TRUE)
 	{
-		lpDrcb->dwInputLen = dwTotalSize > dwWriteBlockSize ? dwWriteBlockSize : dwTotalSize;
-		lpDrcb->lpInputBuffer  = lpBuffer;
-		dwWrittenSize = lpDrvObject->DeviceWrite((__COMMON_OBJECT*)lpDrvObject,
-			(__COMMON_OBJECT*)lpDevObject,
-			lpDrcb);  //Commit the write transaction.
+		/* Reset drcb since it maybe reused. */
+		lpDrcb->Reset((__COMMON_OBJECT*)lpDrcb);
 
-		if(0 == dwWrittenSize)  //Failed to write.
+		/* Set request buffer and length accordingly. */
+		if (total_size > max_write_size)
 		{
+			write_size = max_write_size;
+			lpDrcb->lpInputBuffer = lpBuffer;
+		}
+		else
+		{
+			/* Could be written for one time. */
+			if (total_size % lpDevObject->dwBlockSize)
+			{
+				/* Not block size aligned. */
+				write_size = total_size + lpDevObject->dwBlockSize;
+				write_size -= (total_size % lpDevObject->dwBlockSize);
+				if (write_size > max_write_size)
+				{
+					/* Invalid case. */
+					goto __TERMINAL;
+				}
+				pad_size = write_size - total_size;
+				/* 
+				 * Use a new buffer to hold the data, since it's  
+				 * size may exceed the original buffer after padding.
+				 */
+				pad_buffer = (char*)_hx_malloc(write_size);
+				if (NULL == pad_buffer)
+				{
+					goto __TERMINAL;
+				}
+				memcpy(pad_buffer, lpBuffer, total_size);
+				memset(pad_buffer + total_size, 0, pad_size);
+				lpDrcb->lpInputBuffer = pad_buffer;
+			}
+			else {
+				/* block size aligned. */
+				write_size = total_size;
+				lpDrcb->lpInputBuffer = lpBuffer;
+			}
+		}
+		lpDrcb->dwInputLen = write_size;
+
+		/* Issue write command. */
+		request_ret = lpDrvObject->DeviceWrite((__COMMON_OBJECT*)lpDrvObject,
+			(__COMMON_OBJECT*)lpDevObject,
+			lpDrcb);
+		if ((DRCB_STATUS_FAIL == lpDrcb->dwStatus) ||
+			(write_size != request_ret))
+		{
+			/* request fail. */
 			goto __TERMINAL;
 		}
-		dwTotalWritten += dwWrittenSize;
-		if(dwTotalSize <= dwWriteBlockSize)    //This indicates the write transaction is
-			                                   //over.
+		
+		total_size -= (write_size - pad_size);
+		/* Adjust input buffer. */
+		lpBuffer = (LPVOID)((char*)lpBuffer + (write_size - pad_size));
+
+		if (0 == total_size)
 		{
-			*lpWrittenSize = dwTotalWritten;
+			/* Write over. */
+			*lpWrittenSize = dwWriteSize;
 			bResult = TRUE;
 			goto __TERMINAL;
 		}
-		dwTotalSize -= dwWriteBlockSize;
-		lpBuffer = (LPVOID)((DWORD)lpBuffer + dwWriteBlockSize);  //Adjust the buffer.
 	}
 
 __TERMINAL:
-	if(lpDrcb != NULL)    //Destroy the DRCB object.
+	if (lpDrcb != NULL)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)lpDrcb);
+	}
+	if (pad_buffer)
+	{
+		_hx_free(pad_buffer);
 	}
 	return bResult;
 }
@@ -499,30 +582,28 @@ BOOL _ReadFile(__COMMON_OBJECT* lpThis,
 	LPVOID           lpBuffer,
 	DWORD*           lpReadSize)
 {
-	BOOL              bResult          = FALSE;
-	__DEVICE_OBJECT*  lpFile           = (__DEVICE_OBJECT*)lpFileObject;
-	__DRIVER_OBJECT*  lpDriver         = NULL;
-	__DRCB*           lpDrcb           = NULL;
-	LPVOID            lpTmpBuff        = NULL;
-	DWORD             dwToRead         = 0;
-	DWORD             dwRead           = 0;
-	DWORD             dwTotalRead      = 0;
-	DWORD             dwPartRead       = 0;
-	BYTE*             pPartBuff        = NULL;
+	BOOL              bResult = FALSE;
+	__DEVICE_OBJECT*  lpFile = (__DEVICE_OBJECT*)lpFileObject;
+	__DRIVER_OBJECT*  lpDriver = NULL;
+	__DRCB*           lpDrcb = NULL;
+	LPVOID            lpTmpBuff = NULL;
+	DWORD             dwToRead = 0;
+	DWORD             dwRead = 0;
+	DWORD             dwTotalRead = 0;
+	DWORD             dwPartRead = 0;
+	BYTE*             pPartBuff = NULL;
 
-	//Parameters validity checking.
-	if((NULL == lpFileObject) || (0 == dwByteSize) || (NULL == lpBuffer))
+	/* Parameters validity checking. */
+	if ((NULL == lpFileObject) || (0 == dwByteSize) || (NULL == lpBuffer))
 	{
 		goto __TERMINAL;
 	}
-	//Check if the file object is a valid file object.
-	if(DEVICE_OBJECT_SIGNATURE != lpFile->dwSignature)
+	/* Validate object. */
+	if (DEVICE_OBJECT_SIGNATURE != lpFile->dwSignature)
 	{
 		goto __TERMINAL;
 	}
-	//If block size is set to zero,then the target device object can not be accessed
-	//directly by using this routine.
-	if(DEVICE_BLOCK_SIZE_INVALID == lpFile->dwBlockSize)
+	if (DEVICE_BLOCK_SIZE_INVALID == lpFile->dwBlockSize)
 	{
 		goto __TERMINAL;
 	}
@@ -532,107 +613,112 @@ BOOL _ReadFile(__COMMON_OBJECT* lpThis,
 
 	/* Create DRCB object and initialize it. */
 	lpDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
-		NULL,
-		OBJECT_TYPE_DRCB);
-	if(NULL == lpDrcb)
+		NULL, OBJECT_TYPE_DRCB);
+	if (NULL == lpDrcb)
 	{
 		goto __TERMINAL;
 	}
-	if(!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))  //Failed to initialize.
+	if (!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))
 	{
 		goto __TERMINAL;
 	}
 
-	//Now read data from device by calling the DeviceRead routine.
-	lpDriver  = lpFile->lpDriverObject;
+	/* Start xfer operation. */
+	lpDriver = lpFile->lpDriverObject;
+	BUG_ON(NULL == lpDriver);
 	lpTmpBuff = lpBuffer;
-	do{
-		lpDrcb->dwRequestMode    = DRCB_REQUEST_MODE_READ;
-		lpDrcb->dwStatus         = DRCB_STATUS_INITIALIZED;
-		//lpDrcb->lpOutputBuffer   = lpTmpBuff;
-		if(dwByteSize >= lpFile->dwMaxReadSize)
+	do {
+		/* Reset the drcb object. */
+		lpDrcb->Reset((__COMMON_OBJECT*)lpDrcb);
+		lpDrcb->dwRequestMode = DRCB_REQUEST_MODE_READ;
+		lpDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+		if (dwByteSize > lpFile->dwMaxReadSize)
 		{
-			dwToRead    = lpFile->dwMaxReadSize;
-			lpDrcb->lpOutputBuffer = lpTmpBuff;    //CAUTION: Modified but did not tested yet.
-			lpTmpBuff   = (BYTE*)lpTmpBuff + lpFile->dwMaxReadSize;
-			dwByteSize  = dwByteSize - dwToRead;
-			lpDrcb->dwOutputLen = dwToRead;  //Set the request data size.
+			dwToRead = lpFile->dwMaxReadSize;
+			/* Request size and buffer. */
+			lpDrcb->dwOutputLen = dwToRead;
+			lpDrcb->lpOutputBuffer = lpTmpBuff;
+			lpTmpBuff = (BYTE*)lpTmpBuff + dwToRead;
+			dwByteSize = dwByteSize - dwToRead;
 		}
 		else
 		{
-			if(0 == dwByteSize)  //Read over.
+			if (0 == dwByteSize)
 			{
+				/* read over. */
 				break;
 			}
-			dwToRead   = dwByteSize;
-			dwPartRead = dwToRead;    //It indicates the actual read size.
-			/* 
-			 * Round the to read size to the device's block,if them are not equal.
-			 * Only device block size or multiple times of block size is requested
-			 * for reading in IO Manager's level.
+			dwToRead = dwByteSize;
+			dwPartRead = dwToRead;
+			/*
+			 * Round to read size to the device's
+			 * block size, if they are different.
+			 * Only device block size or multiple times
+			 * of block size is valid.
 			 */
-			if(dwToRead % lpFile->dwBlockSize)
+			if (dwToRead % lpFile->dwBlockSize)
 			{
 				dwToRead += (lpFile->dwBlockSize - (dwToRead % lpFile->dwBlockSize));
 			}
 
-			/* 
-			 * Allocation partition reading buffer. 
+			/*
+			 * Allocation partition reading buffer.
 			 * Use partition reading buffer to hold the data,to avoid
 			 * overflow of original buffer(lpBuffer).
 			 * At least one block of data is obtained in this level.
 			 */
-			pPartBuff = (BYTE*)KMemAlloc(dwToRead,KMEM_SIZE_TYPE_ANY);
-			if(NULL == pPartBuff)  //Can not allocate buffer,giveup.
+			pPartBuff = (BYTE*)KMemAlloc(dwToRead, KMEM_SIZE_TYPE_ANY);
+			if (NULL == pPartBuff)
 			{
 				break;
 			}
 			lpDrcb->lpOutputBuffer = pPartBuff;
-			lpDrcb->dwOutputLen = dwToRead;  //Set the request data size.
-			dwByteSize = 0; //Read over.
-			//dwToRead = dwByteSize;  //Set to initial value so as to jump out the loop.
+			lpDrcb->dwOutputLen = dwToRead;
+			/* Mark as read over. */
+			dwByteSize = 0;
 		}
 
-		//Issue read command to device.
+		/* Issue read command to device. */
 		dwRead = lpDriver->DeviceRead(
 			(__COMMON_OBJECT*)lpDriver,
 			(__COMMON_OBJECT*)lpFile,
 			lpDrcb);
 		dwTotalRead += dwRead;
-		if(dwRead < dwToRead)
+		if (dwRead < dwToRead)
 		{
-			/* 
-			 * Only partition of the request has been read,this may caused by 
+			/*
+			 * Only partition of the request has been read,this may caused by
 			 * the end of file.
 			 * dwPartRead indicates the actual read size.
 			 */
 			dwPartRead = dwRead;
 			break;
 		}
-		if(0 == dwByteSize)    //Read over.
+		if (0 == dwByteSize)
 		{
+			/* Read over. */
 			break;
 		}
-	}while(dwToRead >= lpFile->dwMaxReadSize);
+	} while (dwToRead >= lpFile->dwMaxReadSize);
 
-	/* 
+	/*
 	 * Copy the partition reading data into original buffer,and
 	 * updates the total read size counter.
 	 */
-	if(pPartBuff)
+	if (pPartBuff)
 	{
-		memcpy(lpTmpBuff,pPartBuff,dwPartRead);
+		memcpy(lpTmpBuff, pPartBuff, dwPartRead);
 		dwTotalRead -= dwRead;
 		dwTotalRead += dwPartRead;
 	}
 
-	if(DRCB_STATUS_FAIL == lpDrcb->dwStatus)
+	if (DRCB_STATUS_FAIL == lpDrcb->dwStatus)
 	{
 		bResult = FALSE;
 	}
 	else
 	{
-		/* 
+		/*
 		 * Return back the total read size.
 		 */
 		if (NULL != lpReadSize)
@@ -646,20 +732,20 @@ BOOL _ReadFile(__COMMON_OBJECT* lpThis,
 	}
 
 __TERMINAL:
-	if(lpDrcb)
+	if (lpDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)lpDrcb);
 	}
-	if(pPartBuff)
+	if (pPartBuff)
 	{
-		KMemFree(pPartBuff,KMEM_SIZE_TYPE_ANY,0);
+		KMemFree(pPartBuff, KMEM_SIZE_TYPE_ANY, 0);
 	}
 	return bResult;
 }
 
 //
-//The implementation of CloseFile.
+//Close a file or device object, opened by CreateFile.
 //This routine does the following:
 // 1. Check the validation of the parameters;
 // 2. Check the device type of the target device object;
@@ -668,46 +754,45 @@ __TERMINAL:
 //    reference counter,and return.
 //
 VOID _CloseFile(__COMMON_OBJECT* lpThis,
-			   __COMMON_OBJECT* lpFileObject)
+	__COMMON_OBJECT* lpFileObject)
 {
-	__DRCB*           pDrcb    = NULL;
+	__DRCB*           pDrcb = NULL;
 	__DEVICE_OBJECT*  pFileObj = (__DEVICE_OBJECT*)lpFileObject;
 	__DRIVER_OBJECT*  pFileDrv = NULL;
 
-	if((NULL == lpThis) || (NULL == lpFileObject))  //Invalid parameters.
-	{
-		return;
-	}
-	//Validate the file system object.
-	if(DEVICE_OBJECT_SIGNATURE != pFileObj->dwSignature)
+	BUG_ON((NULL == lpThis) || (NULL == lpFileObject));
+
+	/* Validates object signature. */
+	if (DEVICE_OBJECT_SIGNATURE != pFileObj->dwSignature)
 	{
 		return;
 	}
 	pFileDrv = pFileObj->lpDriverObject;
-	//Create DRCB object and issue the close file command.
+
+	/* Invoke close command of the device. */
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	if (NULL == pDrcb)
 	{
 		goto __TERMINAL;
 	}
 
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
 	{
 		goto __TERMINAL;
 	}
-	pDrcb->dwStatus       = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwRequestMode  = DRCB_REQUEST_MODE_CLOSE;
-	pDrcb->dwInputLen     = sizeof(__COMMON_OBJECT*);
-	pDrcb->lpInputBuffer  = (LPVOID)pFileObj;
-	//Issue the command.
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_CLOSE;
+	pDrcb->dwInputLen = sizeof(__COMMON_OBJECT*);
+	pDrcb->lpInputBuffer = (LPVOID)pFileObj;
+	//Issue close command.
 	pFileDrv->DeviceClose((__COMMON_OBJECT*)pFileDrv,
 		(__COMMON_OBJECT*)pFileObj,
 		pDrcb);
 
 __TERMINAL:
-	if(pDrcb)
+	if (pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)pDrcb);
@@ -715,7 +800,7 @@ __TERMINAL:
 	return;
 }
 
-//Implementation of DeleteFile.
+/* Delete a file from system. */
 BOOL _DeleteFile(__COMMON_OBJECT* lpThis,
 				LPCTSTR lpszFileName)
 {

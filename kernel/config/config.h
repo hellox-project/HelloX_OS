@@ -28,8 +28,8 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.86"
-#define HELLOX_VERSION_INFO "HelloX [Version 1.860(Beta),initiated in 2019/09/09,by Garry.Xin]"
+#define OS_VERSION   "    HelloX V1.88"
+#define HELLOX_VERSION_INFO "HelloX [Version 1.880(Beta),initiated in 2020/11/13,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 #define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
 
@@ -161,7 +161,7 @@
 
 //Include console object into kernel.COM input and output functions are implemented
 //in console object.
-#define __CFG_SYS_CONSOLE
+//#define __CFG_SYS_CONSOLE
 
 //************************************************************************
 //
@@ -171,6 +171,9 @@
 
 //Include IDE driver in OS.
 #define __CFG_DRV_IDE
+
+//Include AHCI driver in OS.
+#define __CFG_DRV_AHCI
 
 //Include COM driver in OS.
 #define __CFG_DRV_COM

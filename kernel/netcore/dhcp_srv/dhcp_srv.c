@@ -719,6 +719,7 @@ __TERMINAL:
  */
 static BOOL add_preconfig_interface()
 {
+#if (!NET_PRECONFIG_ENABLE)
 	char genif_name[6][GENIF_NAME_LENGTH];
 	int if_num = 0;
 
@@ -731,8 +732,9 @@ static BOOL add_preconfig_interface()
 				__func__, genif_name[i]);
 		}
 	}
+	return TRUE;
+#else
 
-#if 0
 #if defined(DHCPD_ENABLED_GENIF_1)
 	if (AddOneInterface(DHCPD_ENABLED_GENIF_1))
 	{
@@ -761,9 +763,8 @@ static BOOL add_preconfig_interface()
 			__func__, DHCPD_ENABLED_GENIF_4);
 	}
 #endif
-#endif
-
 	return TRUE;
+#endif
 }
 
 /* Main thread of DHCP server. */

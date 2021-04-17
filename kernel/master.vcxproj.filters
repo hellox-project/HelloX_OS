@@ -731,6 +731,15 @@
     <ClCompile Include="kernel\cfgmgr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="drivers\x86\ahci.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\ahciio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\x86\ahcidrv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -1249,6 +1258,15 @@
     <ClInclude Include="include\cfgmgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="drivers\x86\ahci.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\x86\ahcidef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1282,5 +1300,6 @@
     <Text Include="netcore\dhcp_srv\dhcp_ms.txt" />
     <Text Include="netcore\bug_oe.txt" />
     <Text Include="doc\syscfg.txt" />
+    <Text Include="drivers\x86\ahci_dev.txt" />
   </ItemGroup>
 </Project>

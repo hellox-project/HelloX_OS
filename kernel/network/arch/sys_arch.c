@@ -199,6 +199,13 @@ err_t sys_mbox_trypost(sys_mbox_t* mbox,void* msg)
 void sys_mbox_post(sys_mbox_t* mbox,void* msg)
 {
 	HANDLE hMailbox = (HANDLE)*mbox;
+	__KERNEL_THREAD_OBJECT* pKernelThread = __CURRENT_KERNEL_THREAD;
+
+	if (0 == strcmp("tcpip_thread", pKernelThread->KernelThreadName))
+	{
+		__LOG("[%s]tcpip thread invoked.\r\n", __func__);
+	}
+
 	SendMail(hMailbox, msg, 0, WAIT_TIME_INFINITE, NULL);
 #if 0
 	__MAIL_BOX* pMailbox = (__MAIL_BOX*)*mbox;

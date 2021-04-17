@@ -205,7 +205,9 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 		ucInt += 0x20;
 #endif
 		/* Establish EHCI interrupt. */
-		pUsbCtrl->IntObject = ConnectInterrupt(CommonInterruptHandler,
+		pUsbCtrl->IntObject = ConnectInterrupt(
+			"int_usbctrl",
+			CommonInterruptHandler,
 			(LPVOID)pUsbCtrl,
 			ucInt);
 		if (NULL == pUsbCtrl->IntObject)

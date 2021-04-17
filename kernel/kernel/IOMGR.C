@@ -125,66 +125,77 @@ static BOOL IOManagerInitialize(__COMMON_OBJECT* lpThis)
 	return bResult;
 }
 
-//Used to open regular file.
-static __COMMON_OBJECT* __OpenFile(__COMMON_OBJECT* lpThis,  //IOManager object.
-								  LPSTR            lpszFileName,
-								  DWORD            dwAccessMode,
-								  DWORD            dwShareMode)
+/* Open a regular file object. */
+static __COMMON_OBJECT* __OpenFile(__COMMON_OBJECT* lpThis,
+	LPSTR            lpszFileName,
+	DWORD            dwAccessMode,
+	DWORD            dwShareMode)
 {
-	__COMMON_OBJECT*              pFileObject    = NULL;
-	__DRIVER_OBJECT*              pFsDriver      = NULL;
-	__DEVICE_OBJECT*              pFsObject      = NULL;
-	__IO_MANAGER*                 pIoManager     = (__IO_MANAGER*)lpThis;
+	__COMMON_OBJECT*              pFileObject = NULL;
+	__DRIVER_OBJECT*              pFsDriver = NULL;
+	__DEVICE_OBJECT*              pFsObject = NULL;
+	__IO_MANAGER*                 pIoManager = (__IO_MANAGER*)lpThis;
 	DWORD                         dwFlags;
-	BYTE                          FsIdentifier   = 0;  //File system identifier.
-	__DRCB*                       pDrcb          = NULL;
+	BYTE                          FsIdentifier = 0;  //File system identifier.
+	__DRCB*                       pDrcb = NULL;
 	int                           i;
 
-	FsIdentifier   = TO_CAPITAL(lpszFileName[0]);
+	FsIdentifier = TO_CAPITAL(lpszFileName[0]);
 	//Create DRCB object first.
-    pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
-		goto __TERMINAL;
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
-		goto __TERMINAL;
-
-	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
-	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
+	if (NULL == pDrcb)
 	{
-		if(FsIdentifier == pIoManager->FsArray[i].FileSystemIdentifier)  //Located the file system.
+		goto __TERMINAL;
+	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
+		goto __TERMINAL;
+	}
+
+	/* 
+	 * Locate the file system manager object by the fs
+	 * identifier in file's name.
+	 */
+	__ENTER_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
+	for (i = 0; i < FILE_SYSTEM_NUM; i++)
+	{
+		if (FsIdentifier == pIoManager->FsArray[i].FileSystemIdentifier)
 		{
-			pFsObject = (__DEVICE_OBJECT*)pIoManager->FsArray[i].pFileSystemObject; //Get the file system object.
+			pFsObject = (__DEVICE_OBJECT*)pIoManager->FsArray[i].pFileSystemObject;
 		}
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(pIoManager->spin_lock, dwFlags);
 
-	if(NULL == pFsObject)  //Can not locate the desired file system.
+	if (NULL == pFsObject)
 	{
 		goto __TERMINAL;
 	}
+
 	//Check the validity of file system object.
-	if(DEVICE_OBJECT_SIGNATURE != pFsObject->dwSignature)
+	if (DEVICE_OBJECT_SIGNATURE != pFsObject->dwSignature)
 	{
 		goto __TERMINAL;
 	}
 	pFsDriver = pFsObject->lpDriverObject;
 
-	//Initialie the DRCB object,then call DeviceOpen routine of file system object.
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_OPEN;
-	pDrcb->dwInputLen      = dwAccessMode;
-	pDrcb->dwOutputLen     = dwShareMode;
-	pDrcb->lpInputBuffer   = (LPVOID)lpszFileName;
+	/*
+	 * Initialie the DRCB object,then invoke
+	 * DeviceOpen routine of file system object.
+	 */
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_OPEN;
+	pDrcb->dwInputLen = dwAccessMode;
+	pDrcb->dwOutputLen = dwShareMode;
+	pDrcb->lpInputBuffer = (LPVOID)lpszFileName;
 
 	pFileObject = pFsDriver->DeviceOpen((__COMMON_OBJECT*)pFsDriver,
 		(__COMMON_OBJECT*)pFsObject,
 		pDrcb);
 
 __TERMINAL:
-	if(NULL != pDrcb)  //DRCB object created yet,release it.
+	if (NULL != pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)pDrcb);
@@ -192,29 +203,93 @@ __TERMINAL:
 	return pFileObject;
 }
 
-//Used to open device object.
+/* 
+ * Open a device object. 
+ * This routine will be invoked by CreateFile when
+ * the file name is a device name(start with \\.\...).
+ */
 static __COMMON_OBJECT* __OpenDevice(__COMMON_OBJECT* lpThis,
-									LPSTR            lpszFileName,
-									DWORD            dwAccessMode,
-									DWORD            dwShareMode)
+	LPSTR lpszFileName,
+	DWORD dwAccessMode,
+	DWORD dwShareMode)
 {
 	__DEVICE_OBJECT* pDevice = NULL;
-	DWORD dwFlags;
+	__DRIVER_OBJECT* pDriver = NULL;
+	unsigned long dwFlags;
+	__DRCB* drcb_open = NULL;
+	BOOL open_result = FALSE;
 
-	//Travel the whole device list to find the desired one.
+	BUG_ON((NULL == lpThis) || (NULL == lpszFileName));
+
+	/* Travel the whole device list to locate the specified one. */
 	__ENTER_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
 	pDevice = ((__IO_MANAGER*)lpThis)->lpDeviceRoot;
-	while(pDevice)
+	while (pDevice)
 	{
-		//if(StrCmp(lpszFileName,(LPSTR)&pDevice->DevName[0]))  //Find.
-		if(0 == strcmp(lpszFileName,&pDevice->DevName[0])) //Find the device.
+		if (0 == strcmp(lpszFileName, &pDevice->DevName[0]))
 		{
+			/* found. */
 			break;
 		}
 		pDevice = pDevice->lpNext;
 	}
+	/* Increase the reference counter. */
+	if (pDevice)
+	{
+		BUG_ON(NULL == pDevice->lpDriverObject);
+		if (!ObjectManager.AddRefCount(&ObjectManager,
+			(__COMMON_OBJECT*)pDevice))
+		{
+			/* Failed to lock the device. */
+			pDevice = NULL;
+		}
+	}
 	__LEAVE_CRITICAL_SECTION_SMP(IOManager.spin_lock, dwFlags);
-	return (__COMMON_OBJECT*)pDevice;
+
+	/* Invoke the open routine of device. */
+	if (pDevice)
+	{
+		drcb_open = (__DRCB*)ObjectManager.CreateObject(
+			&ObjectManager,
+			NULL,
+			OBJECT_TYPE_DRCB);
+		if (NULL == drcb_open)
+		{
+			/* Decrease the refcount. */
+			ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDevice);
+			pDevice = NULL;
+			goto __TERMINAL;
+		}
+		if (!drcb_open->Initialize((__COMMON_OBJECT*)drcb_open))
+		{
+			ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDevice);
+			pDevice = NULL;
+			goto __TERMINAL;
+		}
+		/* Set appropriate drcb members. */
+		drcb_open->dwStatus = DRCB_STATUS_INITIALIZED;
+		drcb_open->dwRequestMode = DRCB_REQUEST_MODE_OPEN;
+		pDriver = pDevice->lpDriverObject;
+
+		/* Invoke open routine. */
+		if (pDriver->DeviceOpen)
+		{
+			if (pDriver->DeviceOpen((__COMMON_OBJECT*)pDriver,
+				(__COMMON_OBJECT*)pDevice, drcb_open))
+			{
+				open_result = TRUE;
+			}
+		}
+	}
+
+__TERMINAL:
+	if (open_result)
+	{
+		return (__COMMON_OBJECT*)pDevice;
+	}
+	else {
+		return NULL;
+	}
 }
 
 /*
@@ -240,7 +315,7 @@ static __COMMON_OBJECT* __OpenDevice(__COMMON_OBJECT* lpThis,
  * otherwise,it will return a NULL value to indicate the failure,user can determine the
  * failing reason by calling GetLastError routine.
  */
-static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object.
+static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,
 	LPSTR            lpszFileName,
 	DWORD            dwAccessMode,
 	DWORD            dwShareMode,
@@ -328,51 +403,51 @@ static __COMMON_OBJECT* _CreateFile(__COMMON_OBJECT* lpThis,  //IOManager object
 	return NULL;
 }
 
-//
-//The implementation of IOControl.
-//This routine does the following:
-// 1. 
-//
-//Implementation of IOControl.Through this routine user can issue some uncommon
-//commands related to specific device.
-static BOOL kIOControl(__COMMON_OBJECT* lpThis,          //IOManager itself.
-					  __COMMON_OBJECT* lpFileObject,    //Target file object.
-					  DWORD            dwCommand,       //Command to do.
-					  DWORD            dwInputLen,      //Input buffer's length.
-					  LPVOID           lpInputBuffer,   //Input buffer.
-					  DWORD            dwOutputLen,     //Output buffer's length.
-					  LPVOID           lpOutputBuffer,  //Output buffer.
-					  DWORD*           lpOutputFilled)  //How many bytes returned.
+/*
+ * IOControl routine, device specific command or operations 
+ * could be carry out through this routine.
+ */
+static BOOL _IOControl(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpFileObject,
+	DWORD            dwCommand,
+	DWORD            dwInputLen,
+	LPVOID           lpInputBuffer,
+	DWORD            dwOutputLen,
+	LPVOID           lpOutputBuffer,
+	DWORD*           lpOutputFilled)
 {
-	BOOL              bResult          = FALSE;
-	__DEVICE_OBJECT*  pDevice          = (__DEVICE_OBJECT*)lpFileObject;
-	__DRIVER_OBJECT*  pDriver          = NULL;
-	__DRCB*           pDrcb            = NULL;
-	DWORD             dwRetValue       = 0;
- 
-	if((NULL == lpThis) || (NULL == lpFileObject))  //Invalid parameters.
+	BOOL              bResult = FALSE;
+	__DEVICE_OBJECT*  pDevice = (__DEVICE_OBJECT*)lpFileObject;
+	__DRIVER_OBJECT*  pDriver = NULL;
+	__DRCB*           pDrcb = NULL;
+	DWORD             dwRetValue = 0;
+
+	if ((NULL == lpThis) || (NULL == lpFileObject))
 	{
 		goto __TERMINAL;
 	}
 	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	if (NULL == pDrcb)
+	{
 		goto __TERMINAL;
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	}
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
+	{
 		goto __TERMINAL;
+	}
 
 	//Initialize DRCB object.
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;  //Request mode.
-	pDrcb->dwCtrlCommand   = dwCommand;
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwInputLen      = dwInputLen;
-	pDrcb->lpInputBuffer   = lpInputBuffer;
-	pDrcb->dwOutputLen     = dwOutputLen;
-	pDrcb->lpOutputBuffer  = lpOutputBuffer;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
+	pDrcb->dwCtrlCommand = dwCommand;
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwInputLen = dwInputLen;
+	pDrcb->lpInputBuffer = lpInputBuffer;
+	pDrcb->dwOutputLen = dwOutputLen;
+	pDrcb->lpOutputBuffer = lpOutputBuffer;
 	//Now issue the IOControl command to device.
-	if(pDevice->dwSignature != DEVICE_OBJECT_SIGNATURE)  //Validation failed.
+	if (pDevice->dwSignature != DEVICE_OBJECT_SIGNATURE)
 	{
 		goto __TERMINAL;
 	}
@@ -381,21 +456,21 @@ static BOOL kIOControl(__COMMON_OBJECT* lpThis,          //IOManager itself.
 	dwRetValue = pDriver->DeviceCtrl((__COMMON_OBJECT*)pDriver,
 		(__COMMON_OBJECT*)pDevice,
 		pDrcb);
-	if(lpOutputFilled)
+	if (lpOutputFilled)
 	{
 		*lpOutputFilled = dwRetValue;
 	}
-	if(DRCB_STATUS_FAIL == pDrcb->dwStatus)  //Failed to handle.
+	if (DRCB_STATUS_FAIL == pDrcb->dwStatus)
 	{
 		bResult = FALSE;
 	}
-	else  //Assume the handling is successfully.
+	else
 	{
 		bResult = TRUE;
 	}
 
 __TERMINAL:
-	if(pDrcb)  //Should release it.
+	if (pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)pDrcb);
@@ -403,7 +478,10 @@ __TERMINAL:
 	return bResult;
 }
 
-//Implementation of CreateDirectory.
+/* 
+ * CreateDirectory, create a new directory
+ * on the specified location of a file system.
+ */
 static BOOL _CreateDirectory(__COMMON_OBJECT* lpThis,
 							 LPCTSTR lpszFileName,
 							 LPVOID  lpReserved)
@@ -783,43 +861,55 @@ __TERMINAL:
 	return dwAttributes;
 }
 
-//Implementation of GetFileSize.
+/*
+ * Get a file object's size, or storage device
+ * volume.
+ */
 static DWORD _GetFileSize(__COMMON_OBJECT* lpThis,
-						  __COMMON_OBJECT* lpFileObject,
-						  DWORD* lpdwSizeHigh)
+	__COMMON_OBJECT* lpFileObject,
+	DWORD* lpdwSizeHigh)
 {
-	__DRIVER_OBJECT*        pDrvObject  = NULL;
-	__DEVICE_OBJECT*        pFileObject = (__DEVICE_OBJECT*)lpFileObject;
-	__DRCB*                 pDrcb       = NULL;
-	DWORD                   dwResult    = 0;
+	__DRIVER_OBJECT* pDrvObject = NULL;
+	__DEVICE_OBJECT* pFileObject = (__DEVICE_OBJECT*)lpFileObject;
+	__DRCB* pDrcb = NULL;
+	DWORD dwResult = 0;
 
-	if((NULL == pFileObject)) 
-	{
-		return 0;
-	}
+	BUG_ON(NULL == pFileObject);
 
 	pDrvObject = pFileObject->lpDriverObject;
-	//Create DRCB object and issue DeviceSeek command to file system driver.
-	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,NULL,OBJECT_TYPE_DRCB);
-	if(NULL == pDrcb)        //Failed to create DRCB object.
+	BUG_ON(NULL == pDrvObject);
+	pDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
+		NULL, OBJECT_TYPE_DRCB);
+	if (NULL == pDrcb)
 	{
 		return 0;
 	}
-
-	if(!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))  //Failed to initialize.
+	if (!pDrcb->Initialize((__COMMON_OBJECT*)pDrcb))
 	{
-		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pDrcb);
-
+		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 		return 0;
 	}
 
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_SIZE;
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwInputLen      = sizeof(DWORD);
-	pDrcb->lpInputBuffer   = 0;      //Use input buffer to contain move scheme,from begin or current.
-	
-	dwResult = pDrvObject->DeviceSize((__COMMON_OBJECT*)pDrvObject,(__COMMON_OBJECT*)pFileObject,pDrcb);
-	ObjectManager.DestroyObject(&ObjectManager,	(__COMMON_OBJECT*)pDrcb);
+	/* Issue device size command to driver. */
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_SIZE;
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwInputLen = 0;
+	pDrcb->lpInputBuffer = 0;
+	/* 
+	 * Use output buffer to contain high part of size. 
+	 * High part size will be saved upon return of device
+	 * size command.
+	 */
+	pDrcb->lpOutputBuffer = lpdwSizeHigh;
+	if (lpdwSizeHigh)
+	{
+		pDrcb->dwOutputLen = sizeof(*lpdwSizeHigh);
+	}
+	dwResult = pDrvObject->DeviceSize((__COMMON_OBJECT*)pDrvObject,
+		(__COMMON_OBJECT*)pFileObject,
+		pDrcb);
+
+	ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 
 	return dwResult;
 }
@@ -876,7 +966,7 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
 }
 
 /* 
- * The implementation of CreateDevice,this routine is called by device
+ * CreateDevice,this routine is called by device
  * driver(s) to create device object.Generally,this routine is called in
  * DriverEntry of device driver(s).
  * This routine does the following:
@@ -886,45 +976,45 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
  *  4. Inserts the device object into device object's list.
 */
 static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
-									 LPSTR             lpszDevName,
-									 DWORD             dwAttribute,
-									 DWORD             dwBlockSize,
-									 DWORD             dwMaxReadSize,
-									 DWORD             dwMaxWriteSize,
-									 LPVOID            lpDevExtension,
-									 __DRIVER_OBJECT*  lpDrvObject)
+	LPSTR             lpszDevName,
+	DWORD             dwAttribute,
+	DWORD             dwBlockSize,
+	DWORD             dwMaxReadSize,
+	DWORD             dwMaxWriteSize,
+	LPVOID            lpDevExtension,
+	__DRIVER_OBJECT*  lpDrvObject)
 {
-	__DEVICE_OBJECT*                 lpDevObject       = NULL;
-	__DEVICE_OBJECT*                 lpFsDriver        = NULL;
-	__DRCB*                          lpDrcb            = NULL;
-	__IO_MANAGER*                    lpIoManager       = (__IO_MANAGER*)lpThis;
-	DWORD                            dwFlags           = 0;
-	DWORD                            dwCtrlRet         = 0;   //Return value of DeviceCtrl routine.
+	__DEVICE_OBJECT*                 lpDevObject = NULL;
+	__DEVICE_OBJECT*                 lpFsDriver = NULL;
+	__DRCB*                          lpDrcb = NULL;
+	__IO_MANAGER*                    lpIoManager = (__IO_MANAGER*)lpThis;
+	DWORD                            dwFlags = 0;
+	DWORD                            dwCtrlRet = 0;   //Return value of DeviceCtrl routine.
 	int                              i;
 
 	/* Validate parameters. */
-	if((NULL == lpThis) || (NULL == lpszDevName) || (NULL == lpDrvObject))
+	if ((NULL == lpThis) || (NULL == lpszDevName) || (NULL == lpDrvObject))
 	{
 		return NULL;
 	}
 
 	/* Device's name must not exceed the MAX_DEV_NAME_LEN. */
-	if(StrLen(lpszDevName) > MAX_DEV_NAME_LEN)
+	if (StrLen(lpszDevName) > MAX_DEV_NAME_LEN)
 	{
 		return NULL;
 	}
 
-	lpDevObject    = (__DEVICE_OBJECT*)ObjectManager.CreateObject(
+	lpDevObject = (__DEVICE_OBJECT*)ObjectManager.CreateObject(
 		&ObjectManager,
 		NULL,
 		OBJECT_TYPE_DEVICE);
-	if(NULL == lpDevObject)
+	if (NULL == lpDevObject)
 	{
 		return NULL;
 	}
 
-	/* Initialize the DRCB object. */
-	if(!lpDevObject->Initialize((__COMMON_OBJECT*)lpDevObject))
+	/* Initialize the device object. */
+	if (!lpDevObject->Initialize((__COMMON_OBJECT*)lpDevObject))
 	{
 		ObjectManager.DestroyObject(&ObjectManager,
 			(__COMMON_OBJECT*)lpDevObject);
@@ -932,51 +1022,50 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 	}
 
 	//Initialize the device object's members.
-	lpDevObject->dwSignature    = DEVICE_OBJECT_SIGNATURE;  //Validate the device object.
+	lpDevObject->dwSignature = DEVICE_OBJECT_SIGNATURE;  //Validate the device object.
 	lpDevObject->lpDevExtension = lpDevExtension;  //Device extension of this object.
 	lpDevObject->lpDriverObject = lpDrvObject;     //Driver object of this device.
-	lpDevObject->dwAttribute    = dwAttribute;
-	lpDevObject->dwBlockSize    = dwBlockSize;
+	lpDevObject->dwAttribute = dwAttribute;
+	lpDevObject->dwBlockSize = dwBlockSize;
 	lpDevObject->dwMaxWriteSize = dwMaxWriteSize;
-	lpDevObject->dwMaxReadSize  = dwMaxReadSize;
-	lpDevObject->lpNext         = NULL;
-	lpDevObject->lpPrev         = NULL;
+	lpDevObject->dwMaxReadSize = dwMaxReadSize;
+	lpDevObject->lpNext = NULL;
+	lpDevObject->lpPrev = NULL;
 
-	StrCpy(lpszDevName,(LPSTR)&lpDevObject->DevName[0]);
-	//strcpy((LPSTR)&lpDevObject->DevName[0],lpszDevName);
-	if(!(dwAttribute & DEVICE_TYPE_PARTITION))  //This is not a partition,skip follows code.
+	StrCpy(lpszDevName, (LPSTR)&lpDevObject->DevName[0]);
+	if (!(dwAttribute & DEVICE_TYPE_PARTITION))
 	{
 		goto __CONTINUE;
 	}
 
 	//If this is a partition object,then give a chance to file system(s) to
 	//check if this partition is file system's target.
-	for(i = 0;i < FS_CTRL_NUM;i++)
+	for (i = 0; i < FS_CTRL_NUM; i++)
 	{
-		if(lpIoManager->FsCtrlArray[i])  //This slot is occupied.
+		if (lpIoManager->FsCtrlArray[i])
 		{
 			lpFsDriver = (__DEVICE_OBJECT*)lpIoManager->FsCtrlArray[i];
-			if(lpFsDriver->dwSignature != DEVICE_OBJECT_SIGNATURE)  //Invalid object.
+			if (lpFsDriver->dwSignature != DEVICE_OBJECT_SIGNATURE)
 			{
 				break;
 			}
 			lpDrcb = (__DRCB*)ObjectManager.CreateObject(&ObjectManager,
 				NULL,
 				OBJECT_TYPE_DRCB);
-			if(NULL == lpDrcb)        //Failed to create DRCB object.
+			if (NULL == lpDrcb)
 				goto __CONTINUE;
 
-			if(!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))  //Failed to initialize.
+			if (!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))
 			{
 				ObjectManager.DestroyObject(&ObjectManager,
 					(__COMMON_OBJECT*)lpDrcb);
 				goto __CONTINUE;
 			}
 
-			lpDrcb->dwStatus      = DRCB_STATUS_INITIALIZED;
+			lpDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
 			lpDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
 			lpDrcb->dwCtrlCommand = IOCONTROL_FS_CHECKPARTITION;
-			lpDrcb->dwInputLen    = sizeof(__DEVICE_OBJECT*);
+			lpDrcb->dwInputLen = sizeof(__DEVICE_OBJECT*);
 			lpDrcb->lpInputBuffer = (LPVOID)lpDevObject;
 			//Now issue the check partition command.
 			dwCtrlRet = lpFsDriver->lpDriverObject->DeviceCtrl(
@@ -986,7 +1075,7 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 			//When checking partition finished,DRCB object should be released.
 			ObjectManager.DestroyObject(&ObjectManager,
 				(__COMMON_OBJECT*)lpDrcb);
-			if(dwCtrlRet)  //The appropriate file system is found.
+			if (dwCtrlRet)  //The appropriate file system is found.
 			{
 				break;
 			}
@@ -995,21 +1084,21 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 
 __CONTINUE:
 
-	/* 
+	/*
 	 * Add the device object into device object's global list,
 	 * can not be interrupted.
 	 */
 	__ENTER_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
-	if(NULL == lpIoManager->lpDeviceRoot)  //This is the first object.
+	if (NULL == lpIoManager->lpDeviceRoot)  //This is the first object.
 	{
 		lpIoManager->lpDeviceRoot = lpDevObject;
 	}
 	else    //This is not the first object.
 	{
-		lpDevObject->lpNext                  = lpIoManager->lpDeviceRoot;
-		lpDevObject->lpPrev                  = NULL;
+		lpDevObject->lpNext = lpIoManager->lpDeviceRoot;
+		lpDevObject->lpPrev = NULL;
 		lpIoManager->lpDeviceRoot->lpPrev = lpDevObject;
-		lpIoManager->lpDeviceRoot         = lpDevObject;
+		lpIoManager->lpDeviceRoot = lpDevObject;
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
 
@@ -1017,54 +1106,10 @@ __CONTINUE:
 }
 
 /* Destroy a specified device object. */
-static VOID kDestroyDevice(__COMMON_OBJECT* lpThis,
-						  __DEVICE_OBJECT* lpDeviceObject)
+static VOID __DestroyDevice(__COMMON_OBJECT* lpThis,
+	 __DEVICE_OBJECT* lpDeviceObject)
 {
-	__IO_MANAGER*         lpIoManager    = (__IO_MANAGER*)lpThis;
-	DWORD                 dwFlags        = 0;
-
-	if((NULL == lpThis) || (NULL == lpDeviceObject)) //Parameters check.
-	{
-		//BUG();
-		return;
-	}
-	if(DEVICE_OBJECT_SIGNATURE != lpDeviceObject->dwSignature)  //Not a valid device.
-	{
-		return;
-	}
-	//
-	//The following code deletes the device object from system list.
-	//
-	__ENTER_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
-	if(NULL == lpDeviceObject->lpPrev)    //This is the first object.
-	{
-		if(NULL == lpDeviceObject->lpNext)  //This is the last object.
-		{
-			lpIoManager->lpDeviceRoot = NULL;
-		}
-		else    //This is not the last object.
-		{
-			lpDeviceObject->lpNext->lpPrev = NULL;
-			lpIoManager->lpDeviceRoot      = lpDeviceObject->lpNext;
-		}
-	}
-	else    //This is not the first object.
-	{
-		if(NULL == lpDeviceObject->lpNext)  //This is the last object.
-		{
-			lpDeviceObject->lpPrev->lpNext = NULL;
-		}
-		else    //This is not the last object.
-		{
-			lpDeviceObject->lpPrev->lpNext = lpDeviceObject->lpNext;
-			lpDeviceObject->lpNext->lpPrev = lpDeviceObject->lpPrev;
-		}
-	}
-	__LEAVE_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
-
-	//Clear the signature of this device object.
-	lpDeviceObject->dwSignature = 0;
-	//Destroy the device object.
+	/* Delegate to object manager to destroy it. */
 	ObjectManager.DestroyObject(&ObjectManager,
 		(__COMMON_OBJECT*)lpDeviceObject);
 
@@ -1213,17 +1258,62 @@ static BOOL ReserveResource(__COMMON_OBJECT*    lpThis,
 	return bResult;
 }
 
-/*************************************************************************
-**************************************************************************
-**************************************************************************
-**************************************************************************
-*************************************************************************/
+/* 
+ * Return a device object by giving it's name. 
+ * The refer counter is increated before return
+ * it,so the device must be released by invoking
+ * ReleaseDevice routine.
+ */
+static __DEVICE_OBJECT* __GetDevice(__COMMON_OBJECT* lpThis, char* device_name)
+{
+	__IO_MANAGER* pIoMgr = (__IO_MANAGER*)lpThis;
+	__DEVICE_OBJECT* pDevice = NULL;
+	unsigned long ulFlags;
 
-/*************************************************************************
-**************************************************************************
-**************************************************************************
-**************************************************************************
-*************************************************************************/
+	BUG_ON(NULL == pIoMgr);
+	BUG_ON(NULL == device_name);
+
+	/* Travel the whole device list to find device. */
+	__ENTER_CRITICAL_SECTION_SMP(pIoMgr->spin_lock, ulFlags);
+	pDevice = pIoMgr->lpDeviceRoot;
+	while (pDevice)
+	{
+		if (0 == strcmp(pDevice->DevName, device_name))
+		{
+			break;
+		}
+		pDevice = pDevice->lpNext;
+	}
+	if (pDevice)
+	{
+		/* Found,increase the refer count. */
+		if (!ObjectManager.AddRefCount(&ObjectManager,
+			(__COMMON_OBJECT*)pDevice))
+		{
+			/* The device maybe destroyed. */
+			pDevice = NULL;
+		}
+	}
+	__LEAVE_CRITICAL_SECTION_SMP(pIoMgr->spin_lock, ulFlags);
+
+	return pDevice;
+}
+
+/* Release the device. */
+static BOOL __ReleaseDevice(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* pDeviceObject)
+{
+	__IO_MANAGER* pIoMgr = (__IO_MANAGER*)lpThis;
+	BOOL bResult = FALSE;
+
+	BUG_ON(NULL == pIoMgr);
+	BUG_ON(NULL == pDeviceObject);
+
+	/* Decrease the ref counter. */
+	bResult = ObjectManager.DestroyObject(&ObjectManager,
+		pDeviceObject);
+
+	return bResult;
+}
 
 /*
  * Defines one of the global objects in HelloX - IOManager.
@@ -1241,26 +1331,28 @@ __IO_MANAGER IOManager = {
 	0,                                      //dwPartitionNumber;
 	NULL,                                   //lpResDescriptor.
 	IOManagerInitialize,                    //Initialize.
-	_CreateFile, //CreateFile,
-	_ReadFile,   //ReadFile,
-	_WriteFile,  //WriteFile,
-	_CloseFile,   //CloseFile,
-	_CreateDirectory,        //CreateDirectory,
-	_DeleteFile,        //DeleteFile,
-	_FindClose,        //FindClose,
-	_FindFirstFile,        //FindFirstFile,
-	_FindNextFile,        //FindNextFile,
-	_GetFileAttributes,        //GetFileAttributes,
-	_GetFileSize,        //GetFileSize,
-	_RemoveDirectory,        //RemoveDirectory,
-	_SetEndOfFile,        //SetEndOfFile,
-	kIOControl,   //IOControl,
-	_SetFilePointer,    //SetFilePointer,
-	_FlushFileBuffers,  //FlushFileBuffers,
+	_CreateFile,                            //CreateFile,
+	_ReadFile,                              //ReadFile,
+	_WriteFile,                             //WriteFile,
+	_CloseFile,                             //CloseFile,
+	_CreateDirectory,                       //CreateDirectory,
+	_DeleteFile,                            //DeleteFile,
+	_FindClose,                             //FindClose,
+	_FindFirstFile,                         //FindFirstFile,
+	_FindNextFile,                          //FindNextFile,
+	_GetFileAttributes,                     //GetFileAttributes,
+	_GetFileSize,                           //GetFileSize,
+	_RemoveDirectory,                       //RemoveDirectory,
+	_SetEndOfFile,                          //SetEndOfFile,
+	_IOControl,                             //IOControl,
+	_SetFilePointer,                        //SetFilePointer,
+	_FlushFileBuffers,                      //FlushFileBuffers,
 
 	kCreateDevice,                           //CreateDevice.
-	kDestroyDevice,        //kDestroyDevice,                          //DestroyDevice.
-	ReserveResource,        //ReserveResource,                        //ReserveResource.
+	__GetDevice,                             //GetDevice.
+	__ReleaseDevice,                         //ReleaseDevice.
+	__DestroyDevice,                         //DestroyDevice.
+	ReserveResource,                         //ReserveResource.
 	LoadDriver,
 	AddFileSystem,
 	RegisterFileSystem

@@ -158,6 +158,8 @@ BEGIN_DEFINE_OBJECT(__OBJECT_MANAGER)
 	BOOL (*AddRefCount)(struct tag__OBJECT_MANAGER*, __COMMON_OBJECT*);
 	/* Validates a kernel object. */
 	BOOL (*ValidateObject)(struct tag__OBJECT_MANAGER*, __COMMON_OBJECT*);
+	/* Show out a specified kind of kernel object's information. */
+	VOID (*ShowKernelObject)(unsigned long kobj_type);
 END_DEFINE_OBJECT(__OBJECT_MANAGER)
 
 /* 

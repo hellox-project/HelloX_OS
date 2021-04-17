@@ -56,9 +56,17 @@ typedef BOOL (*__INTERRUPT_HANDLER)(LPVOID lpEsp,LPVOID);
 #define INTERRUPT_VECTOR_IDE           0x26
 #define EXCEPTION_VECTOR_SYSCALL       0x7F     //For system call.
 
-//Interrupt object.
+/* Maximal length of an interrupt object. */
+#define MAX_INTERRUPT_NAME_LENGTH 32
+
+/* Interrupt object. */
 BEGIN_DEFINE_OBJECT(__INTERRUPT_OBJECT)
-INHERIT_FROM_COMMON_OBJECT
+	INHERIT_FROM_COMMON_OBJECT
+#if defined(__CFG_SYS_SMP)
+	__SPIN_LOCK spin_lock;
+#endif
+	/* Interrupt object's name. */
+	char int_name[MAX_INTERRUPT_NAME_LENGTH];
 	struct tag__INTERRUPT_OBJECT* lpPrevInterruptObject;
     struct tag__INTERRUPT_OBJECT* lpNextInterruptObject;
 	UCHAR ucVector;
@@ -115,19 +123,20 @@ BOOL TimerUninitialize(__COMMON_OBJECT* lpThis);
 //objects may belong to one interrupt slot,and they are linked together by a 
 //link list.
 BEGIN_DEFINE_OBJECT(__INTERRUPT_SLOT)
-    volatile DWORD dwTotalInt;            //Total interrupt times since boot.
-    volatile DWORD dwSuccHandledInt;      //Successfully handled interrupt number.
+    volatile unsigned long dwTotalInt;            //Total interrupt times since boot.
+    volatile unsigned long dwSuccHandledInt;      //Successfully handled interrupt number.
 	__INTERRUPT_OBJECT* lpFirstIntObject; //First interrupt object belong to this slot.
-END_DEFINE_OBJECT(__INTERRUPT_SLOT)
+	END_DEFINE_OBJECT(__INTERRUPT_SLOT)
 
-/*
- * Contains interrupt related statistics 
- * information for a specified interrupt vector.
- */
+		/*
+		 * Contains interrupt related statistics
+		 * information for a specified interrupt vector.
+		 */
 BEGIN_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
-    DWORD dwTotalInt;
-	DWORD dwSuccHandledInt;
-	DWORD dwTotalIntObject;
+	char int_name[8][MAX_INTERRUPT_NAME_LENGTH];
+    unsigned long dwTotalInt;
+	unsigned long dwSuccHandledInt;
+	unsigned long dwTotalIntObject;
 END_DEFINE_OBJECT(__INTERRUPT_VECTOR_STAT)
 
 /* System object's definition. */
@@ -206,6 +215,7 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 		UCHAR ucVector);
 	/* Connect a interrupt vector to it's handler. */
 	__COMMON_OBJECT* (*ConnectInterrupt)(__COMMON_OBJECT* lpThis,
+		const char* int_name,
 		__INTERRUPT_HANDLER InterruptHandler,
 		LPVOID lpHandlerParam,
 		UCHAR ucVector,

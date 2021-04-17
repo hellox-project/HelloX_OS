@@ -614,12 +614,15 @@ VOID DestroyCondition(HANDLE hCond)
 		(__COMMON_OBJECT*)hCond);
 }
 
-HANDLE ConnectInterrupt(__INTERRUPT_HANDLER lpInterruptHandler,
-						LPVOID              lpHandlerParam,
-						UCHAR               ucVector)
+HANDLE ConnectInterrupt(
+	const char* int_name,
+	__INTERRUPT_HANDLER lpInterruptHandler,
+	LPVOID lpHandlerParam,
+	UCHAR ucVector)
 {
 	return System.ConnectInterrupt(
 		(__COMMON_OBJECT*)&System,
+		int_name,
 		lpInterruptHandler,
 		lpHandlerParam,
 		ucVector,

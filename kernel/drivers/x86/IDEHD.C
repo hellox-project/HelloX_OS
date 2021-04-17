@@ -1,7 +1,7 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : Jun,24 2006
-//    Module Name               : EXTCMD.CPP
+//    Module Name               : idehd.c
 //    Module Funciton           : 
 //    Description               : Hard disk driver object's dispatch routines 
 //                                are implemented in this file.
@@ -107,9 +107,9 @@ static int InitExtension(int nHdNum,          //The hard disk number.
 		(__COMMON_OBJECT*)&IOManager,
 		strDevName,
 		dwAttributes,
-		512,
-		16384,
-		16384,
+		STORAGE_DEFAULT_SECTOR_SIZE,
+		STORAGE_MAX_RW_SIZE,
+		STORAGE_MAX_RW_SIZE,
 		pPe,
 		lpDrvObject);
 	nPartitionNum += 1;
@@ -319,6 +319,22 @@ __TERMINAL:
 static DWORD DeviceWrite(__COMMON_OBJECT* lpDrv,
 						 __COMMON_OBJECT* lpDev,
 						 __DRCB* lpDrcb)
+{
+	return 0;
+}
+
+/* Invoked when the device is open. */
+static __COMMON_OBJECT* DeviceOpen(__COMMON_OBJECT* lpDrv,
+	__COMMON_OBJECT* lpDev,
+	__DRCB* lpDrcb)
+{
+	return lpDev;
+}
+
+/* Invoked when the device is closed. */
+static DWORD DeviceClose(__COMMON_OBJECT* lpDrv,
+	__COMMON_OBJECT* lpDev,
+	__DRCB* lpDrcb)
 {
 	return 0;
 }
@@ -535,19 +551,21 @@ BOOL IDEHdDriverEntry(__DRIVER_OBJECT* lpDrvObj)
 	UCHAR Buff[512];
 
 	//Set operating functions for lpDrvObj first.
-	lpDrvObj->DeviceRead    = DeviceRead;
-	lpDrvObj->DeviceWrite   = DeviceWrite;
-	lpDrvObj->DeviceCtrl    = DeviceCtrl;
+	lpDrvObj->DeviceRead = DeviceRead;
+	lpDrvObj->DeviceWrite = DeviceWrite;
+	lpDrvObj->DeviceCtrl = DeviceCtrl;
+	lpDrvObj->DeviceOpen = DeviceOpen;
+	lpDrvObj->DeviceClose = DeviceClose;
 
 	//Read the MBR from first HD.
-	if(!ReadSector(0,0,1,(BYTE*)&Buff[0]))
+	if (!ReadSector(0, 0, 1, (BYTE*)&Buff[0]))
 	{
 		_hx_printf("Can not read MBR from HD [0].\r\n");
 		return FALSE;
 	}
 
 	//Analyze the MBR and try to find any file partitions in HD.
-	InitPartitions(0,(BYTE*)&Buff[0],lpDrvObj);
+	InitPartitions(0, (BYTE*)&Buff[0], lpDrvObj);
 	return TRUE;
 }
 

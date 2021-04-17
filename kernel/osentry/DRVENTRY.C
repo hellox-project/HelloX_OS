@@ -19,11 +19,11 @@
 #include <StdAfx.h>
 
 #ifdef __CFG_DRV_KEYBOARD
-#include "../drivers/x86/keybrd.h"     //header file for key board driver.
+#include "../drivers/x86/keybrd.h"
 #endif
 
 #ifdef __CFG_FS_FAT32
-#include "../fs/fat32.h"      //header file for fat32 file system dirver.
+#include "../fs/fat32.h"
 #endif
 
 #ifdef __CFG_FS_NTFS
@@ -31,7 +31,11 @@
 #endif
 
 #ifdef __CFG_DRV_IDE
-#include "../drivers/x86/idehd.h"      //IDE interface harddisk controller driver.
+#include "../drivers/x86/idehd.h"
+#endif
+
+#ifdef __CFG_DRV_AHCI
+#include "../drivers/x86/ahci.h"
 #endif
 
 #ifdef __CFG_DRV_MOUSE
@@ -92,6 +96,10 @@ __DRIVER_ENTRY_ARRAY DriverEntryArray[] = {
 #ifdef __CFG_DRV_IDE
 	//IDE harddisk driver.
 	{ IDEHdDriverEntry, "IDE_HD" },
+#endif
+
+#ifdef __CFG_DRV_AHCI
+	{ AHCIDriverEntry, "AHCI"},
 #endif
 
 #ifdef __CFG_DRV_COM
