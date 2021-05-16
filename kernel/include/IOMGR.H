@@ -279,7 +279,6 @@ BOOL DrvObjUninitialize(__COMMON_OBJECT*);
 /* Device object signature. */
 #define DEVICE_OBJECT_SIGNATURE 0xAA55AA55
 
-
 /* Device object. */
 typedef struct tag__DEVICE_OBJECT {
 	INHERIT_FROM_COMMON_OBJECT

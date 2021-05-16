@@ -4,11 +4,13 @@
 //    Module Name               : FATMGR2.CPP
 //    Module Funciton           : 
 //                                FAT manager implementation code in this file.
-//                                FAT manager is a object to manage FAT table for FAT file
-//                                system.
-//                                In order to reduce the size of one module(file),FAT related code
-//                                is separated into several parts,named FATMGRx.CPP,where x start from
-//                                2,and one file FATMGR.CPP,is the initial part of FAT driver.
+//                                FAT manager is a object to manage FAT table 
+//                                for FAT file system.
+//                                In order to reduce the size of one module(file),
+//                                FAT related code is separated into several 
+//                                parts,named FATMGRx.CPP,where x start from
+//                                2,and one file FATMGR.CPP,is the initial part of 
+//                                FAT driver.
 //    Last modified Author      :
 //    Last modified Date        :
 //    Last modified Content     :
@@ -33,15 +35,15 @@
  */
 BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	DWORD            dwStartSector,
-	DWORD            dwSectorNum,   //How many sector to read.
-	BYTE*            pBuffer)       //Must equal or larger than request.
+	DWORD            dwSectorNum,
+	BYTE*            pBuffer)
 {
-	BOOL              bResult        = FALSE;
-	__DRIVER_OBJECT*  pDrvObject     = NULL;
-	__DEVICE_OBJECT*  pDevObject     = (__DEVICE_OBJECT*)pPartition;
-	__DRCB*           pDrcb          = NULL;
+	BOOL              bResult = FALSE;
+	__DRIVER_OBJECT*  pDrvObject = NULL;
+	__DEVICE_OBJECT*  pDevObject = (__DEVICE_OBJECT*)pPartition;
+	__DRCB*           pDrcb = NULL;
 
-	if((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))  //Invalid parameters.
+	if ((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))
 	{
 		goto __TERMINAL;
 	}
@@ -60,23 +62,23 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 		goto __TERMINAL;
 	}
 
-	if(DEVICE_OBJECT_SIGNATURE != pDevObject->dwSignature)
+	if (DEVICE_OBJECT_SIGNATURE != pDevObject->dwSignature)
 	{
 		PrintLine("Invalid device object encountered.");
 		goto __TERMINAL;
 	}
 
 	//Initialize the DRCB object.
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;
-	pDrcb->dwCtrlCommand   = IOCONTROL_READ_SECTOR;
-	pDrcb->dwInputLen      = sizeof(DWORD);
-	pDrcb->lpInputBuffer   = (LPVOID)&dwStartSector;    //Input buffer stores the start position pointer.
-	pDrcb->dwOutputLen     = dwSectorNum * (pDevObject->dwBlockSize);
-	pDrcb->lpOutputBuffer  = pBuffer;
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
+	pDrcb->dwCtrlCommand = IOCONTROL_READ_SECTOR;
+	pDrcb->dwInputLen = sizeof(DWORD);
+	pDrcb->lpInputBuffer = (LPVOID)&dwStartSector;    //Input buffer stores the start position pointer.
+	pDrcb->dwOutputLen = dwSectorNum * (pDevObject->dwBlockSize);
+	pDrcb->lpOutputBuffer = pBuffer;
 
 	//Issue the IO control command to read data.
-	if(0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
+	if (0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
 		(__COMMON_OBJECT*)pDevObject,
 		pDrcb))
 	{
@@ -87,7 +89,7 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	bResult = TRUE;
 
 __TERMINAL:
-	if(pDrcb)
+	if (pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 	}
@@ -97,8 +99,8 @@ __TERMINAL:
 /* Write one or several sector(s) to device. */
 BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	DWORD dwStartSector,
-	DWORD dwSectorNum,   //How many sector to write.
-	BYTE* pBuffer)       //Must equal or larger than request.
+	DWORD dwSectorNum,
+	BYTE* pBuffer)
 {
 	BOOL bResult = FALSE;
 	__DRIVER_OBJECT* pDrvObject = NULL;
@@ -107,7 +109,7 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	__SECTOR_INPUT_INFO ssi;
 
 	/* Validate all parameters first. */
-	if((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))
+	if ((NULL == pPartition) || (0 == dwSectorNum) || (NULL == pBuffer))
 	{
 		goto __TERMINAL;
 	}
@@ -125,19 +127,19 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 		goto __TERMINAL;
 	}
 
-	ssi.dwBufferLen   = dwSectorNum * pDevObject->dwBlockSize;
-	ssi.lpBuffer      = pBuffer;
+	ssi.dwBufferLen = dwSectorNum * pDevObject->dwBlockSize;
+	ssi.lpBuffer = pBuffer;
 	ssi.dwStartSector = dwStartSector;
-	pDrcb->dwStatus        = DRCB_STATUS_INITIALIZED;
-	pDrcb->dwRequestMode   = DRCB_REQUEST_MODE_IOCTRL;
-	pDrcb->dwCtrlCommand   = IOCONTROL_WRITE_SECTOR;
-	pDrcb->dwInputLen      = sizeof(__SECTOR_INPUT_INFO);
-	pDrcb->lpInputBuffer   = (LPVOID)&ssi;
-	pDrcb->dwOutputLen     = 0;
-	pDrcb->lpOutputBuffer  = NULL;
+	pDrcb->dwStatus = DRCB_STATUS_INITIALIZED;
+	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
+	pDrcb->dwCtrlCommand = IOCONTROL_WRITE_SECTOR;
+	pDrcb->dwInputLen = sizeof(__SECTOR_INPUT_INFO);
+	pDrcb->lpInputBuffer = (LPVOID)&ssi;
+	pDrcb->dwOutputLen = 0;
+	pDrcb->lpOutputBuffer = NULL;
 
 	/* Issue the IO control command to device to read data. */
-	if(0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
+	if (0 == pDrvObject->DeviceCtrl((__COMMON_OBJECT*)pDrvObject,
 		(__COMMON_OBJECT*)pDevObject,
 		pDrcb))
 	{
@@ -146,7 +148,7 @@ BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	bResult = TRUE;
 
 __TERMINAL:
-	if(pDrcb)
+	if (pDrcb)
 	{
 		ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pDrcb);
 	}
@@ -159,41 +161,41 @@ __TERMINAL:
  */
 BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 {
-	UCHAR*    pStart         = (UCHAR*)pSector0;
-	BOOL      bResult        = FALSE;
-	DWORD     dwCluster      = 0;
-	WORD      RootDirSector  = 0;
-	WORD      wRootEntryCnt  = 0;
-	DWORD     FATSz          = 0;
-	DWORD     TotSec         = 0;
-	DWORD     DataSec        = 0;
+	UCHAR*    pStart = (UCHAR*)pSector0;
+	BOOL      bResult = FALSE;
+	DWORD     dwCluster = 0;
+	WORD      RootDirSector = 0;
+	WORD      wRootEntryCnt = 0;
+	DWORD     FATSz = 0;
+	DWORD     TotSec = 0;
+	DWORD     DataSec = 0;
 	DWORD     CountOfCluster = 0;
 
 	BUG_ON((NULL == pFat32Fs) || (NULL == pSector0));
 	/* Verify the signature of sector. */
-	if((0x55 != pStart[510]) || (0xAA != pStart[511]))
+	if ((0x55 != pStart[510]) || (0xAA != pStart[511]))
 	{
 		_hx_printf("[%s]Invalid partition.\r\n", __func__);
 		goto __TERMINAL;
 	}
 
 	/* Initialize the FAT32 extension object,pFat32Fs. */
-	pFat32Fs->dwAttribute         = FILE_SYSTEM_TYPE_FAT32;
-	pFat32Fs->SectorPerClus       = pStart[BPB_SecPerClus];
-	pFat32Fs->wReservedSector     = *(WORD*)(pStart + BPB_RsvdSecCnt);
-	pFat32Fs->FatNum              = *(pStart + BPB_NumFATs);
-	pFat32Fs->dwFatSectorNum      = *(DWORD*)(pStart + BPB_FAT32_FATSz32);
-	pFat32Fs->dwRootDirClusStart  = *(DWORD*)(pStart + BPB_FAT32_RootClus);
-	pFat32Fs->wFatInfoSector      = *(WORD*)(pStart + BPB_FAT32_FSInfo);
-	pFat32Fs->dwFatBeginSector    = (DWORD)pFat32Fs->wReservedSector;
-	pFat32Fs->dwDataSectorStart   = pFat32Fs->dwFatBeginSector + (pFat32Fs->FatNum * pFat32Fs->dwFatSectorNum);
-	pFat32Fs->dwBytePerSector     = (DWORD)(*(WORD*)(pStart + BPB_BytsPerSec));
-	pFat32Fs->dwClusterSize       = pFat32Fs->dwBytePerSector * pFat32Fs->SectorPerClus;
-	pFat32Fs->pFileList           = NULL;
+	pFat32Fs->dwAttribute = FILE_SYSTEM_TYPE_FAT32;
+	pFat32Fs->SectorPerClus = pStart[BPB_SecPerClus];
+	pFat32Fs->wReservedSector = *(WORD*)(pStart + BPB_RsvdSecCnt);
+	pFat32Fs->FatNum = *(pStart + BPB_NumFATs);
+	pFat32Fs->dwFatSectorNum = *(DWORD*)(pStart + BPB_FAT32_FATSz32);
+	pFat32Fs->dwRootDirClusStart = *(DWORD*)(pStart + BPB_FAT32_RootClus);
+	pFat32Fs->wFatInfoSector = *(WORD*)(pStart + BPB_FAT32_FSInfo);
+	pFat32Fs->dwFatBeginSector = (DWORD)pFat32Fs->wReservedSector;
+	pFat32Fs->dwDataSectorStart = pFat32Fs->dwFatBeginSector + (pFat32Fs->FatNum * pFat32Fs->dwFatSectorNum);
+	pFat32Fs->dwBytePerSector = (DWORD)(*(WORD*)(pStart + BPB_BytsPerSec));
+	pFat32Fs->dwClusterSize = pFat32Fs->dwBytePerSector * pFat32Fs->SectorPerClus;
+	pFat32Fs->pFileList = NULL;
 
-	if(STORAGE_DEFAULT_SECTOR_SIZE != pFat32Fs->dwBytePerSector)
+	if (STORAGE_DEFAULT_SECTOR_SIZE != pFat32Fs->dwBytePerSector)
 	{
-		_hx_printf("[%s]invalid byte/sector value[%d].\r\n", 
+		_hx_printf("[%s]invalid byte/sector value[%d].\r\n",
 			__func__, pFat32Fs->dwBytePerSector);
 		goto __TERMINAL;
 	}
@@ -212,7 +214,7 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 	RootDirSector = wRootEntryCnt / (WORD)pFat32Fs->dwBytePerSector;
 
 	/* According FAT file system specification. */
-	if(*(WORD*)(pStart + BPB_FATSz16) != 0)
+	if (*(WORD*)(pStart + BPB_FATSz16) != 0)
 	{
 		FATSz = (DWORD)(*(WORD*)(pStart + BPB_FATSz16));
 	}
@@ -221,7 +223,7 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 		FATSz = *(DWORD*)(pStart + BPB_FAT32_FATSz32);
 	}
 
-	if(*(WORD*)(pStart + BPB_TotSec16) != 0)
+	if (*(WORD*)(pStart + BPB_TotSec16) != 0)
 	{
 		TotSec = (DWORD)(*(WORD*)(pStart + BPB_TotSec16));
 	}
@@ -231,19 +233,19 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 	}
 
 	/* Get the data sector number. */
-	DataSec  = TotSec - (DWORD)pFat32Fs->wReservedSector;
+	DataSec = TotSec - (DWORD)pFat32Fs->wReservedSector;
 	DataSec -= (FATSz * pFat32Fs->FatNum);
 	DataSec -= RootDirSector;
 	/* Get the total cluster counter. */
 	CountOfCluster = DataSec / pFat32Fs->SectorPerClus;
 
 	/* Can not support FAT12/FAT16 yet. */
-	if(CountOfCluster < 4085)
+	if (CountOfCluster < 4085)
 	{
 		_hx_printf("[%s]only FAT32 supported.\r\n", __func__);
 		goto __TERMINAL;
 	}
-	
+
 	bResult = TRUE;
 
 __TERMINAL:

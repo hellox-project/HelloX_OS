@@ -124,7 +124,8 @@ typedef struct{
 */
 DSKSZTOSECPERCLUS DskTableFAT32 [] = {
         { 66600, 0},       /* disks up to 32.5 MB, the 0 value for SecPerClusVal trips an error */
-        { 532480, 1},      /* disks up to 260 MB,  .5k cluster */
+        //{ 532480, 1},      /* disks up to 260 MB,  .5k cluster */
+		{ 532480, 16},      /* disks up to 260 MB,  2k cluster */
         { 16777216, 8},    /* disks up to     8 GB,    4k cluster */
         { 33554432, 16},   /* disks up to   16 GB,    8k cluster */
         { 67108864, 32},   /* disks up to   32 GB,  16k cluster */

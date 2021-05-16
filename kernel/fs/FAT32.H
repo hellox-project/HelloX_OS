@@ -1,10 +1,10 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : 18 DEC, 2008
-//    Module Name               : FAT32.H
+//    Module Name               : fat32.h
 //    Module Funciton           : 
-//                                This module countains the pre-definition of FAT32
-//                                file system.
+//                                Data types, object definitions, routine
+//                                pro-types, and constants of fat32.
 //    Last modified Author      :
 //    Last modified Date        :
 //    Last modified Content     :
@@ -16,14 +16,17 @@
 #ifndef __FAT32_H__
 #define __FAT32_H__
 
-//Display name of FAT32 file system driver.
-#define FAT32_DRIVER_DEVICE_NAME "\\\\.\\FS_FAT32"    //Name of FAT32 driver device object.
-#define FAT32_DEVICE_NAME_BASE   "\\\\.\\FAT32_DEV0"  //Base name of FAT32 file system.
-#define FAT32_FILE_NAME_BASE     "\\\\.\\FAT_FILE0"   //File device name base.
+/* FAT32 driver device object's name. */
+#define FAT32_DRIVER_DEVICE_NAME "\\\\.\\FS_FAT32"
+/* Base name of fat32 file system. */
+#define FAT32_DEVICE_NAME_BASE   "\\\\.\\FAT32_DEV0"
+/* File object's name, as a device. */
+#define FAT32_FILE_NAME_BASE     "\\\\.\\FAT_FILE0"
 
-#define SECTOR_SIZE 512    //Only can handle partition with 512 bytes sector currently.
+/* Only support 512 sector size. */
+#define SECTOR_SIZE 512
 
-//Entry point for FAT32 driver.
+/* Entry point for FAT32 driver. */
 BOOL FatDriverEntry(__DRIVER_OBJECT* lpDriverObject);
 
 //Definitions for FAT32 file system.
@@ -63,8 +66,8 @@ BOOL FatDriverEntry(__DRIVER_OBJECT* lpDriverObject);
 #define BS_FAT32_VolLab			71	// Length = 11
 #define BS_FAT32_FilSysType		82	// Length = 8
 
-
-//Definition for FAT32 directory short entry.
+/* FAT32 directory short entry. */
+#pragma pack(push,1)
 typedef struct FAT32_SHORTENTRY{
 	CHAR       FileName[11];
 	BYTE       FileAttributes;
@@ -80,7 +83,7 @@ typedef struct FAT32_SHORTENTRY{
 	DWORD      dwFileSize;
 }__FAT32_SHORTENTRY;
 
-//Definition for FAT32 directory long entry.
+/* FAT32 directory long entry. */
 typedef struct FAT32_LONGENTRY
 {
 	BYTE       LongNum[1];
@@ -92,13 +95,21 @@ typedef struct FAT32_LONGENTRY
 	WORD       Rsved2;
 	BYTE       szName3[4];
 }__FAT32_LONGENTRY;
+#pragma pack(pop)
 
-#define  FAT32_SHORTDIR_FILENAME_LEN   11     //Fat32 short entry file name len .        
-#define  FAT32_SHORTDIR_PREFIX_LEN     6      //Fat32 short entry file name len no include ext  .       
-#define  FAT32_LONGDIR_FILENAME_LEN    13     //Fat32 long  entry  file name len .        
-#define  FAT32_STANDARDEXT_NAME_LEN    3      //Fat32 file Standard extension name len .  
+/* Short entry filename's length. */
+#define  FAT32_SHORTDIR_FILENAME_LEN   11
+/* Prefix name length. */
+#define  FAT32_SHORTDIR_PREFIX_LEN     6
+/* Long dir entry filename's length. */
+#define  FAT32_LONGDIR_FILENAME_LEN    13
+/* Standard extension name's length. */
+#define  FAT32_STANDARDEXT_NAME_LEN    3
 
-//FAT32 file object.
+/* 
+ * FAT32 file object, corresponding to each 
+ * opened file object in memory. 
+ */
 struct FAT32_FS;
 typedef struct FAT32_FILE{
 	CHAR       FileName[13];     //Zero terminated file name.
@@ -117,48 +128,77 @@ typedef struct FAT32_FILE{
 
 	struct FAT32_FS* pFileSystem;    //File system this file belong to.
 	__COMMON_OBJECT* pFileCache;     //File cache object.
-	__COMMON_OBJECT* pPartition;     //Partition this file belong to.
-	struct FAT32_FILE* pNext;          //Pointing to next one.
-	struct FAT32_FILE* pPrev;          //Pointing to previous one.
+	__COMMON_OBJECT* pPartition;     //Partition this file host on. 
+	struct FAT32_FILE* pNext;        //Pointing to next one.
+	struct FAT32_FILE* pPrev;        //Pointing to previous one.
 }__FAT32_FILE;
 
-#define FAT_CACHE_LENGTH 1024                  //Fat entry cache,default is 1K.
-#define IS_EOC(clus) ((clus) >= 0x0FFFFFF8)    //Check if the cluster value is EOC.
-#define EOC 0x0FFFFFFFF                        //EOC for Hello China.
-#define IS_EMPTY_CLUSTER_ENTRY(ce) (0 == (ce)) //Check if the cluster entry is empty.
+/* Maximal FAT cache's size. */
+#define MAX_FAT_CACHE_LENGTH (1024 * 1024)
+/* Check if the cluster value is EOC. */
+#define IS_EOC(clus) ((clus) >= 0x0FFFFFF8)
+/* EOC of hellox. */
+#define EOC 0x0FFFFFFFF
+/* Check if the cluster entry is empty. */
+#define IS_EMPTY_CLUSTER_ENTRY(ce) (0 == (ce))
+/* Cluster ID mask value. */
+#define FAT32_CLUSTER_ID_MASK (0x0FFFFFFF)
 
-//FAT32 file system object.
+/* 
+ * Performance metric counters of fat32, 
+ * used to save the performance counters to identify
+ * the bottleneck of performance and improve it.
+ */
+typedef struct tag__FAT32_PERF_METRIC {
+	unsigned long max_getfreeclus_round;
+}__FAT32_PERF_METRIC;
+
+/* 
+ * FAT32 file system object, corresponding to 
+ * each mounted FAT32 partition in system.
+ * All members of this object are read only, since
+ * they are initialized in system boot process. 
+ */
 typedef struct FAT32_FS{
-	__COMMON_OBJECT*    pPartition;      //Partition this file system based.
-	DWORD               dwAttribute;     //File system attributes.
-    BYTE                SectorPerClus;   //Sector per cluster.
-	CHAR                VolumeLabel[13]; //Volume lable.
-	BYTE                FatNum;          //How many FAT in this volume.
-	BYTE                Reserved;        //Reserved to align DWORD.
-	WORD                wReservedSector; //Reserved sector number.
-	WORD                wFatInfoSector;  //FAT information sector number.
-	DWORD               dwBytePerSector; //Byte number per sector.
-	DWORD               dwPartitionSatrt; //Partition start sector
-	DWORD               dwClusterSize;   //Byte number of one cluster.
-	DWORD               dwDataSectorStart;          //Start sector number of data.
-	DWORD               dwRootDirClusStart;         //Start cluster number of root dir.
-	DWORD               dwFatBeginSector;           //Start sector number of FAT.
-	DWORD               dwFatSectorNum;             //Sector number per FAT.
-	DWORD               FatCache[FAT_CACHE_LENGTH]; //FAT entry cache.
-	//FAT32_FS*           pPrev;                      //Pointing to previous one.
-	//FAT32_FS*           pNext;                      //Pointing to next one.
-	__FAT32_FILE*       pFileList;                  //File list header.
+	__COMMON_OBJECT* pPartition;                 //Partition this file system based.
+	unsigned long    total_sectors;              //Total sectors number of this fs.
+	DWORD            dwAttribute;                //File system attributes.
+    BYTE             SectorPerClus;              //Sector per cluster.
+	CHAR             VolumeLabel[13];            //Volume lable.
+	BYTE             FatNum;                     //How many FAT in this volume.
+	WORD             wReservedSector;            //Reserved sector number.
+	WORD             wFatInfoSector;             //FAT information sector number.
+	DWORD            dwBytePerSector;            //Byte number per sector.
+	DWORD            dwPartitionSatrt;           //Partition start sector
+	DWORD            dwClusterSize;              //Byte number of one cluster.
+	DWORD            dwDataSectorStart;          //Start sector number of data.
+	DWORD            dwRootDirClusStart;         //Start cluster number of root dir.
+	DWORD            dwFatBeginSector;           //Start sector number of FAT.
+	DWORD            dwFatSectorNum;             //Sector number per FAT.
+	__FAT32_FILE*    pFileList;                  //File list header.
+	__FAT32_PERF_METRIC perf_metric;             //Performance metric counters.
+
+	/* Manage FAT cache. */
+	unsigned char* pFatCache;
+	unsigned long fc_size;
+	BOOL fc_dirty;
+	unsigned long fc_start_sector;
 }__FAT32_FS;
 
-//Types to maintain the directory searching context.
-//When FindFirstFile is called,FAT32 code will create one of this object to
-//track the searching of the directory,and returns to user.This object must be
-//transfered to FAT32 code by the subsequent calling,such as FindNextFile and
-//FindClose.
-//A subordinate type is defined to main the directory clusters.
+/*
+ * Types to maintain the directory searching context.
+ * When FindFirstFile is called,FAT32 code will create
+ * one of this object to track the enumeration process,
+ * and returns to caller. This object must be
+ * transfered to FAT32 code by the subsequent call,
+ * such as FindNextFile and FindClose.
+ * A subordinate type is defined to main the directory 
+ * clusters.
+ */
 typedef struct tag__FAT32_DIR_CLUSTER{
-	BYTE*         pCluster;     //Pointing to cluster buffer.
-	struct tag__FAT32_DIR_CLUSTER* pNext; //Pointing to next one.
+	/* Pointing to cluster buffer. */
+	BYTE* pCluster;
+	struct tag__FAT32_DIR_CLUSTER* pNext;
 }__FAT32_DIR_CLUSTER;
 
 typedef struct FAT32_FIND_HANDLE{
@@ -168,67 +208,97 @@ typedef struct FAT32_FIND_HANDLE{
 	__FAT32_DIR_CLUSTER*       pCurrCluster;      //Current cluster block.
 }__FAT32_FIND_HANDLE;
 
-//Globa routines used by FAT32 driver code.
-BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,DWORD dwStartSectorNum,
-					  DWORD dwSector,BYTE* pBuffer);     //Read one or several sectors.
-BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,DWORD dwStartSectorNum,
-					   DWORD dwSectorNum,BYTE* pBuffer); //Write one or several sectors.
-BOOL Fat32Init(__FAT32_FS* pFatFs,BYTE* pSector0);       //Initialize FAT32 file system.
+/*
+ * Globa routines used by FAT32 driver code.
+ * FAT32 module of hellox adopts traditional
+ * programming schema without object oriented,
+ * could be optimized in future.
+ */
+/* Read one or several sectors from partition. */
+BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition, DWORD dwStartSectorNum,
+	DWORD dwSector, BYTE* pBuffer);
+/* Write one or several sectors into partition. */
+BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition, DWORD dwStartSectorNum,
+	DWORD dwSectorNum, BYTE* pBuffer);
+/* Initializes a fat32 partition given it's first sector. */
+BOOL Fat32Init(__FAT32_FS* pFatFs, BYTE* pSector0);
 
-BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster);  //Get next cluster given current 1.
+/* Get next cluster given current one. */
+BOOL GetNextCluster(__FAT32_FS* pFat32Fs, uint32_t* pdwCluster);
+/* Construct a long directory entry. */
+VOID  CombinLongFileName(__FAT32_LONGENTRY** plongEntry, INT nLongEntryNum, CHAR* pFileFullName);
 
-VOID  CombinLongFileName(__FAT32_LONGENTRY** plongEntry,INT nLongEntryNum, CHAR* pFileFullName);
-
-//Get one free cluster and mark the cluster as used.
-//If find,TRUE will be returned and the cluster number will be set in pdwFreeCluster,
-//else FALSE will be returned without any changing to pdwFreeCluster.
+/*
+ * Get one free cluster and mark the cluster as used.
+ * TRUE will be returned and the cluster number will 
+ * be set in pdwFreeCluster if a free cluster is found,
+ * otherwise FALSE will be returned.
+ */
 BOOL GetFreeCluster(__FAT32_FS* pFat32Fs, DWORD dwStartToFind, DWORD* pdwFreeCluster);
-DWORD GetClusterSector(__FAT32_FS* pFat32Fs,DWORD dwCluster); //Get cluster's start sector no.
-BOOL  ConvertName(__FAT32_SHORTENTRY* pfse,BYTE* pResult);     //Convert to regular file name string.
-
-VOID  AddSpace(CHAR* pStrBuf,INT nCount);
+/* Get cluster's start sector no. */
+DWORD GetClusterSector(__FAT32_FS* pFat32Fs,DWORD dwCluster);
+/* Convert to regular file name string. */
+BOOL  ConvertName(__FAT32_SHORTENTRY* pfse, BYTE* pResult);
+/* Add nCount space into buffer. */
+VOID  AddSpace(CHAR* pStrBuf, INT nCount);
+/* Get the corresponding short entry given it's name. */
 BOOL  GetShortEntry(__FAT32_FS* pFat32Fs,
-				   DWORD dwStartCluster,
-				   CHAR* pFileName,
-				   __FAT32_SHORTENTRY* pShortEntry,
-				   DWORD* pDirClus,
-				   DWORD* pDirOffset);          //Get the short entry by name.
+	DWORD dwStartCluster,
+	CHAR* pFileName,
+	__FAT32_SHORTENTRY* pShortEntry,
+	DWORD* pDirClus,
+	DWORD* pDirOffset);
+/* Obtain the directory entry of a full name. */
 BOOL GetDirEntry(__FAT32_FS* pFat32Fs,
-				 CHAR* pFullName,
-				 __FAT32_SHORTENTRY* pShortEntry,
-				 DWORD* pDirClus,
-				 DWORD* pDirOffset); //Obtain the directory entry of a full name.
-BOOL CreateFatDir(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszDirName,BYTE Attributes);
-BOOL CreateFatFile(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pszFileName,BYTE Attributes);
-BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse,CHAR* pszName,DWORD dwFirstClus,DWORD dwInitSize,
-					BYTE FileAttr);
+	CHAR* pFullName,
+	__FAT32_SHORTENTRY* pShortEntry,
+	DWORD* pDirClus,
+	DWORD* pDirOffset);
+/* Create a new directory. */
+BOOL CreateFatDir(__FAT32_FS* pFat32Fs, DWORD dwStartCluster, 
+	CHAR* pszDirName, 
+	BYTE Attributes);
+/* Create a new fat file. */
+BOOL CreateFatFile(__FAT32_FS* pFat32Fs, DWORD dwStartCluster, 
+	CHAR* pszFileName, 
+	BYTE Attributes);
+/* Initializes a short directory entry. */
+BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse, CHAR* pszName, 
+	DWORD dwFirstClus, DWORD dwInitSize,
+	BYTE FileAttr);
+/* Convert to short entry given find data. */
 BOOL ConvertShortEntry(__FAT32_SHORTENTRY* pfse,FS_FIND_DATA* pffd);
-BOOL AppendClusterToChain(__FAT32_FS* pFat32Fs,DWORD* pCurrCluster);
+/* Append one cluster into cluster chain. */
+BOOL AppendClusterToChain(__FAT32_FS* pFat32Fs, DWORD* pCurrCluster);
+/* Delete a fat file given it's name. */
+BOOL DeleteFatFile(__FAT32_FS* pFat32Fs, CHAR* pszFileName);
+/* Delete a fat directory given it's name. */
+BOOL DeleteFatDir(__FAT32_FS* pFat32Fs, CHAR* pszDirName);
+/* Release a cluster chain. */
+BOOL ReleaseClusterChain(__FAT32_FS* pFat32Fs, DWORD dwStartCluster);
 
-//Device dispatching routines implemented in FAT322.CPP.
-DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv,
-					  __COMMON_OBJECT* lpDev,
-					  __DRCB*          lpDrcb);
-DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
-					 __COMMON_OBJECT* lpDev,
-					 __DRCB*          lpDrcb);
-DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
-					__COMMON_OBJECT* lpDev,
-					__DRCB*          lpDrcb);
-DWORD FatDeviceSize(__COMMON_OBJECT* lpDrv,
-	__COMMON_OBJECT* lpDev,
-	__DRCB*          lpDrcb);
-
-BOOL DeleteFatFile(__FAT32_FS* pFat32Fs,CHAR* pszFileName);
-BOOL DeleteFatDir(__FAT32_FS* pFat32Fs,CHAR* pszDirName);
-BOOL ReleaseClusterChain(__FAT32_FS* pFat32Fs,DWORD dwStartCluster);
-
+/* Set a file's time attribute. */
 #define  FAT32_DATETIME_CREATE     0x1
 #define  FAT32_DATETIME_WRITE      0x2
 #define  FAT32_DATETIME_ACCEPT     0x4
 
-VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage);
+VOID SetFatFileDateTime(__FAT32_SHORTENTRY* pDirEntry, DWORD dwTimeFlage);
 
+/* Device dispatching routines of fat32 driver. */
+DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv,
+	__COMMON_OBJECT* lpDev,
+	__DRCB*          lpDrcb);
+DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
+	__COMMON_OBJECT* lpDev,
+	__DRCB*          lpDrcb);
+DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv,
+	__COMMON_OBJECT* lpDev,
+	__DRCB*          lpDrcb);
+DWORD FatDeviceSize(__COMMON_OBJECT* lpDrv,
+	__COMMON_OBJECT* lpDev,
+	__DRCB*          lpDrcb);
+
+/* Memory allocate/free routines for fat. */
 VOID* FatMem_Alloc(INT nSize);
 VOID  FatMem_Free(VOID* p);
 

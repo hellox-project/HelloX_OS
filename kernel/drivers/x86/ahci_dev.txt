@@ -80,6 +80,7 @@
    * 2. Copy a file from C: to new formated fs seems OK;
    * 3. It shows the existing fs could work but with poor 
    *    performance, should be optimized;
+   * 4. Specific show of fat32 object is implemented and test;
    *
    * Move to the work of optimizing the fs/fdisk applications:
    * 1. Dir command could not open directory if no file in root;
@@ -109,4 +110,30 @@
    *    earlier of DPS. Clear the i bit in PRD when commit port
    *    request. Pending to test under thinkpad PC;
    * 8. Memory leak in fs operations, should troulbe shooting it;
+   * 9. File system driver treated as a device, it's may not necessary
+   *    and too complicated, consider to optimize it, such as just
+   *    register the file system driver object into system;
+   * 10. Try to change __ENTER_CRITICAL_SECTION_SMP to __ACQUIRE_SPIN_LOCK
+   *    in _hx_printk/_hx_printf routine, to reduce response time of
+   *    interrupt;
+   * 11. Optimized FAT cache management mechanism and adopted in 
+   *    GetFreeCluster routine, but fail when copy a file to a
+   *    new one. Pend to trouble shooting it;
+   *    Get free cluster is not invoked? should be confirmed;--invoked.
+   *    Copy success but the type command to target file shows
+   *    only 1 sector is readable, FatDeviceRead with error 8, the
+   *    issue focus on GetFreeCluster routine, should pay intensive
+   *    attention to this routine; --ISSUE SOLVED;
+   * 12. Copy from C:(system boot) to other partitions using new
+   *    GetFreeCluster routine fairly fast, but copy between ATA
+   *    partitions is very slow, type a file in ATA partitions
+   *    also very slow, it maybe lead by the FAT32 reading operation,
+   *    the cluster size of an ATA partition is 512 bytes in default,
+   *    now concentrate to solve this issue;
+   *    1) Fetch sector from cache in GetNextCluster routine, makes
+   *       the copying process a bit fast; --TESTED;
+   *    2) Next: Add time spent to copy; Check when addpart in fdisk,
+   *       last position as search start in GetFreeCluster, use slider
+   *       window to get a batch of free clusters one time;
+   * 
    */

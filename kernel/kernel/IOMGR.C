@@ -56,55 +56,36 @@ extern DWORD _SetFilePointer(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpFile,
 #define TO_CAPITAL(l) \
     (((l) >= 'a') && ((l) <= 'z')) ? ((l) - 'a' + 'A') : (l);
 
-//A helper routine used to convert a string from lowercase to capital.
-//The string should be terminated by a zero,i.e,a C string.
-/**
-VOID ToCapital(LPSTR lpszString)
-{
-	int nIndex = 0;
-
-	if(NULL == lpszString)
-	{
-		return;
-	}
-	while(lpszString[nIndex])
-	{
-		if((lpszString[nIndex] >= 'a') && (lpszString[nIndex] <= 'z'))
-		{
-			lpszString[nIndex] += 'A' - 'a';
-		}
-		nIndex ++;
-	}
-}
-*/
-//RegisterFileSystem,this routine add one file system controller into system.
+/* 
+ * RegisterFileSystem, add one file system driver 
+ * object(a device object) into system.
+ */
 static BOOL RegisterFileSystem(__COMMON_OBJECT* lpThis,
-							   __COMMON_OBJECT* pFileSystem)
+	__COMMON_OBJECT* pFileSystem)
 {
-	__IO_MANAGER*       pManager = (__IO_MANAGER*)lpThis;
-	DWORD               dwFlags;
-	int                 i = 0;
+	__IO_MANAGER* pManager = (__IO_MANAGER*)lpThis;
+	int i = 0;
 
-	if((NULL == pFileSystem) || (NULL == lpThis))
+	BUG_ON((NULL == pFileSystem) || (NULL == lpThis));
+
+	__ACQUIRE_SPIN_LOCK(pManager->spin_lock);
+	for (i = 0; i < FS_CTRL_NUM; i++)
 	{
-		return FALSE;
-	}
-	__ENTER_CRITICAL_SECTION_SMP(pManager->spin_lock,dwFlags);
-	for(i = 0;i < FS_CTRL_NUM;i ++)
-	{
-		if(NULL == pManager->FsCtrlArray[i]) //Find a empty slot.
+		/* Try to find a free slot. */
+		if (NULL == pManager->FsCtrlArray[i])
 		{
 			break;
 		}
 	}
-	if(FS_CTRL_NUM == i)  //Can not find a empty slot.
+	if (FS_CTRL_NUM == i)
 	{
-		__LEAVE_CRITICAL_SECTION_SMP(pManager->spin_lock, dwFlags);
+		/* All slots are used. */
+		__RELEASE_SPIN_LOCK(pManager->spin_lock);
 		return FALSE;
 	}
-	//Insert the file system object into this slot.
+	/* Save to this slot. */
 	pManager->FsCtrlArray[i] = pFileSystem;
-	__LEAVE_CRITICAL_SECTION_SMP(pManager->spin_lock, dwFlags);
+	__RELEASE_SPIN_LOCK(pManager->spin_lock);
 	return TRUE;
 }
 
@@ -975,22 +956,21 @@ static BOOL _FlushFileBuffers(__COMMON_OBJECT* lpThis,
  *  3. Allocates a block of memory as device object's extension;
  *  4. Inserts the device object into device object's list.
 */
-static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
-	LPSTR             lpszDevName,
-	DWORD             dwAttribute,
-	DWORD             dwBlockSize,
-	DWORD             dwMaxReadSize,
-	DWORD             dwMaxWriteSize,
-	LPVOID            lpDevExtension,
-	__DRIVER_OBJECT*  lpDrvObject)
+static __DEVICE_OBJECT* __CreateDevice(__COMMON_OBJECT* lpThis,
+	char* lpszDevName,
+	DWORD dwAttribute,
+	DWORD dwBlockSize,
+	DWORD dwMaxReadSize,
+	DWORD dwMaxWriteSize,
+	LPVOID lpDevExtension,
+	__DRIVER_OBJECT* lpDrvObject)
 {
-	__DEVICE_OBJECT*                 lpDevObject = NULL;
-	__DEVICE_OBJECT*                 lpFsDriver = NULL;
-	__DRCB*                          lpDrcb = NULL;
-	__IO_MANAGER*                    lpIoManager = (__IO_MANAGER*)lpThis;
-	DWORD                            dwFlags = 0;
-	DWORD                            dwCtrlRet = 0;   //Return value of DeviceCtrl routine.
-	int                              i;
+	__DEVICE_OBJECT* lpDevObject = NULL;
+	__DEVICE_OBJECT* lpFsDriver = NULL;
+	__DRCB* lpDrcb = NULL;
+	__IO_MANAGER* lpIoManager = (__IO_MANAGER*)lpThis;
+	DWORD dwCtrlRet = 0;
+	int i;
 
 	/* Validate parameters. */
 	if ((NULL == lpThis) || (NULL == lpszDevName) || (NULL == lpDrvObject))
@@ -1038,8 +1018,12 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 		goto __CONTINUE;
 	}
 
-	//If this is a partition object,then give a chance to file system(s) to
-	//check if this partition is file system's target.
+	/*
+	 * If this is a partition object,then 
+	 * give a chance to file system(s) registered in 
+	 * kernel to check if this partition is a kind
+	 * of that file system.
+	 */
 	for (i = 0; i < FS_CTRL_NUM; i++)
 	{
 		if (lpIoManager->FsCtrlArray[i])
@@ -1053,7 +1037,9 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 				NULL,
 				OBJECT_TYPE_DRCB);
 			if (NULL == lpDrcb)
+			{
 				goto __CONTINUE;
+			}
 
 			if (!lpDrcb->Initialize((__COMMON_OBJECT*)lpDrcb))
 			{
@@ -1067,40 +1053,41 @@ static __DEVICE_OBJECT* kCreateDevice(__COMMON_OBJECT*  lpThis,
 			lpDrcb->dwCtrlCommand = IOCONTROL_FS_CHECKPARTITION;
 			lpDrcb->dwInputLen = sizeof(__DEVICE_OBJECT*);
 			lpDrcb->lpInputBuffer = (LPVOID)lpDevObject;
-			//Now issue the check partition command.
+			/* Issue check partition command. */
 			dwCtrlRet = lpFsDriver->lpDriverObject->DeviceCtrl(
 				(__COMMON_OBJECT*)lpFsDriver->lpDriverObject,
 				(__COMMON_OBJECT*)lpFsDriver,
 				lpDrcb);
-			//When checking partition finished,DRCB object should be released.
+			/* Release drcb object. */
 			ObjectManager.DestroyObject(&ObjectManager,
 				(__COMMON_OBJECT*)lpDrcb);
-			if (dwCtrlRet)  //The appropriate file system is found.
+			if (dwCtrlRet)
 			{
+				/* Partition belongs to that fs. */
 				break;
 			}
 		}
 	}
 
 __CONTINUE:
-
 	/*
 	 * Add the device object into device object's global list,
 	 * can not be interrupted.
 	 */
-	__ENTER_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
-	if (NULL == lpIoManager->lpDeviceRoot)  //This is the first object.
+	__ACQUIRE_SPIN_LOCK(lpIoManager->spin_lock);
+	if (NULL == lpIoManager->lpDeviceRoot)
 	{
+		/* First object. */
 		lpIoManager->lpDeviceRoot = lpDevObject;
 	}
-	else    //This is not the first object.
+	else
 	{
 		lpDevObject->lpNext = lpIoManager->lpDeviceRoot;
 		lpDevObject->lpPrev = NULL;
 		lpIoManager->lpDeviceRoot->lpPrev = lpDevObject;
 		lpIoManager->lpDeviceRoot = lpDevObject;
 	}
-	__LEAVE_CRITICAL_SECTION_SMP(lpIoManager->spin_lock, dwFlags);
+	__RELEASE_SPIN_LOCK(lpIoManager->spin_lock);
 
 	return lpDevObject;
 }
@@ -1348,7 +1335,7 @@ __IO_MANAGER IOManager = {
 	_SetFilePointer,                        //SetFilePointer,
 	_FlushFileBuffers,                      //FlushFileBuffers,
 
-	kCreateDevice,                           //CreateDevice.
+	__CreateDevice,                          //CreateDevice.
 	__GetDevice,                             //GetDevice.
 	__ReleaseDevice,                         //ReleaseDevice.
 	__DestroyDevice,                         //DestroyDevice.

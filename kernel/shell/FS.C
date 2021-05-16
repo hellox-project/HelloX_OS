@@ -98,55 +98,58 @@ static DWORD QueryCmdName(LPSTR pMatchBuf,INT nBufLen)
 
 	return SHELL_QUERY_CONTINUE;	
 }
-//
-//The following routine processes the input command string.
-//
+
+/* 
+ * Processes the input command string. 
+ */
 static DWORD CommandParser(LPCSTR lpszCmdLine)
 {
-	DWORD                  dwRetVal          = SHELL_CMD_PARSER_INVALID;
-	DWORD                  dwIndex           = 0;
-	__CMD_PARA_OBJ*        lpCmdParamObj     = NULL;
+	DWORD                  dwRetVal = SHELL_CMD_PARSER_INVALID;
+	DWORD                  dwIndex = 0;
+	__CMD_PARA_OBJ*        lpCmdParamObj = NULL;
 
-	if((NULL == lpszCmdLine) || (0 == lpszCmdLine[0]))    //Parameter check
+	if ((NULL == lpszCmdLine) || (0 == lpszCmdLine[0]))
 	{
 		return SHELL_CMD_PARSER_INVALID;
 	}
 
 	lpCmdParamObj = FormParameterObj(lpszCmdLine);
-	if(NULL == lpCmdParamObj)    //Can not form a valid command parameter object.
+	if (NULL == lpCmdParamObj)
 	{
 		return SHELL_CMD_PARSER_FAILED;
 	}
 
-	if(0 == lpCmdParamObj->byParameterNum)  //There is not any parameter.
+	if (0 == lpCmdParamObj->byParameterNum)
 	{
 		return SHELL_CMD_PARSER_FAILED;
 	}
 
 	//
-	//The following code looks up the command map,to find the correct handler that handle
-	//the current command.If find,then calls the handler,else,return SYS_DIAG_CMD_PARSER_INVALID
+	//The following code looks up the command map,
+	//to find the correct handler that handle
+	//the current command.If find,then calls the 
+	//handler,else,return SYS_DIAG_CMD_PARSER_INVALID
 	//to indicate the failure.
 	//
-	while(TRUE)
+	while (TRUE)
 	{
-		if(NULL == SysDiagCmdMap[dwIndex].lpszCommand)
+		if (NULL == SysDiagCmdMap[dwIndex].lpszCommand)
 		{
 			dwRetVal = SHELL_CMD_PARSER_INVALID;
 			break;
 		}
-		if(StrCmp(SysDiagCmdMap[dwIndex].lpszCommand,lpCmdParamObj->Parameter[0]))  //Find the handler.
+		if (StrCmp(SysDiagCmdMap[dwIndex].lpszCommand, lpCmdParamObj->Parameter[0]))
 		{
 			dwRetVal = SysDiagCmdMap[dwIndex].CommandHandler(lpCmdParamObj);
 			break;
 		}
 		else
 		{
-			dwIndex ++;
+			dwIndex++;
 		}
 	}
 
-	if(NULL != lpCmdParamObj)
+	if (NULL != lpCmdParamObj)
 	{
 		ReleaseParameterObj(lpCmdParamObj);
 	}
@@ -154,14 +157,15 @@ static DWORD CommandParser(LPCSTR lpszCmdLine)
 	return dwRetVal;
 }
 
+/* Entry point of fs application. */
 DWORD fsEntry(LPVOID p)
 {
 	if(0 == init())
 	{
-		PrintLine("  Can not initialize the FS thread.");
+		PrintLine("  Init thread fail.");
 		return 0;
 	}
-
+	/* Main message loop. */
 	return Shell_Msg_Loop(FS_PROMPT_STR,CommandParser,QueryCmdName);	
 }
 
@@ -179,23 +183,23 @@ static DWORD fs_exit(__CMD_PARA_OBJ* lpCmdObj)
 //
 static DWORD help(__CMD_PARA_OBJ* lpCmdObj)
 {
-	DWORD               dwIndex = 0;
+	DWORD dwIndex = 0;
 
-	while(TRUE)
+	while (TRUE)
 	{
-		if(NULL == SysDiagCmdMap[dwIndex].lpszHelpInfo)
+		if (NULL == SysDiagCmdMap[dwIndex].lpszHelpInfo)
 			break;
 
 		PrintLine(SysDiagCmdMap[dwIndex].lpszHelpInfo);
-		dwIndex ++;
+		dwIndex++;
 	}
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 
 static DWORD fslist(__CMD_PARA_OBJ* pcpo)
 {
-	CHAR                Buffer[96];
-	int                 i;
+	CHAR Buffer[96];
+	int i;
 
 	PrintLine("  fs_id       fs_label     fs_type");
 	PrintLine("  -----       --------     -------");
@@ -801,7 +805,7 @@ static unsigned long copy(__CMD_PARA_OBJ* pCmdObj)
 			pBuffer,
 			&dwReadSize))
 		{
-			_hx_printf("  Read file failure.\r\n");
+			_hx_printf("Read file failure.\r\n");
 			goto __TERMINAL;
 		}
 
@@ -817,7 +821,7 @@ static unsigned long copy(__CMD_PARA_OBJ* pCmdObj)
 				pBuffer,
 				&dwWriteSize))
 			{
-				_hx_printf("  Write file failure\r\n");
+				_hx_printf("Write file failure.\r\n");
 				goto __TERMINAL;
 			}
 			dwTotalRead += dwReadSize;
@@ -862,19 +866,19 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 	CHAR     Info[4];
 	int      i;
 	BOOL     bMatched = FALSE;
-	CHAR*    strError = "  Please specify a valid file system identifier.";
+	CHAR*    strError = "  No partition specified.";
 
-	if(1 == pCmdObj->byParameterNum)
+	if (1 == pCmdObj->byParameterNum)
 	{
 		Info[0] = FsGlobalData.CurrentFs;
 		Info[1] = ':';
 		Info[2] = 0;
-		_hx_sprintf(Buffer,"  Current file system is: %s",Info);
+		_hx_sprintf(Buffer, "  Current partition: %s", Info);
 		PrintLine(Buffer);
 		goto __TERMINAL;
 	}
 	//Parse the user input.
-	if(strlen(pCmdObj->Parameter[1]) > 2)
+	if (strlen(pCmdObj->Parameter[1]) > 2)
 	{
 		PrintLine(strError);
 		goto __TERMINAL;
@@ -882,23 +886,23 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 	Info[0] = pCmdObj->Parameter[1][0];
 	Info[1] = pCmdObj->Parameter[1][1];
 	Info[2] = 0;
-	if(Info[1] != ':')
+	if (Info[1] != ':')
 	{
 		PrintLine(strError);
 		goto __TERMINAL;
 	}
 
-	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
+	for (i = 0; i < FILE_SYSTEM_NUM; i++)
 	{
-		if(FsGlobalData.FsArray[i].FileSystemIdentifier == Info[0])
+		if (FsGlobalData.FsArray[i].FileSystemIdentifier == Info[0])
 		{
 			bMatched = TRUE;
 			break;
 		}
 	}
-	if(!bMatched)
+	if (!bMatched)
 	{
-		PrintLine("  The specified file system is not present.");
+		PrintLine("  No partition found.");
 		goto __TERMINAL;
 	}
 	//Valid file system,change current information.
@@ -906,10 +910,10 @@ static DWORD use(__CMD_PARA_OBJ* pCmdObj)
 	FsGlobalData.CurrentDir[1] = Info[1];
 	FsGlobalData.CurrentDir[2] = '\\';
 	FsGlobalData.CurrentDir[3] = 0;
-	FsGlobalData.CurrentFs     = Info[0];
+	FsGlobalData.CurrentFs = Info[0];
 
 __TERMINAL:
-	return SHELL_CMD_PARSER_SUCCESS;;
+	return SHELL_CMD_PARSER_SUCCESS;
 }
 
 //Initialize routine for FS thread.

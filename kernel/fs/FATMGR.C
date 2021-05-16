@@ -17,11 +17,11 @@
 #include <StdAfx.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "fsstr.h"
 #include "fat32.h"
 
-//This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
 
 #define  FILENAME_TYPE_SHORT      0
@@ -30,11 +30,11 @@
 
 VOID* FatMem_Alloc(INT nSize)
 {
-	VOID* p =  KMemAlloc(nSize,KMEM_SIZE_TYPE_ANY);
+	VOID* p = KMemAlloc(nSize, KMEM_SIZE_TYPE_ANY);
 
-	if(p)
+	if (p)
 	{
-		memset(p,0,nSize);
+		memset(p, 0, nSize);
 	}
 	return p;
 }
@@ -499,45 +499,73 @@ VOID SetFatFileDateTime(__FAT32_SHORTENTRY*  pDirEntry,DWORD dwTimeFlage)
 }
 
 /*
- * Get the next consecutive cluster number given the current one.
- * pdwCluster contains the current cluster,if next cluster can be fetched,TRUE will be
- * returned and pdwCluster contains the next one,or else FALSE will be returned.
+ * Helper routine to check if a fat sector
+ * is already loaded into fat cache, return
+ * the base address if it is, NULL will be
+ * returned if is not in cache.
  */
-BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster)
+static unsigned char* __get_sector_in_cache(__FAT32_FS* pFat32Fs, uint32_t fat_sector)
 {
-	DWORD           dwNextCluster    = EOC;
-	DWORD           dwClusSector     = 0;
-	DWORD           dwCurrCluster    = 0;
-	DWORD           dwClusOffset     = 0;
-	BYTE            buff[SECTOR_SIZE];
+	unsigned char* pSectorStart = NULL;
+
+	if ((fat_sector >= pFat32Fs->fc_start_sector) &&
+		(fat_sector < (pFat32Fs->fc_start_sector + pFat32Fs->fc_size / pFat32Fs->dwBytePerSector)))
+	{
+		/* Already loaded into cache. */
+		unsigned long offset = fat_sector - pFat32Fs->fc_start_sector;
+		offset *= pFat32Fs->dwBytePerSector;
+		pSectorStart = pFat32Fs->pFatCache + offset;
+		return pSectorStart;
+	}
+	/* Not in cache. */
+	return NULL;
+}
+
+/*
+ * Get the next cluster number in a cluster chain 
+ * given the current one.
+ * pdwCluster contains the current cluster,if next 
+ * cluster can be fetched,TRUE will be
+ * returned and pdwCluster contains the next one,
+ * otherwise FALSE will be returned.
+ */
+BOOL GetNextCluster(__FAT32_FS* pFat32Fs, uint32_t* pdwCluster)
+{
+	uint32_t dwNextCluster = EOC, dwClusSector = 0;
+	uint32_t dwCurrCluster = 0, dwClusOffset = 0;
+	BYTE buff[SECTOR_SIZE];
+	BYTE* pSectorBuff = NULL;
 
 	/* Check the parameters. */
-	if((NULL == pFat32Fs) || (NULL == pdwCluster))
-	{
-		return FALSE;
-	}
+	BUG_ON((NULL == pFat32Fs) || (NULL == pdwCluster));
 	dwCurrCluster = *pdwCluster;
-	if(0 == dwCurrCluster)
+	if (0 == dwCurrCluster)
 	{
 		dwCurrCluster = 2;
 	}
 
-	//Calculate the sector number of current cluster number.
-	dwClusSector = dwCurrCluster / 128;  //128 fat cluster entry per sector.
+	/* FAT's sector number contains current cluster. */
+	dwClusSector = dwCurrCluster / 128;
 	dwClusSector += pFat32Fs->dwFatBeginSector;
-	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-		dwClusSector,
-		1,
-		buff))
+	/* Try to load the fat sector from cache. */
+	pSectorBuff = __get_sector_in_cache(pFat32Fs, dwClusSector);
+	if (NULL == pSectorBuff)
 	{
-		/* Failed to read sector,may caused by hardware. */
-		return FALSE;
+		/* Sector not loaded yet, just load it. */
+		if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+			dwClusSector, 1, buff))
+		{
+			/* Failed to read sector. */
+			return FALSE;
+		}
+		pSectorBuff = &buff[0];
 	}
 
-	dwClusOffset  =   (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(DWORD);
-	dwNextCluster =   *(DWORD*)(&buff[0] + dwClusOffset);
-	dwNextCluster &=  0x0FFFFFFF;   //Mask the first leading 4 bits.
-	if(dwNextCluster == 0)  //Invalid cluster value.
+	dwClusOffset = (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(uint32_t);
+	dwNextCluster = *(uint32_t*)(pSectorBuff + dwClusOffset);
+	/* Mask the leading 4 bits. */
+	dwNextCluster &= FAT32_CLUSTER_ID_MASK;
+	if (dwNextCluster == 0)
 	{
 		return FALSE;
 	}
@@ -546,117 +574,252 @@ BOOL GetNextCluster(__FAT32_FS* pFat32Fs,DWORD* pdwCluster)
 }
 
 /* 
- * Returns the appropriate sector number of given cluster number.
+ * Returns the corresponding sector number of given cluster number.
  * Return value of 0 indicates operation failed.
  */
 DWORD GetClusterSector(__FAT32_FS* pFat32Fs,DWORD dwCluster)
 {
-	if((NULL == pFat32Fs) || (0 == dwCluster))
-	{
-		return 0;
-	}
-	if(dwCluster < 2)  //Invalid value.
+	BUG_ON((NULL == pFat32Fs) || (0 == dwCluster));
+	if(dwCluster < 2)
 	{
 		return 0;
 	}
 	return pFat32Fs->dwDataSectorStart + (dwCluster - 2) * pFat32Fs->SectorPerClus;
 }
 
-//Get one free cluster and mark the cluster as used.
-//If find,TRUE will be returned and the cluster number will be set in pdwFreeCluster,
-//else FALSE will be returned without any changing to pdwFreeCluster.
-BOOL GetFreeCluster(__FAT32_FS* pFat32Fs,DWORD dwStartToFind,DWORD* pdwFreeCluster)
+/* 
+ * Local heler routine to calculate the 
+ * FAT cache's length. 
+ * If FAT's length is less than MAX_FAT_CACHE_LENGTH,
+ * then returns the actual FAT length, otherwise
+ * just return the MAX_FAT_CACHE_LENGTH. More complicated
+ * algorithm maybe adopted in future.
+ */
+static unsigned long __get_fatcache_length(__FAT32_FS* pFatFs)
 {
-	DWORD           dwCurrCluster = 0;
-	DWORD           dwSector      = 0;
-	BYTE*           pBuffer       = NULL;
-	DWORD*          pCluster      = NULL;
-	BOOL            bResult       = FALSE;
-	DWORD           i;
+	unsigned long fat_size = pFatFs->dwFatSectorNum * pFatFs->dwBytePerSector;
+
+	BUG_ON(MAX_FAT_CACHE_LENGTH % pFatFs->dwBytePerSector);
+
+	if (fat_size < MAX_FAT_CACHE_LENGTH)
+	{
+		return fat_size;
+	}
+	return MAX_FAT_CACHE_LENGTH;
+}
+
+/* 
+ * Get one free cluster and mark the cluster as used.
+ * If find,TRUE will be returned and the cluster number 
+ * will be set in pdwFreeCluster, otherwise FALSE will 
+ * be returned without any changing to pdwFreeCluster.
+ */
+BOOL GetFreeCluster(__FAT32_FS* pFat32Fs, DWORD dwStartToFind, DWORD* pdwFreeCluster)
+{
+	unsigned long dwCurrCluster = 0, dwSector = 0;
+	uint32_t* pCluster = NULL;
+	unsigned char* pFatSectorBuff = NULL;
+	BOOL bResult = FALSE;
+	unsigned long i = 0, round = 0;
+
+	/* Init fat cache if not yet. */
+	if (NULL == pFat32Fs->pFatCache)
+	{
+		unsigned long fc_size = __get_fatcache_length(pFat32Fs);
+		pFat32Fs->pFatCache = (unsigned char*)_hx_malloc(fc_size);
+		if (NULL == pFat32Fs->pFatCache)
+		{
+			_hx_printf("[%s]out of memory.\r\n", __func__);
+			goto __TERMINAL;
+		}
+		pFat32Fs->fc_size = fc_size;
+		pFat32Fs->fc_dirty = FALSE;
+		pFat32Fs->fc_start_sector = 0;
+	}
+
+	dwSector = pFat32Fs->dwFatBeginSector;
+	while (dwSector < pFat32Fs->dwFatSectorNum + pFat32Fs->dwFatBeginSector)
+	{
+		if (dwSector != pFat32Fs->fc_start_sector)
+		{
+			/* Should reload fat cache. */
+			if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+				dwSector, pFat32Fs->fc_size / pFat32Fs->dwBytePerSector, 
+				pFat32Fs->pFatCache))
+			{
+				/* Read fat fail. */
+				_hx_printf("[%s]load fat cache fail.\r\n", __func__);
+				goto __TERMINAL;
+			}
+			/* Update the fat cache variables. */
+			pFat32Fs->fc_start_sector = dwSector;
+			pFat32Fs->fc_dirty = FALSE;
+		}
+		/* Search the whole fat cache to find a free cluster. */
+		pFatSectorBuff = pFat32Fs->pFatCache;
+		unsigned long total_cache_sectors = pFat32Fs->fc_size / pFat32Fs->dwBytePerSector;
+		unsigned long fat_sector = 0;
+		//for (fat_sector = 0; fat_sector < total_cache_sectors; fat_sector++)
+		while(fat_sector < total_cache_sectors)
+		{
+			pCluster = (uint32_t*)pFatSectorBuff;
+			/* Analyze one sector to find a free cluster entry. */
+			for (i = 0; i < pFat32Fs->dwBytePerSector / sizeof(uint32_t); i++)
+			{
+				if (0 == ((*pCluster) & FAT32_CLUSTER_ID_MASK))
+				{
+					/* Find one, mark as used. */
+					(*pCluster) |= FAT32_CLUSTER_ID_MASK;
+					/* Mark the whole cache as dirty. */
+					pFat32Fs->fc_dirty = TRUE;
+					if (!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+						dwSector + fat_sector, 1,
+						pFatSectorBuff))
+					{
+						goto __TERMINAL;
+					}
+					else {
+						/* Mark back the dirty flag. */
+						pFat32Fs->fc_dirty = FALSE;
+						//_hx_printf("[%s]fat sector[%d] written.\r\n", __func__,
+						//	dwSector + fat_sector);
+					}
+					/* Write to backup FAT region. */
+					WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+						dwSector + fat_sector + pFat32Fs->dwFatSectorNum, 
+						1, pFatSectorBuff);
+					bResult = TRUE;
+					goto __TERMINAL;
+				}
+				pCluster++;
+				dwCurrCluster++;
+			}
+			/* Next sector in fat. */
+			pFatSectorBuff += pFat32Fs->dwBytePerSector;
+			fat_sector++;
+		}
+		/* Skip the searched fat cache sectors. */
+		dwSector += (pFat32Fs->fc_size / pFat32Fs->dwBytePerSector);
+		/* Update iteration round. */
+		round++;
+	}
+
+__TERMINAL:
+
+	/* Update performance metric counter. */
+	if (pFat32Fs->perf_metric.max_getfreeclus_round < round)
+	{
+		pFat32Fs->perf_metric.max_getfreeclus_round = round;
+	}
+
+	if (bResult)
+	{
+		/* Return the free clustor number. */
+		*pdwFreeCluster = dwCurrCluster;
+	}
+	else {
+		_hx_printf("[%s]get free cluster fail.\r\n", __func__);
+	}
+	return bResult;
+}
+
+/* Old one. */
+BOOL __GetFreeCluster(__FAT32_FS* pFat32Fs, DWORD dwStartToFind, DWORD* pdwFreeCluster)
+{
+	unsigned long dwCurrCluster = 0, dwSector = 0;
+	BYTE* pBuffer = NULL;
+	DWORD*  pCluster = NULL;
+	BOOL bResult = FALSE;
+	unsigned long i = 0, round = 0;
 
 	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
-	if(NULL == pBuffer)  //Can not allocate temporary buffer.
+	if (NULL == pBuffer)
 	{
 		return FALSE;
 	}
 
 	dwSector = pFat32Fs->dwFatBeginSector;
-	while(dwSector < pFat32Fs->dwFatSectorNum + pFat32Fs->dwFatBeginSector)
+	while (dwSector < pFat32Fs->dwFatSectorNum + pFat32Fs->dwFatBeginSector)
 	{
-		if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-			dwSector,
-			1,
-			pBuffer))  //Can not read the sector from fat region.
+		if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+			dwSector, 1, pBuffer))
 		{
+			/* Read fat fail. */
 			goto __TERMINAL;
 		}
 		pCluster = (DWORD*)pBuffer;
-		//Analysis the sector to find a free cluster entry.
-		for(i = 0;i < pFat32Fs->dwBytePerSector / sizeof(DWORD);i ++)
+		/* Analyze the sector to find a free cluster entry. */
+		for (i = 0; i < pFat32Fs->dwBytePerSector / sizeof(DWORD); i++)
 		{
-			if(0 == ((*pCluster) & 0x0FFFFFFF))  //Find one free cluster.
+			if (0 == ((*pCluster) & FAT32_CLUSTER_ID_MASK))
 			{
-				(*pCluster) |= 0x0FFFFFFF;  //Mark the cluster to EOC,occupied.
-				if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-					    dwSector,
-						1,
-						pBuffer))
+				/* Find one, mark as used. */
+				(*pCluster) |= FAT32_CLUSTER_ID_MASK;
+				if (!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+					dwSector, 1,
+					pBuffer))
 				{
 					goto __TERMINAL;
 				}
-				//Write to backup FAT region.
+				/* Write to backup FAT region. */
 				WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-					dwSector + pFat32Fs->dwFatSectorNum,
-					1,
-					pBuffer);  //It is no matter if write to backup fat failed.
+					dwSector + pFat32Fs->dwFatSectorNum, 1,
+					pBuffer);
 				bResult = TRUE;
-				//_hx_sprintf(Buffer,"  In GetFreeCluster,success,cluster = %d,next = %d",dwCurrCluster,*pCluster);
-				//PrintLine(Buffer);
 				goto __TERMINAL;
 			}
-			pCluster ++;
-			dwCurrCluster ++;
+			pCluster++;
+			dwCurrCluster++;
 		}
-		dwSector ++;  //Travel the FAT region in sector unit one by one.
+		/* Next sector in fat. */
+		dwSector++;
+		/* Update iteration round. */
+		round++;
 	}
 __TERMINAL:
-		
-	FatMem_Free(pBuffer);
 
-	if(bResult)  //Found one free cluster successfully,return it.
-		{
+	FatMem_Free(pBuffer);
+	/* Update performance metric counter. */
+	if (pFat32Fs->perf_metric.max_getfreeclus_round < round)
+	{
+		pFat32Fs->perf_metric.max_getfreeclus_round = round;
+	}
+
+	if (bResult)
+	{
+		/* Return the free clustor number. */
 		*pdwFreeCluster = dwCurrCluster;
-		}
-		return bResult;
+	}
+	return bResult;
 }
 
-//Release one cluster.
-BOOL ReleaseCluster(__FAT32_FS* pFat32Fs,DWORD dwCluster)
+/* Release one used cluster. */
+BOOL ReleaseCluster(__FAT32_FS* pFat32Fs, DWORD dwCluster)
 {
-	BYTE*         pBuffer   = NULL;
-	DWORD         dwSector  = 0;
-	DWORD         dwOffset  = 0;
-	BOOL          bResult   = FALSE;
+	BYTE*         pBuffer = NULL;
+	DWORD         dwSector = 0;
+	DWORD         dwOffset = 0;
+	BOOL          bResult = FALSE;
 
-	if((NULL == pFat32Fs) || (dwCluster < 2) || IS_EOC(dwCluster))
+	if ((NULL == pFat32Fs) || (dwCluster < 2) || IS_EOC(dwCluster))
 	{
 		goto __TERMINAL;
 	}
 	dwSector = dwCluster / 128;
-	if(dwSector > pFat32Fs->dwFatSectorNum)
+	if (dwSector > pFat32Fs->dwFatSectorNum)
 	{
 		goto __TERMINAL;
 	}
 	dwSector += pFat32Fs->dwFatBeginSector;
-	dwOffset  = (dwCluster - (dwCluster / 128) * 128) * sizeof(DWORD);
+	dwOffset = (dwCluster - (dwCluster / 128) * 128) * sizeof(DWORD);
 
 	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
-	if(NULL == pBuffer)
+	if (NULL == pBuffer)
 	{
 		goto __TERMINAL;
 	}
 	//Read the fat sector where this cluster's index resides,modify to zero and write it back.
-	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+	if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
 		dwSector,
 		1,
 		pBuffer))
@@ -664,7 +827,7 @@ BOOL ReleaseCluster(__FAT32_FS* pFat32Fs,DWORD dwCluster)
 		goto __TERMINAL;
 	}
 	*(DWORD*)(pBuffer + dwOffset) &= 0xF0000000;
-	if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+	if (!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
 		dwSector,
 		1,
 		pBuffer))
@@ -674,94 +837,184 @@ BOOL ReleaseCluster(__FAT32_FS* pFat32Fs,DWORD dwCluster)
 	//All successfully.
 	bResult = TRUE;
 __TERMINAL:
-	
+
 	FatMem_Free(pBuffer);
-	
+
 	return bResult;
 }
 
-//Append one free cluster to the tail of a cluster chain.
-//The pdwCurrCluster contains the laster cluster of a cluster chain,if this routine
-//executes successfully,it will return TRUE and pdwCurrCluster contains the cluster
-//number value appended to chain right now.Else FALSE will be returned and the pdwCurrCluster
-//keep unchanged.
-BOOL AppendClusterToChain(__FAT32_FS* pFat32Fs,DWORD* pdwCurrCluster)
+/* Append one free cluster to the tail of 
+ * a cluster chain.
+ * The pdwCurrCluster contains the last cluster 
+ * of a cluster chain, returns TRUE if success and
+ * pdwCurrCluster contains the cluster number value 
+ * appended to chain right now. Otherwise FALSE will 
+ * be returned and the pdwCurrCluster keep unchanged.
+ */
+BOOL AppendClusterToChain(__FAT32_FS* pFat32Fs, DWORD* pdwCurrCluster)
 {
-	DWORD         dwCurrCluster   = 0;
-	DWORD         dwNextCluster   = 0;
-	DWORD         dwSector        = 0;
-	DWORD         dwOffset        = 0;
-	BOOL          bResult         = FALSE;
-	BYTE*         pBuffer         = NULL;
-	DWORD         dwEndCluster    = 0;
-	
+	uint32_t dwCurrCluster = 0, dwNextCluster = 0;
+	uint32_t dwSector = 0, dwOffset = 0, dwEndCluster = 0;
+	BOOL bResult = FALSE, bAlloc = FALSE;
+	BYTE* pBuffer = NULL;
 
-	if((NULL == pFat32Fs) || (NULL == pdwCurrCluster))
-	{
-		goto __TERMINAL;
-	}
+	BUG_ON((NULL == pFat32Fs) || (NULL == pdwCurrCluster));
 	dwCurrCluster = *pdwCurrCluster;
-	if((2 > dwCurrCluster) || IS_EOC(dwCurrCluster))
+	if ((2 > dwCurrCluster) || IS_EOC(dwCurrCluster))
 	{
+		/* Invalid cluster value. */
 		goto __TERMINAL;
 	}
 
+	/* 128 cluster entries per sector. */
 	dwSector = dwCurrCluster / 128;
-	if(dwSector > pFat32Fs->dwFatSectorNum)  //Exceed the FAT size.
+	if (dwSector > pFat32Fs->dwFatSectorNum)
+	{
+		/* Exceed the FAT size. */
+		goto __TERMINAL;
+	}
+	/* Get physical sector number of dwCurrCluster in fat. */
+	dwSector += pFat32Fs->dwFatBeginSector;
+	/* Get current cluster's offset in sector. */
+	dwOffset = (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(uint32_t);
+
+	/* Try to get a free cluster. */
+	if (!GetFreeCluster(pFat32Fs, 0, &dwNextCluster))
 	{
 		goto __TERMINAL;
 	}
-	dwSector += pFat32Fs->dwFatBeginSector;  //Now dwSector is the physical sector number of dwCurrCluster in fat.
-	dwOffset  = (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(DWORD); //Get sector offset.
 
+	pBuffer = __get_sector_in_cache(pFat32Fs, dwSector);
+	if (!pBuffer)
+	{
+		/* 
+		 * The corresponding fat sector to dwSector is not
+		 * loaded into cache yet, so just load the fat sector
+		 * using temporary sector buffer. 
+		 */
+		pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
+		if (NULL == pBuffer)
+		{
+			goto __TERMINAL;
+		}
+		bAlloc = TRUE;
+
+		/* Load the fat sector. */
+		if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+			dwSector, 1,
+			pBuffer))
+		{
+			_hx_printf("[%s]read sector error\r\n", __func__);
+			goto __TERMINAL;
+		}
+	}
+	/* Save the next cluster to chain. */
+	*(uint32_t*)(pBuffer + dwOffset) &= (~FAT32_CLUSTER_ID_MASK); /* Keep leading bits. */
+	*(uint32_t*)(pBuffer + dwOffset) += (dwNextCluster & FAT32_CLUSTER_ID_MASK);
+	if (!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+		dwSector, 1, pBuffer))
+	{
+		/* Write fail, release the reserved cluster. */
+		ReleaseCluster(pFat32Fs, dwNextCluster);
+		_hx_printf("[%s]write sector fail.\r\n", __func__);
+		goto __TERMINAL;
+	}
+	bResult = TRUE;
+
+__TERMINAL:
+
+	if (bAlloc)
+	{
+		/* Should release the temporary fat buffer. */
+		FatMem_Free(pBuffer);
+	}
+	if (bResult)
+	{
+		/* Return the next cluster number. */
+		*pdwCurrCluster = (dwNextCluster & FAT32_CLUSTER_ID_MASK);
+	}
+	return bResult;
+}
+
+/* old one. */
+BOOL __AppendClusterToChain(__FAT32_FS* pFat32Fs, DWORD* pdwCurrCluster)
+{
+	uint32_t dwCurrCluster = 0, dwNextCluster = 0;
+	uint32_t dwSector = 0, dwOffset = 0, dwEndCluster = 0;
+	BOOL bResult = FALSE;
+	BYTE* pBuffer = NULL;
+
+	BUG_ON((NULL == pFat32Fs) || (NULL == pdwCurrCluster));
+	dwCurrCluster = *pdwCurrCluster;
+	if ((2 > dwCurrCluster) || IS_EOC(dwCurrCluster))
+	{
+		/* Invalid cluster value. */
+		goto __TERMINAL;
+	}
+
+	/* 128 cluster entries per sector. */
+	dwSector = dwCurrCluster / 128;
+	if (dwSector > pFat32Fs->dwFatSectorNum)
+	{
+		/* Exceed the FAT size. */
+		goto __TERMINAL;
+	}
+	/* Get physical sector number of dwCurrCluster in fat. */
+	dwSector += pFat32Fs->dwFatBeginSector;
+	/* Get current cluster's offset in sector. */
+	dwOffset = (dwCurrCluster - (dwCurrCluster / 128) * 128) * sizeof(uint32_t);
+
+	/* Temporary sector buffer. */
 	pBuffer = (BYTE*)FatMem_Alloc(pFat32Fs->dwBytePerSector);
-	if(NULL == pBuffer)
+	if (NULL == pBuffer)
 	{
 		goto __TERMINAL;
 	}
-	//Try to get a free cluster.
-	if(!GetFreeCluster(pFat32Fs,0,&dwNextCluster))
+	/* Try to get a free cluster. */
+	if (!GetFreeCluster(pFat32Fs, 0, &dwNextCluster))
 	{
 		goto __TERMINAL;
 	}
-	//The following operation must behind GetFreeCluster routine above,because
-	//GetFreeCluster routine will modify the content of FAT,and this change must
-	//be taken before the following read.
-	//One complicated problem has been caused by this reason.
-	if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-		dwSector,
-		1,
-		pBuffer))
-	{
-		PrintLine("AppendClusterToChain. ReadDeviceSector error");
-		goto __TERMINAL;
-	}
-	//Save the next cluster to chain.
-	*(DWORD*)(pBuffer + dwOffset) &= 0xF0000000;  //Keep the leading 4 bits.
-	*(DWORD*)(pBuffer + dwOffset) += (dwNextCluster & 0x0FFFFFFF);
-	if(!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
-		dwSector,
-		1,
-		pBuffer))
-	{
-		ReleaseCluster(pFat32Fs,dwNextCluster);   //Release this cluster.
 
-		PrintLine("AppendClusterToChain. WriteDeviceSector error");
+	/*
+	 * The following invoking must behind GetFreeCluster
+	 * routine above,because GetFreeCluster routine will
+	 * modify the content of FAT, and this change must
+	 * be taken before the following read.
+	 * One complicated problem has lead by this reason.
+	 */
+	if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+		dwSector, 1,
+		pBuffer))
+	{
+		_hx_printf("[%s]read sector error\r\n", __func__);
+		goto __TERMINAL;
+	}
+	/* Save the next cluster to chain. */
+	*(DWORD*)(pBuffer + dwOffset) &= (~FAT32_CLUSTER_ID_MASK); /* Keep leading 4 bits. */
+	*(DWORD*)(pBuffer + dwOffset) += (dwNextCluster & FAT32_CLUSTER_ID_MASK);
+	if (!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
+		dwSector, 1, pBuffer))
+	{
+		/* Write fail, release the reserved cluster. */
+		ReleaseCluster(pFat32Fs, dwNextCluster);
+		_hx_printf("[%s]write sector fail.\r\n", __func__);
 		goto __TERMINAL;
 	}
 	dwEndCluster = *(DWORD*)(pBuffer + dwOffset);
-	if(!GetNextCluster(pFat32Fs,&dwEndCluster))
+	if (!GetNextCluster(pFat32Fs, &dwEndCluster))
 	{
-		PrintLine("  In AppendClusterToChain: Can not get next cluster.");
+		_hx_printf("[%s]can not get next cluster.\r\n", __func__);
 	}
-	bResult = TRUE;  //Anything is in place.
+	bResult = TRUE;
+
 __TERMINAL:
 
 	FatMem_Free(pBuffer);
-
-	if(bResult)
+	if (bResult)
 	{
-		*pdwCurrCluster = (dwNextCluster & 0x0FFFFFFF);
+		/* Return the next cluster number. */
+		*pdwCurrCluster = (dwNextCluster & FAT32_CLUSTER_ID_MASK);
 	}
 	return bResult;
 }
@@ -1309,7 +1562,6 @@ __TERMINAL:
 
 	return bResult;
 }
-
 
 BOOL GetShortEntry(__FAT32_FS* pFat32Fs,DWORD dwStartCluster,CHAR* pFileName,__FAT32_SHORTENTRY* pShortEntry, DWORD* pDirClus,DWORD* pDirOffset)
 {
