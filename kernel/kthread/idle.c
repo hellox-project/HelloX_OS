@@ -57,23 +57,32 @@ static BOOL DetectInput()
 	return FALSE;
 }
 
-//Print out alive message routinely.
+/* 
+ * Print out alive message routinely, to
+ * show the system is alive. If no message of
+ * alive showed out, system may hang by bugs
+ * in kernel.
+ */
 static void ShowAlive()
 {
-	DWORD dwMillionSecond = 0;
+	unsigned long dwMillionSecond = 0;
 
 	dwMillionSecond =  System.GetClockTickCounter((__COMMON_OBJECT*)&System);
-	dwMillionSecond += 1;  //Skip the first 0 clock tick.
+	/* Skip the first 0 clock tick. */
+	dwMillionSecond += 1;
 	dwMillionSecond *= SYSTEM_TIME_SLICE;
 	if (0 == dwMillionSecond % SHOW_ALIVE_TIMESPAN)
 	{
-		if (DetectInput())  //User input detected.
+#if 0
+		if (DetectInput())
 		{
+			/* User input detected, system is alive. */
 			return;
 		}
-		/* Show alive message if no input. */
-		//_hx_printk("  CPU[%d]: System is alive,but no human input yet.\r\n",
-		//	__CURRENT_PROCESSOR_ID);
+#endif
+		/* Log alive message if no user input. */
+		__LOG("CPU(%d): System is alive,but no human input yet.\r\n",
+			__CURRENT_PROCESSOR_ID);
 	}
 }
 #endif

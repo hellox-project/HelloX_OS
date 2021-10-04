@@ -358,7 +358,7 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpDr
 			pFatFs->SectorPerClus,
 			pBuffer))
 		{
-			_hx_printf("[%s]read sector fail.\r\n", __func__);
+			_hx_printf("[%s]read sector[%d] fail.\r\n", __func__, dwSector);
 			goto __TERMINAL;
 		}
 		pStartCopy = pBuffer + pFatFile->dwClusOffset;
@@ -373,14 +373,14 @@ DWORD FatDeviceRead(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpDr
 		//Update next cluster and the appropriate sector number.
 		if (!GetNextCluster(pFatFs, &dwNextClus))
 		{
-			_hx_printf("[%s]get next cluster fail.\r\n", __func__);
+			_hx_printf("[%s]get next cluster[%d] fail.\r\n", __func__, dwNextClus);
 			goto __TERMINAL;
 		}
 		pFatFile->dwCurrClusNum = dwNextClus;
 		dwSector = GetClusterSector(pFatFs, dwNextClus);
 		if (0 == dwSector)
 		{
-			_hx_printf("[%s]get cluster sector fail.\r\n", __func__);
+			_hx_printf("[%s]get cluster[%d] fail.\r\n", __func__, dwNextClus);
 			goto __TERMINAL;
 		}
 	}

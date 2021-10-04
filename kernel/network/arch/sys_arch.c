@@ -203,6 +203,11 @@ void sys_mbox_post(sys_mbox_t* mbox,void* msg)
 
 	if (0 == strcmp("tcpip_thread", pKernelThread->KernelThreadName))
 	{
+		/* 
+		 * This clause is involed frequently, it's 
+		 * a potential BUG and should be shootted in 
+		 * future.
+		 */
 		__LOG("[%s]tcpip thread invoked.\r\n", __func__);
 	}
 

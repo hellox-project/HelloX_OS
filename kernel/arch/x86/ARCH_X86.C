@@ -1050,69 +1050,53 @@ VOID __GetTsc(__U64* lpResult)
 #endif
 }
 
-//A local helper routine used to read CMOS date and time information.
+/*
+ * Local helper routine to get date and time
+ * information from CMOS.
+ */
 static
-#ifndef __GCC__
-	_declspec(naked)
-#endif
-ReadCmosData(WORD* pData,BYTE nPort)
-{
-#ifdef __GCC__
-	__asm__(
-	".code32				\n\t"
-	"pushl	%%ebp			\n\t"
-	"movl	%%esp,	%%ebp	\n\t"
-	"pushl	%%ebx			\n\t"
-	"pushl	%%edx			\n\t"
-	"movl	0x08(%%ebp),%%ebx	\n\t"
-	"xorw	%%ax,	%%ax	\n\t"
-	"movb	%0,	%%al		\n\t"
-	"outb	%%al,	$0x70	\n\t"
-	"inb	$0x71,	%%al	\n\t"
-	"movw	%%ax,	(%%ebx)	\n\t"
-	"popl	%%edx			\n\t"
-	"popl	%%ebx			\n\t"
-	"leave					\n\t"
-	"ret					\n\t"	//retn->ret
-	:
-	:"r"(nPort)
-	);
-
+#if defined(__MS_VC__)
+__declspec(naked)
 #else
+#endif
+__ReadCMOSData(BYTE* pData, BYTE nPort)
+{
+#if defined(__MS_VC__)
 	__asm{
 		    push ebp
 			mov ebp,esp
 			push ebx
 			push edx
 
-			mov ebx,dword ptr [ebp + 0x08]
-
-		    xor ax,ax
-			mov al,nPort
-			out 70h,al
-			in al,71h
-			mov word ptr [ebx],ax
+			mov ebx, dword ptr [ebp + 0x08]
+		    xor ax, ax
+			mov al, nPort
+			out 70h, al
+			in al, 71h
+			mov byte ptr [ebx], al
 
 			pop edx
 			pop ebx
 			leave
 			retn
 	}
+#else
+	/* Reserve for other compilers. */
 #endif
 }
 
-//Get CMOS date and time.
-VOID __GetTime(BYTE* pDate)
+/* Get system level date and time. */
+void __GetTime(BYTE* pDate)
 {
-	ReadCmosData((WORD*)&pDate[0],9);//read year
-	ReadCmosData((WORD*)&pDate[1],8);//read month
-	ReadCmosData((WORD*)&pDate[2],7);//read day
+	__ReadCMOSData(&pDate[0], 9);  //read year
+	__ReadCMOSData(&pDate[1], 8);  //read month
+	__ReadCMOSData(&pDate[2], 7);  //read day
 
-	ReadCmosData((WORD*)&pDate[3],4);//read hour
-	ReadCmosData((WORD*)&pDate[4],2);//read Minute
-	ReadCmosData((WORD*)&pDate[5],0);//read second
+	__ReadCMOSData(&pDate[3], 4);  //read hour
+	__ReadCMOSData(&pDate[4], 2);  //read Minute
+	__ReadCMOSData(&pDate[5], 0);  //read second
 
-	//BCD convert
+	/* Convert to DEC from BCD. */
 	pDate[0] = BCD_TO_DEC_BYTE(pDate[0]);
 	pDate[1] = BCD_TO_DEC_BYTE(pDate[1]);
 	pDate[2] = BCD_TO_DEC_BYTE(pDate[2]);

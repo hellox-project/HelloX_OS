@@ -660,6 +660,7 @@ netif_loop_output(struct netif *netif, struct pbuf *p,
 
 #if LWIP_NETIF_LOOPBACK_MULTITHREADING
   /* For multithreading environment, schedule a call to netif_poll */
+  __LOG("[%s]tcpip callback is invoked.\r\n", __func__); //For debugging.
   tcpip_callback((tcpip_callback_fn)netif_poll, netif);
 #endif /* LWIP_NETIF_LOOPBACK_MULTITHREADING */
 

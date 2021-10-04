@@ -41,10 +41,12 @@ static BOOL _Initialize(__DPI_MANAGER* pMgr)
 }
 
 /* Will be invoked when pakcet into an interface. */
-static struct pbuf* _dpiPacketIn(struct pbuf* p, struct netif* in_if)
+static struct pbuf* _dpiPacketIn(struct pbuf* p, struct netif* in_if, BOOL release_pbuf)
 {
 	__DPI_ENGINE* pEngine = &DPIEngineArray[0];
-	struct pbuf* retp = NULL;
+	struct pbuf* retp = p;
+
+	BUG_ON((NULL == p));
 
 	while (pEngine->dpiFilter)
 	{
@@ -57,7 +59,7 @@ static struct pbuf* _dpiPacketIn(struct pbuf* p, struct netif* in_if)
 		}
 		pEngine++;
 	}
-	if (retp == NULL)
+	if ((retp == NULL) && release_pbuf)
 	{
 		/* Should release the pbuf object. */
 		pbuf_free(p);
@@ -66,10 +68,10 @@ static struct pbuf* _dpiPacketIn(struct pbuf* p, struct netif* in_if)
 }
 
 /* Output direction of DPI processing. */
-static struct pbuf* _dpiPacketOut(struct pbuf* p, struct netif* out_if)
+static struct pbuf* _dpiPacketOut(struct pbuf* p, struct netif* out_if, BOOL release_pbuf)
 {
 	__DPI_ENGINE* pEngine = &DPIEngineArray[0];
-	struct pbuf* retp = NULL;
+	struct pbuf* retp = p;
 
 	while (pEngine->dpiFilter)
 	{
@@ -82,7 +84,7 @@ static struct pbuf* _dpiPacketOut(struct pbuf* p, struct netif* out_if)
 		}
 		pEngine++;
 	}
-	if (retp == NULL)
+	if ((retp == NULL) && release_pbuf)
 	{
 		/* Should release the pbuf object. */
 		pbuf_free(p);

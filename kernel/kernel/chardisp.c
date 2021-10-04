@@ -17,11 +17,9 @@
 #include "StdAfx.h"
 #include "console.h"
 #include "chardisplay.h"
+#include "dbm.h"
 
 #include "../arch/x86/biosvga.h"
-
-
-//##################老版本字符显示接口实现,已经全部定向到新接口实现####################
 
 void PrintStr(const char* pszMsg)
 {
@@ -87,20 +85,19 @@ VOID GotoPrev()
 	CD_GotoPrev();
 }
 
-//###############新版字符显示接口实现######################
-//初始化显示设备
+/* Initializes the display devices. */
 VOID CD_InitDisplay(INT nDisplayMode)
 {	
 	return ;
 }
 
-//设置显示模式
+/* Set display mode. */
 VOID CD_SetDisplayMode(INT nMode)
 {
 	return ;
 }
 
-//得到行和列
+/* Get current dimension of display. */
 VOID CD_GetDisPlayRang(WORD* pLines,WORD* pColums)
 {
 #ifdef __I386__
@@ -108,7 +105,7 @@ VOID CD_GetDisPlayRang(WORD* pLines,WORD* pColums)
 #endif	
 }
 
-//得到当前光标位置
+/* Get cursor's current position. */
 VOID  CD_GetCursorPos(WORD* pCursorX,WORD* pCursorY)
 {
 #ifdef __I386__
@@ -116,7 +113,7 @@ VOID  CD_GetCursorPos(WORD* pCursorX,WORD* pCursorY)
 #endif 
 }
 
-//换行
+/* Change to a new line. */
 VOID CD_ChangeLine()
 {
 #ifdef __I386__
@@ -127,9 +124,12 @@ VOID CD_ChangeLine()
 	Console.GotoHome();
 	Console.ChangeLine();
 #endif
-
+	
+	DispBufferManager.PutChar('\r');
+	DispBufferManager.PutChar('\n');
 }
-//设置当前光标位置
+
+/* Set cursor's current position. */
 VOID  CD_SetCursorPos(WORD nCursorX,WORD nCursorY)
 {
 	#ifdef __I386__
@@ -137,7 +137,7 @@ VOID  CD_SetCursorPos(WORD nCursorX,WORD nCursorY)
 	#endif
 }
 
-//打印字符串,cl表示是否换行
+/* Show out a string, change line if cl is TRUE. */
 VOID CD_PrintString(LPSTR pStr,BOOL cl)
 {
 #ifdef __I386__
@@ -156,6 +156,13 @@ VOID CD_PrintString(LPSTR pStr,BOOL cl)
 		CD_ChangeLine();
 	}
 #endif	
+
+	DispBufferManager.PutString(pStr, strlen(pStr));
+	if (cl)
+	{
+		DispBufferManager.PutChar('\r');
+		DispBufferManager.PutChar('\n');
+	}
 }
 
 /* Show a char on screen or terminal. */
@@ -168,9 +175,10 @@ VOID CD_PrintChar(CHAR ch)
 #ifdef __CFG_SYS_CONSOLE
 		Console.PrintCh(ch);
 #endif
+		DispBufferManager.PutChar(ch);
 }
 
-//从指定位置得到字符串
+/* Get string from the given position. */
 VOID  CD_GetString(WORD nCursorX,WORD nCursorY,LPSTR pString,INT nBufLen)
 {
 #ifdef __I386__
@@ -178,7 +186,7 @@ VOID  CD_GetString(WORD nCursorX,WORD nCursorY,LPSTR pString,INT nBufLen)
 #endif
 }
 
-//得到整个屏幕字符串
+/* Get the whole screen's content. */
 VOID  CD_GetScreen(LPSTR pBuf,INT nBufLen)
 {
 #ifdef __I386__
@@ -186,7 +194,7 @@ VOID  CD_GetScreen(LPSTR pBuf,INT nBufLen)
 #endif
 }
 
-//删除字符串
+/* Delete string from given position. */
 VOID  CD_DelString(WORD nCursorX,WORD nCursorY,INT nDelLen)
 {
 #ifdef __I386__
@@ -194,7 +202,7 @@ VOID  CD_DelString(WORD nCursorX,WORD nCursorY,INT nDelLen)
 #endif
 }
 
-//删除字符
+/* Delete char from current position. */
 VOID  CD_DelChar(INT nDelMode)
 {
 #ifdef __I386__
@@ -202,7 +210,7 @@ VOID  CD_DelChar(INT nDelMode)
 #endif
 }
 
-//清屏
+/* Clear the whole screen. */
 VOID  CD_Clear()
 {
 #ifdef __I386__
@@ -214,7 +222,7 @@ VOID  CD_Clear()
 #endif
 }
 
-//设置当前字符显示属性
+/* Set current displaying attributes. */
 VOID  CD_SetCharAttr(BYTE cAttr)
 {
 	#ifdef __I386__

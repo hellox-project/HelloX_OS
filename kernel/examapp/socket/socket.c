@@ -54,6 +54,27 @@ int lwip_socket(int _domain, int _type, int _protocol)
 	return ret_val;
 }
 
+/* Close a socket. */
+int lwip_close(int s)
+{
+	int ret_val = 0;
+	int* pRet = &ret_val;
+
+	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
+		mov __PARAM_0, s
+		mov ebp, pRet
+		mov eax, SYSCALL_CLOSESOCKET
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
+	}
+	return ret_val;
+}
+
 /* Bind a socket. */
 int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
 {

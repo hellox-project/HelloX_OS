@@ -123,6 +123,7 @@
   <ItemGroup>
     <ClCompile Include="atox.c" />
     <ClCompile Include="ctype.c" />
+    <ClCompile Include="errno.c" />
     <ClCompile Include="examapp.c" />
     <ClCompile Include="fabs.c" />
     <ClCompile Include="hellox.c" />
@@ -139,6 +140,7 @@
     <ClCompile Include="socket\socket.c" />
     <ClCompile Include="stdio.c" />
     <ClCompile Include="string.c" />
+    <ClCompile Include="tftpsrv.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ctype.h" />
@@ -173,6 +175,7 @@
     <ClInclude Include="string.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="time_pri.h" />
+    <ClInclude Include="types.h" />
     <ClInclude Include="unistd.h" />
     <ClInclude Include="__hxcomm.h" />
   </ItemGroup>

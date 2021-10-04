@@ -30,6 +30,8 @@
 #include "dhcp_srv/dhcp_srv.h"
 #endif
 
+#include "services/ttysvr.h"
+
 /*
  * Unify entry point of network subsystem.
  * It will be called by OS_Entry routine in phase of system initialization,
@@ -71,6 +73,12 @@ BOOL Net_Entry(VOID* pArg)
 		goto __TERMINAL;
 	}
 #endif
+
+	/* Start the tty handler service. */
+	if (!ttyServer.Initialize())
+	{
+		_hx_printk("  Start tty service fail.\r\n");
+	}
 
 	bResult = TRUE;
 __TERMINAL:

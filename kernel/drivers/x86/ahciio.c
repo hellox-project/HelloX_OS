@@ -192,9 +192,18 @@ static BOOL __commit_port_request(__AHCI_PORT_OBJECT* port_obj, __AHCI_PORT_REQU
 }
 
 /* Cancel a committed request so as to avoid memory corruption. */
-static BOOL __cancel_port_request(__AHCI_PORT_OBJECT* port_obj, __AHCI_PORT_REQUEST* req)
+static BOOL __cancel_port_request(__AHCI_PORT_OBJECT* port_obj, __AHCI_PORT_REQUEST* req,
+	__DRCB* pDrcb)
 {
 	UNIMPLEMENTED_ROUTINE_CALLED;
+	if (pDrcb)
+	{
+		/* Show out which thread owns the canceled drcb. */
+		if (pDrcb->lpKernelThread) {
+			_hx_printf("[%s]owner thread of the request[%s]\r\n", __func__,
+				pDrcb->lpKernelThread->KernelThreadName);
+		}
+	}
 	return FALSE;
 }
 
@@ -301,6 +310,12 @@ static BOOL __submit_port_request(__AHCI_PORT_OBJECT* pPort,
 		drcb->lpPrev = pPort->request_list_tail;
 		pPort->request_list_tail = drcb;
 		pPort->request_num++;
+		/* The operation is sucess. */
+		bResult = TRUE;
+		/* Just for debugging. */
+		//_hx_printf("[%s]more than 1 req[pend_num: %d, req thread: %s].\r\n", 
+		//	__func__, pPort->request_num,
+		//	__CURRENT_KERNEL_THREAD->KernelThreadName);
 	}
 	else {
 		/* First request. */
@@ -370,11 +385,13 @@ static BOOL __submit_port_request(__AHCI_PORT_OBJECT* pPort,
 				pPort->request_list_tail = NULL;
 			}
 			pPort->request_num--;
-			__cancel_port_request(pPort, (__AHCI_PORT_REQUEST*)drcb->lpDrcbExtension);
+			__cancel_port_request(pPort, (__AHCI_PORT_REQUEST*)drcb->lpDrcbExtension, drcb);
 			
 			/* Commit the next request if exist. */
 			if (pPort->request_list)
 			{
+				//_hx_printf("[%s]commit a new pending request, req_num[%d].\r\n", __func__,
+				//	pPort->request_num);
 				__commit_port_request(pPort, pPort->request_list->lpDrcbExtension);
 			}
 		}
@@ -456,6 +473,7 @@ int __int_handler_dhrs(__AHCI_PORT_OBJECT* pPortObject)
 	/* Commit next one if exist. */
 	if (pPortObject->request_list)
 	{
+		//_hx_printf("[%s]commit a new request in interrupt.\r\n", __func__);
 		__commit_port_request(pPortObject, pPortObject->request_list->lpDrcbExtension);
 	}
 	__LEAVE_CRITICAL_SECTION_SMP(pPortObject->spin_lock, ulFlags);

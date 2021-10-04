@@ -34,12 +34,14 @@
 #include "dpiicmp.h"
 #include "dpidns.h"
 #include "dpihttp.h"
+#include "dpiland.h"
 
 /* DPI engine array. */
 __DPI_ENGINE DPIEngineArray[] = {
-	{dpiFilter_ICMP,dpiAction_ICMP},
-	{dpiFilter_DNS,dpiAction_DNS},
-	{dpiFilter_HTTP,dpiAction_HTTP},
+	{dpiFilter_land, dpiAction_land },
+	//{dpiFilter_ICMP,dpiAction_ICMP},
+	//{dpiFilter_DNS,dpiAction_DNS},
+	//{dpiFilter_HTTP,dpiAction_HTTP},
 	/* Terminator of this array. */
 	{NULL,NULL},
 };

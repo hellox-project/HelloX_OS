@@ -162,6 +162,7 @@ typedef struct tag__FAT32_PERF_METRIC {
 typedef struct FAT32_FS{
 	__COMMON_OBJECT* pPartition;                 //Partition this file system based.
 	unsigned long    total_sectors;              //Total sectors number of this fs.
+	uint32_t         total_clusters;             //How many clusters in the part.
 	DWORD            dwAttribute;                //File system attributes.
     BYTE             SectorPerClus;              //Sector per cluster.
 	CHAR             VolumeLabel[13];            //Volume lable.

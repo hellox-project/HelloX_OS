@@ -161,7 +161,7 @@
 
 //Include console object into kernel.COM input and output functions are implemented
 //in console object.
-//#define __CFG_SYS_CONSOLE
+#define __CFG_SYS_CONSOLE
 
 //************************************************************************
 //
@@ -170,7 +170,7 @@
 //************************************************************************
 
 //Include IDE driver in OS.
-#define __CFG_DRV_IDE
+//#define __CFG_DRV_IDE
 
 //Include AHCI driver in OS.
 #define __CFG_DRV_AHCI
@@ -283,6 +283,9 @@
 
 //Enable or disable telnet support in system.
 //#define __CFG_APP_TELNET
+
+//Enable or disable logging function in system.
+#define __CFG_APP_SYSLOG
 
 //************************************************************************
 //

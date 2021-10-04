@@ -894,7 +894,7 @@ pppoe_do_disconnect(struct pppoe_softc *sc)
 static void
 pppoe_abort_connect(struct pppoe_softc *sc)
 {
-  printf("%c%c%"U16_F": could not establish connection\n", sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num);
+  __LOG("%c%c%"U16_F": could not establish connection\n", sc->sc_ethif->name[0], sc->sc_ethif->name[1], sc->sc_ethif->num);
   sc->sc_state = PPPOE_STATE_CLOSING;
 
   sc->sc_linkStatusCB(sc->sc_pd, 0); /* notify upper layers */

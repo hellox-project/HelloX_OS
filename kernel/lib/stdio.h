@@ -88,4 +88,7 @@ int _hx_printk(const char* fmt, ...);
  */
 int sscanf(const char *buf, const char *fmt, ...);
 
+/* Issue log. */
+int __issue_log(const char* fmt, ...);
+
 #endif //__STDIO_H__

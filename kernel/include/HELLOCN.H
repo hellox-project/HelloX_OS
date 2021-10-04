@@ -207,7 +207,7 @@
 	void LogHeader(int level);
 
 	/* Macro to print out log information. */
-#define __LOG LogHeader(0); _hx_printf
+#define __LOG __issue_log //LogHeader(0); _hx_printf
 
 	VOID __BUG(LPSTR, DWORD);
 #define BUG() \

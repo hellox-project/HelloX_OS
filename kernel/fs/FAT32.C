@@ -1069,7 +1069,6 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRC
 		break;
 	}
 
-__TERMINAL:
 	return 0;
 }
 
@@ -1086,6 +1085,7 @@ static void __show_fat_fs(__FAT32_FS* pFatObject)
 
 	_hx_printf("  vol label: %s\r\n", vol_label);
 	_hx_printf("  total sectors: %d\r\n", pFatObject->total_sectors);
+	_hx_printf("  total clusters: %d\r\n", pFatObject->total_clusters);
 	_hx_printf("  sector per cluster: %d\r\n", pFatObject->SectorPerClus);
 	_hx_printf("  cluster size: %d\r\n", pFatObject->dwClusterSize);
 	_hx_printf("  data cluster start: %d\r\n", pFatObject->dwDataSectorStart);

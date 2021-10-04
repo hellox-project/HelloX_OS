@@ -171,6 +171,11 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size);
  * @param mbox mbox to posts the message
  * @param msg message to post (ATTENTION: can be NULL) */
 void sys_mbox_post(sys_mbox_t *mbox, void *msg);
+
+//#define sys_mbox_post(mbox, msg) \
+//	__LOG("mail-box post invoked, file:%s, line:%d\r\n", __FILE__, __LINE__); \
+//	__sys_mbox_post(mbox, msg)
+
 /** Try to post a message to an mbox - may fail if full or ISR
  * @param mbox mbox to posts the message
  * @param msg message to post (ATTENTION: can be NULL) */

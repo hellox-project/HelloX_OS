@@ -1,22 +1,28 @@
-#if 0
+/*
+ * I/O operations of standard C library, under HelloX
+ * operating system.
+ */
 
 #include "hellox.h"
 #include "stdio.h"
+#include "string.h"
+#include "errno.h"
 #include "io.h"
 
-#define  JVM_ROOT_PATH  "C:\\JVM\\"
-#define  FILE_ROOT_PATH  "C:\\"
-
+/* Remove the specified file. */
 int remove (const char* name)
 {
-	IOManager.DeleteFile((__COMMON_OBJECT*)&IOManager,name);
-	return S_OK;
+	if (DeleteFile((LPSTR)name))
+	{
+		return S_OK;
+	}
+	return -EIO;
 }
 
+/* Rename a file name from sn to dn. */
 int rename (const char* sn, const char*  dn)
 {
-	
-	return S_OK;
+	return -EIO;
 }
 
 int access (const char* name, int m)
@@ -40,6 +46,7 @@ int access (const char* name, int m)
 	return S_OK;
 }
 
+/* Change a file object's size. */
 int chsize (int fd, long size)
 {
 	DWORD  dwFileSize = 0;
@@ -59,7 +66,7 @@ int chsize (int fd, long size)
 		long  dwOffset   = size;
 		
 		lseek(fd,dwOffset,SEEK_SET);
-		IOManager.SetEndOfFile((__COMMON_OBJECT*)&IOManager,(__COMMON_OBJECT*)fd);
+		SetEndOfFile((HANDLE)fd);
 	}
 	else 
 	{
@@ -93,17 +100,17 @@ int chsize (int fd, long size)
 	return S_OK;
 }
 
-
-int     dup (int fd)
+int dup (int fd)
 {
 	return S_OK;
 }
 
-int     dup2 (int fd, int d)
+int dup2 (int fd, int d)
 {
 	return S_OK;
 }
-int    eof (int fd)
+
+int eof (int fd)
 {
 	DWORD  dwOffset   = 0;
 	DWORD  dwCurPos   = 0;
@@ -117,57 +124,61 @@ int    eof (int fd)
 	dwCurPos   = lseek(fd,dwOffset,SEEK_CUR);	
 	dwFileSize = filelength(fd);
 	
-	return (dwCurPos == dwFileSize-1)?TRUE:FALSE;
+	return (dwCurPos == dwFileSize-1)? TRUE : FALSE;
 }
 
-long    filelength (int fd)
+long filelength (int fd)
 {
 	return tell(fd);
 }
 
-int     isatty (int fd)
+int isatty (int fd)
 {
 	return S_OK;
 }
 
-
-int     close (int fd)
+/* Close the specified file. */
+int close (int fd)
 {
-	IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,(__COMMON_OBJECT*)fd);
-
+	if (0 == fd)
+	{
+		_hx_printf("[%s]invalid fd value: 0\r\n", __func__);
+	}
+	CloseFile((HANDLE)fd);
 	return S_OK;
 }
 
-int     creat (const char* name , int d)
+/* Create a new file. */
+int creat (const char* name , int d)
 {
 	return open(name,d&O_CREAT);	
 }
 
-int     open (const char* name , int oflag, ...)
+/* Open or create a file. */
+int open (const char* name , int oflag, ...)
 {
-	va_list  ap;
-	int      mode; 
-	char     filename[FILENAME_MAX];
-	char*    p;
+	va_list ap;
+	int mode; 
+	char filename[FILENAME_MAX];
+	char* p;
+	HANDLE f_handle = NULL;
+	unsigned long dwFlag = FILE_ACCESS_READ;
+	unsigned long dwMode = FILE_OPEN_ALWAYS;
 
-	__COMMON_OBJECT*   pFileHandle = NULL;
-	DWORD              dwFlage     = FILE_ACCESS_READ;
-	DWORD              dwMode      = FILE_OPEN_EXISTING;
-
-	
+	/* Parameter checking. */
 	if(name == NULL || strlen(name) >= FILENAME_MAX)
 	{
-		printf("open err 1\n");
-		return -1;
+		_hx_printf("[%s]invalid parameter value.\r\n", __func__);
+		return -EINVAL;
 	}
 	
 	p = filename;	
-	if(!strstr(name,":")) 
+	if(!strstr(name, ":"))
 	{
 		strcpy(filename,FILE_ROOT_PATH);	
 		p += strlen(FILE_ROOT_PATH);
 	}
-	strcpy(p,name+2);
+	strcpy(p, name);
 	
 	while(*p)	
 	{
@@ -178,148 +189,141 @@ int     open (const char* name , int oflag, ...)
 		p ++;
 	}
 	
-
 	va_start(ap, oflag);
 	mode = va_arg(ap, int);
 	va_end(ap);
 
-	printf("open name=%s,oflag=%d,mode=%d \n",filename,oflag,mode);
-
-	//设置访问模式
-	switch(oflag&0x4)
+	/* Convert accessing mode to hellox specified. */
+	switch(oflag & 0x4)
 	{
 		case O_RDONLY:
-			{
-			dwFlage = FILE_ACCESS_READ;
-			}
+			dwFlag = FILE_ACCESS_READ;
 			break;
 		case O_WRONLY:
-			{
-            dwFlage = FILE_ACCESS_WRITE;
-			}
+            dwFlag = FILE_ACCESS_WRITE;
 			break;
 		case O_RDWR:
-			{
-            dwFlage = FILE_ACCESS_READWRITE;
-			}
+            dwFlag = FILE_ACCESS_READWRITE;
 			break;
 		default:
-			{
-			return -1;
-			}		
+			return -1;	
 	}
 
-	//设置打开模式
-	if(mode&O_CREAT)
+	/* Convert open mode to hellox specific. */
+	if(mode & O_CREAT)
 	{
 		dwMode = FILE_OPEN_NEW;
 	}
-	else if(mode&O_EXCL)
+	else if(mode & O_EXCL)
 	{
 		dwMode = FILE_OPEN_ALWAYS;
 	}
 
-	//打开文件
-	pFileHandle = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,(LPSTR)filename,dwFlage,dwMode,NULL);
-	if(NULL == pFileHandle)
+	/* Open the file. */
+	f_handle = CreateFile((LPSTR)filename, dwFlag | dwMode, 0, NULL);
+	if(NULL == f_handle)
 	{
-		printf("open err 2\n");
-
+		_hx_printf("[%s]open file[%s] failed, flag = %d, mode = 0x%X.\r\n",
+			__func__, filename, dwFlag, dwMode);
 		return -1;
 	}
 	
-	//清空文件，从头开始写
-	if((oflag&O_TRUNC) && ((oflag&O_WRONLY) || (oflag&O_RDWR)))
+	/* Clear file and start from begin. */
+	if((oflag & O_TRUNC) && ((oflag & O_WRONLY) || (oflag & O_RDWR)))
 	{
-		IOManager.SetEndOfFile((__COMMON_OBJECT*)&IOManager,pFileHandle);
+		SetEndOfFile(f_handle);
 	}
 
-	return (pFileHandle)?(int)pFileHandle:-1;
+	return (f_handle) ? (int)f_handle : -1;
 }
 
-long  lseek (int fd, long p , int w)
+long lseek (int fd, long p , int w)
 {
-	DWORD dwWhere = w+(FILE_FROM_BEGIN-SEEK_SET);
+	DWORD dwWhere = w + (FILE_FROM_BEGIN-SEEK_SET);
 
 	if(fd <= 0)
 	{
 		return -1;
 	}
-		
-	return IOManager.SetFilePointer((__COMMON_OBJECT*)&IOManager,(__COMMON_OBJECT*)fd,(DWORD*)&p,0,dwWhere);
-	
+	SetFilePointer((HANDLE)fd, (unsigned long*)&p, NULL, dwWhere);
+	return S_OK;
 }
 
-
-int   read (int fd , void* buf, unsigned int r)
+/* Read from file. */
+int read(int fd , void* buf, unsigned int r)
 {
-	DWORD  dwRead = 0;
-
-	if(fd <= 0)
-	{
-		return -1;
-	}
-
-	IOManager.ReadFile((__COMMON_OBJECT*)&IOManager,(__COMMON_OBJECT*)fd,r,buf,&dwRead);
-
-	return (int)dwRead;
-}
-
-int     write (int fd , const void* buf, unsigned int w)
-{
-	DWORD  dwWrite = 0;
+	unsigned long read_sz = 0;
 
 	if(fd <= 0)
 	{
 		return -1;
 	}
 
-	IOManager.WriteFile((__COMMON_OBJECT*)&IOManager,(__COMMON_OBJECT*)fd,w,(LPVOID)buf,&dwWrite);
-
-	return (int)dwWrite;
-}
-
-int  setmode (int fd, int m)
-{
-	return S_OK;
-}
-
-int   sopen (const char* name, int d1, int d2, ...)
-{
-	return S_OK;
-}
-
-long    tell (int fd )
-{
-	printf("tell fd =%d\n",fd);
-
-	if(fd <= 0)
+	if (ReadFile((HANDLE)fd, r, buf, &read_sz))
 	{
-		
+		return (int)read_sz;
+	}
+	else {
+		return -EIO;
+	}
+}
+
+/* Write into file. */
+int write (int fd , const void* buf, unsigned int w)
+{
+	unsigned long write_sz = 0;
+
+	if (WriteFile((HANDLE)fd, w, (LPVOID)buf, &write_sz))
+	{
+		return (int)write_sz;
+	}
+	else {
+		return -EIO;
+	}
+}
+
+/* Set accessing mode. */
+int setmode (int fd, int m)
+{
+	return S_OK;
+}
+
+int sopen (const char* name, int d1, int d2, ...)
+{
+	return S_OK;
+}
+
+/* Returns the current file pointer's position. */
+long tell (int fd )
+{
+	unsigned long size = 0;
+	if(fd <= 0)
+	{	
 		return -1;
 	}
-
-	return (long)IOManager.GetFileSize((__COMMON_OBJECT*)&IOManager,(__COMMON_OBJECT*)fd,NULL);
-	
+	if (size = GetFileSize((HANDLE)fd, NULL))
+	{
+		return (long)size;
+	}
+	return -EIO;
 }
 
-int     umask (int fd)
+int umask (int fd)
 {
 	return S_OK;
 }
 
-int     unlink (const char* name)
+int unlink (const char* name)
 {
 	return S_OK;
 }
 
-
-FILE*   fopen(const char * file, const char * fmt)
+/* Open a file and returns it's handle. */
+FILE* fopen(const char * file, const char * fmt)
 {
 	int  flage  = 0;
 	int  mode   = 0;
 	int  fd     = -1;
-
 
 	if(NULL	 == file)
 	{
@@ -350,44 +354,70 @@ FILE*   fopen(const char * file, const char * fmt)
 		mode   = O_EXCL;
 	}
 
-	fd = open(file,flage,mode);
-
+	fd = open(file, flage, mode);
+	if (fd < 0)
+	{
+		/* Open error. */
+		return NULL;
+	}
 	return (FILE*)fd;
 }
-int     fclose(FILE* stream)
+
+/* Close a opened file. */
+int fclose(FILE* stream)
 {
+	if (NULL == stream)
+	{
+		_hx_printf("[%s]invalid stream value: NULL\r\n", __func__);
+		return -1;
+	}
 	return close((int)stream);
-	
 }
 
-size_t  fwrite(const void * buf, size_t size, size_t count, FILE * stream)
+/* Write into file. */
+size_t fwrite(const void* buf, size_t size, size_t count, FILE* stream)
 {
+	size_t ret = 0;
+	int write_result = -1;
+
 	 if(NULL == buf || NULL == stream)
 	 {
-		 return -1;
+		 goto __TERMINAL;
 	 }
+	 write_result = write((int)stream, buf, size * count);
+	 if (write_result < 0)
+	 {
+		 /* For debugging. */
+		 _hx_printf("[%s]write error, ret = [%d], req size = [%d], req count = [%d]\r\n",
+			 __func__, ret, size, count);
+		 goto __TERMINAL;
+	 }
+	 /* Write ok, return the records number written. */
+	 ret = (size_t)write_result / size;
 
-	 return	 (size_t)write((int)stream,buf,size*count);	 
+ __TERMINAL:
+	 return ret;
 }
 
-size_t  fread(void * buf , size_t size , size_t count , FILE* stream)
+/* Read from file. */
+size_t fread(void* buf , size_t size , size_t count , FILE* stream)
 {
 	if(NULL == buf || NULL == stream)
 	{
 		return -1;
 	}
 
-	 return	 (size_t)read((int)stream,buf,size*count);	 
+	return (size_t)read((int)stream, buf, size * count);	 
 }
 
-int     fseek(FILE * stream, long pos , int where)
+/* Change file's current pointer. */
+int fseek(FILE* stream, long pos, int where)
 {
 	return lseek((int)stream,pos,where);	
 }
 
-long    ftell(FILE * stream)
+/* Get current pointer's position. */
+long ftell(FILE* stream)
 {
 	return tell((int)stream);
-
 }
-#endif //if 0.

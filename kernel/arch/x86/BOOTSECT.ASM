@@ -71,7 +71,8 @@ gl_bootbgn:
     call np_load
 	
 	;Jump to the real mode initialize code.
-	jmp   0:DEF_RINIT_START
+	jmp 0 : DEF_RINIT_START
+	;jmp 0x100 : 0
 
 	;Enter deadloop in case of exception.
     call np_deadloop

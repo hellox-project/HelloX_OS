@@ -1,0 +1,101 @@
+The new boot mechanism is described in this file.
+Old loading process:
+1. The kernel is constructed by packing realinit.bin, miniker.bin, master.bin together, using
+   append application;
+2. Kernel image is written into disk at a fixed location, where is start from the 2nd sector;
+3. Boot sector is written into disk at the first sector;
+4. BIOS load boot sector into memory @ 0x07C0, and jump to it to run;
+5. Boot sector relocates itself to 635K(0x9EC0), and load the hellox kernel into memory start @
+   0x01000(4K offset), then jump to it;
+6. Realinit module starts, it does some initializations in real mode, one thing is worth noting:
+   6.1 It constructs the physical memory layout array @ 0x5000(in miniker module);
+   6.2 Master will analyze the physical memory layout array to check the size of physical memory;
+7. Then the realinit module transfers into protected mode, and relocate the miniker & master
+   into 0x0100000, and jump to it in long mode;
+8. Master starts, the hellox university starts...;
+9. The original content of miniker and master under 1M memory should not be destroyed, since
+   many system level code such as trompline of smp, will be invoked in system running.
+
+Constrains of old loading process:
+1. The master's size is limited to 560K, it's the limitation of 640K memory in realmode;
+2. Kernel is not a file, it's hiden to fs, the whole disk will be destroyed if reinstall;
+
+New booting process:
+1. Support fat32 fs, all kernel files are normal files and are put into root directory; --OK
+2. The kernel is composed by 2 files: realinit.bin and miniker.bin are linked together
+   by using append application, as osinit.bin(52K), and master.bin, the core part of kernel; --POSTPONED
+3. Use a new boot sector from github, it's loaded into memory by BIOS @0x07C0 and start
+   from it, the boot loader relocates itself first to 576K(640K - 64K); --OK
+4. Boot sector searchs the root directory for osinit.bin module, and load it into same
+   location as old loading process, which is 0x01000(4K offset), and handover the control
+   to it; --OK
+5. Real init model does some initializations in realmode, include construct the physical
+   memory layout table, and transfer to protect mode, then protect loading process begain; --OK
+6. It relocates the miniker.bin to 0x0100000 from 0x08000(8K offset), and then searches
+   the root directory for master.bin, load it into memory @0x0110000(1M + 64K offset); --POSTPONED
+7. Then real init model jumps to 0x0100000, the start address of miniker, then
+   hellox university starts; --OK, NO CHANGE
+8. The loading process of miniker.bin is keep same as old one, since there are many mechanism
+   related to it and change will lead too much coding cost; --OK, UNCHANGE
+9. The upper boundary could be set to verify the size of osinit.bin and master.bin, where
+   the first is 52K(realinit.bin in 4K, plus miniker.bin in 48K), and the master.bin is
+   at most (2M - 64K). The master.bin's size could be enlarged by revise a macro's definition
+   in master.bin(in mlayout.h file). -- POSTPONED
+
+LAST REMARK:
+ Just implements the boot sector, named fat32bs.asm and is put under arch/x86 directory, 
+ this new loader loads hellox kernel from FAT32 partition, to replace the old one that loads
+ kernel from a fixed location. -- WE CALL THIS STAGE I.
+ The stage II, i.e, load master.bin from FAT32 partition, is postponed to future, since there
+ is enough space to hold the master.bin(572K for miniker.bin and master.bin).
+
+Implementation process of new loading:
+0. Backup all hellox kernel source code files;
+1. Download the new boot sector from github and deepdive it;
+2. Revise it to located to 635K at first and reserve space from 0x01000 to 635k, then
+   compile and replace the old boot sector with it;
+4. Build a vhd file using the new boot sector;
+5. Put the hellox kernel(realinit + miniker + master) into root directory of vhd;
+6. Reload vm to test the new boot sector, loop to 1 in any error or exception;
+7. Error message may appear in realinit.bin in case of exception, realinit.bin's 
+   source code maybe revised to debugging. Use a new working directory;
+8. Change the realinit.bin's implementation, to load master.bin from disk;
+9. C code of hellox should not be impacted in the whole process;
+
+Progress:
+1. Fat32 boot sector revised to fat32bs.asm, and tested without relocation, it seems work;
+2. Should relocate it to upper location of memory, to yeild space for hellox OS loader:
+   1) Consider just change the segment value, with all others unchanged;-- IN PROGRESS
+   2) Should consider how to save space, since it's current size is almost one sector;
+   3) The partition table is cleared in boot sector, so must init in real/v disk;
+2021/06/06:
+1. Relocated the boot loader to 576K, relocation seems OK, but can not run, maybe caused
+   by the dapLoad routine with error parameters(DAP). Should review the code to check 
+   data buffers are correct, in lnc/loadBPB/loadOSLoader process;
+2. Show progress routine invoked and show out the loading progress, matches the size of
+   osloadr.bin file, but could not jump to it:
+   2.1 The BPB is loaded OK;
+   2.2 The root directory's clusters are all loaded OK;
+   2.3 The filename matching process success;
+   2.4 File's size seems OK, varies file's size, the loading process shows out accordingly dots;
+       and the memory flushed accordingly, since ERROR 4 appear;
+   2.5 But the osloadr's loading process may fail, pending to trouble shotting...;
+   2.6 A dedicated ASM file named osloadr.asm under /bin is created to simulate the realinit;
+   --Updated:
+   2.7 New boot loader seems OK, it can load osloadr.bin(less than 564K), tested for hellox kernel;
+   2.8 But the maximal loaded size can not exceed 572(should be OK), pending issue;
+   2.9 Revise the batch file to use new loader, change OS loader's name, and enter the stage 2
+       of new loader; --done
+
+Pending issue:
+   1. Use cx to calculate FAT_LBA, commented with 'May overflow...'; -- resolved;
+
+CHANGES BETWEEN OLD BOOT AND NEW BOOT:
+1. The old boot sector's source file is: bootsect.asm;
+2. batch.bat file before new boot in hellox_os/bin is changed to batch.old to backup;
+3. make_usb_boot tool is revised to use 'osloadr.bin' as hellox's kernel, just search
+   'osloadr.bin' and replace it back to 'hcnimge.bin', could restore to original;
+4. hellox's kernel name is changed as 'osloadr.bin' from 'hcnimge.bin';
+5. Just restore the old booting mechanism according above steps if new boot issue could
+   not be solved in extremely situation;
+6. 

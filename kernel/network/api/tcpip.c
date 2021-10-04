@@ -252,6 +252,7 @@ tcpip_thread(void *arg)
 
 		default:
 			LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: invalid message: %d\n", msg->type));
+			_hx_printf("[%s]invalid message[%d]\r\n", __func__, msg->type);
 			LWIP_ASSERT("tcpip_thread: invalid message", 0);
 			break;
 		}

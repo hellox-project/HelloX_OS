@@ -26,9 +26,9 @@
 #define ENOTDIR 20 /* Not a directory */
 #define EISDIR 21 /* Is a directory */
 
-//#ifndef EINVAL
-//#define EINVAL 22 /* Invalid argument */
-//#endif
+#ifndef EINVAL
+#define EINVAL 22 /* Invalid argument */
+#endif
 
 #define ENFILE 23 /* File table overflow */
 #define EMFILE 24 /* Too many open files */

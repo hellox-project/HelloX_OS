@@ -3,6 +3,7 @@
 #define	__IO_H__
 
 #include "__hxcomm.h"
+#include "types.h"
 
 /*
  * Attributes of files as returned by _findfirst et al.
@@ -134,6 +135,9 @@ extern "C" {
 #define stdin  NULL
 #define stdout NULL
 #define stderr NULL
+
+/* Root path of hellox. */
+#define FILE_ROOT_PATH "C:\\"
 
 #ifdef	__cplusplus
 }

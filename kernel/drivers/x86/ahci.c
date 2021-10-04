@@ -136,69 +136,87 @@ static BOOL __ahci_int_handler(LPVOID lpESP, LPVOID lpParam)
 	while (pPortObject)
 	{
 		pPort = pPortObject->pConfigRegister;
-		if (pPort->is)
+		//if (pPort->is)
+		while(pPort->is)
 		{
 			/* 
 			 * Invoke corresponding handlers according 
 			 * status, and clear the corresponding bit.
+			 * NOTE:
+			 * Clearing interrupt bit must be in front of
+			 * the invoking of it's handler. Suppose the
+			 * following scenario if clear interrupt AFTER
+			 * invoking it's handler:
+			 * 1) In handler, another request maybe commited;
+			 * 2) The controller process the request and raise
+			 *    interrupt again, before handler return;
+			 * 3) The unprocessed interrupt bit is cleared
+			 *    so unhandled interrupt lost.
 			 */
 			if (pPort->is & AHCI_PxINT_DHRS)
 			{
-				__int_handler_dhrs(pPortObject);
 				pPort->is &= AHCI_PxINT_DHRS;
+				__int_handler_dhrs(pPortObject);
+				//pPort->is &= AHCI_PxINT_DHRS;
 				pPortObject->int_dhrs_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_PSS)
 			{
-				__int_handler_pss(pPortObject);
 				pPort->is &= AHCI_PxINT_PSS;
+				__int_handler_pss(pPortObject);
+				//pPort->is &= AHCI_PxINT_PSS;
 				pPortObject->int_pss_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_DSS)
 			{
-				__int_handler_dss(pPortObject);
 				pPort->is &= AHCI_PxINT_DSS;
+				__int_handler_dss(pPortObject);
+				//pPort->is &= AHCI_PxINT_DSS;
 				pPortObject->int_dss_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_SDBS)
 			{
-				__int_handler_sdbs(pPortObject);
 				pPort->is &= AHCI_PxINT_SDBS;
+				__int_handler_sdbs(pPortObject);
+				//pPort->is &= AHCI_PxINT_SDBS;
 				pPortObject->int_sdbs_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_UFS)
 			{
-				__int_handler_ufs(pPortObject);
 				pPort->is &= AHCI_PxINT_UFS;
+				__int_handler_ufs(pPortObject);
+				//pPort->is &= AHCI_PxINT_UFS;
 				pPortObject->int_ufs_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_DPS)
 			{
-				__int_handler_dps(pPortObject);
 				pPort->is &= AHCI_PxINT_DPS;
+				__int_handler_dps(pPortObject);
+				//pPort->is &= AHCI_PxINT_DPS;
 				pPortObject->int_dps_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_PCS)
 			{
-				__int_handler_pcs(pPortObject);
 				pPort->is &= AHCI_PxINT_PCS;
+				__int_handler_pcs(pPortObject);
+				//pPort->is &= AHCI_PxINT_PCS;
 				pPortObject->int_pcs_raised++;
 			}
 			if (pPort->is & AHCI_PxINT_PRCS)
 			{
-				__int_handler_prcs(pPortObject);
 				pPort->is &= AHCI_PxINT_PRCS;
+				__int_handler_prcs(pPortObject);
+				//pPort->is &= AHCI_PxINT_PRCS;
 				pPortObject->int_prcs_raised++;
 			}
 			
 			/* Still has unhandled interrupt. */
 			if (pPort->is)
 			{
-				_hx_printf("[%s]unknown interrupt[is = 0x%X]\r\n",
-					__func__,
-					pPort->is);
-				pPort->is = (uint32_t)-1;
-				/* IS = 0x400040*/
+				//_hx_printf("[%s]interrupt still hold[is = 0x%X]\r\n",
+				//	__func__,
+				//	pPort->is);
+				//pPort->is = (uint32_t)-1;
 			}
 			/* Increment interrupt counter. */
 			pPortObject->int_raised++;

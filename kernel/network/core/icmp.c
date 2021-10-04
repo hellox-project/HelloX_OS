@@ -43,6 +43,7 @@
 
 #if LWIP_ICMP /* don't build if not configured for use in lwipopts.h */
 
+#include "lwip/inet.h"
 #include "lwip/icmp.h"
 #include "lwip/inet_chksum.h"
 #include "lwip/ip.h"
@@ -95,6 +96,12 @@ icmp_input(struct pbuf *p, struct netif *inp)
     goto lenerr;
   }
 
+  /* Log it if src and dest are same. */
+  if (iphdr->src.addr == iphdr->dest.addr)
+  {
+	  __LOG("[%s]source and dest are same[%s]\r\n",
+		  __func__, inet_ntoa(iphdr->src));
+  }
   type = *((u8_t *)p->payload);
 #ifdef LWIP_DEBUG
   code = *(((u8_t *)p->payload)+1);
@@ -256,6 +263,15 @@ memerr:
 void
 icmp_dest_unreach(struct pbuf *p, enum icmp_dur_type t)
 {
+  struct ip_hdr *iphdr;
+  char str_src[64], str_dest[64];
+
+  /* log this event. */
+  iphdr = (struct ip_hdr*)p->payload;
+  strncpy(str_src, inet_ntoa(iphdr->src), 64);
+  strncpy(str_dest, inet_ntoa(iphdr->dest), 64);
+  __LOG("[%s]original hdr info:src = %s, dest = %s, proto = %d, ttl = %d, len = %d\r\n",
+	  __func__, str_src, str_dest, iphdr->_proto, iphdr->_ttl, ntohs(iphdr->_len));
   icmp_send_response(p, ICMP_DUR, t);
 }
 
@@ -270,7 +286,17 @@ icmp_dest_unreach(struct pbuf *p, enum icmp_dur_type t)
 void
 icmp_time_exceeded(struct pbuf *p, enum icmp_te_type t)
 {
-  icmp_send_response(p, ICMP_TE, t);
+	struct ip_hdr *iphdr;
+	char str_src[64], str_dest[64];
+
+	/* log this event. */
+	iphdr = (struct ip_hdr*)p->payload;
+	strncpy(str_src, inet_ntoa(iphdr->src), 64);
+	strncpy(str_dest, inet_ntoa(iphdr->dest), 64);
+	__LOG("[%s]original hdr info:src = %s, dest = %s, proto = %d, ttl = %d, len = %d\r\n",
+		__func__, str_src, str_dest, iphdr->_proto, iphdr->_ttl, ntohs(iphdr->_len));
+	
+	icmp_send_response(p, ICMP_TE, t);
 }
 
 #endif /* IP_FORWARD || IP_REASSEMBLY */

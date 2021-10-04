@@ -179,13 +179,15 @@ BEGIN_DEFINE_OBJECT(__SYSTEM)
 
 	/* Current context is in interrupt. */
 #define IN_INTERRUPT()  (System.ucIntNestLevel[__CURRENT_PROCESSOR_ID])
-	/* Current execution context is in process(kernel thread). */
-#define IN_KERNELTHREAD() (System.ucIntNestLevel[__CURRENT_PROCESSOR_ID] == 0)
 
 	/* Indicate if the system is initialized successfully. */
 	volatile UCHAR bSysInitialized;
 	/* To check if the system is under initialization phase. */
 #define IN_SYSINITIALIZATION() (FALSE == System.bSysInitialized)
+	
+	/* Current execution context is in process(kernel thread). */
+#define IN_KERNELTHREAD() ((System.ucIntNestLevel[__CURRENT_PROCESSOR_ID] == 0) && \
+	(!IN_SYSINITIALIZATION()))
 
 	/* Align to 4 bytes border. */
 	UCHAR ucReserved1;

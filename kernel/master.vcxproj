@@ -183,6 +183,7 @@
     <ClCompile Include="kernel\cfgmgr.c" />
     <ClCompile Include="kernel\chardisp.c" />
     <ClCompile Include="kernel\console.c" />
+    <ClCompile Include="kernel\dbm.c" />
     <ClCompile Include="kernel\debug.c" />
     <ClCompile Include="kernel\devmgr.c" />
     <ClCompile Include="kernel\dim.c" />
@@ -223,6 +224,7 @@
     <ClCompile Include="fs\NTFS.C" />
     <ClCompile Include="fs\NTFS2.C" />
     <ClCompile Include="fs\NTFSDRV.C" />
+    <ClCompile Include="kthread\syslog.c" />
     <ClCompile Include="lib\atox.c" />
     <ClCompile Include="lib\cJSON\cJSON.c" />
     <ClCompile Include="lib\ctype.c" />
@@ -243,6 +245,7 @@
     <ClCompile Include="lib\stdio.c" />
     <ClCompile Include="lib\string.c" />
     <ClCompile Include="lib\strtod.c" />
+    <ClCompile Include="lib\liblog.c" />
     <ClCompile Include="lib\sysmem.c" />
     <ClCompile Include="lib\time.c" />
     <ClCompile Include="netcore\dhcp_srv\dhcp_srv.c" />
@@ -251,6 +254,7 @@
     <ClCompile Include="netcore\dpi\dpidns.c" />
     <ClCompile Include="netcore\dpi\dpihttp.c" />
     <ClCompile Include="netcore\dpi\dpiicmp.c" />
+    <ClCompile Include="netcore\dpi\dpiland.c" />
     <ClCompile Include="netcore\dpi\dpimgr.c" />
     <ClCompile Include="netcore\drivers\e1000ex.c" />
     <ClCompile Include="netcore\drivers\r8152_e.c" />
@@ -286,6 +290,7 @@
     <ClCompile Include="netcore\pppox\randm.c" />
     <ClCompile Include="netcore\pppox\vj.c" />
     <ClCompile Include="netcore\protos.c" />
+    <ClCompile Include="netcore\services\ttysvr.c" />
     <ClCompile Include="netcore\tmo.c" />
     <ClCompile Include="network\arch\lwip_pro.c" />
     <ClCompile Include="shell\EXTCMD.C" />
@@ -396,6 +401,7 @@
     <ClInclude Include="include\CharDisplay.H" />
     <ClInclude Include="INCLUDE\COMMOBJ.H" />
     <ClInclude Include="include\console.h" />
+    <ClInclude Include="include\dbm.h" />
     <ClInclude Include="include\debug.h" />
     <ClInclude Include="INCLUDE\DEVMGR.H" />
     <ClInclude Include="INCLUDE\dim.h" />
@@ -440,6 +446,7 @@
     <ClInclude Include="fs\FAT32.H" />
     <ClInclude Include="fs\fsstr.h" />
     <ClInclude Include="fs\NTFS.H" />
+    <ClInclude Include="kthread\syslog.h" />
     <ClInclude Include="lib\cJSON\cJSON.h" />
     <ClInclude Include="lib\ctype.h" />
     <ClInclude Include="lib\errno.h" />
@@ -468,6 +475,7 @@
     <ClInclude Include="netcore\dpi\dpidns.h" />
     <ClInclude Include="netcore\dpi\dpihttp.h" />
     <ClInclude Include="netcore\dpi\dpiicmp.h" />
+    <ClInclude Include="netcore\dpi\dpiland.h" />
     <ClInclude Include="netcore\dpi\dpimgr.h" />
     <ClInclude Include="netcore\drivers\e1000ex.h" />
     <ClInclude Include="netcore\drivers\r8152.h" />
@@ -506,6 +514,7 @@
     <ClInclude Include="netcore\pppox\vj.h" />
     <ClInclude Include="netcore\precfg.h" />
     <ClInclude Include="netcore\proto.h" />
+    <ClInclude Include="netcore\services\ttysvr.h" />
     <ClInclude Include="netcore\tmo.h" />
     <ClInclude Include="network\arch\lwipext.h" />
     <ClInclude Include="network\arch\lwip_pro.h" />
@@ -553,7 +562,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="arch\x86\bootsect.asm" />
+    <None Include="arch\x86\fat32bs.asm" />
     <None Include="arch\x86\hdbs.asm" />
+    <None Include="arch\x86\mbr.asm" />
     <None Include="arch\x86\miniker.asm" />
     <None Include="arch\x86\ntfsbs.asm" />
     <None Include="arch\x86\realinit.asm" />
@@ -563,13 +574,19 @@
     <None Include="revise.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="arch\x86\mbr.txt" />
+    <Text Include="arch\x86\newboot.txt" />
+    <Text Include="doc\ip_hang.txt" />
     <Text Include="doc\lock_ord.txt" />
+    <Text Include="doc\lwip_mt.txt" />
     <Text Include="doc\proc_del.txt" />
     <Text Include="doc\rev_recd.txt" />
     <Text Include="doc\rr_ptmalloc.txt" />
     <Text Include="doc\pendissu.txt" />
     <Text Include="doc\syscfg.txt" />
+    <Text Include="doc\install.txt" />
     <Text Include="doc\todo.txt" />
+    <Text Include="doc\upgrade.txt" />
     <Text Include="drivers\x86\ahci_dev.txt" />
     <Text Include="netcore\bug_oe.txt" />
     <Text Include="netcore\dhcp_srv\dhcp_ms.txt" />

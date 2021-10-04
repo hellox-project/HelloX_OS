@@ -32,6 +32,7 @@
 #include "stdio.h"
 #include "buffmgr.h"
 #include "smp.h"
+#include "dbm.h"
 
 #include "../shell/shell.h"
 #include "../shell/stat_s.h"
@@ -39,6 +40,7 @@
 #include "../netcore/ethmgr.h"
 
 #include "../kthread/logcat.h"
+#include "../kthread/syslog.h"
 #include "ktmgr.h"
 
 #ifdef __I386__
@@ -307,6 +309,15 @@ static void __OS_Entry_BSP()
 	EnableVMM(lpVirtualMemoryMgr->lpPageIndexMgr->lpPdAddress);
 #endif
 
+	/* Initializes system logging function. */
+#ifdef __CFG_APP_SYSLOG
+	if (!LogManager.Initialize(&LogManager))
+	{
+		pszErrorMsg = "INIT ERROR: Can not initialize log manager.";
+		goto __TERMINAL;
+	}
+#endif
+
 	/* Initializes system config manager object. */
 	if (!SystemConfigManager.Initialize(&SystemConfigManager))
 	{
@@ -345,6 +356,13 @@ static void __OS_Entry_BSP()
 		dwIndex++;
 	}
 #endif
+
+	/* Initializes the display buffer manager object. */
+	if (!DispBufferManager.Initialize())
+	{
+		pszErrorMsg = "INIT ERROR: Can not initialize display buffer manager.";
+		goto __TERMINAL;
+	}
 
 	/* Initialize Console object if necessary. */
 #ifdef __CFG_SYS_CONSOLE
@@ -526,6 +544,9 @@ static void __OS_Entry_BSP()
 		goto __TERMINAL;
 	}
 #endif
+
+	/* OS start to run. */
+	__LOG("HelloX world starts.\r\n");
 
 	/* 
 	 * End initialization routine is called finally. 

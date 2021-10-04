@@ -1,0 +1,68 @@
+HelloX gateway may crash after runs several days, or several hours, especially there 
+are new devices attach to network.
+LOG mechanism is developed to trace the system messages, since there is no monitor all
+present. The appearence of the issue is:
+1. System can be operated normally with terminal input, but TCP/IP thread
+   same hang;
+2. This thread's state is block and waiting for mailbox;
+3. The mailbox is full;
+4. So this issue maybe lead by sending mail into mailbox by tcp/ip thread itself,
+   since the mail processing is also handled by tcp/ip thread;
+5. Logging messages give some hints, as following:
+   1) The mail is sent by netif_loop_output routine;
+   2) This routine is invoked by ip_input since the src and dest addresses are same;
+   3) The loopback packet is originated by icmp_time_exceed routine, with TTL = 0;
+ After several months deep dive, issue sames solved.
+ The whole process as follows:
+-- The path maybe:
+	   a. Windows system sends out MDNS or Service discovery packets, whose destination
+	      addresses are multicast(224.255.255.250, 224.0.0.251/252...);
+	   b. HelloX GW does essential checks, then forwards these packets by looking up route table. The
+	      IGMP or multicast mechanism do not eat the packet;
+	   c. Default interface pp is matched(ip_route is not revised yet) and returned;
+	   d. Apply NAT on the packet, replace source address as pp's address, so when icmp_time_exceed
+	      send back response, it's just send to PP interface;
+	   e. Decrement the TTL, but reaches 0, then the ip_forward routine notices source;
+	   f. icmp_time_exceed is invoked, then response ICMP packet is send back to pp;
+	   g. It's a local address, so the loopback sending routine netif_loop_output invoked;
+	   h. It send a mail into tcp/ip thread, when mailbox full, tcp/ip thread pends;
+	   i. Dead loop raise...
+	   j. Solution: Ignore multicast address in ip_route routine;
+
+Solved as following code revision in ip_route routine(ip.c file):
+struct netif* ip_route(ip_addr_t *dest)
+{
+	struct netif *netif;
+
+	if (ip_addr_ismulticast(dest))
+	{
+		//__LOG("[%s]multicast addr:%s, ignore.\r\n", __func__,
+		//	inet_ntoa(*dest));
+		return NULL;
+	}
+
+	/* iterate through netifs */
+	for (netif = netif_list; netif != NULL; netif = netif->next) {
+		/* network mask matches? */
+		if (netif_is_up(netif)) {
+			/* Ignore the case that if's addr is 0. */
+			if (0 == netif->ip_addr.addr)
+			{
+				continue;
+			}
+			if (ip_addr_netcmp(dest, &(netif->ip_addr), &(netif->netmask))) {
+				/* return netif on which to forward IP packet */
+				return netif;
+			}
+		}
+	}
+	if ((netif_default == NULL) || (!netif_is_up(netif_default))) {
+		LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_route: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
+			ip4_addr1_16(dest), ip4_addr2_16(dest), ip4_addr3_16(dest), ip4_addr4_16(dest)));
+		IP_STATS_INC(ip.rterr);
+		snmp_inc_ipoutnoroutes();
+		return NULL;
+	}
+	/* no matching netif found, use default netif */
+	return netif_default;
+}

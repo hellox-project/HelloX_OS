@@ -23,6 +23,7 @@
 #include "sysd_s.h"
 #include "stat_s.h"
 #include "pci_drv.h"
+#include "../kthread/syslog.h"
 
 #define  SYSD_PROMPT_STR   "[sysdiag_view]"
 
@@ -52,6 +53,9 @@ static DWORD usbportreset(__CMD_PARA_OBJ*);
 static DWORD usbctrlstat(__CMD_PARA_OBJ*);
 static DWORD usbmouse(__CMD_PARA_OBJ*);
 #endif
+#if defined(__CFG_APP_SYSLOG)
+static DWORD syslog(__CMD_PARA_OBJ*);
+#endif
 
 //
 //The following is a map between command and it's handler.
@@ -73,6 +77,9 @@ static struct __SHELL_CMD_MAP{
 	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
 	{"showdev",           showdev,          "  showdev              : show device specific information." },
 	{"kobjshow",          kobjshow,         "  kobjshow             : Display kernel object information" },
+#if defined(__CFG_APP_SYSLOG)
+	{"syslog",            syslog,           "  syslog               : Turn on or off logging."},
+#endif
 #ifdef __CFG_SYS_USB
 	{"usblist",           usblist,          "  usblist              : Show all USB device(s) in system." },
 	{"usbdev",            usbdev,           "  usbdev               : Show a specified USB device's detail info." },
@@ -853,5 +860,20 @@ static DWORD usbmouse(__CMD_PARA_OBJ* pData)
 	DoUsbMouse();
 	return SHELL_CMD_PARSER_SUCCESS;
 }
+#endif
 
+#if defined(__CFG_APP_SYSLOG)
+/* Logging control functions. */
+static DWORD syslog(__CMD_PARA_OBJ* pCmdObj)
+{
+	LogManager.bLogOn = !LogManager.bLogOn;
+	if (LogManager.bLogOn)
+	{
+		_hx_printf("Logging on.\r\n");
+	}
+	else {
+		_hx_printf("Logging off.\r\n");
+	}
+	return SHELL_CMD_PARSER_SUCCESS;
+}
 #endif

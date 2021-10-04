@@ -15,6 +15,9 @@
     <Filter Include="Source Files\socket">
       <UniqueIdentifier>{66bacafc-1096-44e6-a37d-c70abdcc951a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tftpsrv_src">
+      <UniqueIdentifier>{e949812c-1034-433e-a37d-6602f439900b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="examapp.c">
@@ -69,6 +72,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fabs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tftpsrv.c">
+      <Filter>tftpsrv_src</Filter>
+    </ClCompile>
+    <ClCompile Include="errno.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -174,6 +183,9 @@
     </ClInclude>
     <ClInclude Include="socket\dhcp_srv.h">
       <Filter>Header Files\socket</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

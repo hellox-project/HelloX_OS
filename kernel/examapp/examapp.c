@@ -134,7 +134,7 @@ static void build_addr(__COMMON_NETWORK_ADDRESS* comm_addr, unsigned char index)
 }
 
 /* Test the ptmalloc lib. */
-int _hxmain(int argc, char* argv[])
+int _hxmain_old(int argc, char* argv[])
 {
 	__GENERIC_NETIF* pGenif = NULL;
 	unsigned long buf_req = 0;

@@ -506,12 +506,16 @@ static void SC_TerminateKernelThread(__SYSCALL_PARAM_BLOCK* pspb)
 	BUG_ON(NULL == pProcess);
 	if (INVALID_HANDLE_VALUE == thread_handle)
 	{
-		goto __TERMINAL;
+		/* Terminate current thread if no thread specified. */
+		pThread = (__COMMON_OBJECT*)__CURRENT_KERNEL_THREAD;
 	}
-	pThread = ProcessManager.GetObjectByHandle(pProcess, thread_handle);
-	if (NULL == pThread)
-	{
-		goto __TERMINAL;
+	else {
+		pThread = ProcessManager.GetObjectByHandle(pProcess, thread_handle);
+		if (NULL == pThread)
+		{
+			/* Thread is not exist, giveup. */
+			goto __TERMINAL;
+		}
 	}
 	/* Just terminates the thread. */
 	SYSCALL_RET = KernelThreadManager.TerminateKernelThread(

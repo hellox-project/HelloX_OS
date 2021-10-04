@@ -1,0 +1,21 @@
+Upgrade process through TFTP function:
+Preparation:
+1. Compile any kernel or application modules, make them ready on PC;
+2. Makre sure the TFTP client is installed on local PC;
+3. Network connection between local PC and hellox box is established;
+4. Disable windows firewall on local PC(or set the network as no-public);
+5. Make sure tftpsrv.exe(or examapp.exe) is in C: directory of hellox.
+
+Procedures for upgrade:
+1. Start TFTP server on hellox: loadapp c:\tftpsrv.exe 69 &;
+2. Run tftp client and put the target file into hellox server, for example:
+   tftp 192.168.43.95 put osloadr.bin hxldr.bin
+   in order to avoid the failure of xfer that lead kernel file cruption, use
+   another name when put to server;
+3. The rename the kernel file as following:
+   3.1 Delete the old version of kernel file;
+   3.2 Rename the hxldr.bin to osloadr.bin(using copy command);
+4. The kernel file in hellox will be the new one;
+5. Update any other application or module through the same procedure;
+6. Check if the files are put OK through dir command;
+7. Reload hellox, new version should work;

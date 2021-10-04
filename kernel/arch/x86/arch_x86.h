@@ -36,21 +36,21 @@
  * We just get and put value as aligned memory accessing 
  * since x86 support unaligned memory accessing directly.
  */
-#define __GET_UNALIGNED(ptr) (*ptr)
-#define __GET_UNALIGNED_I16(ptr) (*ptr)
-#define __GET_UNALIGNED_I32(ptr) (*ptr)
-#define __GET_UNALIGNED_I64(ptr) (*ptr)
-#define __GET_UNALIGNED_U16(ptr) (*ptr)
-#define __GET_UNALIGNED_U32(ptr) (*ptr)
-#define __GET_UNALIGNED_U64(ptr) (*ptr)
+#define __GET_UNALIGNED(ptr) (*(ptr))
+#define __GET_UNALIGNED_I16(ptr) (*((__s16*)(ptr)))
+#define __GET_UNALIGNED_I32(ptr) (*((__s32*)(ptr)))
+#define __GET_UNALIGNED_I64(ptr) (*((__s64*)(ptr)))
+#define __GET_UNALIGNED_U16(ptr) (*((__u16*)(ptr)))
+#define __GET_UNALIGNED_U32(ptr) (*((__u32*)(ptr)))
+#define __GET_UNALIGNED_U64(ptr) (*((__u64*)(ptr)))
 
-#define __PUT_UNALIGNED(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_I16(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_I32(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_I64(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_U16(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_U32(val,ptr) (*ptr = val)
-#define __PUT_UNALIGNED_U64(val,ptr) (*ptr = val)
+#define __PUT_UNALIGNED(val,ptr) (*(ptr) = (val))
+#define __PUT_UNALIGNED_I16(val,ptr) (*((__s16*)(ptr)) = (val))
+#define __PUT_UNALIGNED_I32(val,ptr) (*((__s32*)(ptr)) = (val))
+#define __PUT_UNALIGNED_I64(val,ptr) (*((__s64*)(ptr)) = (val))
+#define __PUT_UNALIGNED_U16(val,ptr) (*((__u16*)(ptr)) = (val))
+#define __PUT_UNALIGNED_U32(val,ptr) (*((__u32*)(ptr)) = (val))
+#define __PUT_UNALIGNED_U64(val,ptr) (*((__u64*)(ptr)) = (val))
 
  /* Port operating routines for x86. */
 DWORD __ind(WORD wPort);

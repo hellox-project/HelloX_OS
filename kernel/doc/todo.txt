@@ -133,3 +133,103 @@
  * 3. Rewrite file system's implementation in hellox,as next step;
  * 4. loadapp's implementation code has commented partly,should resolve it;
  */
+
+ TO DO LIST AFTER NEW BOOT STAGE I IMPLEMENTED(2021/06/11):
+ 1. Make a usb booting stick and load IBM thinkpad/DELL PC in Beijing, to verify
+    the new boot loader;
+ 2. Fix usb stick's FS error(introduced by make_usb_boot) under windows, and
+    reload the PCs to check if it's OK;
+ 3. Install hellox into harddisk of PC, according steps in doc/install.txt file,
+    and load PC to test it;
+ 4. Implement the system logging service and make all logging information persisted;
+ 5. Do some intensive testing of FS and storage function, and make some optimization;
+ 6. Release the V1.88 version, and begin next version...
+
+ 20210627:
+ 1. fat32bs could load from fat32 partition whose size is 4G,but could not load
+    if the partition's size is 80G,should trouble shooting it;
+ 2. System crash when disk is accessed at the same time, such as syslog is writting
+    and showing the logfile at the same time, should trouble shooting it;
+	-- When code lines in 305 of ahciio.c executed, error arise;
+	-- The _hx_printf clause in 305 of ahciio.c file, appear 2 times when crash;
+	-- So the issue may lead by re-enter of ahci accessing;
+	-- 20210711: Sames solved, pending to test the performance of AHCI in Multiple Thread;
+
+ 20210807:
+ Trouble shooting of packet loopback(lead mailbox full):
+ 1. LAND filter of ingress direction of pp interface captures the ICMP packet 
+    with size is 56, same as icmp_send_response;
+ 2. The packet sames sent by local host, may triggered by IP fragment timeout, should
+    print out the ICMP type; --in progress;
+ 3. ICMP type is 11, code is 0, it maybe caused by TTL = 0 in ip_forward() routine;
+ 4. Should check why the ppp/pppoe module sends out packet with TTL=1?
+    -- hx-gw forwards the multicase packets with address(224.0.0.251,252, 224.255.255.250),
+	   the packets length are too large that lead to fragment;
+	-- These packets should be originated by local host, windows system,...;
+	-- why hx-gw forwards the multicast packets? and use the pppoe interface's address
+	   as source address ?
+	-- The path maybe:
+	   a. Windows system sends out MDNS or Service discovery packets;
+	   b. HelloX GW does essential checks, then forwards these packets by looking up route table;
+	   c. Default interface pp is matched(ip_route is not revised yet) and returned;
+	   d. Apply NAT on the packet, replace source address as pp's address;
+	   e. Decrement the TTL, but reaches 0, then the ip_forward routine notices source;
+	   f. icmp_time_exceed is invoked, then response ICMP packet is send back to pp;
+	   g. It's a local address, so the loopback sending routine netif_loop_output invoked;
+	   h. It send a mail into tcp/ip thread, when mailbox full, tcp/ip thread pends;
+	   i. Dead loop raise...
+	   j. Solution: Ignore multicast address in ip_route routine;
+	   -- Issue sames resolved.
+
+
+Following issues pending when implement the TFTP server:
+1. sendto system call will fail with sockaddr is changed in sendto routine, triggers
+   the bug in sockets.c file;
+   1) Code line is 840 in sockets.c file under kernel;
+   2) The sendto target address is revised, may by the recvfrom routine. this lead to
+      the __BUG macro;
+2. More than 1 request submitted to AHCI controller, and __cancel_port_request is invoked
+   but with NULL implementation, and then lead system crash. It's maybe the following cause:
+   1) request cancelled but still linked in the list, since __cancel_xxx is not implemented
+      yet. But the corresponding DRCB is released;
+	  -- Revised the interrupt handler of AHCI, change if(port->is) to while(port->is),
+	     the issue same resolved;
+	  -- Should exam if the solution is OK, should consider if there are other unhandled
+	     interrupts exist, and it may lead to deadloop if so;
+	  -- Should test it under physical PCs if above revision eventually committed;
+   2) when interrupt raise, the already destroyed request is processed, so lead system crash;
+3. exit() system call in user land does not work since current thread handle is specified
+   and the system bottom half will check it, and just return if the handle is NULL;
+
+Debugging procedures:
+1. Load examapp.exe from C:, could stop syslog function before it;
+2. Start tftp client under windows CMD line, get cpuid.exe from server;
+3. Error may appear;
+
+Progress in 2021/08/22:
+1. tftp_send_data works OK, returns the byte value that sent, but the client sames
+   does not received;
+   -- The destination port is correct, from the output of netstat -s -p UDP command, since
+      there is not port error counter when tftp client present;
+   -- But the UDP packet may error since the recv error counter is increasing when tftp
+      client present;
+   -- The UDP packet is sent out by hellox, and received by windows, port is OK, but 
+      some unknown-thing wrong that leads tftp client could not received the server's response;
+   -- Source port/addr and dest port/addr same all OK from the output of udp.c, should install
+      wireshark to capture packet to diagnose it;
+   -- Issue solved: caused by windows firewall, drops all packets that are not initiated from 
+      inside direction;
+2. tftp_recv_message from client enters waiting state and give up because of timeout,
+   the sockaddr maybe revised by the recvfrom routine, thus lead the BUGS described above. This
+   should be confirmed, just put a print clause in recvfrom routine of kernel, maybe before 689
+   line of sockets.c file;
+   -- The sockaddr is revised by recvfrom syscall's agent in kernel side, we revised it and the
+      issue is solved;
+3. TFTP put functions seems OK, enter the releasing procedure of V1.88;
+
+TFTP server optimization-20210907 all done:
+1. Resolve the issue of fwrite failure, which lead the exit() routine invoked;
+2. Test the trying mechanism both for get and for put;
+3. Test it under physical pc, test the quit function to make sure the application
+   is re-enterable;
+4. Trouble the issue that thread is not killed after exit, then lead memory leaking;

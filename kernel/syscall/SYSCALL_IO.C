@@ -75,11 +75,34 @@ static void SC_CreateFile(__SYSCALL_PARAM_BLOCK* pspb)
 
 static void SC_ReadFile(__SYSCALL_PARAM_BLOCK* pspb)
 {
-	SYSCALL_RET = (uint32_t)ReadFile(
-		(HANDLE)PARAM(0),
-		(DWORD)PARAM(1),
-		(LPVOID)PARAM(2),
-		(DWORD*)PARAM(3));
+	char* out_buffer = NULL;
+	unsigned long read_sz = 0;
+	BOOL bResult = FALSE;
+
+	out_buffer = (char*)map_to_kernel((LPVOID)PARAM(2), PARAM(1), __OUT);
+	if (NULL == out_buffer)
+	{
+		goto __TERMINAL;
+	}
+
+	//SYSCALL_RET = (uint32_t)ReadFile(
+	//	(HANDLE)PARAM(0),
+	//	(DWORD)PARAM(1),
+	//	(LPVOID)PARAM(2),
+	//	(DWORD*)PARAM(3));
+	bResult = ReadFile((HANDLE)PARAM(0), (unsigned long)PARAM(1), out_buffer, &read_sz);
+
+__TERMINAL:
+	if (out_buffer && bResult)
+	{
+		map_to_user((LPVOID)PARAM(2), PARAM(1), __OUT, out_buffer);
+	}
+	if (PARAM(3) && bResult)
+	{
+		/* Return the read size. */
+		*(unsigned long*)PARAM(3) = read_sz;
+	}
+	SYSCALL_RET = (uint32_t)bResult;
 }
 
 static void SC_WriteFile(__SYSCALL_PARAM_BLOCK* pspb)
@@ -90,8 +113,14 @@ static void SC_WriteFile(__SYSCALL_PARAM_BLOCK* pspb)
 		(LPVOID)PARAM(2),
 		(DWORD*)PARAM(3));
 }
+
 static void SC_CloseFile(__SYSCALL_PARAM_BLOCK* pspb)
 {
+	if (NULL == (HANDLE)PARAM(0))
+	{
+		_hx_printf("[%s]invalid handle value: NULL\r\n", __func__);
+		return;
+	}
 	CloseFile((HANDLE)PARAM(0));
 }
 

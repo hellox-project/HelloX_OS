@@ -740,6 +740,21 @@
     <ClCompile Include="drivers\x86\ahcidrv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="kthread\syslog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\liblog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\dpi\dpiland.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\services\ttysvr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\dbm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -1267,6 +1282,18 @@
     <ClInclude Include="include\ata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kthread\syslog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\dpi\dpiland.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\services\ttysvr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dbm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1286,6 +1313,8 @@
     <None Include="arch\x86\realinit.bin">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="arch\x86\mbr.asm" />
+    <None Include="arch\x86\fat32bs.asm" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="netcore\pppox\readme.txt" />
@@ -1301,5 +1330,11 @@
     <Text Include="netcore\bug_oe.txt" />
     <Text Include="doc\syscfg.txt" />
     <Text Include="drivers\x86\ahci_dev.txt" />
+    <Text Include="arch\x86\newboot.txt" />
+    <Text Include="arch\x86\mbr.txt" />
+    <Text Include="doc\install.txt" />
+    <Text Include="doc\ip_hang.txt" />
+    <Text Include="doc\upgrade.txt" />
+    <Text Include="doc\lwip_mt.txt" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,18 @@
+Steps to install HelloX on PC manually:
+ 1. Create a bootable USB stick by using make_usb_boot;
+ 2. Load the PC using this USB stick;
+ 3. USB stick will be loaded by HelloX as C:;
+ 4. Turn off logging(sysdiag->syslog);
+ 4. Check harddisk status using fdisk, make sure \\.\ATADISK0 appear;
+ 5. Copy bootsect to \\.\ATADISK0, then boot sector is initialized;
+ 6. Partition the harddisk using fdisk, choose one partition as active;
+ 7. Reload the PC, then format one partition as FAT32, and reload again;
+ 8. Copy the osloadr.bin and usragent.bin into just formated partition;
+ 9. Create several system directories on system partition:
+    9.1 bin, contains binary applications;
+	9.2 syslog, contains system level logs;
+	9.3 data, contains system and application level data;
+	9.4 syscfg, contains system configuration files;
+ 10. Pull out the USB stick and load PC again, it should boot from HelloX;
+
+A dedicated application maybe created in future to simplify this procedure.

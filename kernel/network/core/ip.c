@@ -40,6 +40,7 @@
 
 #include "lwip/opt.h"
 #include "lwip/ip.h"
+#include "lwip/inet.h"
 #include "lwip/def.h"
 #include "lwip/mem.h"
 #include "lwip/ip_frag.h"
@@ -121,6 +122,7 @@ static u16_t ip_id;
  * searches the list of network interfaces linearly. A match is found
  * if the masked IP address of the network interface equals the masked
  * IP address given to the function.
+ * Multicast, broadcast addresses are ignored directly.
  *
  * @param dest the destination IP address for which to find the route
  * @return the netif on which to send to reach dest
@@ -128,6 +130,13 @@ static u16_t ip_id;
 struct netif* ip_route(ip_addr_t *dest)
 {
 	struct netif *netif;
+
+	if (ip_addr_ismulticast(dest))
+	{
+		//__LOG("[%s]multicast addr:%s, ignore.\r\n", __func__,
+		//	inet_ntoa(*dest));
+		return NULL;
+	}
 
 	/* iterate through netifs */
 	for (netif = netif_list; netif != NULL; netif = netif->next) {
@@ -215,7 +224,11 @@ ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 #ifdef __CFG_NET_DPI
   if (netif->flags & NETIF_FLAG_DPI)
   {
-	  p = DPIManager.dpiPacketOut(p, netif);
+	  /* 
+	   * Output direction filter, should not release pbuf since the 
+	   * caller of ip_forward will do it.
+	   */
+	  p = DPIManager.dpiPacketOut(p, netif, FALSE);
 	  if (NULL == p)
 	  {
 		  /* The packet is eaten by DPI. */
@@ -407,12 +420,13 @@ ip_input(struct pbuf *p, struct netif *inp)
   {
 	  if (inp->flags & NETIF_FLAG_DPI)
 	  {
-		  p = DPIManager.dpiPacketIn(p, inp);
+		  /* Invoke ingress packet filer, pbuf should be released if matched. */
+		  p = DPIManager.dpiPacketIn(p, inp, TRUE);
 		  if (NULL == p)
 		  {
 			  /* 
 			   * Packet is eaten by DPI,the pbuf also 
-			   * should be destroyed by DPI packet in 
+			   * should be destroyed by dpiPacketIn
 			   * routine. 
 			   */
 			  return ERR_OK;
@@ -836,6 +850,12 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
 
 #if ENABLE_LOOPBACK
   if (ip_addr_cmp(dest, &netif->ip_addr)) {
+	/* For debugging. */
+	 __LOG("[%s]pkt loopback, src = %s, prot = %d, if = %c%c, pkt_len = %d\r\n",
+		 __func__,
+		 inet_ntoa(*src), proto,
+		 netif->name[0], netif->name[1],
+		 p->len);
     /* Packet to self, enqueue it for loopback */
     LWIP_DEBUGF(IP_DEBUG, ("netif_loop_output()"));
     return netif_loop_output(netif, p, dest);

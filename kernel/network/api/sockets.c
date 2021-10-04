@@ -597,8 +597,6 @@ int lwip_recvfrom(int s, void *mem, size_t len, int flags, struct sockaddr *from
         err = netconn_recv(sock->conn, (struct netbuf **)&buf);
       }
 
-
-
       LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_recvfrom: netconn_recv err=%d, netbuf=%p\n", err, buf));
 
       if (err != ERR_OK) {

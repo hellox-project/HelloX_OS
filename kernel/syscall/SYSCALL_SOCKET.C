@@ -195,8 +195,13 @@ static void SC_RecvFrom(__SYSCALL_PARAM_BLOCK* pspb)
 	}
 	if (EXT_PARAM(4))
 	{
+		/* 
+		 * The from addr maybe set by caller so it must 
+		 * be transfer to recvfrom routine, use __INOUT
+		 * indicator to copy it to kernel.
+		 */
 		from = (struct sockaddr*)map_to_kernel((void*)EXT_PARAM(4), 
-			sizeof(struct sockaddr), __OUT);
+			sizeof(struct sockaddr), __INOUT);
 		if (NULL == from)
 		{
 			goto __TERMINAL;

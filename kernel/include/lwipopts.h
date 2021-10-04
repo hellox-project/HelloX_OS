@@ -21,6 +21,14 @@
 //Swich of debugging functions.
 //#define LWIP_DEBUG           1
 
+#define NETIF_DEBUG          0
+#define PBUF_DEBUG           0
+#define API_LIB_DEBUG        0
+#define API_MSG_DEBUG        0
+#define SOCKETS_DEBUG        1
+#define IP_DEBUG             1
+#define DHCP_DEBUG           0
+
 //Switch of IP debugging function.
 //#define IP_DEBUG             1
 

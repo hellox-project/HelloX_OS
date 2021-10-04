@@ -1,0 +1,15 @@
+Sockets API could not support multiple thread, i.e, if a socket is created by thread A,
+then xfer it to thread B, two threads use it at the same time, one for sending and another
+for receiving, this scenario could lead to deadlock of tcp/ip thread.
+The reason:
+1. Only one semaphore defined in TCB(conn structure), both for sending and receiving;
+2. Thread A waits on the semaphore after recv invoking;
+3. Thread B sends data out, and then waits on the semaphore too;
+4. Data sends out by tcp/ip thread, then it invokes TCPIP_MSG_ACK routine, which
+   should wake up thread B;
+5. But thread B is at the end of pending thread list, so thread A is woken up;
+
+Thus lead the internal stack or data cruption, and system crash.
+
+This issue is limited on the lwIP version that HelloX V1.88 adopts.
+The lwIP version is 1.5.X.

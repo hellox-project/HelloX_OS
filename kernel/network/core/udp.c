@@ -61,6 +61,7 @@
 #include "lwip/snmp.h"
 #include "arch/perf.h"
 #include "lwip/dhcp.h"
+#include "lwip/inet.h"
 
 #include <string.h>
 
@@ -712,6 +713,10 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
     netif->addr_hint = &(pcb->addr_hint);
 #endif /* LWIP_NETIF_HWADDRHINT*/
     err = ip_output_if(q, src_ip, dst_ip, pcb->ttl, pcb->tos, IP_PROTO_UDP, netif);
+	//_hx_printf("[%s]udp dport:%d, sport:%d, chksum:%d, udp-len:%d, src:%s ", __func__, 
+	//	ntohs(udphdr->dest), ntohs(udphdr->src),
+	//	udphdr->chksum, ntohs(udphdr->len), inet_ntoa(*src_ip));
+	//_hx_printf("dest:%s\r\n", inet_ntoa(*dst_ip));
 #if LWIP_NETIF_HWADDRHINT
     netif->addr_hint = NULL;
 #endif /* LWIP_NETIF_HWADDRHINT*/

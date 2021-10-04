@@ -43,7 +43,7 @@ void sched_yield()
 void exit(int status)
 {
 	/* Show out a warning msg. */
-	_hx_printf("[thread ID:%d]: exit is invoked.\r\n",
+	_hx_printf("[thread ID:%d]: exit() is invoked.\r\n",
 		GetCurrentThreadID());
 
 	/* Invoke all destructors of global object. */

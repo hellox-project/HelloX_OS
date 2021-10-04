@@ -54,9 +54,9 @@ typedef struct tag__DPI_MANAGER {
 	/* Enable or disable DPI on a specified interface. */
 	BOOL (*dpiEnable)(char* if_name, BOOL bEnable);
 	/* Will be invoked when pakcet into an interface. */
-	struct pbuf* (*dpiPacketIn)(struct pbuf* p, struct netif* in_if);
+	struct pbuf* (*dpiPacketIn)(struct pbuf* p, struct netif* in_if, BOOL release_pbuf);
 	/* Output direction of DPI processing. */
-	struct pbuf* (*dpiPacketOut)(struct pbuf* p, struct netif* out_if);
+	struct pbuf* (*dpiPacketOut)(struct pbuf* p, struct netif* out_if, BOOL release_pbuf);
 	/* Send out raw IP packet. */
 	BOOL (*dpiSendRaw)(ip_addr_t* src_addr, ip_addr_t* dst_addr,
 		uint8_t protocol, uint8_t ttl, uint8_t tos,

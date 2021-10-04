@@ -53,8 +53,10 @@
  *       it will lead system crash after several(>3) times
  *       of restart on one pppoe instance,so we set this
  *       restriction,it will be removed when bugs shooted.
+ *       BUGS solved, it's because of the memory overlap 
+ *       operation in PPPoE source code of lwIP.
  */
-#define PPPOE_SESSION_RESTART_COUNT 64
+#define PPPOE_SESSION_RESTART_COUNT 8
 
 /*
  * Authentication types of PPPoE,default is ANY,that is,try the

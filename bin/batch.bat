@@ -5,17 +5,19 @@ del miniker.bin
 del bootsect
 nasm -f bin ..\arch\x86\miniker.asm -o miniker.bin
 nasm -f bin ..\arch\x86\realinit.asm -o realinit.bin
-nasm -f bin ..\arch\x86\bootsect.asm -o bootsect
-del hcnimge.bin
+nasm -f bin ..\arch\x86\fat32bs.asm -o bootsect
+
+del osloadr.bin
 del master.bin
 process -i master.dll -o master.bin
 append -s realinit.bin -a miniker.bin -b 2000 -o image_1.bin
 append -s image_1.bin -a master.bin -b 12000 -o image_2.bin
-ren image_2.bin hcnimge.bin
+ren image_2.bin osloadr.bin
 del image_1.bin
+
 cd ..
 cd ..\bin
-copy ..\kernel\bin\hcnimge.bin
+copy ..\kernel\bin\osloadr.bin
 copy ..\kernel\bin\bootsect
 cd ..\gui\guimaker
 copy ..\release\hcngui.dll
@@ -31,8 +33,12 @@ del usragent.bin
 copy ..\kernel\release\usragent.dll
 process -i usragent.dll -o usragent.bin
 copy usragent.bin .\import\
+del .\import\osloadr.bin
+copy osloadr.bin .\import\
+copy bootsect .\import\
+ren .\import\bootsect bootsect.bin
+
 copy ..\kernel\release\examapp.exe
 copy examapp.exe .\import\
 copy ..\app\cpuid\Release\cpuid.exe
 copy cpuid.exe .\import\
-

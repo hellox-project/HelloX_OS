@@ -34,9 +34,9 @@ typedef struct tag__SYSMEM_MLAYOUT_DESCRIPTOR {
 
 /*
 * System memory layout array's base address.
-* System memory layout information is put here,one
-* by one in format of __SYSTEM_MLAYOUT_DESCRIPTOR.
-* The loader should do this and HelloX kernel will
+* System memory layout information is put here,
+* one by one in format of __SYSTEM_MLAYOUT_DESCRIPTOR.
+* The loader should do it and HelloX kernel will
 * read this region to obtain physical memory layout
 * information.
 */

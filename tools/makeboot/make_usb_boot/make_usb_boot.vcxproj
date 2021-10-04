@@ -14,7 +14,7 @@
     <ProjectGuid>{AE91E53C-8075-4DE4-9E15-6E5C01779268}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>make_usb_boot</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

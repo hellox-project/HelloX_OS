@@ -544,7 +544,12 @@ BOOL GetNextCluster(__FAT32_FS* pFat32Fs, uint32_t* pdwCluster)
 		dwCurrCluster = 2;
 	}
 
-	/* FAT's sector number contains current cluster. */
+	/* Must be in range of partition. */
+	if (dwCurrCluster > pFat32Fs->total_clusters)
+	{
+		return FALSE;
+	}
+	/* Get the FAT's sector number contains current cluster. */
 	dwClusSector = dwCurrCluster / 128;
 	dwClusSector += pFat32Fs->dwFatBeginSector;
 	/* Try to load the fat sector from cache. */

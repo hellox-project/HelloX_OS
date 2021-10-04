@@ -496,6 +496,11 @@ BOOL WriteFile(HANDLE hFile,
 
 void CloseFile(HANDLE hFile)
 {
+	if (NULL == hFile)
+	{
+		_hx_printf("[%s]invalid HANDLE value: NULL\r\n", __func__);
+	}
+
 	__asm {
 		push __PARAM_0
 		push eax
@@ -508,7 +513,13 @@ void CloseFile(HANDLE hFile)
 }
 
 BOOL CreateDirectory(LPSTR lpszDirName);
-BOOL DeleteFile(LPSTR lpszFileName);
+
+/* Delete a given file. */
+BOOL DeleteFile(LPSTR lpszFileName)
+{
+	return FALSE;
+}
+
 HANDLE FindFirstFile(LPSTR lpszDirName,
 	FS_FIND_DATA* pFindData);
 BOOL FindNextFile(LPSTR lpszDirName,
@@ -551,7 +562,13 @@ __TERMINAL:
 }
 
 BOOL RemoveDirectory(LPSTR lpszDirName);
-BOOL SetEndOfFile(HANDLE hFile);
+
+/* Set current position as end of the file. */
+BOOL SetEndOfFile(HANDLE hFile)
+{
+	return FALSE;
+}
+
 BOOL IOControl(HANDLE hFile,
 	DWORD dwCommand,
 	DWORD dwInputLen,

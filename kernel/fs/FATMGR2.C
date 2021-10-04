@@ -179,17 +179,21 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 		goto __TERMINAL;
 	}
 
-	/* Initialize the FAT32 extension object,pFat32Fs. */
+	/* 
+	 * Initialize the FAT32 extension object,pFat32Fs. 
+	 * get_unaligned routines should be used to make the code
+	 * portable.
+	 */
 	pFat32Fs->dwAttribute = FILE_SYSTEM_TYPE_FAT32;
 	pFat32Fs->SectorPerClus = pStart[BPB_SecPerClus];
-	pFat32Fs->wReservedSector = *(WORD*)(pStart + BPB_RsvdSecCnt);
+	pFat32Fs->wReservedSector = __GET_UNALIGNED_U16(pStart + BPB_RsvdSecCnt);
 	pFat32Fs->FatNum = *(pStart + BPB_NumFATs);
-	pFat32Fs->dwFatSectorNum = *(DWORD*)(pStart + BPB_FAT32_FATSz32);
-	pFat32Fs->dwRootDirClusStart = *(DWORD*)(pStart + BPB_FAT32_RootClus);
-	pFat32Fs->wFatInfoSector = *(WORD*)(pStart + BPB_FAT32_FSInfo);
+	pFat32Fs->dwFatSectorNum = __GET_UNALIGNED_U32(pStart + BPB_FAT32_FATSz32);
+	pFat32Fs->dwRootDirClusStart = __GET_UNALIGNED_U32(pStart + BPB_FAT32_RootClus);
+	pFat32Fs->wFatInfoSector = __GET_UNALIGNED_U16(pStart + BPB_FAT32_FSInfo);
 	pFat32Fs->dwFatBeginSector = (DWORD)pFat32Fs->wReservedSector;
 	pFat32Fs->dwDataSectorStart = pFat32Fs->dwFatBeginSector + (pFat32Fs->FatNum * pFat32Fs->dwFatSectorNum);
-	pFat32Fs->dwBytePerSector = (DWORD)(*(WORD*)(pStart + BPB_BytsPerSec));
+	pFat32Fs->dwBytePerSector = __GET_UNALIGNED_U16(pStart + BPB_BytsPerSec);
 	pFat32Fs->dwClusterSize = pFat32Fs->dwBytePerSector * pFat32Fs->SectorPerClus;
 	pFat32Fs->pFileList = NULL;
 
@@ -207,29 +211,31 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 	}
 
 	/* Check the partition type, only FAT32 is supported. */
-	wRootEntryCnt = *(WORD*)(pStart + BPB_RootEntCnt);
+	wRootEntryCnt = __GET_UNALIGNED_U16(pStart + BPB_RootEntCnt);
 	wRootEntryCnt *= 32;
 	wRootEntryCnt += (WORD)pFat32Fs->dwBytePerSector - 1;
 	/* Get root directory's sector num. */
 	RootDirSector = wRootEntryCnt / (WORD)pFat32Fs->dwBytePerSector;
 
 	/* According FAT file system specification. */
-	if (*(WORD*)(pStart + BPB_FATSz16) != 0)
+	if (__GET_UNALIGNED_U16(pStart + BPB_FATSz16) != 0)
 	{
-		FATSz = (DWORD)(*(WORD*)(pStart + BPB_FATSz16));
+		FATSz = __GET_UNALIGNED_U16(pStart + BPB_FATSz16);
 	}
 	else
 	{
-		FATSz = *(DWORD*)(pStart + BPB_FAT32_FATSz32);
+		FATSz = __GET_UNALIGNED_U32(pStart + BPB_FAT32_FATSz32);
 	}
 
-	if (*(WORD*)(pStart + BPB_TotSec16) != 0)
+	if (__GET_UNALIGNED_U16(pStart + BPB_TotSec16) != 0)
 	{
-		TotSec = (DWORD)(*(WORD*)(pStart + BPB_TotSec16));
+		TotSec = __GET_UNALIGNED_U16(pStart + BPB_TotSec16);
+		pFat32Fs->total_sectors = TotSec;
 	}
 	else
 	{
-		TotSec = *(DWORD*)(pStart + BPB_TotSec32);
+		TotSec = __GET_UNALIGNED_U32(pStart + BPB_TotSec32);
+		pFat32Fs->total_sectors = TotSec;
 	}
 
 	/* Get the data sector number. */
@@ -238,6 +244,7 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 	DataSec -= RootDirSector;
 	/* Get the total cluster counter. */
 	CountOfCluster = DataSec / pFat32Fs->SectorPerClus;
+	pFat32Fs->total_clusters = CountOfCluster;
 
 	/* Can not support FAT12/FAT16 yet. */
 	if (CountOfCluster < 4085)
