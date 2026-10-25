@@ -1,2 +1,0 @@
-﻿  time.c
-d:\hellox\v190\hellox_os\hxlib\time.c(237): warning C4013: 'GetSystemTime' undefined; assuming extern returning int

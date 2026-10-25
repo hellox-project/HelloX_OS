@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include "fsstr.h"
+#include "blkcache.h"
 #include "fat32.h"
 
 #ifdef __CFG_SYS_DDF
@@ -82,27 +83,28 @@ DWORD FatDeviceCreate(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev,
 	pszFileName = (CHAR*)lpDrcb->lpInputBuffer;
 	if (!GetPathName(pszFileName, DirName, FileName))
 	{
-		return FALSE;
+		goto __TERMINAL;
 	}
 	/* Try to open the parent directory. */
 	if (!GetDirEntry((__FAT32_FS*)pFatDevice->lpDevExtension, 
 		DirName, &DirShortEntry, NULL, NULL, NULL))
 	{
-		PrintLine("Get parent dir fail.");
-		return FALSE;
+		_hx_printf("[%s]get parent dir fail\r\n", __func__);
+		goto __TERMINAL;
 	}
 	if (!(DirShortEntry.FileAttributes & FILE_ATTR_DIRECTORY))
 	{
-		PrintLine("Not a valid dir entry.");
-		return FALSE;
+		_hx_printf("[%s]Not a valid dir\r\n", __func__);
+		goto __TERMINAL;
 	}
 	dwDirCluster = DirShortEntry.wFirstClusHi;
 	dwDirCluster <<= 16;
 	dwDirCluster += DirShortEntry.wFirstClusLow;
 
-	if (!CreateFatFile((__FAT32_FS*)pFatDevice->lpDevExtension, dwDirCluster, FileName, 0))
+	if (!CreateFatFile((__FAT32_FS*)pFatDevice->lpDevExtension, 
+		dwDirCluster, FileName, 0))
 	{
-		_hx_printf("%s:failed to create file.\r\n", __func__);
+		_hx_printf("[%s]:failed to create file.\r\n", __func__);
 		goto __TERMINAL;
 	}
 
@@ -111,7 +113,11 @@ __TERMINAL:
 	return dwResult;
 }
 
-/* Write data into the specified file,from current location. */
+/* 
+ * Write data into the specified file,from 
+ * current location. The target file object
+ * must be opened.
+ */
 DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 	__COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
 {
@@ -163,13 +169,13 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 		goto __TERMINAL;
 	}
 
-	/* 
-	 * Read current cluster into memory, since the 
+	/*
+	 * Read current cluster into memory, since the
 	 * start position of writting may not begin from
 	 * start of cluster, the data between cluster start
 	 * and writting start should be preserved.
 	 */
-	if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition, dwSector, 
+	if (!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition, dwSector,
 		pFat32Fs->SectorPerClus, pClusBuffer))
 	{
 		goto __TERMINAL;
@@ -229,9 +235,9 @@ DWORD FatDeviceWrite(__COMMON_OBJECT* lpDrv,
 				goto __TERMINAL;
 			}
 		}
-		/* 
-		 * Adjust the buffer position and 
-		 * local control variables. 
+		/*
+		 * Adjust the buffer position and
+		 * local control variables.
 		 */
 		pBuffer += dwOnceSize;
 		dwWritten += dwOnceSize;

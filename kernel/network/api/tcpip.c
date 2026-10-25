@@ -99,6 +99,7 @@ tcpip_thread(void *arg)
 		/* wait for a message, timeouts are processed while waiting */
 		sys_timeouts_mbox_fetch(&mbox, (void **)&msg);
 		LOCK_TCPIP_CORE();
+		BUG_ON(NULL == msg);
 		switch (msg->type) {
 #if LWIP_NETCONN
 		case TCPIP_MSG_API:
@@ -270,9 +271,9 @@ tcpip_thread(void *arg)
 #endif /* LWIP_TCPIP_TIMEOUT */
 
 		default:
-			LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: invalid message: %d\n", msg->type));
-			_hx_printf("[%s]invalid message[%d]\r\n", __func__, msg->type);
-			LWIP_ASSERT("tcpip_thread: invalid message", 0);
+			LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: invalid message [%d]\n", msg->type));
+			_hx_printf("[%s]Invalid message[%d]\r\n", __func__, msg->type);
+			LWIP_ASSERT("tcpip_thread: invalid message\r\n", 0);
 			break;
 		}
 	}
@@ -588,6 +589,7 @@ err_t
 tcpip_apimsg(struct api_msg *apimsg)
 {
 	struct tcpip_msg msg;
+	u32_t wait_result = 0;
 #ifdef LWIP_DEBUG
 	/* catch functions that don't set err */
 	apimsg->msg.err = ERR_VAL;
@@ -597,6 +599,14 @@ tcpip_apimsg(struct api_msg *apimsg)
 		msg.type = TCPIP_MSG_API;
 		msg.msg.apimsg = apimsg;
 		sys_mbox_post(&mbox, &msg);
+		/*
+		 * The op_completed semaphore must not be
+		 * destroyed before the message is processed, other
+		 * wise will lead tcp/ip thread crash,since
+		 * the msg is put into message box of tcpip thread,
+		 * but is released before processed by tcpip thread.
+		 */
+		BUG_ON(!sys_sem_valid(&apimsg->msg.conn->op_completed));
 		sys_arch_sem_wait(&apimsg->msg.conn->op_completed, 0);
 		return apimsg->msg.err;
 	}

@@ -47,6 +47,7 @@ typedef struct tag__DISPLAY_BUFFER_MANAGER {
 	/* Operation routines. */
 	BOOL (*Initialize)();
 	int (*PutChar)(char disp_char);
+	int (*DelChar)();
 	int (*PutString)(const char* disp_string, int length);
 	int (*GetBuffer)(char* buffer, int buffer_len, int* start);
 	int (*GetBufferBlock)(char* buffer, int buffer_len, int *start, unsigned long timeout);

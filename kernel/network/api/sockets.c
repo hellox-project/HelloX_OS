@@ -705,9 +705,7 @@ int lwip_recvfrom(int s, void *mem, size_t len, int flags, struct sockaddr *from
 #endif /*  SOCKETS_DEBUG */
       }
     }
-
-
-
+	
     /* If we don't peek the incoming message... */
     if ((flags & MSG_PEEK) == 0) 
 	{
@@ -2358,6 +2356,244 @@ lwip_fcntl(int s, int cmd, int val)
     break;
   }
   return ret;
+}
+
+/* 
+ * Diagnostic facilities, show out all sockets 
+ * and their detail info. 
+ * Invoked by socklist command under network app.
+ * NOTE:
+ *   ALL THESE ROUTINES HAVE ISSUE THAT ACCESSING
+ *   SOCKET DATA STRUCTURES WITHOUT EXCLUSIVE, I.E,
+ *   THE SOCKET DATA STRUCTURES ARE ALLOCATED AND
+ *   RELEASED IN TCP/IP THREAD, BUT THESE ROUTINES
+ *   RUN IN SHELL THREAD, WITHOUT SYNCHRONIZATION.
+ *   IT MAY LEAD SYSTEM CRASH IN EXTREAM CASE.
+ *
+ *   MAY USE TCP/IP API MESSAGE MECHANISM TO SOLVE
+ *   IT.
+ */
+/* Return TCP state string. */
+const char* tcp_state_string(enum tcp_state state)
+{
+	switch (state)
+	{
+	case CLOSED:
+		return "closed";
+	case LISTEN:
+		return "listen";
+	case SYN_SENT:
+		return "syn_sent";
+	case SYN_RCVD:
+		return "syn_rcvd";
+	case ESTABLISHED:
+		return "established";
+	case FIN_WAIT_1:
+		return "fin_wait_1";
+	case FIN_WAIT_2:
+		return "fin_wait_2";
+	case CLOSE_WAIT:
+		return "close_wait";
+	case CLOSING:
+		return "closing";
+	case LAST_ACK:
+		return "last_ack";
+	case TIME_WAIT:
+		return "time_wait";
+	default:
+		BUG_ON(TRUE);
+	}
+	return NULL;
+}
+
+#if 0
+/* Show one socket. */
+static void show_sock_detail(struct lwip_sock* pSock, int sock_num)
+{
+	struct netconn* net_conn = NULL;
+	struct tcp_pcb* tp = NULL;
+	__MAIL_BOX* pMailbox = NULL;
+
+	BUG_ON(NULL == pSock);
+	net_conn = pSock->conn;
+	BUG_ON(NULL == net_conn);
+	_hx_printf("Socket[%d] info:\r\n", sock_num);
+	/* Show detail according connection type. */
+	switch (net_conn->type)
+	{
+	case NETCONN_INVALID:
+		/* Invalid connection. */
+		_hx_printf("  Invalid netconn.\r\n");
+		break;
+	case NETCONN_TCP:
+		_hx_printf("  type: TCP, state: %d\r\n", net_conn->state);
+		tp = net_conn->pcb.tcp;
+		BUG_ON(NULL == tp);
+		_hx_printf("  Port: %d/%d, flags: 0x%X, tcp state: %s\r\n",
+			tp->local_port,
+			tp->remote_port,
+			tp->flags,
+			tcp_state_string(tp->state));
+		_hx_printf("  MSS: %d, cwnd: %d, ssthresh: %d\r\n",
+			tp->mss,
+			tp->cwnd,
+			tp->ssthresh);
+		_hx_printf("  Keep idle: %d, keep intvl: %d, keep cnt: %d, sent: %d\r\n",
+			tp->keep_idle,
+			tp->keep_intvl,
+			tp->keep_cnt,
+			tp->keep_cnt_sent);
+		break;
+	case NETCONN_UDP:
+		break;
+	case NETCONN_UDPLITE:
+		break;
+	case NETCONN_UDPNOCHKSUM:
+		break;
+	case NETCONN_RAW:
+		break;
+	default:
+		break;
+	}
+
+	/* Show out the recv mailbox's info. */
+	pMailbox = (__MAIL_BOX*)net_conn->recvmbox;
+	if (pMailbox)
+	{
+		pMailbox->ShowInfo((__COMMON_OBJECT*)pMailbox);
+	}
+}
+#endif
+
+/* 
+ * Show one socket, run in tcp/ip thread context. 
+ * Use the err contains sock number, and use the netbuf
+ * pointer(msg.msg.b) transfers struct lwip_sock.
+ */
+static void show_sock_detail(struct api_msg_msg* msg)
+{
+	struct netconn* net_conn = NULL;
+	struct tcp_pcb* tp = NULL;
+	__MAIL_BOX* pMailbox = NULL;
+	struct lwip_sock* pSock = (struct lwip_sock*)msg->msg.b;
+	int sock_num = msg->err;
+
+	BUG_ON(NULL == pSock);
+	net_conn = pSock->conn;
+	BUG_ON(NULL == net_conn);
+	_hx_printf("Socket[%d] info:\r\n", sock_num);
+	/* Show detail according connection type. */
+	switch (net_conn->type)
+	{
+	case NETCONN_INVALID:
+		/* Invalid connection. */
+		_hx_printf("  Invalid netconn.\r\n");
+		break;
+	case NETCONN_TCP:
+		_hx_printf("  type: TCP, state: %d\r\n", net_conn->state);
+		_hx_printf("  last err code: %d\r\n", net_conn->last_err);
+		tp = net_conn->pcb.tcp;
+		if (NULL == tp)
+		{
+			/* 
+			 * The TCP connection may disconnect, and 
+			 * the corresponding PCB maybe released.
+			 * The netconn is still exist in this case.
+			 */
+			_hx_printf("  TCP connection [DISCONNECTED]\r\n");
+			break;
+		}
+		/* Fall through. */
+		_hx_printf("  Remote host: %s, ", 
+			inet_ntoa(tp->remote_ip));
+		_hx_printf("local host: %s\r\n",
+			inet_ntoa(tp->local_ip));
+		_hx_printf("  Port: %d/%d, flags: 0x%X, tcp state: %s\r\n",
+			tp->local_port,
+			tp->remote_port,
+			tp->flags,
+			tcp_state_string(tp->state));
+		_hx_printf("  MSS: %d, cwnd: %d, ssthresh: %d\r\n",
+			tp->mss,
+			tp->cwnd,
+			tp->ssthresh);
+		_hx_printf("  Keep idle: %d, keep intvl: %d, keep cnt: %d, sent: %d\r\n",
+			tp->keep_idle,
+			tp->keep_intvl,
+			tp->keep_cnt,
+			tp->keep_cnt_sent);
+		break;
+	case NETCONN_UDP:
+		break;
+	case NETCONN_UDPLITE:
+		break;
+	case NETCONN_UDPNOCHKSUM:
+		break;
+	case NETCONN_RAW:
+		break;
+	default:
+		break;
+	}
+
+	/* Show out the recv mailbox's info. */
+	pMailbox = (__MAIL_BOX*)net_conn->recvmbox;
+	if (pMailbox)
+	{
+		pMailbox->ShowInfo((__COMMON_OBJECT*)pMailbox);
+	}
+
+	/* Ack the message. */
+	TCPIP_APIMSG_ACK(msg);
+}
+
+/* Print out one sock's info, run in tcp/ip thread context. */
+static void show_sock(struct lwip_sock* sock, int sock_num)
+{
+	struct api_msg msg;
+	msg.function = show_sock_detail;
+	msg.msg.err = sock_num;
+	msg.msg.msg.b = (struct netbuf*)sock;
+	msg.msg.conn = sock->conn;
+	tcpip_apimsg(&msg);
+}
+
+/* Command handler,run in CORE tcp/ip thread. */
+void sock_list(int sock_num)
+{
+	struct lwip_sock* sock = NULL;
+	//int sock_num = msg->err;
+
+	if (sock_num == -1)
+	{
+		/* Show all sockets. */
+		for (int i = 0; i < NUM_SOCKETS; i++)
+		{
+			sock = get_socket(i);
+			if (sock)
+			{
+				show_sock(sock, i);
+			}
+		}
+		return;
+	}
+
+	if (sock_num >= NUM_SOCKETS)
+	{
+		/* Out of range. */
+		_hx_printf("Socket out of range[max: %d]\r\n",
+			(NUM_SOCKETS - 1));
+		return;
+	}
+
+	/* Show one specific socket. */
+	sock = get_socket(sock_num);
+	if (NULL == sock)
+	{
+		_hx_printf("No socket[%d] found.\r\n", sock_num);
+		return;
+	}
+	show_sock(sock, sock_num);
+	return;
 }
 
 #endif /* LWIP_SOCKET */

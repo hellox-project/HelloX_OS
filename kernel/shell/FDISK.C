@@ -13,11 +13,12 @@
 //    Extra comment             : 
 //***********************************************************************/
 
-#include "StdAfx.h"
-#include "kapi.h"
-#include "string.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <StdAfx.h>
+#include <kapi.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <blkcache.h>
 
 #include "shell.h"
 #include "fdisk.h"
@@ -309,12 +310,17 @@ static DWORD CommandParser(LPSTR lpszCmdLine)
 /* Entry point of fdisk tool. */
 unsigned long fdiskEntry(LPVOID pParam)
 {
-	/* Allocate MBR buffer. */
-	MbrControlBlock.pMbrBuffer = (unsigned char*)_hx_malloc(512);
+	/* Allocate MBR buffer at first. */
+	if (NULL == MbrControlBlock.pMbrBuffer)
+	{
+		MbrControlBlock.pMbrBuffer = (unsigned char*)_hx_malloc(512);
+	}
 	if (NULL == MbrControlBlock.pMbrBuffer)
 	{
 		return SHELL_CMD_PARSER_TERMINAL;
 	}
+
+	/* Clear mbr buffer's content. */
 	memset(MbrControlBlock.pMbrBuffer, 0, 512);
 
 	return Shell_Msg_Loop(FDISK_PROMPT_STR, CommandParser, QueryCmdName);	
@@ -403,15 +409,21 @@ static DWORD disklist(__CMD_PARA_OBJ* pcpo)
 /* Show out a partition object. */
 static VOID DumpPartDev(__DEVICE_OBJECT* pPartDev)
 {
-	__PARTITION_EXTENSION* ppe = (__PARTITION_EXTENSION*)pPartDev->lpDevExtension;
+	__PARTITION_EXTENSION* ppe = NULL;
 	CHAR Buffer[128];
 
-	_hx_sprintf(Buffer,"    %16s    %12d    %12d    %8X",
+	BUG_ON(NULL == pPartDev);
+	ppe = (__PARTITION_EXTENSION*)pPartDev->lpDevExtension;
+	BUG_ON(NULL == ppe);
+
+	_hx_sprintf(Buffer, "    %16s    %12d    %12d    %8X",
 		pPartDev->DevName,
 		ppe->dwStartSector,
 		ppe->dwSectorNum,
 		ppe->PartitionType);
 	PrintLine(Buffer);
+
+	return;
 }
 
 static DWORD pdevlist(__CMD_PARA_OBJ* pcpo)
@@ -504,7 +516,7 @@ static unsigned long use(__CMD_PARA_OBJ* pCmdObj)
 		0, NULL);
 	if(NULL == MbrControlBlock.pCurrentDisk)
 	{
-		_hx_printf("  Can not open disk.\r\n");
+		_hx_printf("  Can not open disk[%s].\r\n", disk_name);
 		return SHELL_CMD_PARSER_SUCCESS;
 	}
 

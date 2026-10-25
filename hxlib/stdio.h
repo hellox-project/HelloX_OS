@@ -57,16 +57,30 @@ typedef unsigned int     size_t;
 
 int _hx_sprintf(char* buf,const char* fmt,...);
 int _hx_printf(const char* fmt,...);
+int _hx_fprintf(void* stream, const char* fmt, ...);
 int _hx_vsprintf(char *buf, const char *fmt, va_list args);
 int _hx_vfprintf(void* stream,const char* fmt,va_list args);
 
 int _hx_snprintf(char* buf,size_t n,const char* fmt,...);
+
+/* IO streams. */
+#ifndef stderr 
+#define stderr 0
+#endif
 
 #define TAB_SPACE_NUM 8  //How many space in a tab key.
 
 //Simulate standard printf routine.
 #ifndef printf
 #define printf _hx_printf
+#endif
+
+#ifndef fprintf
+#define fprintf _hx_fprintf
+#endif
+
+#ifndef vsprintf
+#define vsprintf _hx_vsprintf
 #endif
 
 //Simulate standard sprintf routine.
@@ -88,5 +102,8 @@ int _hx_snprintf(char* buf,size_t n,const char* fmt,...);
  *  sscanf(buf,fmt,va_alist)
  */
 int sscanf(const char *buf, const char *fmt, ...);
+
+/* Get inputs. */
+int getchar();
 
 #endif //__STDIO_H__

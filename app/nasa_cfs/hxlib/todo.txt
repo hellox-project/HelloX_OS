@@ -1,0 +1,83 @@
+DONE:
+1. Port hellox.h/hellox.c files into this project;
+2. Port sockets and network files into this project;
+3. ptmalloc ported into this project;
+4. IO.C/IO.H revised and pass the compiling;
+2. Port cJSON into this project; --OK
+3. Compare with examapp/ forlder, port IO, regexp, wildmask, and other tools into this project; --OK
+6. Port atox.c/.h into this project; --OK
+7. port stdio.c to support 64 bits integer; --OK
+8. Revise VirtualAlloc in ptmalloc.c to support allocate from heap; --OK
+. Implement getsockname and getsockpeer routines; --OK
+. Test getsockname and getsockpeer routines; --OK
+. Implement GetSystemTime routine, and revise the time.c to work; --OK
+
+TODO:
+. Implement recv/send/read/write.. routines in socket;
+. Use handle mechanism to fit I/O and socket system calls;
+
+20240717:
+1. Implement the strftime routine, pass compiling; --OK
+2. Implement the fcntl.h file, make sure server.c/handles.c pass compilation;
+3. stderr and fprintf should be implemented porperly;
+4. Test the time function;
+5. Should implement: splice, read(socket, file), fork, lseek/open/access,...
+
+20240808:
+1. ftp_retr and ftp_stor routines are commented off to pass compiling; fork() in server.c is commented off also;
+2. Implement the getcwd() routine; --OK
+3. Implement the dprintf routine; --OK
+4. Replace fork() with create thread;
+5. Launch testing and debugging;
+
+20240826:
+1. Debugging the TlsAlloc/Free/Get/Set routines;
+2. Implement the pthread.c sources;
+3. Check the lightFTP's source code, find the more GAPs;
+4. Implement interfaces of gnutls_xxxx routines;
+5. Port lightFTP code into hxlib;
+6. Debugging the lightFTP;
+
+20240929:
+1. Should recovey the SKIP_PASS_AUTH macro and debugging the config file function;
+2. C: is not a available directory when using stat, but c:\ is, should TS it;
+3. Use strncpy routine to combine full path in List command, should revise the file_effective_path routine;
+4. Thread auto cleaning up functions, find a solution in this holiday;
+5. 
+
+20240922-TEST RESULT:
+1. dir command sames OK;
+2. get command sames OK, with speed is very low;
+3. put command could put file but with exception close:
+   3.1 File is saved OK, but with connection close;
+   3.2 Put speed is normal, very fast;
+   3.3 Should exame the difference between get and put, to resolve the slow of getting;
+4. Testing sequence: ftp->pwd->dir->get->put(nok)...
+5. Start testing after holiday:
+   1) Load VM, load ftp server(c:\ftp\hxlib.exe), apply command pwd, dir,...;
+   2) Put a local file to server, observe the disconnection error;
+   3) Fix the disconnection error, and go on other testing;
+   4) Apply pthread auto-exit mechanism, if got in this holiday; --OK
+   5) Should avoid using "&" when loadapp, since it will be interpretted
+      as config file name;
+   6) Should delete the "&" from command line when xfer to application;
+   7) GetCurrentThread returns the kernel thread's object, not a handle. But
+      DestroyUserThread uses handle as input, should solve it; --OK
+   8) 
+
+Auto release of thread: -- ALL OK
+1. AddRef when CreateThread is execute ready;
+2. DestroyObject at the end of KernelThreadClean, __KilledThreadClean;
+3. DestroyUserThread() at the end of pthread_detach() routine;
+4. Implement the saving of current handle into TLS, of pthread;
+5. Implement the pthread_self routine, returns current thread's handle,
+   from TLS;
+6. Implement pthread_detach, just call DestroyUserThread using the current
+   thread's handle(from pthread_self);
+
+20241004:
+1. Trouble shooting the issue that FTP server will crash after main thread
+   exit(with 'Q'+Enter pressed);
+2. Trouble shooting the stor command's disconnection of FTP, with thread
+   does not exit(waiting for socket);
+3. Implement a mechanism that let server exit;

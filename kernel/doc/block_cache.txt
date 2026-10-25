@@ -1,0 +1,26 @@
+Block cache design
+Each block cache object is associated with a block storage partition object,
+when partition object is created, then block cache also is created accordingly.
+
+IMPORTANT:
+The block cache uses partition device's block size as sector size, so if the
+block size is 512, it's no problem, but if the partition device's block size
+is not 512(Seldom currently), then there must be issue.
+This issue will be solved in the future.
+
+Link architecture:
+    Partition_Device_object->lpDevExtension is Partition Extension object;
+	Partition_Extenstion_Object->pBlockCache is Block cache object;
+	Block_cache_object->pDevice is Partition Device Object
+
+Create process:
+    Block Storage Driver->Identify disk->Init_Partion or Init_Extension routine,
+	then partion device and partition extension is created, then block cache
+	is created with partition device offered.
+
+Run process:
+    FS code->ReadDiskSector or WriteDiskSector->BlkCacheRead/Write->DiskSectorR/W(
+	use harddisk number or ata_hard_disk object to locate physical disk)
+
+To do next:
+    Optimize block cache using wait queue, instead of one BIG LOCK(MUTEX) object.

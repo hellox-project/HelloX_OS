@@ -206,11 +206,23 @@ LPVOID VirtualAlloc(LPVOID lpDesiredAddr,
 /* Release virtual memory allocated by VirtualAlloc. */
 BOOL VirtualFree(LPVOID lpVirtualAddr)
 {
+	BOOL bResult = FALSE;
+
 	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
 		mov __PARAM_0, lpVirtualAddr
+		lea eax, bResult
+		mov ebp, eax
 		mov eax, SYSCALL_VIRTUALFREE
 		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
 	}
+
+	return bResult;
 }
 
 /* Routines to manipulate file or device. */
@@ -427,8 +439,11 @@ BOOL FlushFileBuffers(HANDLE hFile)
 void ExitThread(int errCode)
 {
 	__asm {
+		push __PARAM_0
+		mov __PARAM_0, errCode
 		mov eax, SYSCALL_PROCESSHALFBOTTOM
 		int SYSCALL_VECTOR
+		pop __PARAM_0
 	}
 }
 

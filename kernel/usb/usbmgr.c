@@ -37,17 +37,16 @@ extern __DRIVER_ENTRY_ARRAY UsbDriverEntryArray[];
 static BOOL CommonInterruptHandler(LPVOID lpESP, LPVOID lpParam)
 {
 	__COMMON_USB_CONTROLLER* pUsbCtrl = (__COMMON_USB_CONTROLLER*)lpParam;
-	if (NULL == pUsbCtrl)
-	{
-		BUG();
-	}
+
+	BUG_ON(NULL == pUsbCtrl);
 	if (NULL == pUsbCtrl->ctrlOps.InterruptHandler)
 	{
-		_hx_printf("Warning: Interrupt is enabled for USB Controller 0x%X but without HANDLER set.\r\n", 
+		_hx_printf("Warning: No intterupt handler for USB Controller [0x%X].\r\n", 
 			pUsbCtrl->pPhysicalDev->dwNumber);
 		return FALSE;
 	}
-	//Process the interrupt by calling controller specific handler.
+
+	/* Invoke controller specific handler. */
 	if (pUsbCtrl->ctrlOps.InterruptHandler((LPVOID)pUsbCtrl))
 	{
 		return TRUE;
@@ -130,9 +129,15 @@ static BOOL UsbMgrInit(__USB_MANAGER* pUsbMgr)
 	return TRUE;
 }
 
-//Create and return a common USB controller object.
-static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,DWORD dwCtrlType,
-	__PHYSICAL_DEVICE* pPhyDev,void* priv)
+/*
+ * Create and return a common USB controller object.
+ * It's used to denote a EHCI/xHCI or OHCI USB
+ * controller.
+ */
+static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,
+	unsigned long dwCtrlType,
+	__PHYSICAL_DEVICE* pPhyDev,
+	void* priv)
 {
 	__COMMON_USB_CONTROLLER* pUsbCtrl = NULL;
 	int i = 0;
@@ -179,10 +184,13 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 	pUsbCtrl->ctrlOps.StopXfer = ops->StopXfer;
 	pUsbCtrl->ctrlOps.DestroyXferDescriptor = ops->DestroyXferDescriptor;
 
-	//Save private data of the user specified.
+	/* Save private data of the user specified. */
 	pUsbCtrl->pUsbCtrl = priv;
 
-	//If physical device is specified,then should establish interrupt mechanism.
+	/*
+	 * If physical device is specified,then should 
+	 * establish interrupt mechanism.
+	 */
 	if (pPhyDev)
 	{
 		for (i = 0; i < MAX_RESOURCE_NUM; i++)
@@ -193,9 +201,10 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(__USB_CONTROLLER_OPERATIONS* ops,D
 				break;
 			}
 		}
-		if (0 == ucInt)  //No interrupt resource is found.
+		/* No interrupt resource is found. */
+		if (0 == ucInt)
 		{
-			debug("%s: Can not find interrupt vector for the USB controller.\r\n", __func__);
+			_hx_printf("%s: No interrupt defined for the USB controller.\r\n", __func__);
 		}
 	}
 	if (ucInt)

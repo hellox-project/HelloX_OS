@@ -208,6 +208,8 @@ VOID  CD_DelChar(INT nDelMode)
 #ifdef __I386__
 	VGA_DelChar(nDelMode);
 #endif
+	/* Delete from display buffer. */
+	DispBufferManager.DelChar();
 }
 
 /* Clear the whole screen. */

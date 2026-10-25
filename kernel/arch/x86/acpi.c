@@ -261,7 +261,9 @@ static struct ACPISDTHeader* LocateSDT(char* sdt_type)
 		pRSDT = (struct RSDT*)pRSDP->RsdtAddress;
 		if (!IN_SYSINITIALIZATION())
 		{
-			pRSDT = VirtualAlloc(pRSDT, 1024 * 1024, VIRTUAL_AREA_ALLOCATE_IO, VIRTUAL_AREA_ACCESS_RW,
+			pRSDT = VirtualAlloc(pRSDT, 1024 * 1024, 
+				VIRTUAL_AREA_ALLOCATE_IO, 
+				VIRTUAL_AREA_ACCESS_RW,
 				"XSDT");
 			if (NULL == pRSDT)
 			{

@@ -41,4 +41,19 @@ typedef struct _SYSTEM_INFO {
 	WORD wProcessorRevision;
 } SYSTEM_INFO, *LPSYSTEM_INFO, __SYSTEM_INFO;
 
+/*
+ * CPU infomation that can be retrieved by
+ * user application through system call.
+ */
+typedef struct tag__CPU_INFO {
+	int cbSize;
+	int processor_num;
+	int processor_id;
+	uint64_t cpuFreq;
+	uint64_t cpuTSC;
+}__CPU_INFO;
+
+/* Get CPU information. */
+BOOL GetCPUInfo(__CPU_INFO* pCpuInfo);
+
 #endif //__SYSINFO_H__

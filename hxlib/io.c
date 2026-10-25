@@ -6,8 +6,116 @@
 #include "hellox.h"
 #include "stdio.h"
 #include "string.h"
+#include "ctype.h"
 #include "errno.h"
 #include "io.h"
+
+/* Hold current application's path and name. */
+char g_current_path[MAX_FILE_NAME_LEN] = { 0 };
+char g_current_name[MAX_FILE_NAME_LEN] = { 0 };
+
+char* getcwd(char* cwd, int cwd_size)
+{
+	int cwd_len = strlen(g_current_path);
+	int to_copy = 0;
+	
+	if (0 == cwd_len)
+	{
+		/* Current path may not saved yet. */
+		return NULL;
+	}
+
+	if (cwd && (cwd_size < cwd_len))
+	{
+		/* Buffer is too short. */
+		return NULL;
+	}
+
+	if (NULL == cwd)
+	{
+		return NULL;
+	}
+
+	/* Copy back path. */
+	to_copy = (cwd_size > MAX_FILE_NAME_LEN) ? MAX_FILE_NAME_LEN : cwd_size;
+	strncpy(cwd, g_current_path, to_copy);
+	return cwd;
+}
+
+/* Remove a empty directory. */
+int rmdir(const char* dir_name)
+{
+	BOOL bResult = RemoveDirectory(dir_name);
+	int last_err = 0;
+
+	if (bResult)
+	{
+		return S_OK;
+	}
+	last_err = (int)GetLastError();
+	return -last_err;
+}
+
+/* 
+ * Helper routine to check if a path name 
+ * is absolute path. 
+ */
+static int is_absolute(const char* path_name)
+{
+	int path_len = 0;
+
+	if (NULL == path_name)
+	{
+		return -1;
+	}
+	path_len = strlen(path_name);
+	if (path_len >= MAX_FILE_NAME_LEN)
+	{
+		return -1;
+	}
+	if (path_len < 2)
+	{
+		return -1;
+	}
+	if (isalpha(path_name[0]) && (path_name[1] == ':'))
+	{
+		return 0;
+	}
+	return -1;
+}
+
+/* Change current directory. */
+int chdir(const char* new_dir)
+{
+	if (NULL == new_dir)
+	{
+		return -EINVAL;
+	}
+	if (0 == is_absolute(new_dir))
+	{
+		/* Replace the current dir. */
+		strncpy(g_current_path, new_dir, MAX_FILE_NAME_LEN);
+		return S_OK;
+	}
+
+	/* Relative path, append it into current one. */
+	int new_path_len = strlen(new_dir);
+	int cur_path_len = strlen(g_current_path);
+	if ((new_path_len + cur_path_len) >= MAX_FILE_NAME_LEN)
+	{
+		return -EINVAL;
+	}
+	if (g_current_path[cur_path_len - 1] == '\\')
+	{
+		/* Append directly. */
+		strcat(g_current_path, new_dir);
+		return S_OK;
+	}
+	/* Append a splitter. */
+	strcat(g_current_path, "\\");
+	strcat(g_current_path, new_dir);
+	return S_OK;
+}
 
  /* Remove the specified file. */
 int remove(const char* name)
@@ -20,9 +128,14 @@ int remove(const char* name)
 }
 
 /* Rename a file name from sn to dn. */
-int rename(const char* sn, const char*  dn)
+int rename(const char* sn, const char* dn)
 {
 	return -EIO;
+}
+
+int chmod(const char* fName, mode_t flags)
+{
+	return S_OK;
 }
 
 int access(const char* name, int m)
@@ -219,8 +332,16 @@ int open(const char* name, int oflag, ...)
 		dwMode = FILE_OPEN_ALWAYS;
 	}
 
-	/* Open the file. */
-	f_handle = CreateFile((LPSTR)filename, dwFlag | dwMode, 0, NULL);
+	//f_handle = CreateFile((LPSTR)filename, dwFlag | dwMode, 0, NULL);
+	/* 
+	 * Just use default flags to open the file. 
+	 * FIX ME:
+	 * Should set the open flags according the user specified,
+	 * and debug each flags combination, since some combination
+	 * may not work under HelloX.
+	 */
+	f_handle = CreateFile((LPSTR)filename, FILE_ACCESS_READWRITE | FILE_OPEN_ALWAYS,
+		0, NULL);
 	if (NULL == f_handle)
 	{
 		_hx_printf("[%s]open file[%s] failed, flag = %d, mode = 0x%X.\r\n",
@@ -420,4 +541,20 @@ int fseek(FILE* stream, long pos, int where)
 long ftell(FILE* stream)
 {
 	return tell((int)stream);
+}
+
+/* Make a new directory. */
+int mkdir(const char* path_name, unsigned short mode)
+{
+	BOOL bResult = FALSE;
+	DWORD dwError = 0;
+
+	bResult = CreateDirectory(path_name, NULL);
+	if (!bResult)
+	{
+		/* Set error information. */
+		dwError = GetLastError();
+		errno = (int)dwError;
+	}
+	return (bResult) ? 0 : -1;
 }

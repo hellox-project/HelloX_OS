@@ -23,6 +23,8 @@
 
 #include "shell.h"
 #include "../appldr/AppLoader.h"
+#include "../arch/x86/bios.h"
+#include "../arch/x86/vesa.h"
 
 //Handler of version command.
 DWORD VerHandler(__CMD_PARA_OBJ* pCmdParaObj)
@@ -211,6 +213,12 @@ unsigned long LoadappHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	strncpy(process_name, (const char*)(pCmdParaObj->Parameter[1]), MAX_THREAD_NAME);
 	process_name[MAX_THREAD_NAME] = 0;
 
+	/* Eleminates the last "&" sign if specified. */
+	if (bBackground)
+	{
+		pCmdParaObj->byParameterNum--;
+	}
+
 	/* Launch a new process to run the module. */
 	pProcess = ProcessManager.CreateProcess(
 		(__COMMON_OBJECT*)&ProcessManager,
@@ -373,15 +381,170 @@ __TERMINAL:
 	return S_OK;
 }
 
-//Handler for GUI command,it only call LoadappHandler by given
-//the GUI module's name and it's start address after loaded into
-//memory.
+/*
+ * We preserve this routine just for kernel debugging.
+ * Please use SwitchToGraphic system call.
+ * 
+ * Switch display mode into graphic.
+ * Procedures as follows:
+ * 1. Invoke BIOS interface __biosSwitchToGraphic, then
+ *    the display will enter GRAPHIC mode and VBE block
+ *    will be stored into __VBE_INFO_START address;
+ * 2. Calculate the frame buffer size and map it into
+ *    line space, could be accessed from user;
+ * 3. Copy the whole VBE memory block into input parameter;
+ * 4. Return the frame buffer's lineary address so that
+ *    user GUI module can access directly;
+ * 5. NULL will be returned in any case of error.
+ * Please be noted the I/O space is maped to kernel space.
+ */
+static LPVOID __SwitchToGraphic(__VBE_INFO* pUserVbeInfo)
+{
+	int disp_mem_sz = 0;
+	LPVOID dispMemAddr = NULL;
+	int pixels = 0, i = 0;
+	__VBE_INFO* pVbeInfo = (__VBE_INFO*)VBE_INFO_START;
+	BOOL bResult = FALSE;
+
+	/* If already in graphic mode then just return. */
+	if (pVbeInfo->IfInGraphic)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Switch controller to graphic mode. */
+	if (!__biosSwitchToGraphic())
+	{
+		goto __TERMINAL;
+	}
+
+	/* Get the display memory's size. */
+	disp_mem_sz = pVbeInfo->ModeInfo.xresolution;
+	disp_mem_sz *= pVbeInfo->ModeInfo.yresolution;
+	disp_mem_sz *= pVbeInfo->ModeInfo.bitsperpixel;
+	disp_mem_sz /= 8;
+
+	/*
+	 * Map display memory.
+	 */
+	dispMemAddr = lpVirtualMemoryMgr->VirtualAlloc(
+		(__COMMON_OBJECT*)lpVirtualMemoryMgr,
+		(LPVOID)pVbeInfo->ModeInfo.physbaseptr,
+		disp_mem_sz,
+		VIRTUAL_AREA_ALLOCATE_IO | VIRTUAL_AREA_ALLOCATE_IOSPACE,
+		VIRTUAL_AREA_ACCESS_RW,
+		"dispmem", NULL);
+	if (NULL == dispMemAddr)
+	{
+		_hx_printf("[%s]can not map display I/O.\r\n", __func__);
+		goto __TERMINAL;
+	}
+
+	/* Copy back the VBE info block. */
+	memcpy(pUserVbeInfo, pVbeInfo, sizeof(__VBE_INFO));
+
+	bResult = TRUE;
+
+__TERMINAL:
+	if (!bResult)
+	{
+		/* Switch to text mode. */
+		__biosSwitchToText();
+
+		/* Release frame buffer. */
+		if (dispMemAddr)
+		{
+			lpVirtualMemoryMgr->VirtualFree(
+				(__COMMON_OBJECT*)lpVirtualMemoryMgr,
+				dispMemAddr);
+		}
+
+		return NULL;
+	}
+
+	BUG_ON(NULL == dispMemAddr);
+	return dispMemAddr;
+}
+
+/* Local helper to test screen in graphic. */
+static void ScreenTest(__VBE_INFO* pVbeInfo, LPVOID dispMemAddr)
+{
+	char* clrPtr = NULL;
+	int pixels = 0, i = 0;
+
+	pixels = pVbeInfo->ModeInfo.xresolution;
+	pixels *= pVbeInfo->ModeInfo.yresolution;
+
+	/* Fill the memory with RED. */
+	clrPtr = dispMemAddr;
+	for (i = 0; i < pixels; i++)
+	{
+		clrPtr[0] = 0xFF;
+		clrPtr[1] = 0;
+		clrPtr[2] = 0;
+		clrPtr += 3;
+	}
+	Sleep(1000);
+
+	/* Fill the memory with GREEN. */
+	clrPtr = dispMemAddr;
+	for (i = 0; i < pixels; i++)
+	{
+		clrPtr[0] = 0;
+		clrPtr[1] = 0xFF;
+		clrPtr[2] = 0;
+		clrPtr += 3;
+	}
+	Sleep(1000);
+
+	/* Fill the memory with BLUE. */
+	clrPtr = dispMemAddr;
+	for (i = 0; i < pixels; i++)
+	{
+		clrPtr[0] = 0;
+		clrPtr[1] = 0;
+		clrPtr[2] = 0xFF;
+		clrPtr += 3;
+	}
+	Sleep(1000);
+
+	return;
+}
+
+/* Switch display mode into graphic. */
 DWORD GUIHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
-	//Set current mode indicator to GRAPHIC.
-	System.ucReserved1 = 1;
-	RunDynamicAppModule("C:\\PTHOUSE\\hcngui.dll",pCmdParaObj);
-	//Restore current display mode to TEXT.
-	System.ucReserved1 = 0;
+	__VBE_INFO vbeInfo;
+	__VBE_INFO* pVbeInfo = &vbeInfo;
+	LPVOID frameBuff = NULL;
+
+	frameBuff = __SwitchToGraphic(&vbeInfo);
+	if (NULL == frameBuff)
+	{
+		_hx_printf("[%s]switch to graphic fail.\r\n", __func__);
+		return 0;
+	}
+
+	ScreenTest(pVbeInfo, frameBuff);
+
+	/* Release IO map memory and switch to text mode. */
+	lpVirtualMemoryMgr->VirtualFree(
+		(__COMMON_OBJECT*)lpVirtualMemoryMgr,
+		frameBuff);
+	__biosSwitchToText();
+
+	/* Show out graphic information. */
+	_hx_printf("Lineary frame buff: 0x%X\r\n", frameBuff);
+	_hx_printf("GraphicNum: 0x%X\r\n", pVbeInfo->GraphicNum);
+	_hx_printf("Frame buffer base: 0x%X\r\n", pVbeInfo->ModeInfo.physbaseptr);
+	_hx_printf("xres/yres: %d/%d\r\n", pVbeInfo->ModeInfo.xresolution,
+		pVbeInfo->ModeInfo.yresolution);
+	_hx_printf("Bytes per s-line: %d\r\n", pVbeInfo->ModeInfo.bytesperscanline);
+	_hx_printf("Disp memory size: %d\r\n",
+		pVbeInfo->ModeInfo.xresolution * pVbeInfo->ModeInfo.yresolution * pVbeInfo->ModeInfo.bitsperpixel / 8);
+	_hx_printf("Controller vendor: [%s]\r\n", 
+		(char*)pVbeInfo->ControllerInfo.oemvendornameptr);
+	_hx_printf("Controller product: [%s]\r\n",
+		(char*)pVbeInfo->ControllerInfo.oemproductnameptr);
 	return S_OK;
 }

@@ -19,7 +19,11 @@ Steps to install HelloX on PC manually:
 	9.5 hellox, main directory of hellox;
 	    9.5.1 hellox\system32, system modules or other files;
  10. Copy the corresponding files under above directories to target from boot device;
- 11. Pull out the USB stick and load PC again, it should boot from HelloX;
+ 11. Enable ftp service for upgrade:
+    11.1 Create ftp directory under C:\;
+	11.2 Copy ftp.exe, ftpdcfg.txt into ftp directory;
+	11.3 Put ftpdcfg.txt under c:\(root) directory, maybe revised future;
+ 12. Pull out the USB stick and load PC again, it should boot from HelloX;
 
 A dedicated application maybe created in future to simplify this procedure.
 
@@ -37,3 +41,14 @@ NOTE!!:
 5. So please carefully consider to enable or disable BIOS IDE in certain platform.
 
 SOLUTION: DO NOT USE ANY BIOS FUNCTION, MAKE USB FUNCTION WORK WELL.
+
+Use UEFI to install:
+1. All system files should be copied into a usb stick;
+2. Boot from UEFI;
+3. USB stick maybe identified as FS0:, first partition of HD
+   maybe identified as FS1:;
+4. Then copy the system files from FS0: to FS1: manully:
+   copy FS0:\oskernl.bin FS1:\oskernl.bin
+   then all other files one by one;
+5. Reboot the system, enter BIOS and set the boot device as HD;
+6. Reboot system;

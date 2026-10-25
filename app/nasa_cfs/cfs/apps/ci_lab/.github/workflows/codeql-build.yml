@@ -1,0 +1,13 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+  pull_request:
+  
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    uses: nasa/cFS/.github/workflows/codeql-reusable.yml@main
+    with: 
+      component-path: apps/ci_lab
+      make: 'make -C build/native/default_cpu1/apps/ci_lab'

@@ -463,10 +463,13 @@ void ResetUsbPort(int index, int port)
 	return;
 }
 
-//Show all USB controller's status register.
+/*
+ * Show all USB controller's status register.
+ */
 void ShowUsbCtrlStatus()
 {
 	__COMMON_USB_CONTROLLER* pCtrl = NULL;
+	__PHYSICAL_DEVICE* phy_dev = NULL;
 
 	int i = 0;
 	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_NUM; i++)
@@ -474,6 +477,13 @@ void ShowUsbCtrlStatus()
 		if (USBManager.CtrlArray[i])
 		{
 			pCtrl = USBManager.CtrlArray[i];
+			_hx_printf("  USB Controller[%d]'s general info:\r\n", i);
+			_hx_printf("    Ctrl type: 0x%X\r\n", pCtrl->dwCtrlType);
+			phy_dev = pCtrl->pPhysicalDev;
+			if (phy_dev)
+			{
+				_hx_printf("    Ctrl name: %s\r\n", phy_dev->strName);
+			}
 			if (NULL == pCtrl->ctrlOps.get_ctrl_status)
 			{
 				continue;

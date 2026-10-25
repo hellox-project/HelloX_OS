@@ -32,13 +32,6 @@ void srand(unsigned long seed);
 //Environment related routine.
 char *_hx_getenv(char *envvar);
 
-//mmap and munmap routine to simulate the Linux API.
-void* mmap(void* start,size_t length,int prot,int flags,int fd,off_t offset);
-int munmap(void* start,size_t length);
-
-//Aligned malloc.
-void* _hx_aligned_malloc(int size, int align);
-
 //Flags to control the mmap routine.
 #define PROT_READ      0x00000001
 #define PROT_WRITE     0x00000002
@@ -90,12 +83,21 @@ gethex(int32_t *vp, char *p, int n);
  */
 double strtod(const char *str, char **endptr);
 
+/* strtoul function. */
+unsigned long strtoul(const char* nptr, char** endptr, int base);
+
 //exit and abort.
 void exit(int state);
 void abort(void);
 
-//Standard C routine,alias of HX version.
+/* Flags for exit. */
+#define EXIT_SUCCESS ( 0)
+#define EXIT_FAILURE (-1)
 
+/* qsort. */
+void qsort(void* a, size_t n, size_t es, int(*cmp)());
+
+//Standard C routine,alias of HX version.
 //#ifndef malloc
 #define malloc _hx_malloc
 //#endif

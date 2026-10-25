@@ -1,9 +1,9 @@
 
 #include "malloc.h" 
 #include <string.h>
+#include <bitscan_AI.h>
 
 /*------------------------------ internal #includes ---------------------- */
-
 #ifdef WIN32
 #pragma warning( disable : 4146 ) /* no "unsigned" warnings */
 #endif /* WIN32 */
@@ -67,14 +67,14 @@ extern void*     sbrk(ptrdiff_t);
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-	LONG __cdecl _InterlockedCompareExchange(LPLONG volatile Dest, LONG Exchange, LONG Comp);
-	LONG __cdecl _InterlockedExchange(LPLONG volatile Target, LONG Value);
+	//LONG __cdecl _InterlockedCompareExchange(LPLONG volatile Dest, LONG Exchange, LONG Comp);
+	//LONG __cdecl _InterlockedExchange(LPLONG volatile Target, LONG Value);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* _M_AMD64 */
-#pragma intrinsic (_InterlockedCompareExchange)
-#pragma intrinsic (_InterlockedExchange)
+//#pragma intrinsic (_InterlockedCompareExchange)
+//#pragma intrinsic (_InterlockedExchange)
 #define interlockedcompareexchange __InterlockedCompareExchange
 #define interlockedexchange __InterlockedExchange
 #endif /* Win32 */
@@ -86,16 +86,16 @@ extern "C" {
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-	unsigned char _BitScanForward(unsigned long *index, unsigned long mask);
-	unsigned char _BitScanReverse(unsigned long *index, unsigned long mask);
+	//unsigned char _BitScanForward(unsigned long *index, unsigned long mask);
+	//unsigned char _BitScanReverse(unsigned long *index, unsigned long mask);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
 #define BitScanForward _BitScanForward
 #define BitScanReverse _BitScanReverse
-#pragma intrinsic(_BitScanForward)
-#pragma intrinsic(_BitScanReverse)
+//#pragma intrinsic(_BitScanForward)
+//#pragma intrinsic(_BitScanReverse)
 #endif /* BitScanForward */
 #endif /* defined(_MSC_VER) && _MSC_VER>=1300 */
 
@@ -224,24 +224,51 @@ static int dev_zero_fd = -1; /* Cached file descriptor for /dev/zero. */
 
 /* Win32 MMAP via VirtualAlloc */
 static FORCEINLINE void* win32mmap(size_t size) {
-	void* ptr = VirtualAlloc(NULL, size, VIRTUAL_AREA_ALLOCATE_ALL, VIRTUAL_AREA_ACCESS_RW, "ptmalloc");
-	//printf("%s:[0x%X] bytes allocated at [0x%X].\r\n", __func__, size, (unsigned long)ptr);
+	void* ptr = VirtualAlloc(NULL, size, 
+		VIRTUAL_AREA_ALLOCATE_ALL | 
+		/* Allocate from user heap. */
+		VIRTUAL_AREA_ALLOCATE_USERHEAP,
+		VIRTUAL_AREA_ACCESS_RW, "ptmalloc");
+
+	/* Debugging. */
+	//printf("[%s]:[%d] bytes allocated at [0x%X].\r\n", __func__, 
+	//	size, (unsigned long)ptr);
+
+	/* Clear the whole memory range. */
+	if (ptr)
+	{
+		memset(ptr, 0, size);
+	}
 	return (ptr != 0) ? ptr : MFAIL;
 }
 
 /* For direct MMAP, use MEM_TOP_DOWN to minimize interference */
 static FORCEINLINE void* win32direct_mmap(size_t size) {
-	//void* ptr = VirtualAlloc(0, size, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN,
-	//	PAGE_READWRITE);
-	void* ptr = VirtualAlloc(NULL, size, VIRTUAL_AREA_ALLOCATE_ALL, VIRTUAL_AREA_ACCESS_RW, "ptmalloc");
-	//printf("%s:[0x%X] bytes allocated at [0x%X].\r\n", __func__, size, (unsigned long)ptr);
+	void* ptr = VirtualAlloc(NULL, size, 
+		VIRTUAL_AREA_ALLOCATE_ALL | 
+		/* Allocate from user heap. */
+		VIRTUAL_AREA_ALLOCATE_USERHEAP,
+		VIRTUAL_AREA_ACCESS_RW, "ptmalloc");
+
+	/* Debugging. */
+	//printf("[%s]:[%d] bytes allocated at [0x%X].\r\n", __func__, 
+	//	size, (unsigned long)ptr);
+
+	/* Clear the whole memory range. */
+	if (ptr)
+	{
+		memset(ptr, 0, size);
+	}
 	return (ptr != 0) ? ptr : MFAIL;
 }
 
 /* This function supports releasing coalesed segments */
 static FORCEINLINE int win32munmap(void* ptr, size_t size) {
 	MEMORY_BASIC_INFORMATION minfo;
-	//printf("%s:ptr = 0x%X, size = 0x%X\r\n", __func__, ptr, size);
+
+	/* Debugging. */
+	//printf("[%s]:release[%d] bytes from[0x%X].\r\n", __func__, size, ptr);
+
 	char* cptr = (char*)ptr;
 	while (size) {
 		if (VirtualQuery(cptr, &minfo, sizeof(minfo)) == 0)

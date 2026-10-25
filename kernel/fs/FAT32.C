@@ -26,13 +26,14 @@
 #include <stdio.h>
 
 #include "fsstr.h"
+#include "blkcache.h"
 #include "fat32.h"
 
 #ifdef __CFG_SYS_DDF
 
 //Global variables used by FAT32.
-static __DRIVER_OBJECT*    g_Fat32Driver  = NULL;
-static __DEVICE_OBJECT*    g_Fat32Object  = NULL;
+static __DRIVER_OBJECT* g_Fat32Driver  = NULL;
+static __DEVICE_OBJECT* g_Fat32Object  = NULL;
 
 //A helper routine to dump out a FAT32 file system's global information.
 static VOID DumpFat32(__FAT32_FS* pFat32Fs)
@@ -83,10 +84,15 @@ static BOOL GetVolumeLbl(__FAT32_FS* pFat32Fs,CHAR* pVolumeLbl)
 		{
 			goto __TERMINAL;
 		}
+
+		/*
+		 * Load device sector using the direct version, since
+		 * the block cache may not initialized yet.
+		 */
 		if(!ReadDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
 			dwSector,
 			pFat32Fs->SectorPerClus,
-			pBuffer))  //Can not read the appropriate sector(s).
+			pBuffer))
 		{
 			_hx_sprintf(Buffer," Read sector failed in GetVolumeLbl,Info: %d %d %d %d %d %d %d ",
 				dwCurrClus,
@@ -174,8 +180,9 @@ static __FAT32_FS* InitFat32(__COMMON_OBJECT* pPartObj)
 	}
 	pFatObject->pPartition = pPartObj;
 	pFatObject->total_sectors = pPartExt->dwSectorNum;
+
 	/* Initialize the FAT32 file system. */
-	if(!Fat32Init(pFatObject,buff))
+	if(!Fat32Init(pFatObject, buff))
 	{
 		_hx_printf("[%s]Init FAT fs fail.\r\n", __func__);
 		RELEASE_OBJECT(pFatObject);
@@ -214,33 +221,55 @@ static BOOL CheckPartition(__COMMON_OBJECT* lpThis,
 		/* Not a FAT32 partition. */
 		goto __TERMINAL;
 	}
+
 	pFatObject = InitFat32(pPartitionObject);
 	if(!pFatObject)
 	{
 		goto __TERMINAL;
 	}
 
-	/* Create fat32 device object. */
+	/* 
+	 * Create fat32 device object, construct it's 
+	 * device name first.
+	 */
 	StrCpy(FAT32_DEVICE_NAME_BASE,DevName);
 	nIndex = StrLen(FAT32_DEVICE_NAME_BASE);
-	/* Construct device name. */
 	DevName[nIndex - 1] += nNameIndex;
 	nNameIndex += 1;
+
+	/* 
+	 * Create the corresponding device object, 
+	 * it's a FAT device instance. The block size
+	 * and r/w maximal size are set using fat's
+	 * cluster size.
+	 */
 	pFatDevice = IOManager.CreateDevice((__COMMON_OBJECT*)&IOManager,
 		DevName,
 		DEVICE_TYPE_FAT32,
-		/* FAT device object can not be accessed directly. */
-		DEVICE_BLOCK_SIZE_INVALID,
-		DEVICE_BLOCK_SIZE_INVALID,
-		DEVICE_BLOCK_SIZE_INVALID,
-		(LPVOID)pFatObject,
+		pFatObject->dwClusterSize, /* Cluster's size as block size. */
+		DEVICE_BLOCK_SIZE_ANY,     /* Can access any size. */
+		DEVICE_BLOCK_SIZE_ANY,
+		(LPVOID)pFatObject,        /* Fat object as device extension. */
 		((__DEVICE_OBJECT*)lpThis)->lpDriverObject);
 	if(NULL == pFatDevice)
 	{
 		goto __TERMINAL;
 	}
 
-	/* Register the file system into kernel. */
+	/* 
+	 * Block cache object could be created here,
+	 * and should be stored into fat object structure.
+	 * The associated device object with block cache
+	 * is the fat device object.
+	 * When read/write sector in block cache, it should
+	 * use the partition object as device.
+	 */
+
+	/* 
+	 * Register the file system device into kernel,
+	 * so the kernel could know this file system and
+	 * allocate a FS identifier('C', 'D', etc) to it.
+	 */
 	IOManager.AddFileSystem((__COMMON_OBJECT*)&IOManager,
 		(__COMMON_OBJECT*)pFatDevice,
 		pFatObject->dwAttribute,
@@ -384,7 +413,8 @@ static __COMMON_OBJECT* FatDeviceOpen(__COMMON_OBJECT* lpDrv,
 	__ATOMIC_INCREASE(&NameIndex);
 	pFileDevice = (__COMMON_OBJECT*)IOManager.CreateDevice((__COMMON_OBJECT*)&IOManager,
 		FileDevName,
-		DEVICE_TYPE_FILE, 1,
+		DEVICE_TYPE_FILE, 
+		1, 
 		DEVICE_BLOCK_SIZE_ANY,
 		DEVICE_BLOCK_SIZE_ANY,
 		pFat32File,
@@ -792,17 +822,44 @@ __TERMINAL:
 	return dwFileAttributes;
 }
 
-//Implementation of GetFileSize.
-/*static DWORD GetFileSize(__COMMON_OBJECT* lpThis,
-		                 __COMMON_OBJECT* pFileHandle,
-						 DWORD* pdwSizeHigh)
+/* Get a file object's full attr. */
+static BOOL _fat32GetFileAttributesEx(__COMMON_OBJECT* lpDev, 
+	LPCSTR  pszFileName,
+	GET_FILEEX_INFO_LEVELS fInfoLevel,
+	LPVOID lpFileInformation)
 {
-	__FAT32_FS*         pFat32Fs      = NULL;
-	
-	pFat32Fs = (__FAT32_FS*)(((__DEVICE_OBJECT*)lpThis)->lpDevExtension);
+	__FAT32_FS* pFat32Fs = NULL;
+	CHAR FileName[MAX_FILE_NAME_LEN];
+	__FAT32_SHORTENTRY ShortEntry;
+	FILE_ATTRIBUTE_DATA* pAttrData = (FILE_ATTRIBUTE_DATA*)lpFileInformation;
+	unsigned long errors = 0;
+	BOOL bResult = FALSE;
 
-	return pFat32Fs->pFileList->dwFileSize;
-}*/
+	if ((NULL == pszFileName) || (NULL == lpDev) || (NULL == lpFileInformation))
+	{
+		goto __TERMINAL;
+	}
+	pFat32Fs = (__FAT32_FS*)(((__DEVICE_OBJECT*)lpDev)->lpDevExtension);
+	StrCpy((CHAR*)pszFileName, FileName);
+	ToCapital(FileName);
+	if (!GetDirEntry(pFat32Fs, &FileName[0], &ShortEntry, NULL, NULL, &errors))
+	{
+		SetLastError(errors);
+		goto __TERMINAL;
+	}
+
+	/* Convert the file entry info to result. */
+	pAttrData->dwFileAttributes = ShortEntry.FileAttributes;
+	pAttrData->nFileSizeHigh = 0;
+	pAttrData->nFileSizeLow = ShortEntry.dwFileSize;
+	/* Time will be processed later. */
+
+	/* Commit success. */
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
+}
 
 //Implementation of _RemoveDirectory.
 static BOOL _RemoveDirectory(__COMMON_OBJECT* lpDev,
@@ -819,14 +876,22 @@ static BOOL _RemoveDirectory(__COMMON_OBJECT* lpDev,
 	return DeleteFatDir(pFat32Fs,pszFileName);
 }
 
-/* Set the end flag of a file object. */
+/* 
+ * Truncate the file from current position. 
+ * The current position should be set by SetFilePointer
+ * or read/write operations.
+ * The function set file's length as current, release
+ * all cluster(s) behind current position and mark the
+ * next cluster as EOC.
+ */
 static BOOL _SetEndOfFile(__COMMON_OBJECT* lpDev)
 {
 	__FAT32_FS* pFat32Fs = NULL;
 	__FAT32_FILE* pFat32File = NULL;
 	BYTE* pClusBuffer = NULL;
 	__FAT32_SHORTENTRY* pfse = NULL;
-	DWORD dwNextCluster = 0, dwSector = 0;
+	DWORD logic_target = 0, phy_clus = 0, phy_next = 0;
+	DWORD dwSector = 0;
 	BOOL bSetOk = FALSE;
 
 
@@ -840,7 +905,7 @@ static BOOL _SetEndOfFile(__COMMON_OBJECT* lpDev)
 		goto __TERMINAL;
 	}
 
-	/* Update the file's directory entry. */
+	/* Load the parent directory's data cluster. */
 	dwSector = GetClusterSector(pFat32Fs, pFat32File->dwParentClus);
 	if (0 == dwSector)
 	{
@@ -851,34 +916,58 @@ static BOOL _SetEndOfFile(__COMMON_OBJECT* lpDev)
 		pFat32Fs->SectorPerClus,
 		pClusBuffer))
 	{
+		_hx_printf("[%s]load parent cluster failed.\r\n",
+			__func__);
 		goto __TERMINAL;
 	}
+
+	/* Get the files directory entry. */
 	pfse = (__FAT32_SHORTENTRY*)(pClusBuffer + pFat32File->dwParentOffset);
 
+	/* Trunk the file to current position. */
 	pFat32File->dwFileSize = pFat32File->dwCurrPos;
 	pfse->dwFileSize = pFat32File->dwFileSize;
 
-	/* Save to disk. */
+	/* Save file directory entry to disk. */
 	if (!WriteDeviceSector((__COMMON_OBJECT*)pFat32Fs->pPartition,
 		dwSector, pFat32Fs->SectorPerClus, pClusBuffer))
 	{
+		_hx_printf("[%s]write cluster failed.\r\n", __func__);
 		goto __TERMINAL;
 	}
 
-	if (pFat32File->dwCurrPos < pFat32Fs->dwClusterSize)
+	/* 
+	 * Release the rest clusters this file own, from current
+	 * position. Get the physical cluster number of current
+	 * position first.
+	 */
+	logic_target = pFat32File->dwCurrPos / pFat32Fs->dwClusterSize + 1;
+	phy_clus = pFat32File->dwStartClusNum;
+	unsigned long logic_start = 1;
+	while(logic_start < logic_target)
 	{
-		dwNextCluster = 1;
-	}
-	else
-	{
-		dwNextCluster = pFat32File->dwCurrPos / pFat32Fs->dwClusterSize;
-		if ((pFat32File->dwCurrPos + 1) % pFat32Fs->dwClusterSize)
+		if (!GetNextCluster(pFat32Fs, &phy_clus))
 		{
-			dwNextCluster++;
+			_hx_printf("[%s]failed to get physical cluster.\r\n",
+				__func__);
+			goto __TERMINAL;
 		}
+		logic_start++;
 	}
-	dwNextCluster++;
-	ReleaseClusterChain(pFat32Fs, dwNextCluster);
+
+	/* Get the next real cluster. */
+	phy_next = phy_clus;
+	if (!GetNextCluster(pFat32Fs, &phy_next))
+	{
+		_hx_printf("[%s]failed to get next physical cluster.\r\n",
+			__func__);
+		goto __TERMINAL;
+	}
+
+	/* Release rest clusters. */
+	ReleaseClusterChain(pFat32Fs, phy_next);
+	/* Mark the current cluster as EOC. */
+	MarkClusterEOC(pFat32Fs, phy_clus);
 
 	bSetOk = TRUE;
 
@@ -888,13 +977,42 @@ __TERMINAL:
 	return bSetOk;
 }
 
+/*
+ * Get file information from it's opened
+ * handle.
+ */
+ /* Set the end flag of a file object. */
+static BOOL _GetInfoByHandle(__COMMON_OBJECT* lpDev, LPVOID lpOutput)
+{
+	__FAT32_FILE* pFat32File = NULL;
+	BY_HANDLE_FILE_INFORMATION* pFileInfo = lpOutput;
+
+	BUG_ON((NULL == lpDev) || (NULL == lpOutput));
+	pFat32File = (__FAT32_FILE*)(((__DEVICE_OBJECT*)lpDev)->lpDevExtension);
+	BUG_ON(NULL == pFat32File);
+
+	/* Clear the memory block. */
+	memset(pFileInfo, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
+	/* Just retrieve info from file object. */
+	pFileInfo->dwFileAttributes = pFat32File->Attributes;
+	pFileInfo->dwVolumeSerialNumber = 0;
+	pFileInfo->nFileIndexHigh = pFat32File->dwStartClusNum;
+	pFileInfo->nFileIndexLow = pFat32File->dwParentClus;
+	pFileInfo->nFileSizeHigh = 0;
+	pFileInfo->nFileSizeLow = pFat32File->dwFileSize;
+	pFileInfo->nNumberOfLinks = 1;
+
+	return TRUE;
+}
+
 /* 
  * Move file's current pointer to the user specified position.
  * This routine is called by SetFilePointer in IOManager object,
  * all parameters,such as the offset value to move,where to move
  * are all specified in DRCB object.
  */
-static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
+static DWORD FatDeviceSeek(__COMMON_OBJECT* lpDrv, 
+	__COMMON_OBJECT* lpDev, __DRCB* lpDrcb)
 {
 	__FAT32_FILE* pFatFile = NULL;
 	DWORD dwSeekRet = 0;
@@ -1047,6 +1165,21 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRC
 		lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
 		return 1;
 		break;
+	case IOCONTROL_FS_GETFILEATTREX:
+		if (_fat32GetFileAttributesEx(
+			lpDev,
+			(LPCSTR)lpDrcb->lpInputBuffer,
+			(GET_FILEEX_INFO_LEVELS)(lpDrcb->dwExtraParam1),
+			lpDrcb->lpOutputBuffer))
+		{
+			lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
+			return 1;
+		}
+		else {
+			lpDrcb->dwStatus = DRCB_STATUS_FAIL;
+			return 0;
+		}
+		break;
 	case IOCONTROL_FS_DELETEFILE:
 		if (_fat32DeleteFile(lpDev,
 			(LPSTR)lpDrcb->lpInputBuffer))
@@ -1087,6 +1220,17 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRC
 		}
 	}
 	break;
+	case IOCONTROL_FS_GETINFOBYHANDLE:
+		if (_GetInfoByHandle(lpDev, lpDrcb->lpOutputBuffer))
+		{
+			lpDrcb->dwStatus = DRCB_STATUS_SUCCESS;
+			return 1;
+		}
+		else
+		{
+			lpDrcb->dwStatus = DRCB_STATUS_FAIL;
+			return 0;
+		}
 	default:
 		break;
 	}
@@ -1098,6 +1242,24 @@ static DWORD FatDeviceCtrl(__COMMON_OBJECT* lpDrv, __COMMON_OBJECT* lpDev, __DRC
 static void __show_fat_fs(__FAT32_FS* pFatObject)
 {
 	char vol_label[16];
+	__BLK_CACHE* pBlockCache = NULL;
+	DWORD dwHitCount;
+	DWORD dwMissCount;
+	DWORD dwDirtyCount;
+	DWORD dwBackThreadWake;
+	DWORD dwReadAhead;
+	DWORD dwWriteBack;
+
+	/* Get block cache statistics counters. */
+	pBlockCache = pFatObject->pBlockCache;
+	BUG_ON(NULL == pBlockCache);
+	BlkCacheGetStats(pBlockCache,
+		&dwHitCount,
+		&dwMissCount,
+		&dwDirtyCount,
+		&dwBackThreadWake,
+		&dwReadAhead,
+		&dwWriteBack);
 
 	for (int i = 0; i < 13; i++)
 	{
@@ -1115,6 +1277,19 @@ static void __show_fat_fs(__FAT32_FS* pFatObject)
 	_hx_printf("  fat sector number: %d\r\n", pFatObject->dwFatSectorNum);
 	_hx_printf("  max get-free-clus round: %d\r\n", 
 		pFatObject->perf_metric.max_getfreeclus_round);
+
+	/* Show cache counters. */
+	_hx_printf("  Cache counters: \r\n");
+	_hx_printf("    -total cache block[%d], allocated[%d]\r\n",
+		pBlockCache->dwMaxBuffers,
+		pBlockCache->dwAllocated);
+
+	_hx_printf("    -hit[%d], mis[%d], dirty[%d], wake[%d]\r\n",
+		dwHitCount, dwMissCount,
+		dwDirtyCount, dwBackThreadWake);
+
+	_hx_printf("    -ahead[%d], wb[%d]\r\n",
+		dwReadAhead, dwWriteBack);
 }
 
 /* 

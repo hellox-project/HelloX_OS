@@ -21,27 +21,14 @@
 extern "C" {
 #endif
 
-/**
- * Define the target CPU model,which will determine the endian
- * and other macros.
- */
-#ifndef __I386__
-#define __I386__
-#endif
-
 //CPU endian.
 #if (defined (i386) || defined (__i386) || defined (__i386__) || \
-	 defined(I386) || defined(__I386) || defined(__I386__) || \
+	 defined(I386) || defined(__I386) || defined(__I386__) || defined(_M_IX86) || \
      defined (i486) || defined (__i486) || defined (__i486__) || \
      defined (intel) || defined (x86) || defined (i86pc) || \
-     defined (__alpha) || defined (__osf__) || \
+     defined (__alpha) || defined (__osf__) || defined(_M_X64) || \
      defined (__x86_64__) || defined (__arm__) || defined (__aarch64__))
 #define __LITTLE_ENDIAN
-#endif
-
-//Page size.
-#ifndef __CPU_PAGE_SIZE
-#define __CPU_PAGE_SIZE 4096
 #endif
 
 #ifdef __cplusplus

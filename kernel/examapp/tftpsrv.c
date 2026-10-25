@@ -521,7 +521,12 @@ __TERMINAL:
 	//exit(0);
 }
 
-int _hxmain(int argc, char *argv[])
+/*
+ * Main entry for FTP server, just change
+ * the name to _hxmain to enable FTP 
+ * server.
+ */
+int _ftpd_hxmain(int argc, char *argv[])
 {
 	int s;
 	uint16_t port = 0;
@@ -618,4 +623,182 @@ int _hxmain(int argc, char *argv[])
 	closesocket(s);
 	_hx_printf("TFTP Server for HelloX quit.\r\n");
 	return 0;
+}
+
+/* Local helper to test screen in graphic. */
+static void ScreenTest(__VBE_INFO* pVbeInfo, LPVOID dispMemAddr)
+{
+	char* clrPtr = NULL;
+	int pixels = 0, i = 0;
+
+	pixels = pVbeInfo->ModeInfo.xresolution;
+	pixels *= pVbeInfo->ModeInfo.yresolution;
+
+	/* Fill the memory with BLUE. */
+	clrPtr = dispMemAddr;
+	for (i = 0; i < pixels; i++)
+	{
+		clrPtr[0] = 0xFF;
+		clrPtr[1] = 0;
+		clrPtr[2] = 0;
+		clrPtr += 3;
+	}
+	Sleep(1000);
+
+	/* Fill the memory with GREEN. */
+	clrPtr = dispMemAddr;
+	for (i = 0; i < pixels; i++)
+	{
+		clrPtr[0] = 0;
+		clrPtr[1] = 0xFF;
+		clrPtr[2] = 0;
+		clrPtr += 3;
+	}
+	Sleep(1000);
+
+	/* Fill the memory with RED. */
+	clrPtr = dispMemAddr;
+	for (i = 0; i < pixels; i++)
+	{
+		clrPtr[0] = 0;
+		clrPtr[1] = 0;
+		clrPtr[2] = 0xFF;
+		clrPtr += 3;
+	}
+	Sleep(1000);
+
+	return;
+}
+
+/*
+ * Entry for GUI testing code. 
+ * Just change to _hxmain to enable
+ * the GUI testing.
+ */
+int _gui_hxmain(int argc, char *argv[]) 
+{
+	__VBE_INFO vbe_info;
+	__VBE_INFO* pVbeInfo = &vbe_info;
+	LPVOID frame_buff = NULL;
+	double pi = 3.14159265, r = 24.25;
+	float range = 0.0, length = 0.0;
+
+	_hx_printf("Hello, switch to graphic....\r\n");
+	Sleep(1000);
+	frame_buff = SwitchToGraphic(&vbe_info);
+	if (NULL == frame_buff)
+	{
+		_hx_printf("Failed switching to graphic.\r\n");
+		return -1;
+	}
+
+	ScreenTest(&vbe_info, frame_buff);
+	SwitchToText();
+	_hx_printf("Switch back to text mode.\r\n");
+
+	/* Show out graphic information. */
+	_hx_printf("Lineary frame buffer: 0x%X\r\n", (unsigned long)frame_buff);
+	_hx_printf("GraphicNum: 0x%X\r\n", pVbeInfo->GraphicNum);
+	_hx_printf("Frame buffer base: 0x%X\r\n", pVbeInfo->ModeInfo.physbaseptr);
+	_hx_printf("xres/yres: %d/%d\r\n", pVbeInfo->ModeInfo.xresolution,
+		pVbeInfo->ModeInfo.yresolution);
+	_hx_printf("Bytes per s-line: %d\r\n", pVbeInfo->ModeInfo.bytesperscanline);
+	_hx_printf("Disp memory size: %d\r\n",
+		pVbeInfo->ModeInfo.xresolution * pVbeInfo->ModeInfo.yresolution * pVbeInfo->ModeInfo.bitsperpixel / 8);
+	_hx_printf("Controller vendor: [%s]\r\n",
+		(char*)pVbeInfo->ControllerInfo.oemvendornameptr);
+	_hx_printf("Controller product: [%s]\r\n",
+		(char*)pVbeInfo->ControllerInfo.oemproductnameptr);
+
+	/* Test FPU. */
+	range = (float)(pi * r * r);
+	length = (float)(pi * 2 * r);
+	_hx_printf("FPU: circle range = %d, length = %d\r\n", 
+		(unsigned long)range,
+		(unsigned long)length);
+	return 0;
+}
+
+/*
+ * Testing code for process mechanism syscall.
+ * Just change to _hxmain to enable.
+ */
+int _hxmain(int argc, char* argv[])
+{
+	char* result_message = NULL;
+	int flash_message_len = 0;
+	HANDLE hChild = NULL;
+	int ret_val = -1;
+	unsigned long err_code = 0;
+
+	if (argc < 2)
+	{
+		/* No atom capability specified, show usage. */
+		_hx_printf("Usage: checkfm [atom_cap name]\r\n");
+		_hx_printf("  Load the specified atom_cap and show it's flash message.\r\n");
+		goto __TERMINAL;
+	}
+
+	hChild = CreateProcess(0, PRIORITY_LEVEL_NORMAL,
+		argv[1], NULL, "child_proc");
+	if (NULL == hChild)
+	{
+		_hx_printf("Create child process failed.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* Wait to run over. */
+	WaitForThisObject(hChild);
+
+	/* Get and show flash message. */
+	flash_message_len = 8;
+	while (TRUE)
+	{
+		if (result_message)
+		{
+			_hx_free(result_message);
+		}
+		result_message = (char*)_hx_malloc(flash_message_len);
+		if (NULL == result_message)
+		{
+			_hx_printf("Out of memory\r\n");
+			goto __TERMINAL;
+		}
+
+		if (GetFlashMessage(hChild, &flash_message_len, &result_message[0]))
+		{
+			_hx_printf("Got flash message: %s\r\n", result_message);
+			ret_val = 0;
+			goto __TERMINAL;
+		}
+		else {
+			err_code = GetLastError();
+			if ((PROCESS_ERROR_FLASHMESSAGE_NOMESSAGE == err_code) ||
+				(0 == flash_message_len))
+			{
+				_hx_printf("  No flash message in process.\r\n");
+				goto __TERMINAL;
+			}
+			if (flash_message_len > PROCESS_MAX_FLASHMESSAGE_LEN)
+			{
+				/* Required buffer is too long, error case. */
+				_hx_printf("  Too lang buffer required.\r\n");
+				goto __TERMINAL;
+			}
+		}
+	}
+
+	ret_val = 0;
+
+__TERMINAL:
+	if (hChild)
+	{
+		CloseHandle(hChild);
+	}
+	if (result_message)
+	{
+		_hx_free(result_message);
+	}
+
+	return ret_val;
 }

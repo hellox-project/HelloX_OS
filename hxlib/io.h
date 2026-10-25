@@ -77,10 +77,10 @@ extern "C" {
 
 	int     chdir(const char*);
 	char*   getcwd(char*, int);
-	int     mkdir(const char*);
+	int     mkdir(const char* path_name, unsigned short mode);
 	char*   mktemp(char*);
 	int     rmdir(const char*);
-	int     chmod(const char*, int);
+	int     chmod(const char*, mode_t);
 
 #ifdef	__cplusplus
 }
@@ -104,8 +104,8 @@ extern "C" {
 extern "C" {
 #endif
 
-	int  	 remove(const char*);
-	int  	 rename(const char*, const char*);
+	int  	remove(const char*);
+	int  	rename(const char*, const char*);
 	int     access(const char*, int);
 	int     chsize(int, long);
 	int     close(int);
@@ -134,10 +134,10 @@ extern "C" {
 	int     fseek(FILE *, long, int);
 	long    ftell(FILE *);
 
-	//stdin,stdout,stderr definition.
-#define stdin  NULL
-#define stdout NULL
-#define stderr NULL
+//stdin,stdout,stderr definition.
+#define stdin  0
+#define stdout 1
+#define stderr 2
 
 /* Root path of hellox. */
 #define FILE_ROOT_PATH "C:\\"

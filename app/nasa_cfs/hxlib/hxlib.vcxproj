@@ -1,0 +1,221 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5E2A6354-0680-48DF-B1B4-BA618BE37083}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>hxlib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>D:\HelloX\V190\HelloX_OS\hxlib;</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MinSpace</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MinSpace</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AssemblerOutput>All</AssemblerOutput>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EntryPointSymbol>_hx_main</EntryPointSymbol>
+      <GenerateMapFile>true</GenerateMapFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ftp_srv\to_do.txt" />
+    <Text Include="ReadMe.txt" />
+    <Text Include="todo.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="arch\bpstruct.h" />
+    <ClInclude Include="arch\epstruct.h" />
+    <ClInclude Include="binsem.h" />
+    <ClInclude Include="bitscan_AI.h" />
+    <ClInclude Include="cJSON\cJSON.h" />
+    <ClInclude Include="ctype.h" />
+    <ClInclude Include="dirent.h" />
+    <ClInclude Include="errno.h" />
+    <ClInclude Include="fcntl.h" />
+    <ClInclude Include="float.h" />
+    <ClInclude Include="ftp_srv\cfgparse.h" />
+    <ClInclude Include="ftp_srv\fspathtools.h" />
+    <ClInclude Include="ftp_srv\ftpserv.h" />
+    <ClInclude Include="ftp_srv\x_malloc.h" />
+    <ClInclude Include="gnutls\gnutls.h" />
+    <ClInclude Include="hellox.h" />
+    <ClInclude Include="inet.h" />
+    <ClInclude Include="io.h" />
+    <ClInclude Include="limits.h" />
+    <ClInclude Include="math.h" />
+    <ClInclude Include="pthread.h" />
+    <ClInclude Include="ptmalloc\malloc.h" />
+    <ClInclude Include="regexp\regexp.h" />
+    <ClInclude Include="sched.h" />
+    <ClInclude Include="setjmp.h" />
+    <ClInclude Include="signal.h" />
+    <ClInclude Include="sockets\genif.h" />
+    <ClInclude Include="sockets\hx_eth.h" />
+    <ClInclude Include="sockets\hx_inet.h" />
+    <ClInclude Include="sockets\ip_addr.h" />
+    <ClInclude Include="sockets\sockets.h" />
+    <ClInclude Include="sockets\sockopt.h" />
+    <ClInclude Include="stdarg.h" />
+    <ClInclude Include="stdbool.h" />
+    <ClInclude Include="stddef.h" />
+    <ClInclude Include="stdint.h" />
+    <ClInclude Include="stdio.h" />
+    <ClInclude Include="stdlib.h" />
+    <ClInclude Include="string.h" />
+    <ClInclude Include="sys\cpu.h" />
+    <ClInclude Include="sys\ide.h" />
+    <ClInclude Include="sys\stat.h" />
+    <ClInclude Include="sys\types.h" />
+    <ClInclude Include="sys\utsname.h" />
+    <ClInclude Include="time.h" />
+    <ClInclude Include="time_pri.h" />
+    <ClInclude Include="unistd.h" />
+    <ClInclude Include="wchar.h" />
+    <ClInclude Include="wildcard\wildcard.h" />
+    <ClInclude Include="__hxcomm.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="acos.c" />
+    <ClCompile Include="asin.c" />
+    <ClCompile Include="atan.c" />
+    <ClCompile Include="atan2.c" />
+    <ClCompile Include="atox.c" />
+    <ClCompile Include="binsem.c" />
+    <ClCompile Include="ceil.c" />
+    <ClCompile Include="cJSON\cJSON.c" />
+    <ClCompile Include="cleanup.c" />
+    <ClCompile Include="copysign.c" />
+    <ClCompile Include="ctype.c" />
+    <ClCompile Include="dirent.c" />
+    <ClCompile Include="dirlist.c" />
+    <ClCompile Include="errno.c" />
+    <ClCompile Include="exp.c" />
+    <ClCompile Include="fabs.c" />
+    <ClCompile Include="finite.c" />
+    <ClCompile Include="ftp_srv\cfgparse.c" />
+    <ClCompile Include="ftp_srv\fspathtools.c" />
+    <ClCompile Include="ftp_srv\ftpconst.c" />
+    <ClCompile Include="ftp_srv\ftpserv.c" />
+    <ClCompile Include="ftp_srv\ftp_main.c" />
+    <ClCompile Include="ftp_srv\x_malloc.c" />
+    <ClCompile Include="getenv.c" />
+    <ClCompile Include="gnutls\gnutls_sim.c" />
+    <ClCompile Include="gnutls\strtoul.c" />
+    <ClCompile Include="hellox.c" />
+    <ClCompile Include="io.c" />
+    <ClCompile Include="log.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="math.c" />
+    <ClCompile Include="memory.c" />
+    <ClCompile Include="nextafter.c" />
+    <ClCompile Include="pow.c" />
+    <ClCompile Include="pthread.c" />
+    <ClCompile Include="pthread_cond.c" />
+    <ClCompile Include="pthread_mutex.c" />
+    <ClCompile Include="pthread_other.c" />
+    <ClCompile Include="pthread_sem.c" />
+    <ClCompile Include="ptmalloc\malloc.c" />
+    <ClCompile Include="qsort.c" />
+    <ClCompile Include="rand.c" />
+    <ClCompile Include="regexp\regexp.c" />
+    <ClCompile Include="scalbn.c" />
+    <ClCompile Include="scanf.c" />
+    <ClCompile Include="sched.c" />
+    <ClCompile Include="setjmp.c" />
+    <ClCompile Include="signal.c" />
+    <ClCompile Include="sockaddr.c" />
+    <ClCompile Include="sockets\hx_eth.c" />
+    <ClCompile Include="sockets\hx_inet.c" />
+    <ClCompile Include="sockets\ip_addr.c" />
+    <ClCompile Include="sockets\socket.c" />
+    <ClCompile Include="sqrt.c" />
+    <ClCompile Include="stat.c" />
+    <ClCompile Include="stattest.c" />
+    <ClCompile Include="stdio.c" />
+    <ClCompile Include="strftime.c" />
+    <ClCompile Include="string.c" />
+    <ClCompile Include="strtod.c" />
+    <ClCompile Include="test\app_main.c" />
+    <ClCompile Include="test\binsem_test.c" />
+    <ClCompile Include="test\clock_test.c" />
+    <ClCompile Include="test\pthread_cond_test.c" />
+    <ClCompile Include="test\semaphore_test.c" />
+    <ClCompile Include="test\sleep_test.c" />
+    <ClCompile Include="test\timer_test.c" />
+    <ClCompile Include="time.c" />
+    <ClCompile Include="timetest.c" />
+    <ClCompile Include="trig.c" />
+    <ClCompile Include="wchar.c" />
+    <ClCompile Include="wildcard\wildcard.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

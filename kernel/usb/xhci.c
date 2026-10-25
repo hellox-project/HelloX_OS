@@ -1062,21 +1062,26 @@ static int submit_int_msg(struct usb_device *udev, unsigned long pipe, void *buf
 	return _xhci_submit_int_msg(udev, pipe, buffer, length, interval);
 }
 
-//Create a common USB controller object to unify the OHCI USB controller.
-static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl)
+/*
+ * Create a common USB controller object to 
+ * unify the xHCI USB controller.
+ */
+static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl, 
+	__PHYSICAL_DEVICE* pPhyDev)
 {
 	__USB_CONTROLLER_OPERATIONS ctrlOps;
 
 	ctrlOps.submit_bulk_msg = submit_bulk_msg;
 	ctrlOps.submit_control_msg = submit_control_msg;
 	ctrlOps.submit_int_msg = submit_int_msg;
+	ctrlOps.InterruptHandler = xHCIIntHandler;
 	ctrlOps.create_int_queue = NULL;
 	ctrlOps.destroy_int_queue = NULL;
 	ctrlOps.poll_int_queue = NULL;
 	ctrlOps.usb_reset_root_port = NULL;
 	ctrlOps.get_ctrl_status = NULL;
 
-	return USBManager.CreateUsbCtrl(&ctrlOps, USB_CONTROLLER_XHCI,NULL,pCtrl);
+	return USBManager.CreateUsbCtrl(&ctrlOps, USB_CONTROLLER_XHCI, pPhyDev, pCtrl);
 }
 
 /**
@@ -1084,19 +1089,20 @@ static __COMMON_USB_CONTROLLER* CreateUsbCtrl(LPVOID pCtrl)
 * and allocates the necessary data structures
 *
 * @param index	index to the host controller data structure
-* @return pointer to the intialised controller
+* @return pointer to the initialised controller
 */
 int _xhci_usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 {
 	struct xhci_hccr *hccr;
 	struct xhci_hcor *hcor;
 	struct xhci_ctrl *ctrl;
+	__PHYSICAL_DEVICE* pUsbCtrl = NULL;
 	int ret;
 
 	*controller = NULL;
 
-	ret = xhci_hcd_init(index, &hccr, (struct xhci_hcor **)&hcor);
-	if (ret != 0)
+	pUsbCtrl = xhci_hcd_init(index, &hccr, (struct xhci_hcor **)&hcor);
+	if (NULL == pUsbCtrl)
 	{
 		debug("xHCI: Host controller init failed[%d].\r\n", ret);
 		return -ENODEV;
@@ -1121,12 +1127,11 @@ int _xhci_usb_lowlevel_init(int index, enum usb_init_type init, void **controlle
 		ctrl->hcor = NULL;
 	}
 	else {
-		*controller = CreateUsbCtrl(&xhcic[index]);
+		*controller = CreateUsbCtrl(&xhcic[index], pUsbCtrl);
 		if (!*controller)
 		{
 			ret = -1;
 		}
-		//*controller = &xhcic[index];
 	}
 
 	return ret;

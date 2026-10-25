@@ -18,7 +18,7 @@ Client side on HelloX:
    -- Set VTI's peer address: vti set ht2 [if_name] peer-addr [underlay address];
    -- Set VTI's ciphering key file: vti set ht2 [if_name] key-file [file path&name];
    -- Add the static route using the tunnel;
-3. Add PBR, associate the ingress and egress interfaces together: iproute pbradd g1000_if_1 ht2_amaif0;
+3. Add PBR, associate the ingress and egress interfaces together: iproute pbradd g1000_if_3 ht2_amaif0;
 
 Client is OK.
 
@@ -32,12 +32,14 @@ Server side on Linux:
 2. Modify the build in route and tun's ip address;
    -- 192.168.0.0/16 segment should be added, through dev tun0;
    -- tun0's ip address should be configed using above's planning;
+   -- In app will do this, no need by manually;
 3. Compile the ht2_server app:
    --gcc aes.h aes.c ht2_server.c -o ht2_server
 4. Change to root:
    -- su
 5. start server:
    -- nohup ./ht2_server aliif0.key > logfile_xxxx.log &
+   -- or ./ht2_server amaif0.key &
 6. Back to ubuntu
    -- su ubuntu
 

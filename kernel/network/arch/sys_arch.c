@@ -212,10 +212,6 @@ void sys_mbox_post(sys_mbox_t* mbox,void* msg)
 	}
 
 	SendMail(hMailbox, msg, 0, WAIT_TIME_INFINITE, NULL);
-#if 0
-	__MAIL_BOX* pMailbox = (__MAIL_BOX*)*mbox;
-	pMailbox->SendMail((__COMMON_OBJECT*)pMailbox,msg,0,WAIT_TIME_INFINITE,NULL);
-#endif
 }
 
 //Release a mailbox object.
@@ -224,15 +220,29 @@ void sys_mbox_free(sys_mbox_t* mbox)
 	DestroyMailbox((HANDLE)*mbox);
 }
 
-//Create a new mailbox object.
+/* Create a new mailbox object. */
 err_t sys_mbox_new(sys_mbox_t* mbox,int size)
 {
 	HANDLE hMailbox = NULL;
 
-	/* Change mailbox's size to default if it's 0. */
+	/*
+	 * If no mailbox's size is specified,
+	 * just set as 32. If too small, may
+	 * lead the mailbox full and mail droping
+	 * issue. This issue raised in FTP server
+	 * function's implementation, the recv
+	 * mail box was set to 4(old value), and
+	 * when a file was xfered, there maybe
+	 * more than 4 mails were put into box,
+	 * thus lead mail dropping. The receiving
+	 * side(application) was pending for
+	 * mail and never waken up unless the
+	 * timer out, and lead the TCP session
+	 * exit with exception.
+	 */
 	if (0 == size)
 	{
-		size = 4;
+		size = 32;
 	}
 
 	hMailbox = CreateMailbox(size);
@@ -242,38 +252,6 @@ err_t sys_mbox_new(sys_mbox_t* mbox,int size)
 	}
 	*mbox = hMailbox;
 	return ERR_OK;
-
-#if 0
-	__COMMON_OBJECT*   pMailbox = NULL;
-
-	pMailbox = ObjectManager.CreateObject(&ObjectManager,
-		NULL,
-		OBJECT_TYPE_MAILBOX);
-	if(NULL == pMailbox)
-	{
-		return 0;
-	}
-	if(!pMailbox->Initialize(pMailbox))
-	{
-		ObjectManager.DestroyObject(&ObjectManager,pMailbox);  //Destroy it.
-		return 0;
-	}
-
-	//Set mailbox size accordingly.
-	if(0 == size)
-	{
-		size = 4;
-	}
-	if(!((__MAIL_BOX*)pMailbox)->SetMailboxSize(pMailbox,size))
-	{
-		ObjectManager.DestroyObject(&ObjectManager,pMailbox);
-		return 0;
-	}
-
-	//Return the new created mailbox object.
-	*mbox = pMailbox;
-	return ERR_OK;
-#endif
 }
 
 //Check if a semaphore object is valid.
@@ -298,6 +276,8 @@ u32_t sys_arch_sem_wait(sys_sem_t* sem,u32_t timeout)
 	DWORD dwRetVal = OBJECT_WAIT_FAILED;
 	DWORD dwWait = 0;
 
+	BUG_ON(!sys_sem_valid(sem));
+
 	/* Wait forever until semaphore is signal. */
 	if (0 == timeout)
 	{
@@ -314,33 +294,18 @@ u32_t sys_arch_sem_wait(sys_sem_t* sem,u32_t timeout)
 		return SYS_ARCH_TIMEOUT;
 	case OBJECT_WAIT_RESOURCE:
 		return dwWait;
+
+		/* 
+		 * lwIP does not consider these cases, 
+		 * so just return 0. 
+		 * Potential bugs may exist since dwWait
+		 * may also be 0.
+		 */
+	case OBJECT_WAIT_DELETED:
+	case OBJECT_WAIT_FAILED:
 	default:
 		return 0;
 	}
-
-#if 0
-	__SEMAPHORE*   pSem     = (__SEMAPHORE*)*sem;
-	DWORD          dwRetVal = OBJECT_WAIT_FAILED;
-	DWORD          dwWait   = 0;
-
-	if(0 == timeout)  //Wait forever until semaphore is signal.
-	{
-		dwRetVal = pSem->WaitForThisObject((__COMMON_OBJECT*)pSem);
-	}
-	else  //Wait for a period of time.
-	{
-		dwRetVal = pSem->WaitForThisObjectEx((__COMMON_OBJECT*)pSem,timeout,&dwWait);
-	}
-	switch(dwRetVal)
-	{
-	case OBJECT_WAIT_TIMEOUT:
-		return SYS_ARCH_TIMEOUT;
-	case OBJECT_WAIT_RESOURCE:
-		return dwWait;
-	default:
-		return 0;
-	}
-#endif
 }
 
 //Set a semaphore object's status to signal.
@@ -377,9 +342,19 @@ err_t sys_sem_new(sys_sem_t* sem,u8_t count)
 {
 	HANDLE hSem = NULL;
 
+	/* 
+	 * Following code may has bug: max cound is fixed 
+	 * as 1, when count is beyond 1, create semaphore
+	 * will fail. Just mark and without changing, since
+	 * the code runs many years. But output a failure
+	 * information for indication.
+	 */
 	hSem = CreateSemaphore(1, count);
 	if (NULL == hSem)
 	{
+		_hx_printf("[%s]create semaphore failed[max:1, count:%d]\r\n",
+			__func__,
+			count);
 		return ERR_ARG;
 	}
 	*sem = hSem;

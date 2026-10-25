@@ -1,0 +1,9 @@
+#---------------------------------------------------------------------------
+# Doxygen Configuration options to generate the "OSAL API Guide"
+#---------------------------------------------------------------------------
+
+# Common definitions, can be overridden here
+@INCLUDE               = @OSAL_NATIVE_COMMON_CFGFILE@
+
+PROJECT_NAME           = "OSAL User's Guide"
+WARN_LOGFILE           = @OSAL_NATIVE_LOGFILE@

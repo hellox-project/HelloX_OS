@@ -171,7 +171,13 @@
  *  OS kernel developers could adjust the actual memory
  *  layout by changing the corresponding macros with
  *  prefix of 'KMEM',such as KMEM_ANYSIZEPOOL_START,
- *  KMEM_KERNEL_EXCLUDE_END,etc.
+ *  KMEM_KERNEL_EXCLUDE_END. For example, the max size
+ *  of kernel file(master.bin) is limited to 1M, since
+ *  it's loading address is 0x110000(1M+64K), and the
+ *  start address of 4K pool is defined as 2M(KMEM_4KPOOL_
+ *  START macro). So if the kernel size increases beyond
+ *  this size, you can change the KMEM_4KPOOL_START
+ *  to larger value to hold the larger kernel.
  */
 
 /*

@@ -13,19 +13,14 @@
 //                                2.
 //    Lines number              :
 //***********************************************************************/
-#ifndef __STDAFX_H__
+
 #include <StdAfx.h>
-#endif
 
-#ifndef __FAT32_H__
+#include "blkcache.h"
 #include "fat32.h"
-#endif
-
-#ifndef __FSSTR_H__
 #include "fsstr.h"
-#endif
 
-#include "../lib/stdio.h"
+#include "stdio.h"
 
 //This module will be available if and only if the DDF function is enabled.
 #ifdef __CFG_SYS_DDF
@@ -75,27 +70,30 @@ VOID  AddSpace(CHAR* pStrBuf,INT nCount)
 	}
 }
 
-//Initialize a FAT32 shortentry given it's name,start cluster number,and other
-//information.
-BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse,CHAR* pszName,DWORD dwFirstClus,DWORD dwInitSize,BYTE FileAttr)
+/*
+ * Initialize a FAT32 shortentry given it's name,
+ * start cluster number,and other information.
+ */
+BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse, CHAR* pszName,
+	DWORD dwFirstClus, DWORD dwInitSize, BYTE FileAttr)
 {
-	BOOL            bResult    = FALSE;
-	CHAR*           pDotPos    = NULL;
-	CHAR*           pStart     = NULL;
-	int             i,nNameLen;
+	BOOL            bResult = FALSE;
+	CHAR*           pDotPos = NULL;
+	CHAR*           pStart = NULL;
+	int             i, nNameLen;
 
-	if((NULL == pfse) || (NULL == pszName))
+	if ((NULL == pfse) || (NULL == pszName))
 	{
 		goto __TERMINAL;
 	}
 
-	memzero(pfse,sizeof(__FAT32_SHORTENTRY));
-	if(StrCmp(pszName,"."))
+	memzero(pfse, sizeof(__FAT32_SHORTENTRY));
+	if (StrCmp(pszName, "."))
 	{
 		InitDot(pfse);
 		goto __INITOTHER;
 	}
-	if(StrCmp(pszName,".."))
+	if (StrCmp(pszName, ".."))
 	{
 		InitDotdot(pfse);
 		goto __INITOTHER;
@@ -103,65 +101,65 @@ BOOL InitShortEntry(__FAT32_SHORTENTRY* pfse,CHAR* pszName,DWORD dwFirstClus,DWO
 
 #if 0
 	//long file name. don't change 
-	if(strstr(pszName,"~"))
+	if (strstr(pszName, "~"))
 	{
-		memcpy(pfse->FileName,pszName,FAT32_SHORTDIR_FILENAME_LEN);
+		memcpy(pfse->FileName, pszName, FAT32_SHORTDIR_FILENAME_LEN);
 		goto __INITOTHER;
 	}
 #endif
 
 	//Now convert the name to directory format.
 	nNameLen = StrLen(pszName);
-	pDotPos  = pszName + (nNameLen - 1);
-	while((*pDotPos != '.') && (pDotPos != pszName))
+	pDotPos = pszName + (nNameLen - 1);
+	while ((*pDotPos != '.') && (pDotPos != pszName))
 	{
-		pDotPos --;
+		pDotPos--;
 	}
-	if((pDotPos == pszName) && (*pDotPos == '.')) //First character is dot,invalid.
+	if ((pDotPos == pszName) && (*pDotPos == '.')) //First character is dot,invalid.
 	{
 		goto __TERMINAL;
 	}
-	if(pDotPos == pszName)  //Without extension.
+	if (pDotPos == pszName)  //Without extension.
 	{
 		pDotPos = pszName + nNameLen;
 	}
 	i = 0;
 	pStart = pszName;
-	while(pStart != pDotPos)  //Get the name's part.
+	while (pStart != pDotPos)  //Get the name's part.
 	{
 		pfse->FileName[i] = *pStart;
-		i ++;
-		pStart ++;
-		if(i == 8)
+		i++;
+		pStart++;
+		if (i == 8)
 		{
 			break;
 		}
 	}
-	while(i < 8)  //Fill space.
+	while (i < 8)  //Fill space.
 	{
 		pfse->FileName[i] = ' '; //0x20.
-		i ++;
+		i++;
 	}
 	//Process the extension.
 	pStart = pszName + (nNameLen - 1);  //Now pStart pointing to the tail of name.
 	i = 10;
-	while((pStart > pDotPos) && (i > 7))
+	while ((pStart > pDotPos) && (i > 7))
 	{
 		pfse->FileName[i] = *pStart;
-		i --;
-		pStart --;
+		i--;
+		pStart--;
 	}
-	while(i > 7)
+	while (i > 7)
 	{
-		pfse->FileName[i --] = ' ';
+		pfse->FileName[i--] = ' ';
 	}
-	
+
 __INITOTHER:
-	pfse->FileAttributes   = FileAttr;
-	pfse->dwFileSize       = dwInitSize;
-	pfse->wFirstClusHi     = (WORD)(dwFirstClus >> 16);
-	pfse->wFirstClusLow    = (WORD)dwFirstClus;
-	
+	pfse->FileAttributes = FileAttr;
+	pfse->dwFileSize = dwInitSize;
+	pfse->wFirstClusHi = (WORD)(dwFirstClus >> 16);
+	pfse->wFirstClusLow = (WORD)dwFirstClus;
+
 	bResult = TRUE;
 
 __TERMINAL:

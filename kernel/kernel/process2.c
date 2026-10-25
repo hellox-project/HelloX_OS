@@ -65,8 +65,8 @@ static BOOL MapUserAgent(__PROCESS_OBJECT* pProcess)
 		hUserAgentFile = CreateFile(USER_AGENT_FILE_NAME, FILE_ACCESS_READ, 0, NULL);
 		if (NULL == hUserAgentFile)
 		{
-			_hx_printf("  Failed to load user agent[%s]\r\n",
-				USER_AGENT_FILE_NAME);
+			_hx_printf("[%s]load user agent fail\r\n",
+				__func__);
 			goto __TERMINAL;
 		}
 		if (!ReadFile(hUserAgentFile, KMEM_USERAGENT_LENGTH, pUserAgent, NULL))
@@ -200,8 +200,32 @@ static BOOL PrepareUserStack(__PROCESS_OBJECT* pProcessObject,
 	 */
 	if (pszCmdLine)
 	{
-		/* Use raw command line to construct user stack. */
+		/* 
+		 * Use raw command line to construct user 
+		 * stack. 
+		 */
+		char* cmd_tokens[PROCESS_MAX_PARAMETER_NUM];
+		char* cmd_token = NULL;
+
+		/*
+		 * We put the first argv as 'loadapp', since
+		 * the user agent is fit with loadapp command
+		 * in kernel.
+		 */
 		argc = 1;
+		cmd_tokens[0] = "loadapp";
+
+		/* Splitter tokens from command line. */
+		cmd_token = strtok(pszCmdLine, " ");
+		while (cmd_token)
+		{
+			cmd_tokens[argc++] = cmd_token;
+			if (argc == PROCESS_MAX_PARAMETER_NUM)
+			{
+				break;
+			}
+			cmd_token = strtok(NULL, " ");
+		}
 
 		/*
 		 * Push a NULL returen address to simulate a call
@@ -231,18 +255,18 @@ static BOOL PrepareUserStack(__PROCESS_OBJECT* pProcessObject,
 		for (i = 0; i < argc; i++)
 		{
 			argv[i] = (char*)pUserStackTop;
-			strncpy(pTmpStackTop, pszCmdLine, MAX_CMD_LEN);
-			pTmpStackTop += strlen(pszCmdLine) + 1;
-			pUserStackTop += strlen(pszCmdLine) + 1;
+			strncpy(pTmpStackTop, cmd_tokens[i], MAX_CMD_LEN);
+			pTmpStackTop += strlen(cmd_tokens[i]) + 1;
+			pUserStackTop += strlen(cmd_tokens[i]) + 1;
 		}
 	}
 	else /* Use formated command object. */
 	{
 		argc = pCmdObject->byParameterNum;
-		if (argc > 16)
+		if (argc > PROCESS_MAX_PARAMETER_NUM)
 		{
-			/* At most 16 parameters are transferd to user. */
-			argc = 16;
+			/* At most parameters are transferd to user. */
+			argc = PROCESS_MAX_PARAMETER_NUM;
 		}
 		/*
 		 * Push a NULL returen address to simulate a call
@@ -321,7 +345,11 @@ __TERMINAL:
 	return bResult;
 }
 
-/* Get a handle from handle array. */
+/* 
+ * Get a handle from handle array, then
+ * save the common object's ptr into the
+ * handle array element.
+ */
 static __HANDLE GetHandle(__PROCESS_OBJECT* pProcess, __COMMON_OBJECT* objectPtr)
 {
 	__HANDLE_ARRAY* pHandleArray = NULL;
@@ -446,8 +474,11 @@ __TERMINAL:
 /*
  * A helper routine to shrink handle array's element,
  * release the unused array element to save kernel memory.
+ * The routine is not atomic operation, so the spin lock
+ * of the process object must be obtained before invoke
+ * it.
  */
-static void ShrinkHandleArray(__PROCESS_OBJECT* pProcess)
+static void __ShrinkHandleArray(__PROCESS_OBJECT* pProcess)
 {
 	__HANDLE_ARRAY* pHandleArray = NULL;
 	__HANDLE secndLast = INVALID_HANDLE_VALUE;
@@ -460,13 +491,11 @@ static void ShrinkHandleArray(__PROCESS_OBJECT* pProcess)
 	unsigned long reserveEleNum = 0;
 	/* Start position in list that should be released. */
 	__HANDLE_ARRAY_ELEMENT* pFreeStart = NULL;
-	unsigned long ulFlags;
 	unsigned int i = 0;
 
 	BUG_ON(NULL == pProcess);
 	pHandleArray = &pProcess->handleArray;
 
-	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
 	pArrayElement = pHandleArray->pRoot;
 	while (pArrayElement && (currHandle < pHandleArray->maxHandleValue))
 	{
@@ -516,7 +545,6 @@ static void ShrinkHandleArray(__PROCESS_OBJECT* pProcess)
 	/* Update handle array's state. */
 	pHandleArray->elementNum = reserveEleNum;
 	pHandleArray->maxHandleValue = secndLast;
-	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
 
 	/* Release the free handle element list. */
 	while (pFreeStart)
@@ -534,23 +562,23 @@ static int CloseHandle(__PROCESS_OBJECT* pProcess, __HANDLE handle)
 	__HANDLE_ARRAY* pHandleArray = NULL;
 	__COMMON_OBJECT* objectPtr = NULL;
 	__HANDLE_ARRAY_ELEMENT* pArrayElement = NULL;
-	unsigned long ulFlags = 0;
 	int result = 0;
+	cpuflags_t cpuFlags = 0;
 
 	BUG_ON((NULL == pProcess) || (INVALID_HANDLE_VALUE == handle));
 	pHandleArray = &pProcess->handleArray;
 
 	/* Must operate in atomic. */
-	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 	if (handle > pHandleArray->maxHandleValue)
 	{
-		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 		goto __TERMINAL;
 	}
 	unsigned int eleIndex = (handle - 1) / MAX_HANDLE_OBJECT_PTR;
 	if (eleIndex >= pHandleArray->elementNum)
 	{
-		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 		goto __TERMINAL;
 	}
 	unsigned int eleOffset = (handle - 1) % MAX_HANDLE_OBJECT_PTR;
@@ -568,7 +596,7 @@ static int CloseHandle(__PROCESS_OBJECT* pProcess, __HANDLE handle)
 	if (NULL == pArrayElement)
 	{
 		/* The corresponding handle array element is not exist. */
-		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 		goto __TERMINAL;
 	}
 	/*
@@ -580,7 +608,7 @@ static int CloseHandle(__PROCESS_OBJECT* pProcess, __HANDLE handle)
 	if (NULL == objectPtr)
 	{
 		/* No object in this slot,may caused by invalid handle value. */
-		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+		__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 		goto __TERMINAL;
 	}
 	/* Reset the slot. */
@@ -589,9 +617,9 @@ static int CloseHandle(__PROCESS_OBJECT* pProcess, __HANDLE handle)
 	if (handle == pHandleArray->maxHandleValue)
 	{
 		/* Potential exists to shrink the handle array. */
-		ShrinkHandleArray(pProcess);
+		__ShrinkHandleArray(pProcess);
 	}
-	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 
 	/* Destroy the corresponding kernel object. */
 	ObjectManager.DestroyObject(&ObjectManager, objectPtr);

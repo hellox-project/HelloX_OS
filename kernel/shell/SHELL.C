@@ -36,7 +36,7 @@
 #endif
 #endif
 
-#define  DEF_PROMPT_STR   "[system-view]"
+#define  DEF_PROMPT_STR   "[hellox-cli]"
 #define  ERROR_STR        "  Incorrect command."
 
 //shell input pos
@@ -673,8 +673,27 @@ static DWORD Process2(LPVOID pData)
 	return 0;
 }
 
+/* Local helper to raise BUG for testing. */
+static void __RaiseBug()
+{
+	_hx_printf("Raise bug now...\r\n");
+	BUG_ON(TRUE);
+}
+
+static void __RaiseBug1()
+{
+	_hx_printf("Call [%s] to raise bug\r\n", __func__);
+	__RaiseBug();
+}
+
 static DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 {
+	/* Simulate a kernel BUG. */
+	__RaiseBug();
+	//BUG_ON(TRUE);
+	return SHELL_CMD_PARSER_SUCCESS;
+
+#if 0
 	HANDLE hCfgProfile = SystemConfigManager.GetConfigProfile("pppoeMain");
 	char value_buff[SYSTEM_CONFIG_MAX_KVLENGTH];
 
@@ -700,6 +719,7 @@ static DWORD DebugHandler(__CMD_PARA_OBJ* pCmdParaObj)
 	SystemConfigManager.ReleaseConfigProfile(hCfgProfile);
 
 	return SHELL_CMD_PARSER_SUCCESS;
+#endif
 
 #if 0
 	cJSON* cfgRoot = NULL;

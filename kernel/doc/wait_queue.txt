@@ -1,0 +1,160 @@
+        Wait queue and it's atomic mechanism
+
+在设计块缓存机制（cache block）时，遇到一个资源的独占访问问题，具体如下：
+假设一个缓存块，定义如下:
+struct block_cache{
+  struct block_cache* hash_next;
+  struct block_cache* hash_prev;
+  ......
+  __SPIN_LOCK spinlock;
+  __MUTEX mutex;
+  unsigned long flags;
+  void* pData;
+  };
+
+这只是一个缓存块的定义。系统中通过HASH数组以及双向链表，把大量缓存块连接到一起。有一个后台线程，
+定时对系统中的缓存块进行刷新（写入块存储）。同时，有若干数量不固定的缓存数据消费者，对缓存块数组
+进行读写操作。这样就会引发一个竞争问题：读写线程与后台刷新线程，必须互斥的访问缓存块。
+
+最开始的设计，是通过spin lock来保护缓存块，实现互斥访问。具体来说，对读写线程：
+  __ACQUIRE_SPIN_LOCK(block->spinlock);
+  while(flags & BLOCK_CACHE_IO_BUSY)
+  {
+     /* Block is flushing. */
+	 __RELEASE_SPIN_LOCK(block->spinlock);
+	 /* Wait for the mutex of the block. */
+	 WaitForThisObject(block->mutex);
+
+	 /* Acquire spin lock again, after been waken up. */
+	 __ACQUIRE_SPIN_LOCK(block->spinlock);
+  }
+  /* The BUSY flag is clear when reach here. */
+  AccessBlockData(block, buffer, ...);
+  __RELEASE_SPIN_LOCK(block->spinlock);
+  ...
+
+对于后台的刷新线程，则代码逻辑如下：
+  __ACQUIRE_SPIN_LOCK(block->spinlock);
+  FlashCacheToDisk(block);
+  /* Wake up all thread(s) waiting for this block. */
+  WakeUpAllThreads(block->mutex);
+  __RELEASE_SPIN_LOCK(block->spinlock);
+
+首先说明，上述mutex的用法不太正确，可能用EVENT会更合适。但这不影响后续讨论。
+
+在这个方案中，存在一个致命的“丢失唤醒”问题：
+在第一段代码中，一旦读写线程释放spin lock，但还未被加入到mutex的等待队列之前，后台刷洗线程得以
+调度执行。后台刷新线程完成磁盘写入，然后试图唤醒等待的线程。因为读写线程尚未被加入等待队列，所以
+这里不会唤醒。一旦这个唤醒操作结束，读写线程被加入MUTEX的等待队列，那就永远无法唤醒了。
+这里的问题就是，查看block的flag信息、如果正在刷新则加入等待队列这两个操作，应该是原子的，不能被
+中断的。当前针对这种情况，HelloX的内核没有合适的机制确保这个原子性。如果把释放block的spinlock
+操作放到等待mutex之后，那就是灾难性的，系统性能会急剧下降。
+
+Linux内核的等待队列机制（wait queue）可以完美的解决这个问题。这里先描述一下等待队列的原理，作为
+记录。后续在HelloX的内核中增加实现等待队列机制。
+下面的描述，很多都是从DeepSeek对话中拷贝过来，整体逻辑上是连续的。
+首先，在使用等待队列之前，首选需要定义一个等待队列，一般是定义在block的结构体中，比如：
+struct block_cache{
+  struct block_cache* hash_next;
+  struct block_cache* hash_prev;
+  ......
+  __SPIN_LOCK spinlock;
+  wait_queue_head_t wq;
+  unsigned long flags;
+  void* pData;
+  };
+
+在使用的时候，需要引用linux定义的宏来操作等待队列。主要有wait_event_interruptible(wq, condition)，
+展开之后大概如下：
+  for (;;) {
+    // 1. 准备休眠：设置进程状态，并把自己加入等待队列
+    //    这一步需要原子完成，由等待队列内部锁 wq.lock 保护。
+    spin_lock_irqsave(&wq->lock, flags);
+    if (condition) { 
+        // 条件在持有内部锁时成立，直接退出，不休眠
+        __set_current_state(TASK_RUNNING);
+        spin_unlock_irqrestore(&wq->lock, flags);
+        break;
+    }
+    __add_wait_queue(wq, &wait_entry);
+    __set_current_state(TASK_INTERRUPTIBLE);
+    spin_unlock_irqrestore(&wq->lock, flags);
+
+    // 2. 让出 CPU
+    schedule();
+
+    // 3. 被唤醒后，从等待队列中移除（同样由内部锁保护）
+    spin_lock_irqsave(&wq->lock, flags);
+    __remove_wait_queue(wq, &wait_entry);
+    spin_unlock_irqrestore(&wq->lock, flags);
+}
+
+最关键的核心就是，在这个宏定义中，引入了一个condition条件，任何可计算出TRUE/FALSE的
+C语言代码都可以作为条件进行输入。Linux内核在把当前进程加入等待队列之前，首先判断这个条件，
+如果条件成立，则直接退出，不加入等待队列。只有条件不成立的情况下，才加入等待队列。
+
+基于这个实现，再看看block cache的互斥访问过程。首先是读写线程，整体逻辑如下：
+  __ACQUIRE_SPIN_LOCK(block->spinlock);
+  while(block->flags & BLOCK_CACHE_IO_BUSY)
+  {
+    /* In progress of flushing. */
+	__RELEASE_SPIN_LOCK(block->spinlock);
+	wait_event_interruptible(block->wq, 
+	  (!(block->flags & BLOCK_CACHE_IO_BUSY)));
+
+	/* Thread is waken up, get spin lock again. */
+	__ACQUIRE_SPIN_LOCK(block->spinlock);
+  }
+  /* Above while loop exit since condition meet. */
+  AccessBlockData(block);
+  __RELEASE_SPIN_LOCK(block->spinlock);
+
+
+然后再看看后台刷新线程：
+  static void flush_block_to_disk(struct cache_block *block) {
+    int ret;
+
+    /* 1. 设置刷写标志，锁保护状态变更 */
+    spin_lock(&block->lock);
+    block->flag = BLOCK_FLUSHING;
+    spin_unlock(&block->lock);
+
+    /* 2. 执行磁盘写入——可能睡眠，绝不能在锁内进行 */
+    ret = submit_and_wait_block_io(block, WRITE);
+    if (ret)
+        pr_err("flush block %llu failed\n", block->block_no);
+
+    /* 3. I/O 完成，清除标志并唤醒等待者 */
+    spin_lock(&block->lock);
+    block->flag = BLOCK_IDLE;
+    spin_unlock(&block->lock);
+
+    /*
+     * 4. 唤醒在 block->wq 上等待的所有进程。
+     *    注意：wake_up 在解锁后调用是安全的，且能避免锁嵌套问题。
+     *    这里使用 wake_up_interruptible 与读写线程的
+     *    wait_event_interruptible_locked 配合。
+     */
+    wake_up_interruptible(&block->wq);
+}
+
+再分析一下“唤醒丢失”问题还存不存在。在读写线程的操作中，释放block的spinlock之后，
+假设还未被加入到等待队列，这时候后台刷新线程已经完成刷新，即已经完成wake_up_interruptible
+代码的执行，同时flags的BUSY标记已经被清除。这时候读写线程继续执行wait_event_interruptible
+操作。在这个宏定义中，首先获取wait queue的自旋锁，然后判断condition条件。因为condition已
+满足，所以直接退出，读写线程不会被加入等待队列，唤醒丢失问题解决。
+另外一种情况就更简单了，读写线程被加入等待队列，然后刷洗线程执行完毕。最后的wake_up_interruptible
+操作会把读写线程唤醒。
+唤醒丢失问题完美解决。
+
+Linux Wait Queue的最核心特点，就是增加了对外部条件的判断，把外部状态引入了等待队列的操作中。
+HelloX当前的内核机制为什么不支持判断block的状态、在状态不满足的情况下进入等待队列，从技术上说
+最核心的问题就是这两个操作无法在一个原子锁的保护下完成。互斥体Mutex，Event，Semaphore等等内核
+同步对象，只能原子的操作*对象本身*的变量和状态，无法把外部变量引入进去。
+当然，Mutex等内核对象的语义，也不允许它这样操作。Wait queue本身等待的是一个“条件”的发生，而
+Mutex则是对共享资源的保护。
+
+后续HelloX的内核中，考虑增加wait queue机制。当前的块缓存机制，先采用BIG LOCK的方式解决互斥问题，
+即定义一个全局的mutex，不管是后台刷新线程，还是读写线程，都需要先获取这个mutex，然后再进行访问。显然
+这样效率低下，但至少比直接读写效率要高。
+后续逐渐优化。

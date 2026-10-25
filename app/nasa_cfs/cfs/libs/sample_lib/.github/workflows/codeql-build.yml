@@ -1,0 +1,13 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  codeql:
+    name: Codeql
+    uses: nasa/cFS/.github/workflows/codeql-reusable.yml@main
+    with: 
+      component-path: libs/sample_lib
+      make: 'make -C build/native/default_cpu1/apps/sample_lib'

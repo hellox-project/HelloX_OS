@@ -41,7 +41,7 @@
 
 #ifdef __CFG_NET_E1000   //Intel e1000 NIC.
 //#include "drivers/e1000e.h"
-#include "drivers/e1000ex.h"
+#include "drivers/e1000/e1000ex.h"
 #endif
 
 __ETHERNET_DRIVER_ENTRY EthernetDriverEntry[] = 

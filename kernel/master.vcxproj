@@ -14,7 +14,7 @@
     <SccProjectName />
     <SccLocalPath />
     <ProjectGuid>{156D873E-78D4-9A45-FEBE-A97A5EB779CB}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -46,7 +46,7 @@
     <IntDir>.\Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>usb;config;jvm;network;Lib;drivers;netcore</IncludePath>
+    <IncludePath>fs;usb;config;jvm;network;Lib;drivers;netcore</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -172,6 +172,7 @@
     <ClCompile Include="arch\x86\hellocn.c" />
     <ClCompile Include="arch\x86\pic.c" />
     <ClCompile Include="arch\x86\smpx86.c" />
+    <ClCompile Include="arch\x86\vesa.c" />
     <ClCompile Include="drivers\x86\ahci.c" />
     <ClCompile Include="drivers\x86\ahcidrv.c" />
     <ClCompile Include="drivers\x86\ahciio.c" />
@@ -180,9 +181,12 @@
     <ClCompile Include="drivers\x86\IDEHD.C" />
     <ClCompile Include="drivers\x86\KEYBRD.C" />
     <ClCompile Include="drivers\x86\MOUSE.C" />
+    <ClCompile Include="fs\blkcache.c" />
     <ClCompile Include="kernel\cfgmgr.c" />
     <ClCompile Include="kernel\chardisp.c" />
+    <ClCompile Include="kernel\condvar.c" />
     <ClCompile Include="kernel\console.c" />
+    <ClCompile Include="kernel\cst.c" />
     <ClCompile Include="kernel\dbm.c" />
     <ClCompile Include="kernel\debug.c" />
     <ClCompile Include="kernel\devmgr.c" />
@@ -221,9 +225,6 @@
     <ClCompile Include="fs\FATMGR2.C" />
     <ClCompile Include="fs\FATSTR.C" />
     <ClCompile Include="fs\fsstr.c" />
-    <ClCompile Include="fs\NTFS.C" />
-    <ClCompile Include="fs\NTFS2.C" />
-    <ClCompile Include="fs\NTFSDRV.C" />
     <ClCompile Include="kthread\syslog.c" />
     <ClCompile Include="lib\atox.c" />
     <ClCompile Include="lib\cJSON\cJSON.c" />
@@ -261,11 +262,11 @@
     <ClCompile Include="netcore\dpi\dpiicmp.c" />
     <ClCompile Include="netcore\dpi\dpiland.c" />
     <ClCompile Include="netcore\dpi\dpimgr.c" />
-    <ClCompile Include="netcore\drivers\e1000ex.c" />
-    <ClCompile Include="netcore\drivers\r8152_e.c" />
-    <ClCompile Include="netcore\drivers\r8152_fw.c" />
-    <ClCompile Include="netcore\drivers\rtl8111.c" />
-    <ClCompile Include="netcore\drivers\rtl8152.c" />
+    <ClCompile Include="netcore\drivers\e1000\e1000ex.c" />
+    <ClCompile Include="netcore\drivers\r8152\r8152_e.c" />
+    <ClCompile Include="netcore\drivers\r8152\r8152_fw.c" />
+    <ClCompile Include="netcore\drivers\r8152\rtl8152.c" />
+    <ClCompile Include="netcore\drivers\rtl8111\rtl8111.c" />
     <ClCompile Include="netcore\ebridge\ethbrg.c" />
     <ClCompile Include="netcore\ethentry.c" />
     <ClCompile Include="netcore\ethio.c" />
@@ -428,6 +429,7 @@
     <ClCompile Include="usb\uvc_diag.c" />
     <ClCompile Include="usb\uvc_drv.c" />
     <ClCompile Include="usb\xhci.c" />
+    <ClCompile Include="usb\xhciint.c" />
     <ClCompile Include="usb\xhci_mem.c" />
     <ClCompile Include="usb\xhci_pci.c" />
     <ClCompile Include="usb\xhci_ring.c" />
@@ -442,9 +444,11 @@
     <ClInclude Include="arch\x86\pic.h" />
     <ClInclude Include="arch\x86\smpx86.h" />
     <ClInclude Include="arch\x86\syn_mech.h" />
+    <ClInclude Include="arch\x86\vesa.h" />
     <ClInclude Include="dispaly\BIOSVGA.H" />
     <ClInclude Include="drivers\x86\ahci.h" />
     <ClInclude Include="drivers\x86\ahcidef.h" />
+    <ClInclude Include="fs\blkcache.h" />
     <ClInclude Include="include\align.h" />
     <ClInclude Include="include\arch\bpstruct.h" />
     <ClInclude Include="include\ata.h" />
@@ -454,6 +458,7 @@
     <ClInclude Include="include\CharDisplay.H" />
     <ClInclude Include="INCLUDE\COMMOBJ.H" />
     <ClInclude Include="include\console.h" />
+    <ClInclude Include="include\cst.h" />
     <ClInclude Include="include\dbm.h" />
     <ClInclude Include="include\debug.h" />
     <ClInclude Include="INCLUDE\DEVMGR.H" />
@@ -498,7 +503,6 @@
     <ClInclude Include="kthread\logcat.h" />
     <ClInclude Include="fs\FAT32.H" />
     <ClInclude Include="fs\fsstr.h" />
-    <ClInclude Include="fs\NTFS.H" />
     <ClInclude Include="kthread\syslog.h" />
     <ClInclude Include="lib\cJSON\cJSON.h" />
     <ClInclude Include="lib\ctype.h" />
@@ -535,10 +539,10 @@
     <ClInclude Include="netcore\dpi\dpiicmp.h" />
     <ClInclude Include="netcore\dpi\dpiland.h" />
     <ClInclude Include="netcore\dpi\dpimgr.h" />
-    <ClInclude Include="netcore\drivers\e1000ex.h" />
-    <ClInclude Include="netcore\drivers\r8152.h" />
-    <ClInclude Include="netcore\drivers\r8152_e.h" />
-    <ClInclude Include="netcore\drivers\rtl8111.h" />
+    <ClInclude Include="netcore\drivers\e1000\e1000ex.h" />
+    <ClInclude Include="netcore\drivers\r8152\r8152.h" />
+    <ClInclude Include="netcore\drivers\r8152\r8152_e.h" />
+    <ClInclude Include="netcore\drivers\rtl8111\rtl8111.h" />
     <ClInclude Include="netcore\drivers\usb_ether.h" />
     <ClInclude Include="netcore\ebridge\ethbrg.h" />
     <ClInclude Include="netcore\ethmgr.h" />
@@ -663,21 +667,27 @@
   <ItemGroup>
     <Text Include="arch\x86\mbr.txt" />
     <Text Include="arch\x86\newboot.txt" />
+    <Text Include="doc\block_cache.txt" />
+    <Text Include="doc\call_stack_trace.txt" />
+    <Text Include="doc\cfs_port.txt" />
+    <Text Include="doc\install_on_new_vhd.txt" />
     <Text Include="doc\ip_hang.txt" />
     <Text Include="doc\lock_ord.txt" />
     <Text Include="doc\lwip_mt.txt" />
     <Text Include="doc\newldr.txt" />
     <Text Include="doc\printf.txt" />
-    <Text Include="doc\proc_del.txt" />
+    <Text Include="doc\process_delete.txt" />
     <Text Include="doc\rev_recd.txt" />
     <Text Include="doc\rr_ptmalloc.txt" />
     <Text Include="doc\pendissu.txt" />
     <Text Include="doc\rwslock.txt" />
     <Text Include="doc\syscfg.txt" />
     <Text Include="doc\install.txt" />
+    <Text Include="doc\thread_lfm.txt" />
     <Text Include="doc\todo.txt" />
     <Text Include="doc\upgrade.txt" />
     <Text Include="doc\vpncfg.txt" />
+    <Text Include="doc\wait_queue.txt" />
     <Text Include="drivers\x86\ahci_dev.txt" />
     <Text Include="netcore\bug_oe.txt" />
     <Text Include="netcore\cap\todo.txt" />

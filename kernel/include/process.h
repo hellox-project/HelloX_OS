@@ -245,8 +245,21 @@ BEGIN_DEFINE_OBJECT(__PROCESS_OBJECT)
 	//Process's name.
 	char ProcessName[MAX_THREAD_NAME + 1];
 
+	/* 
+	 * Process's ID, just use 64 bits to avoid 
+	 * it's overflow. 
+	 */
+	unsigned long long process_id;
+
 	//Process status.
 	DWORD dwProcessStatus;
+
+	/* Flash message. */
+	int flash_message_sz;
+	LPVOID flash_message;
+
+	/* Exit code. */
+	int exit_code;
 
 	//Entry point information.
 	__KERNEL_THREAD_ROUTINE lpMainStartRoutine;
@@ -285,10 +298,26 @@ BEGIN_DEFINE_OBJECT(__PROCESS_OBJECT)
 	__HANDLE_ARRAY handleArray;
 END_DEFINE_OBJECT(__PROCESS_OBJECT)
 
-//Process status.
-#define PROCESS_STATUS_INITIALIZING 0x00000001
-#define PROCESS_STATUS_READY        0x00000002
-#define PROCESS_STATUS_TERMINAL     0x00000004
+/*
+ * Process's status.
+ */
+#define PROCESS_STATUS_INITIALIZING (1 << 0)
+#define PROCESS_STATUS_READY        (1 << 1)
+#define PROCESS_STATUS_TERMINAL     (1 << 2)
+
+/*
+ * Process types, we unified many calculating
+ * tasks as process, include VM, AI infer, driver
+ * container, normal process, etc.
+ */
+#define PROCESS_TYPE_NORMAL            0
+#define PROCESS_TYPE_VM                1
+#define PROCESS_TYPE_AIINFER           2
+#define PROCESS_TYPE_DRIVERCONTAINER   3
+
+/* Errors related to process. */
+#define PROCESS_ERROR_FLASHMESSAGE_ALREADYSET  1
+#define PROCESS_ERROR_FLASHMESSAGE_NOMESSAGE   2
 
 //Initializer and uninitializer of process object.
 BOOL ProcessInitialize(__COMMON_OBJECT* lpThis);
@@ -299,12 +328,27 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis);
  * level object and manages all process in system.
  */
 BEGIN_DEFINE_OBJECT(__PROCESS_MANAGER)
-    //Process object list,contains all process(es) in system.
+    /*
+	 * Process object list,contains all process(es) in 
+	 * system.
+	 */
 	__KOBJ_LIST_NODE ProcessList;
+
 #if defined(__CFG_SYS_SMP)
 	/* Spin lock to protect the process manager object. */
 	__SPIN_LOCK spin_lock;
 #endif
+
+	/* Process id value. */
+	unsigned long long process_id;
+
+	/* 
+	 * Terminated process queue. 
+	 * The process object with status is TERMINAL 
+	 * will be put into this queue, wait for resouce
+	 * collection by background IDLE thread.
+	 */
+	__PRIORITY_QUEUE* terminal_queue;
 
 	/* 
 	 * Buffer for user agent. User agent is a common
@@ -337,6 +381,9 @@ BEGIN_DEFINE_OBJECT(__PROCESS_MANAGER)
 	BOOL (*UnlinkKernelThread)(__COMMON_OBJECT* lpThis,
 		__COMMON_OBJECT* lpOwnProcess,
 		__COMMON_OBJECT* lpKernelThread);
+
+	/* Process terminal queue. */
+	BOOL (*ProcessTerminalQueue)(__COMMON_OBJECT* lpThis);
 
 	//TLS operation routines.
 	BOOL (*GetTLSKey)(__COMMON_OBJECT* lpThis,
@@ -374,7 +421,7 @@ BEGIN_DEFINE_OBJECT(__PROCESS_MANAGER)
 	 * It should be called before a user thread exit,
 	 * through the maner of system call. 
 	 */
-	void (*ProcessHalfBottom)();
+	void (*ProcessHalfBottom)(int errCode);
 
 	/* Routines to operate handle array of process. */
 	/*
@@ -389,6 +436,14 @@ BEGIN_DEFINE_OBJECT(__PROCESS_MANAGER)
 	/* Return the kernel object given it's handle. */
 	__COMMON_OBJECT* (*GetObjectByHandle)(__PROCESS_OBJECT* pProcess, __HANDLE handle);
 
+	/* Put flash message to process object. */
+	BOOL (*PutFlashMessage)(__PROCESS_OBJECT* pProcess, int flash_message_sz,
+		LPVOID flash_message);
+
+	/* Get flash message from a process object. */
+	BOOL (*GetFlashMessage)(__PROCESS_OBJECT* pProcess, int* flash_message_sz,
+		LPVOID flash_message);
+
 END_DEFINE_OBJECT(__PROCESS_MANAGER)
 
 /* A macro to get the current process object. */
@@ -396,6 +451,16 @@ END_DEFINE_OBJECT(__PROCESS_MANAGER)
 
 /* User agent file's name. */
 #define USER_AGENT_FILE_NAME "C:\\USRAGENT.BIN"
+
+/* 
+ * Maximal parameters that can be transfered 
+ * to a process, i.e, the command line options and
+ * strings number that could transfer to process.
+ */
+#define PROCESS_MAX_PARAMETER_NUM 16
+
+/* Maximal flash message length. */
+#define PROCESS_MAX_FLASHMESSAGE_LEN 65536
 
 #if defined(__CFG_SYS_PROCESS)
 /* 

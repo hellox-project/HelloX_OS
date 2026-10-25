@@ -45,5 +45,7 @@ static BOOL __GetSystemInfo(__SYSTEM_INFO* pSysInfo)
 	pSysInfo->lpMaximumApplicationAddress = (LPVOID)KMEM_USERSPACE_END;
 	pSysInfo->lpMinimumApplicationAddress = (LPVOID)KMEM_USERSPACE_START;
 	pSysInfo->wProcessorLevel = 3;
+
 	return TRUE;
 }
+

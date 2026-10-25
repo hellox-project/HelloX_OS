@@ -1,5 +1,7 @@
 Upgrade process through TFTP function:
 Preparation:
+0. Carry out thoroughly testing, make sure the upgrading path is avaiable
+   after upgrade(for example, FTP service can not use after upgrade);
 1. Compile any kernel or application modules, make them ready on PC;
 2. Make sure the TFTP client is installed on local PC;
 3. Network connection between local PC and hellox box is established;

@@ -14,7 +14,7 @@
     <ProjectGuid>{5E2A6354-0680-48DF-B1B4-BA618BE37083}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>hxlib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -24,7 +24,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -69,30 +69,44 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AssemblerOutput>All</AssemblerOutput>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <EntryPointSymbol>_hx_main</EntryPointSymbol>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Text Include="ftp_srv\to_do.txt" />
     <Text Include="ReadMe.txt" />
     <Text Include="todo.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arch\bpstruct.h" />
     <ClInclude Include="arch\epstruct.h" />
+    <ClInclude Include="binsem.h" />
+    <ClInclude Include="bitscan_AI.h" />
     <ClInclude Include="cJSON\cJSON.h" />
     <ClInclude Include="ctype.h" />
+    <ClInclude Include="dirent.h" />
     <ClInclude Include="errno.h" />
+    <ClInclude Include="fcntl.h" />
     <ClInclude Include="float.h" />
+    <ClInclude Include="ftp_srv\cfgparse.h" />
+    <ClInclude Include="ftp_srv\fspathtools.h" />
+    <ClInclude Include="ftp_srv\ftpserv.h" />
+    <ClInclude Include="ftp_srv\x_malloc.h" />
+    <ClInclude Include="gnutls\gnutls.h" />
     <ClInclude Include="hellox.h" />
     <ClInclude Include="inet.h" />
-    <ClInclude Include="inttypes.h" />
     <ClInclude Include="io.h" />
     <ClInclude Include="limits.h" />
     <ClInclude Include="math.h" />
@@ -123,6 +137,7 @@
     <ClInclude Include="time.h" />
     <ClInclude Include="time_pri.h" />
     <ClInclude Include="unistd.h" />
+    <ClInclude Include="wchar.h" />
     <ClInclude Include="wildcard\wildcard.h" />
     <ClInclude Include="__hxcomm.h" />
   </ItemGroup>
@@ -132,26 +147,42 @@
     <ClCompile Include="atan.c" />
     <ClCompile Include="atan2.c" />
     <ClCompile Include="atox.c" />
+    <ClCompile Include="binsem.c" />
     <ClCompile Include="ceil.c" />
     <ClCompile Include="cJSON\cJSON.c" />
+    <ClCompile Include="cleanup.c" />
     <ClCompile Include="copysign.c" />
     <ClCompile Include="ctype.c" />
+    <ClCompile Include="dirent.c" />
+    <ClCompile Include="dirlist.c" />
     <ClCompile Include="errno.c" />
     <ClCompile Include="exp.c" />
     <ClCompile Include="fabs.c" />
     <ClCompile Include="finite.c" />
+    <ClCompile Include="ftp_srv\cfgparse.c" />
+    <ClCompile Include="ftp_srv\fspathtools.c" />
+    <ClCompile Include="ftp_srv\ftpconst.c" />
+    <ClCompile Include="ftp_srv\ftpserv.c" />
+    <ClCompile Include="ftp_srv\ftp_main.c" />
+    <ClCompile Include="ftp_srv\x_malloc.c" />
     <ClCompile Include="getenv.c" />
+    <ClCompile Include="gnutls\gnutls_sim.c" />
+    <ClCompile Include="gnutls\strtoul.c" />
     <ClCompile Include="hellox.c" />
     <ClCompile Include="io.c" />
     <ClCompile Include="log.c" />
+    <ClCompile Include="main.c" />
     <ClCompile Include="math.c" />
     <ClCompile Include="memory.c" />
     <ClCompile Include="nextafter.c" />
     <ClCompile Include="pow.c" />
     <ClCompile Include="pthread.c" />
+    <ClCompile Include="pthread_cond.c" />
     <ClCompile Include="pthread_mutex.c" />
     <ClCompile Include="pthread_other.c" />
+    <ClCompile Include="pthread_sem.c" />
     <ClCompile Include="ptmalloc\malloc.c" />
+    <ClCompile Include="qsort.c" />
     <ClCompile Include="rand.c" />
     <ClCompile Include="regexp\regexp.c" />
     <ClCompile Include="scalbn.c" />
@@ -159,17 +190,29 @@
     <ClCompile Include="sched.c" />
     <ClCompile Include="setjmp.c" />
     <ClCompile Include="signal.c" />
+    <ClCompile Include="sockaddr.c" />
     <ClCompile Include="sockets\hx_eth.c" />
     <ClCompile Include="sockets\hx_inet.c" />
     <ClCompile Include="sockets\ip_addr.c" />
     <ClCompile Include="sockets\socket.c" />
     <ClCompile Include="sqrt.c" />
     <ClCompile Include="stat.c" />
+    <ClCompile Include="stattest.c" />
     <ClCompile Include="stdio.c" />
+    <ClCompile Include="strftime.c" />
     <ClCompile Include="string.c" />
     <ClCompile Include="strtod.c" />
+    <ClCompile Include="test\app_main.c" />
+    <ClCompile Include="test\binsem_test.c" />
+    <ClCompile Include="test\clock_test.c" />
+    <ClCompile Include="test\pthread_cond_test.c" />
+    <ClCompile Include="test\semaphore_test.c" />
+    <ClCompile Include="test\sleep_test.c" />
+    <ClCompile Include="test\timer_test.c" />
     <ClCompile Include="time.c" />
+    <ClCompile Include="timetest.c" />
     <ClCompile Include="trig.c" />
+    <ClCompile Include="wchar.c" />
     <ClCompile Include="wildcard\wildcard.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

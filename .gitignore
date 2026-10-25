@@ -1,0 +1,69 @@
+# =====================================================================
+# Build artifacts
+# =====================================================================
+*.o
+*.obj
+*.cod
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.pch
+*.pdb
+*.idb
+*.ncb
+*.suo
+*.plg
+*.opt
+*.sdf
+*.map
+*.tlog
+*.lo
+*.la
+*.Plo
+*.Tpo
+*.lastbuildstate
+*.intermediate.manifest
+*.lastcodeanalysissucceeded
+*.nativecodeanalysis.xml
+*.CppClean.log
+*.log
+*.mak
+*.dep
+*.user
+
+# =====================================================================
+# Visual Studio / build output directories
+# =====================================================================
+Debug/
+Release/
+x64/
+ipch/
+
+# =====================================================================
+# Disk images and archives
+# =====================================================================
+*.zip
+*.VFD
+*.vfd
+*.img
+*.bin
+
+# =====================================================================
+# cFS port build outputs
+# =====================================================================
+app/nasa_cfs/build/
+app/nasa_cfs/bin/
+app/nasa_cfs/cfs/build/
+app/nasa_cfs/cfs/sample_defs/
+
+# =====================================================================
+# Nested git repositories (avoid accidentally committing sub-repos)
+# =====================================================================
+.git/
+
+# =====================================================================
+# Binary resource directories
+# =====================================================================
+tools/hcxbuild/bmp/

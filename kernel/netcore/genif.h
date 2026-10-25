@@ -56,6 +56,13 @@
 #include "lwip/pbuf.h"
 #include "lwip/err.h"
 
+/*
+ * Pack all structures to machine word, so
+ * other modules outside kernel could keep
+ * same layout of all these structures.
+ */
+#pragma pack(push, __MACHINE_WORD_LENGTH)
+
 /* Constants for generic network interface. */
 #define GENIF_NAME_LENGTH  MAX_NETIF_NAME_LENGTH
 #define GENIF_HARD_ADDRLEN 16
@@ -349,5 +356,7 @@ int general_ip_output(__GENERIC_NETIF* pGenif, struct pbuf* pkt,
  * according genif flags.
  */
 int genif_apply_callback(__GENERIC_NETIF* pGenif, struct pbuf* pkt);
+
+#pragma pack(pop)
 
 #endif //__GENIF_H__

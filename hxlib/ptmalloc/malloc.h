@@ -484,6 +484,15 @@ MAX_RELEASE_CHECK_RATE   default: 255 unless not HAVE_MMAP
 #ifndef __MALLOC_H__
 #define __MALLOC_H__
 
+/* Inherit from WIN32 configurations. */
+#ifndef WIN32
+#define WIN32
+#endif
+
+#if defined(linux)
+#define HAVE_MREMAP 0
+#endif
+
 /* 
  * Use _dl_ as malloc routine's prefix instead 
  * of standard C library name. 
@@ -561,7 +570,11 @@ MAX_RELEASE_CHECK_RATE   default: 255 unless not HAVE_MMAP
 #define FOOTERS 0
 #endif  /* FOOTERS */
 #ifndef ABORT
-#define ABORT  abort()
+#define ABORT  \
+	{ \
+		printf("[%s][%d]execution abort\r\n", __func__, __LINE__); \
+		abort(); \
+	}
 #endif  /* ABORT */
 #ifndef ABORT_ON_ASSERT_FAILURE
 #define ABORT_ON_ASSERT_FAILURE 1

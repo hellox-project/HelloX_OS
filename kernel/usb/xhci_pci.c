@@ -9,9 +9,10 @@
 #include "xhci.h"
 #include <pci_drv.h>
 
-//This file only available when xHCI is enabled.
+/* Enable only when XHCI defined. */
 #ifdef CONFIG_USB_XHCI
 
+/* PCI class id of xHCI. */
 #define XHCI_PCI_CLASS_IDENTIFIER 0x0C0330
 
 /*
@@ -22,8 +23,8 @@
 //device searching.
 static __PHYSICAL_DEVICE* pOldCtrl = NULL;
 
-int xhci_hcd_init(int index, struct xhci_hccr **ret_hccr,
-struct xhci_hcor **ret_hcor)
+__PHYSICAL_DEVICE* xhci_hcd_init(int index, struct xhci_hccr **ret_hccr,
+	struct xhci_hcor **ret_hcor)
 {
 	struct xhci_hccr *hccr;
 	struct xhci_hcor *hcor;
@@ -36,7 +37,10 @@ struct xhci_hcor **ret_hcor)
 	int len;
 	int ret = -1;
 
-	//Try to locate XHCI controller's physical device in system.
+	/* 
+	 * Try to locate XHCI controller's 
+	 * physical device in system.
+	 */
 	id.dwBusType = BUS_TYPE_PCI;
 	id.Bus_ID.PCI_Identifier.ucMask = PCI_IDENTIFIER_MASK_CLASS;
 	id.Bus_ID.PCI_Identifier.dwClass = (XHCI_PCI_CLASS_IDENTIFIER << 8);
@@ -44,14 +48,17 @@ struct xhci_hcor **ret_hcor)
 		BUS_TYPE_PCI,
 		&id,
 		pOldCtrl);
-	if (NULL == pUsbCtrl)  //Can not find the device.
+	if (NULL == pUsbCtrl)
 	{
-		_hx_printf("XHCI: Can not find XHCI controller in system.\r\n");
+		//_hx_printf("XHCI: Can not find XHCI controller in system.\r\n");
 		pOldCtrl = NULL;
 		goto __TERMINAL;
 	}
 
-	//Save the found USB controller object,so as the start point of next searching.
+	/* 
+	 * Save the found USB controller object,
+	 * so as the start point of next searching.
+	 */
 	pOldCtrl = pUsbCtrl;
 
 	//Get the vendor ID and device ID and the base address.
@@ -60,7 +67,8 @@ struct xhci_hcor **ret_hcor)
 	printf("XHCI pci controller (Vendor: %04X, Device: %04X) found.\r\n", vid, did);
 	base = pUsbCtrl->ReadDeviceConfig(pUsbCtrl, PCI_CONFIG_OFFSET_BASE1, sizeof(base));
 	printf("XHCI regs address 0x%08x\r\n", base);
-	base &= ~0x0F;  //Clear the lowest 4 bits.
+	//Clear the lowest 4 bits.
+	base &= ~0x0F;
 
 	//Reserve the config register space in Virtual Memory Space.
 #ifdef __CFG_SYS_VMM
@@ -92,18 +100,20 @@ struct xhci_hcor **ret_hcor)
 	cmd |= 0x04;
 	pUsbCtrl->WriteDeviceConfig(pUsbCtrl, PCI_CONFIG_OFFSET_COMMAND, cmd, 2);
 
-	//Mark the return value as success.
+	/* Everything is OK. */
 	ret = 0;
 
 __TERMINAL:
-	if (ret)  //Failed of this routine.
+	if (ret)
 	{
+		/* Somewhere failure. */
 		if (pRegBase)
 		{
 			VirtualFree(pRegBase);
 		}
+		return NULL;
 	}
-	return ret;
+	return pUsbCtrl;
 }
 
 /*

@@ -1,0 +1,23 @@
+1. #define CONFIG_FILE_NAME     "c:\\ftp\\ftpdcfg.txt" should be changed to "ftpdcfg.txt",
+and make sure the fopen function can use app's current directory as home;
+2. On Lenovo PC, default route should be added, since network config file can not opened 
+under USB stick;
+3. FTP client could connect to server in Lenovo, but can not execute 'dir' command,
+sometimes OK;
+4. May try on physical disk on blue-box;
+5. x_malloc error with size(-4) is caused by clause 1;
+6. copy command may should be revised, since can not copy bootsect to \\.\ATADISK0,
+Invalid dest file is prompted;
+7. Network config file should be revised according different target;
+8. TFTP service in blackbox fault(confirmed in VM), should install the physical blackbox
+through monitor and cable, near field;
+9. Near field upgrade:
+   9.1 Can not load using USB stick, may changed under BIOS configuration;
+   9.2 Can not access USB directly, enable IDE(__CFG_DRV_IDE) and rebuild;
+   9.3 Copy files to blackbox directly, and test ftp service functions after.
+10. Things to do:
+   1. Configure file missing(x_malloc with -4);
+   2. USB storage conflict when using FTP service;
+   3. Optimize FTP service's other functions;
+   4. Change network configure file for blue-box;
+   5. Thoroughly testing;

@@ -1,0 +1,102 @@
+1. In mailbox's getting routine, the 0 waiting time should be processed correctly,
+   now it's skiped when dwMillionSecond is 0, the following code lines(654@synobj2.c)
+   will never reach: --checked again, may no problem, since lwIP invoked several times.
+   	if (0 == dwMillionSecond)
+	{
+		/* Should return immediately.*/
+		__LEAVE_CRITICAL_SECTION_SMP(pMailbox->spin_lock, dwFlags);
+		dwRetValue = OBJECT_WAIT_TIMEOUT;
+		goto __TERMINAL;
+	}
+
+2. cFS源代码结构：在移植时，只需要增加一个OS目录（os/hellox/inc&src)，所有代码放在该目录下；
+3. shared目录存放的是OSAL这一层本身的实现，即OSAL内部机制的实现。这个目录下的代码，调用了OS特定目录下
+   的具体实现（函数后缀_Impl）；
+4. portable目录下是一些可共享的源代码实现，即可以被不同OS调用的源代码，这个目录下的源代码按需取用；
+5. 移植完成后，直接用tests目录下的测试用例进行测试，这些测试用例通过后，即可保证被cFS正常集成；
+6. 还需要修改CMake构建程序，确保移植的目录和源代码能够包含到构建中。这个工作可以考虑让AI完成；
+7. 关于timebase与timer的关系：按Claude的解释，timebase是周期性的时间触发源，类似system tick，
+   定期的触发，而timer则是附着在timebase上的具体定时器，timer的定时周期必须是timebase的整数倍，
+   因此在实现上，每当OSAL调用一次TimeBaseCreate的时候，就创建一个独立线程，专门以消息循环方式处理
+   TIMER消息，在OSAL调用TimeBaseSet的时候，再创建定时器并关联到线程；当OSAL调用TimerAdd的时候，
+   应该是把这个timer挂载到一个链表上，在timebase到期的处理函数中，遍历链表，找到到时的timer，并
+   调用其回调处理函数；在OSAL调用TimeBaseDelete时，通知后台线程退出（以消息方式）；
+8. 当前timer的API还未实现，另外需要支持SetTimer时，关联到具体的一个线程，即SetTimer的参数要支持
+   线程HANDLE作为入参。另外需要确认一下有没有类似Windows的timer消息合并问题，即如果消息队列中有多个
+   消息，会不会合并成一个（应该没有）；
+9. 实现二进制信号量（BinSemphore），作为支持OSAL二进制信号量的底层基础设施，对于队列机制，暂时考虑
+   用MailBox实现；
+10. FileSystem（不是file I/O）当前可以暂不实现，只返回NOT_IMPLEMENTED即可。根据Claude的描述，不
+   影响cFS的功能；
+11. 文件系统：According Claude, invoke OS_FileSysAddFixedMap() routine to configure mapping
+   between OSAL /xxx style file path and HelloX C:\xxx filepath, in BSP boot and initial
+   process; Then implement OS_TranslatePath interface(os-impl-file.c), return the mapping
+   between OSAL style and HelloX style, should check the file name and path's length accordingly;
+12. OS_mount/unmount, could be used to validate the disk or mount point is legal or illegal,
+   just return SUCCESS; OS_mkfs just return NOT_IMPLEMENTED; OS_FS_GetPhysDriveName just return
+   the physical disk and path;
+13. File name and path string's capital should carefully check; apply the functional test to
+   make sure the porting is OK;
+14. There are 2 BSP/PSPs: BSP with OSAL(simple) and PSP with cFE(complicated), should distinguish
+   them;
+15. Reset type just return POR(Power On Reset);
+16. Memory Reserved Region: just keep volatile, return POR;
+17. Watch dog, interrupt or exception hook, just mark "NOT_IMPLEMENTED";
+18. Consider implement shared memory region, file mapping, structural exception mechanism, in
+   HelloX kernel;
+19. Use mutex_condvar implement the binSemaphore, as following:
+   1) Give operation:
+      lock(mutex);
+	  if(val < 1) {
+	    val = 1;
+		cond_signal(cond);  /* Signal condition variable. */
+	  }
+	  unlock(mutex);
+   2) Take operation:
+      lock(mutex);
+	  while(val < 1)
+	  {
+	    cond_wait(cond, mutex);  /* Check the semantic of condvar. */
+	  }
+	  val = 0;
+	  unlock(mutex);
+   3) Flush operation:
+      lock(mutex);
+	  generation++;  /* generation counter, indicate the thread is waken up by flush or give. */
+	  cond_broadcast(cond); /* Check the semantic of condvar. */
+	  /* Do not change the value of val. */
+	  unlock(mutex);
+
+	  So the take's operation changes as follows:
+	  lock(mutex);
+	  uint32_t local_generation = generation;
+	  while((val < 1) &&(local_generation == generation))
+	  {
+	    cond_wait(cond, mutex);
+	  }
+	  /* Thread is waken up now. */
+	  if(local_generation != generation)
+	  {
+	    /* Thread is waken up by flushing, just return success. */
+		unlock(mutex);
+		return OS_SUCCESS;
+	  }
+	  /* Thread is waken up by give. */
+	  val = 0;
+	  unlock(mutex);
+	  return OS_SUCCESS;
+
+20. Condition var's semantic should be examed carefully and the old code
+   of HelloX kernel must be carefully revised;
+
+21. Implement system call of condition var:
+   1) Implement CreateCondition, CondSignal, CondBroadcast, CondWait, CondTimeoutWait routines,
+      cond destroying just invoke ObjectManager's DestroyObject routine;
+   2) In user space, implement the corresponding routines accordingly, just use CloseHandle as
+      destroying of condition var;
+   3) Use handle as condition object's reference between user and kernel, include mutex object;
+   4) Use the already existing pthread_xxx implementation in user space as lib;
+   5) Should process the CondTimeoutWait scenario with time_out value is 0(!!!);
+   6) Test the condtion in user space using AI generated code, make this object as one kind of
+      key kernel object;
+   

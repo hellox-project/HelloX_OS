@@ -51,7 +51,11 @@
 
 //#define CONFIG_USB_HOST_ETHER
 
-//Maximal USB controllers of each type(OHCI/UHCI/EHCI/xHCI,etc) in system.
+/*
+ * Maximal USB controllers of each type
+ * (OHCI/UHCI/EHCI/xHCI,etc) in system that
+ * the OS kernel can support.
+ */
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 2
 
 //Maximal USB controllers of ALL TYPES in system.

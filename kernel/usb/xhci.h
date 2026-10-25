@@ -1153,7 +1153,7 @@ static inline void xhci_writeq(__le64 volatile *regs, const u64 val)
 #endif
 }
 
-int xhci_hcd_init(int index, struct xhci_hccr **ret_hccr,
+__PHYSICAL_DEVICE* xhci_hcd_init(int index, struct xhci_hccr **ret_hccr,
 struct xhci_hcor **ret_hcor);
 void xhci_hcd_stop(int index);
 
@@ -1309,6 +1309,12 @@ struct xhci_hcor *hcor);
 extern struct dm_usb_ops xhci_usb_ops;
 
 struct xhci_ctrl *xhci_get_ctrl(struct usb_device *udev);
+
+/* 
+ * General entry of xHCI controller 
+ * interrupt handler. 
+ */
+unsigned long xHCIIntHandler(LPVOID pParam);
 
 #endif //CONFIG_USB_XHCI
 

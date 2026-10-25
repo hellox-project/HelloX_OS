@@ -30,7 +30,6 @@ void sched_yield()
 void exit(int status)
 {
 	TerminateKernelThread(NULL, status);
-	
 }
 
 //abort routine.

@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <PCI_DRV.H>
+#include <blkcache.h>
 
 #include "ahcidef.h"
 #include "ahci.h"
@@ -178,6 +179,16 @@ static int InitExtension(
 		STORAGE_MAX_RW_SIZE,
 		pPe,
 		lpDrvObject);
+	if (NULL == pDevObject)
+	{
+		/* Create partition object failed. */
+		_hx_printf("[%s]Failed to create partition object.\r\n",
+			__func__);
+		RELEASE_OBJECT(pPe);
+		goto __TERMINAL;
+	}
+
+	/* Increment partition number. */
 	nPartitionNum += 1;
 
 	/*
@@ -333,9 +344,12 @@ static int InitPartitions(
 			lpDrvObject);
 		if (NULL == pDevObject)
 		{
+			_hx_printf("[%s]failed to create partition object.\r\n",
+				__func__);
 			RELEASE_OBJECT(pPe);
 			break;
 		}
+
 		/* Reset to default value since will be resued. */
 		dwAttributes = DEVICE_TYPE_PARTITION;
 	}

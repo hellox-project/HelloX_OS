@@ -168,6 +168,9 @@ static BOOL __copy_one_file(const char* srcFullName, const char* dstFullName,
 	} while (dwReadSize == __TMP_FILE_BUFFSZ);
 #undef __TMP_FILE_BUFFSZ
 
+	/* Set the end position of target file. */
+	SetEndOfFile(hDestinationFile);
+
 	bResult = TRUE;
 
 __TERMINAL:

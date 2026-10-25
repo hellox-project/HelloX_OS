@@ -140,15 +140,6 @@
     <ClCompile Include="fs\fsstr.c">
       <Filter>Source Files\fs</Filter>
     </ClCompile>
-    <ClCompile Include="fs\NTFS.C">
-      <Filter>Source Files\fs</Filter>
-    </ClCompile>
-    <ClCompile Include="fs\NTFS2.C">
-      <Filter>Source Files\fs</Filter>
-    </ClCompile>
-    <ClCompile Include="fs\NTFSDRV.C">
-      <Filter>Source Files\fs</Filter>
-    </ClCompile>
     <ClCompile Include="shell\EXTCMD.C">
       <Filter>Source Files\shell</Filter>
     </ClCompile>
@@ -659,18 +650,6 @@
     <ClCompile Include="arch\x86\pic.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="netcore\drivers\r8152_e.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\r8152_fw.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\rtl8152.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\rtl8111.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="netcore\dpi\dpi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -702,9 +681,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kernel\system2.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="netcore\drivers\e1000ex.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="netcore\ethio.c">
@@ -914,6 +890,36 @@
     <ClCompile Include="shell\fs_del.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="usb\xhciint.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arch\x86\vesa.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\e1000\e1000ex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\r8152\r8152_e.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\r8152\r8152_fw.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\r8152\rtl8152.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netcore\drivers\rtl8111\rtl8111.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\cst.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fs\blkcache.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kernel\condvar.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\arch\bpstruct.h">
@@ -1034,9 +1040,6 @@
       <Filter>Header Files\fs_hdr</Filter>
     </ClInclude>
     <ClInclude Include="fs\fsstr.h">
-      <Filter>Header Files\fs_hdr</Filter>
-    </ClInclude>
-    <ClInclude Include="fs\NTFS.H">
       <Filter>Header Files\fs_hdr</Filter>
     </ClInclude>
     <ClInclude Include="shell\EXTCMD.H">
@@ -1363,16 +1366,7 @@
     <ClInclude Include="arch\x86\pic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="netcore\drivers\r8152.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="netcore\drivers\r8152_e.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="netcore\drivers\usb_ether.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="netcore\drivers\rtl8111.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="netcore\dpi\dpimgr.h">
@@ -1406,9 +1400,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="netcore\genif.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="netcore\drivers\e1000ex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="syscall\memxfer.h">
@@ -1552,6 +1543,27 @@
     <ClInclude Include="lib\regexp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="arch\x86\vesa.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\e1000\e1000ex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\r8152\r8152.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\r8152\r8152_e.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netcore\drivers\rtl8111\rtl8111.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fs\blkcache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Authors.txt">
@@ -1582,7 +1594,6 @@
     <Text Include="doc\todo.txt" />
     <Text Include="doc\lock_ord.txt" />
     <Text Include="doc\pendissu.txt" />
-    <Text Include="doc\proc_del.txt" />
     <Text Include="doc\rev_recd.txt" />
     <Text Include="network\rev_recd.txt" />
     <Text Include="netcore\dhcp_srv\dhcp_ms.txt" />
@@ -1604,5 +1615,12 @@
     <Text Include="netcore\dhcp_srv\jsnfmt.txt" />
     <Text Include="netcore\pppox\cfgfmt.txt" />
     <Text Include="doc\printf.txt" />
+    <Text Include="doc\thread_lfm.txt" />
+    <Text Include="doc\call_stack_trace.txt" />
+    <Text Include="doc\wait_queue.txt" />
+    <Text Include="doc\block_cache.txt" />
+    <Text Include="doc\process_delete.txt" />
+    <Text Include="doc\install_on_new_vhd.txt" />
+    <Text Include="doc\cfs_port.txt" />
   </ItemGroup>
 </Project>

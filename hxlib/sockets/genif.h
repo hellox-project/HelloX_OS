@@ -111,6 +111,14 @@ enum __LINK_TYPE {
 	lt_loopback = GENIF_LINKTYPE_LOOPBACK
 };
 
+/* Tunnel type if the genif is a VTI. */
+enum __VTI_TYPE {
+	vti_ipsec = 0,
+	vti_gre   = 1,
+	vti_l2tp  = 2,
+	vti_ht2   = 3,
+};
+
 /* Ethernet interface duplex mode. */
 enum __DUPLEX {
 	half = 0,

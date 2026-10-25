@@ -24,14 +24,18 @@
 #include <stdio.h>
 
 #include "fsstr.h"
+#include "blkcache.h"
 #include "fat32.h"
 
 /* Available if and only if the DDF function is enabled. */
 #ifdef __CFG_SYS_DDF
 
 /* 
- * Read one or several sector(s) from device object.
- * This is the lowest level routine used by all FAT32 driver code.
+ * Read one or several sector(s) from device object directly, without
+ * block cache support. 
+ * It maybe invoked by several low level initialization places, such
+ * as the initialization code of fat fs code, since the block cache
+ * is not created.
  */
 BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	DWORD            dwStartSector,
@@ -73,7 +77,8 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition,
 	pDrcb->dwRequestMode = DRCB_REQUEST_MODE_IOCTRL;
 	pDrcb->dwCtrlCommand = IOCONTROL_READ_SECTOR;
 	pDrcb->dwInputLen = sizeof(DWORD);
-	pDrcb->lpInputBuffer = (LPVOID)&dwStartSector;    //Input buffer stores the start position pointer.
+	//Input buffer stores the start sector to read.
+	pDrcb->lpInputBuffer = (LPVOID)&dwStartSector;    
 	pDrcb->dwOutputLen = dwSectorNum * (pDevObject->dwBlockSize);
 	pDrcb->lpOutputBuffer = pBuffer;
 
@@ -96,7 +101,10 @@ __TERMINAL:
 	return bResult;
 }
 
-/* Write one or several sector(s) to device. */
+/* 
+ * Write one or several sector(s) to device directly, without
+ * support of block cache.
+ */
 BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition,
 	DWORD dwStartSector,
 	DWORD dwSectorNum,
@@ -155,8 +163,70 @@ __TERMINAL:
 	return bResult;
 }
 
+/*
+ * Read sector(s) from fat, use dedicated APIs
+ * since dedicated block cache policy is applied
+ * to FAT.
+ */
+BOOL ReadFatSector(__FAT32_FS* pFat32Fs,
+	DWORD            dwStartSector,
+	DWORD            dwSectorNum,
+	BYTE*            pBuffer)
+{
+	__COMMON_OBJECT* pPartition = NULL;
+
+	BUG_ON((NULL == pFat32Fs) || (NULL == pBuffer));
+	pPartition = pFat32Fs->pPartition;
+	BUG_ON(NULL == pPartition);
+
+#if (__FAT_BLOCKCACHE_ENABLE)
+	__BLK_CACHE* pBlkCache = pFat32Fs->pBlockCache;
+	BUG_ON(NULL == pBlkCache);
+
+	/* Invoke the cache version of reading. */
+	return BlkCacheRead(pBlkCache, dwStartSector,
+		dwSectorNum, pBuffer);
+#else
+	/* Just invoke the read device sector routine. */
+	return ReadDeviceSector(pPartition,
+		dwStartSector, dwSectorNum, pBuffer);
+#endif
+}
+
+/*
+ * Write sector(s) from fat, use dedicated APIs
+ * since dedicated block cache policy is applied
+ * to FAT.
+ */
+BOOL WriteFatSector(__FAT32_FS* pFat32Fs,
+	DWORD            dwStartSector,
+	DWORD            dwSectorNum,
+	BYTE*            pBuffer)
+{
+	__COMMON_OBJECT* pPartition = NULL;
+
+	BUG_ON((NULL == pFat32Fs) || (NULL == pBuffer));
+	pPartition = pFat32Fs->pPartition;
+	BUG_ON(NULL == pPartition);
+
+#if (__FAT_BLOCKCACHE_ENABLE)
+	__BLK_CACHE* pBlkCache = pFat32Fs->pBlockCache;
+	BUG_ON(NULL == pBlkCache);
+
+	/* Invoke the cache version of reading. */
+	return BlkCacheWrite(pBlkCache, dwStartSector,
+		dwSectorNum, pBuffer);
+#else
+	/* Just invoke the read device sector routine. */
+	return WriteDeviceSector(pPartition,
+		dwStartSector, dwSectorNum, pBuffer);
+#endif
+}
+
 /* 
- * Initialize one FAT32 file system given the first sector data.
+ * Initialize one FAT32 file system given the first 
+ * sector data. Fat table's block cache is created 
+ * and initialized in this routine.
  * Return TRUE if sucessfully.
  */
 BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
@@ -170,8 +240,16 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 	DWORD     TotSec = 0;
 	DWORD     DataSec = 0;
 	DWORD     CountOfCluster = 0;
+	__DEVICE_OBJECT* pPartition = NULL;
 
 	BUG_ON((NULL == pFat32Fs) || (NULL == pSector0));
+	
+	/* Partition must be specified. */
+	BUG_ON(NULL == pFat32Fs->pPartition);
+	pPartition = (__DEVICE_OBJECT*)pFat32Fs->pPartition;
+	/* Check basic partition variables. */
+	BUG_ON(pPartition->dwBlockSize == 0);
+
 	/* Verify the signature of sector. */
 	if ((0x55 != pStart[510]) || (0xAA != pStart[511]))
 	{
@@ -250,6 +328,20 @@ BOOL Fat32Init(__FAT32_FS* pFat32Fs, BYTE* pSector0)
 	if (CountOfCluster < 4085)
 	{
 		_hx_printf("[%s]only FAT32 supported.\r\n", __func__);
+		goto __TERMINAL;
+	}
+
+	/* 
+	 * Create the block cache of FAT. 
+	 * Read ahead number set to 4 for block cache's
+	 * speculation pre-fetch.
+	 */
+	pFat32Fs->pBlockCache = BlkCacheCreate(pPartition, 0, 4);
+	if (NULL == pFat32Fs->pBlockCache)
+	{
+		/* Create block cache failed. */
+		_hx_printf("[%s]create block cache failed.\r\n",
+			__func__);
 		goto __TERMINAL;
 	}
 

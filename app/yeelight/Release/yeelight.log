@@ -1,7 +1,0 @@
-﻿  yeelight.c
-c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(63): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
-c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(71): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
-c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(84): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
-c:\hellox\personal\hellox_os\app\yeelight\hxlib\ip_addr.h(92): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
-LINK : warning LNK4108: /ALIGN specified without /DRIVER; image may not run
-  yeelight.vcxproj -> C:\HelloX\personal\HelloX_OS\app\yeelight\Release\ylight.exe

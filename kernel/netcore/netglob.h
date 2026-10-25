@@ -25,6 +25,13 @@
 /* For DOMAIN_NAME_LENGTH. */
 #include "netcfg.h"
 
+/*
+ * Pack as machine word length so the
+ * other module could keep same layout
+ * of all structures.
+ */
+#pragma pack(push, __MACHINE_WORD_LENGTH)
+
 /* Structure to contain system network info. */
 typedef struct {
 	char version; /* version of this object. */
@@ -51,5 +58,7 @@ typedef struct tag__NETWORK_GLOBAL{
 }__NETWORK_GLOBAL;
 
 extern __NETWORK_GLOBAL NetworkGlobal;
+
+#pragma pack(pop)
 
 #endif

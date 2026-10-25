@@ -1,0 +1,28 @@
+#---------------------------------------------------------------------------
+# Sample doxygen setup for generating mission documentation
+#---------------------------------------------------------------------------
+
+# Allow overrides
+@INCLUDE_PATH          = @MISSION_SOURCE_DIR@
+
+# Common configuration and default settings
+@INCLUDE               = @MISSION_BINARY_DIR@/docs/cfe-common.doxyfile
+
+# Example mission doc design setup
+PROJECT_NAME           = "@MISSION_NAME@"
+PROJECT_BRIEF          = "Core Flight System project built using \"@MISSIONCONFIG@\" configuration"
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/docs/mission-doc
+WARN_LOGFILE           = mission-doc-warnings.log
+
+# Include mission defs directory
+INPUT                 += @MISSION_DEFS@
+STRIP_FROM_PATH       += @MISSION_DEFS@
+
+# The user content doxyfile contains paths to the mission-specific applications
+@DETAILDESIGN_DOXYFILE_USER_CONTENT@
+@TGTSYSTEM_DOXYFILE_USER_CONTENT@
+
+# Exclude coverage tests, stubs and associated framework from the documentation
+EXCLUDE_PATTERNS       += "*/ut-stubs/*"
+EXCLUDE_PATTERNS       += "*/ut-coverage/*"
+EXCLUDE_PATTERNS       += "*/unit-test*/*"

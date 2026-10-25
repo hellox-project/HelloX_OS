@@ -28,60 +28,12 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#ifndef _INTERNAL_IFSTRIP_
-//#include <cruntime.h>
-#endif  /* _INTERNAL_IFSTRIP_ */
-
-
-/* Define _CRTIMP */
-
-#ifndef _CRTIMP
-#ifdef CRTDLL
-#define _CRTIMP __declspec(dllexport)
-#else  /* CRTDLL */
-#ifdef _DLL
-#define _CRTIMP __declspec(dllimport)
-#else  /* _DLL */
-#define _CRTIMP
-#endif  /* _DLL */
-#endif  /* CRTDLL */
-#endif  /* _CRTIMP */
-
-
-/* Define __cdecl for non-Microsoft compilers */
-
-#if (!defined (_MSC_VER) && !defined (__cdecl))
-#define __cdecl
-#endif  /* (!defined (_MSC_VER) && !defined (__cdecl)) */
-
-/* Define _CRTAPI1 (for compatibility with the NT SDK) */
-
-#ifndef _CRTAPI1
-#if _MSC_VER >= 800 && _M_IX86 >= 300
-#define _CRTAPI1 __cdecl
-#else  /* _MSC_VER >= 800 && _M_IX86 >= 300 */
-#define _CRTAPI1
-#endif  /* _MSC_VER >= 800 && _M_IX86 >= 300 */
-#endif  /* _CRTAPI1 */
-
-
 #include "types.h"
-
-
 
 #ifndef _TIME_T_DEFINED
 typedef long time_t;
 #define _TIME_T_DEFINED
 #endif
-
-
-#ifdef _WIN32
-#ifndef _WCHAR_T_DEFINED
-typedef unsigned short wchar_t;
-#define _WCHAR_T_DEFINED
-#endif  /* _WCHAR_T_DEFINED */
-#endif  /* _WIN32 */
-
 
 /* define structure for returning status information */
 
@@ -101,8 +53,6 @@ struct _stat {
         time_t st_ctime;
         };
 
-#if !__STDC__
-
 /* Non-ANSI names for compatibility */
 
 struct stat {
@@ -119,8 +69,6 @@ struct stat {
         time_t st_ctime;
         };
 
-#endif  /* !__STDC__ */
-
 #if _INTEGRAL_MAX_BITS >= 64   
 struct _stati64 {
         _dev_t st_dev;
@@ -130,7 +78,7 @@ struct _stati64 {
         short st_uid;
         short st_gid;
         _dev_t st_rdev;
-        __int64 st_size;
+        long long st_size;
         time_t st_atime;
         time_t st_mtime;
         time_t st_ctime;
@@ -141,8 +89,7 @@ struct _stati64 {
 #endif  /* _STAT_DEFINED */
 
 //Check if the file is a dir.
-#define S_ISDIR(mode) (mode)
-
+//#define S_ISDIR(mode) (mode)
 
 #define _S_IFMT         0170000         /* file type mask */
 #define _S_IFDIR        0040000         /* directory */
@@ -153,50 +100,75 @@ struct _stati64 {
 #define _S_IWRITE       0000200         /* write permission, owner */
 #define _S_IEXEC        0000100         /* execute/search permission, owner */
 
+/* Flags definitions. */
+#define	S_ISUID	0004000			/* set user id on execution */
+#define	S_ISGID	0002000			/* set group id on execution */
+#ifndef _POSIX_SOURCE
+#define	S_ISTXT	0001000			/* sticky bit */
+#endif
 
-/* Function prototypes */
+#define	S_IRWXU	0000700			/* RWX mask for owner */
+#define	S_IRUSR	0000400			/* R for owner */
+#define	S_IWUSR	0000200			/* W for owner */
+#define	S_IXUSR	0000100			/* X for owner */
 
-_CRTIMP int __cdecl _fstat(int, struct _stat *);
-_CRTIMP int __cdecl _stat(const char *, struct _stat *);
+#ifndef _POSIX_SOURCE
+#define	S_IREAD		S_IRUSR
+#define	S_IWRITE	S_IWUSR
+#define	S_IEXEC		S_IXUSR
+#endif
 
-#if _INTEGRAL_MAX_BITS >= 64   
-_CRTIMP int __cdecl _fstati64(int, struct _stati64 *);
-_CRTIMP int __cdecl _stati64(const char *, struct _stati64 *);
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
+#define	S_IRWXG	0000070			/* RWX mask for group */
+#define	S_IRGRP	0000040			/* R for group */
+#define	S_IWGRP	0000020			/* W for group */
+#define	S_IXGRP	0000010			/* X for group */
 
-#ifdef _WIN32
-#ifndef _WSTAT_DEFINED
+#define	S_IRWXO	0000007			/* RWX mask for other */
+#define	S_IROTH	0000004			/* R for other */
+#define	S_IWOTH	0000002			/* W for other */
+#define	S_IXOTH	0000001			/* X for other */
 
-/* wide function prototypes, also declared in wchar.h  */
+/* All permision bits. */
+#define ALLPERMS (S_IRWXU | S_IRWXG | S_IRWXO)
 
-_CRTIMP int __cdecl _wstat(const wchar_t *, struct _stat *);
+#ifndef _POSIX_SOURCE
+#define	S_IFMT	 0170000		/* type of file mask */
+#define	S_IFIFO	 0010000		/* named pipe (fifo) */
+#define	S_IFCHR	 0020000		/* character special */
+#define	S_IFDIR	 0040000		/* directory */
+#define	S_IFBLK	 0060000		/* block special */
+#define	S_IFREG	 0100000		/* regular */
+#define	S_IFLNK	 0120000		/* symbolic link */
+#define	S_IFSOCK 0140000		/* socket */
+#define	S_IFWHT  0160000		/* whiteout */
+#define	S_ISVTX	 0001000		/* save swapped text even after use */
+#endif
 
-#if _INTEGRAL_MAX_BITS >= 64   
-_CRTIMP int __cdecl _wstati64(const wchar_t *, struct _stati64 *);
-#endif  /* _INTEGRAL_MAX_BITS >= 64    */
-
-#define _WSTAT_DEFINED
-#endif  /* _WSTAT_DEFINED */
-#endif  /* _WIN32 */
-
-
-#if !__STDC__
+#define	S_ISDIR(m)	((m & 0170000) == 0040000)	/* directory */
+#define	S_ISCHR(m)	((m & 0170000) == 0020000)	/* char special */
+#define	S_ISBLK(m)	((m & 0170000) == 0060000)	/* block special */
+#define	S_ISREG(m)	((m & 0170000) == 0100000)	/* regular file */
+#define	S_ISFIFO(m)	((m & 0170000) == 0010000 || \
+			 (m & 0170000) == 0140000)	/* fifo or socket */
+#ifndef _POSIX_SOURCE
+#define	S_ISLNK(m)	((m & 0170000) == 0120000)	/* symbolic link */
+#define	S_ISSOCK(m)	((m & 0170000) == 0010000 || \
+			 (m & 0170000) == 0140000)	/* fifo or socket */
+#define	S_ISWHT(m)	((m & 0170000) == 0160000)	/* whiteout */
+#endif
 
 /* Non-ANSI names for compatibility */
 
-#define S_IFMT   _S_IFMT
-#define S_IFDIR  _S_IFDIR
-#define S_IFCHR  _S_IFCHR
-#define S_IFREG  _S_IFREG
-#define S_IREAD  _S_IREAD
-#define S_IWRITE _S_IWRITE
-#define S_IEXEC  _S_IEXEC
+//#define S_IFMT   _S_IFMT
+//#define S_IFDIR  _S_IFDIR
+//#define S_IFCHR  _S_IFCHR
+//#define S_IFREG  _S_IFREG
+//#define S_IREAD  _S_IREAD
+//#define S_IWRITE _S_IWRITE
+//#define S_IEXEC  _S_IEXEC
 
-int __cdecl fstat(int, struct stat *);
-int __cdecl stat(const char *, struct stat *);
-
-#endif  /* !__STDC__ */
-
+int __CDECL fstat(int, struct stat *);
+int __CDECL stat(const char *, struct stat *);
 
 #ifdef __cplusplus
 }

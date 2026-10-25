@@ -65,4 +65,8 @@ int ffs(int x);
  */
 size_t strcspn(const char* s1, register const char* s2);
 
+/* Case in-sensitive comparation. */
+int strcasecmp(const char *s1, const char *s2);
+int strncasecmp(const char *s1, const char *s2, int n);
+
 #endif //string.h

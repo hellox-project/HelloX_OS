@@ -70,6 +70,7 @@ static DWORD showgif(__CMD_PARA_OBJ*);
 static DWORD setgif(__CMD_PARA_OBJ*);
 static DWORD capstart(__CMD_PARA_OBJ*);
 static DWORD capstop(__CMD_PARA_OBJ*);
+static DWORD socklist(__CMD_PARA_OBJ*);
 
 /* DHCP Server control command. */
 #ifdef __CFG_NET_DHCP_SERVER
@@ -126,6 +127,7 @@ static struct __FDISK_CMD_MAP{
 #endif
 	{ "ipsec",      ipsec_entry,   "  ipsec    : ipsec diagnostic or operation."},
 	{ "vti",        vti_entry,     "  vti      : Virtual tunnel interface management."},
+	{ "socklist",   socklist,      "  socklist : List all socket(s) information."},
 	{ "help",       help,          "  help     : Print out this screen." },
 	{ "exit",       _exit,         "  exit     : Exit the application." },
 	{ NULL,		    NULL,          NULL}
@@ -1547,6 +1549,13 @@ static DWORD capstop(__CMD_PARA_OBJ* lpCmdObj)
 	genif_index = atol(lpCmdObj->Parameter[1]);
 	/* Just invoke the command handler. */
 	CaptureStop(genif_index);
+	return NET_CMD_SUCCESS;
+}
+
+static DWORD socklist(__CMD_PARA_OBJ* lpCmdObj)
+{
+	/* Show all sockets. */
+	sock_list(-1);
 	return NET_CMD_SUCCESS;
 }
 

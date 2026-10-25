@@ -3,7 +3,7 @@
 //    Original Date             : April 18,2015
 //    Module Name               : process.c
 //    Module Funciton           : 
-//                                Process mechanism related data types and
+//                                Process mamagement implementation code.
 //    Last modified Author      :
 //    Last modified Date        :
 //    Last modified Content     :
@@ -70,11 +70,14 @@ BOOL ProcessInitialize(__COMMON_OBJECT* lpThis)
 	lpProcess->pMemMgr = NULL;
 
 	//Initialize TLS flags.
-	lpProcess->dwTLSFlags         = 0;
-	lpProcess->dwObjectSignature  = KERNEL_OBJECT_SIGNATURE;
+	lpProcess->dwTLSFlags = 0;
+	lpProcess->dwObjectSignature = KERNEL_OBJECT_SIGNATURE;
 	lpProcess->lpMainThread = NULL;
-	lpProcess->WaitForThisObject  = WaitForProcessObject;
-	lpProcess->ProcessName[0]     = 0;
+	lpProcess->WaitForThisObject = WaitForProcessObject;
+	lpProcess->ProcessName[0] = 0;
+	lpProcess->exit_code = 0;
+	lpProcess->flash_message_sz = 0;
+	lpProcess->flash_message = NULL;
 
 	/* Initializes handle array of this process. */
 	lpProcess->handleArray.pRoot = NULL;
@@ -114,8 +117,8 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 {
 	__PROCESS_OBJECT* pProcessObject = (__PROCESS_OBJECT*)lpThis;
 	__KOBJ_LIST_NODE* pListNode = NULL;
-	unsigned long ulFlags = 0;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
+	cpuflags_t cpuFlags = 0;
 
 	BUG_ON(NULL == pProcessObject);
 
@@ -130,8 +133,8 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 		return FALSE;
 	}
 
-	/* Delete it from the global process list. */
-	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, ulFlags);
+	/* Delete itself from the global process list and terminal queue. */
+	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, cpuFlags);
 	pListNode = ProcessManager.ProcessList.next;
 	while (pListNode != &ProcessManager.ProcessList)
 	{
@@ -146,9 +149,21 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 	{
 		pListNode->next->prev = pListNode->prev;
 		pListNode->prev->next = pListNode->next;
-		pListNode->next = pListNode->prev = NULL;  //Set as flags.
+		/* Clear pointer as indicator. */
+		pListNode->next = pListNode->prev = NULL;
 	}
-	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, ulFlags);
+
+	/* 
+	 * Delete from terminal queue. 
+	 * It may fail since the process object maybe
+	 * removed from the terminal queue by background
+	 * thread.
+	 */
+	ProcessManager.terminal_queue->DeleteFromQueue(
+		(__COMMON_OBJECT*)ProcessManager.terminal_queue,
+		(__COMMON_OBJECT*)pProcessObject);
+
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, cpuFlags);
 
 	/* Could not find the process object in global list. */
 	BUG_ON(pListNode->next != NULL);
@@ -162,10 +177,20 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 	 */
 	DestroyHandleArray(pProcessObject);
 
+	/* Free flash message buffer. */
+	if (pProcessObject->flash_message)
+	{
+		_hx_free(pProcessObject->flash_message);
+	}
+
 	/* 
 	 * Destroy all kernel thread(s) this process own. 
 	 * No need to release the memory of list node since it will
-	 * be released when the thread is destroyed.
+	 * be released when the thread is destroyed, i.e, when
+	 * the thread object's destroy process is executed, it will
+	 * invoke the UnlinkKernelThread routine, the thread object
+	 * is removed from list and the corresponding list node
+	 * will be freed.
 	 */
 	pListNode = pProcessObject->ThreadObjectList.next;
 	while (pListNode != &pProcessObject->ThreadObjectList)
@@ -184,7 +209,8 @@ BOOL ProcessUninitialize(__COMMON_OBJECT* lpThis)
 	 * Destroy the corresponding virtual memory manager.
 	 * It must be the last step,since other routines may refer it.
 	 */
-	ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pProcessObject->pMemMgr);
+	ObjectManager.DestroyObject(&ObjectManager, 
+		(__COMMON_OBJECT*)pProcessObject->pMemMgr);
 	return TRUE;
 }
 
@@ -236,21 +262,28 @@ static DWORD ProcessEntry(LPVOID pData)
 
 /*
  * Half bottom of a process,at the end of each user thread,
- * this routine will be invoked(through system call in user space).
+ * this routine should be invoked(through system call in user space).
  * It waits all work thread(s) run over if current thread is the
  * main thread,then release all process level resources and exit
  * by calling KernelThreadClean routine.
  * It just invoke the KernelThreadClean routine if current thread
  * is not the main thread.
+ * 
+ * The errCode is transfered here from the user space, it's
+ * the return value of user main thread. Traveling path:
+ *   user_main()->__UsrAgent_Entry->ExitThread->ProcessHalfBottom
+ * It indicates the process level result of executing, and other
+ * process could get the value by invoking GetExitCode system call
+ * go get this value.
  */
 extern void KernelThreadClean(__COMMON_OBJECT* lpKThread, DWORD dwExitCode);
-static void ProcessHalfBottom()
+static void ProcessHalfBottom(int errCode)
 {
 	__PROCESS_OBJECT* pProcess = NULL;
 	__KERNEL_THREAD_OBJECT* currentThread = __CURRENT_KERNEL_THREAD;
 	__KERNEL_THREAD_OBJECT* pKernelThread = NULL;
 	__KOBJ_LIST_NODE* pListNode = NULL;
-	unsigned long ulFlags = 0;
+	cpuflags_t cpuFlags = 0;
 
 	/* Only user thread is permited to invoke this routine. */
 	BUG_ON(IS_KERNEL_THREAD(currentThread));
@@ -259,7 +292,7 @@ static void ProcessHalfBottom()
 	BUG_ON(NULL == pProcess);
 	if (currentThread != pProcess->lpMainThread)
 	{
-		/* Work thread,just clean up and exit. */
+		/* Work thread,just clean up. */
 		KernelThreadClean((__COMMON_OBJECT*)currentThread, 0);
 		/* Should never reach here. */
 		BUG_ON(TRUE);
@@ -268,6 +301,13 @@ static void ProcessHalfBottom()
 	 * Current thread is the main thread of process,so
 	 * do some clean up work for current process.Should 
 	 * wait all work thread(s) run over.
+	 *
+	 * TODO: AI scaned the code and told that the following
+	 * lines may lead dangling pointers: suppose other
+	 * thread modified(by creating new thread) the list. But
+	 * if we acquire process's spin lock here, dead lock may
+	 * raise, suppose other thread also try acquire spin lock
+	 * but we waiting it. we will handle the issue later.
 	 */
 	pListNode = pProcess->ThreadObjectList.next;
 	while (pListNode != &pProcess->ThreadObjectList)
@@ -282,12 +322,20 @@ static void ProcessHalfBottom()
 		pListNode = pListNode->next;
 	}
 
-	/* Release all process level resources. */
-	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
-	/* Set the process's status to TERMINAL so it could be destroyed. */
+	__ENTER_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
+	/* 
+	 * Set the process's status to TERMINAL and insert
+	 * into terminal queue so it could be destroyed. 
+	 */
 	pProcess->dwProcessStatus = PROCESS_STATUS_TERMINAL;
+	ProcessManager.terminal_queue->InsertIntoQueue(
+		(__COMMON_OBJECT*)ProcessManager.terminal_queue,
+		(__COMMON_OBJECT*)pProcess, 0);
+	/* Clear the main thread handle. */
 	pProcess->lpMainThread = NULL;
-	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, ulFlags);
+	/* Set error code(exit code). */
+	pProcess->exit_code = errCode;
+	__LEAVE_CRITICAL_SECTION_SMP(pProcess->spin_lock, cpuFlags);
 
 	/* Clean up main thread. */
 	KernelThreadClean((__COMMON_OBJECT*)currentThread, 0);
@@ -364,10 +412,18 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT* lpThis,
 	}
 	pProcessObject->ProcessName[i] = 0;
 
+	/* Set process id. */
+	pProcessObject->process_id = pProcessManager->process_id;
+	pProcessManager->process_id++;
+
 	/* 
 	 * Create the corresponding virtual memory manager object. 
 	 * Each process has it's own virtual memory space,so a dedicated
-	 * virtual manager is created to manage the whole memory space.
+	 * virtual manager is created to manage the whole lineary memory space
+	 * of the process.
+	 * There is one page index manager object in virtual memory manager,
+	 * page index manager responses to manage page table of the process.
+	 * The PIM is created in process of VMM initialization.
 	 */
 	pvmmgr = (__VIRTUAL_MEMORY_MANAGER*)ObjectManager.CreateObject(&ObjectManager,
 		NULL,
@@ -393,6 +449,10 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT* lpThis,
 	 * since the process's initialization is not over,the start address
 	 * contains nothing now,since the location will be loaded by
 	 * PrepareProcessCtx routine.
+	 * The new created thread will link itself to the thread list
+	 * of process object, in __CreateThread routine. So there is no
+	 * need to link the thread, and also no need to increment thread
+	 * number of process.
 	 * And will resume the main kernel thread after the initialization.
 	 */
 	pProcessObject->lpMainThread = KernelThreadManager.CreateUserThread(
@@ -400,7 +460,7 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT* lpThis,
 		dwMainThreadStackSize,
 		KERNEL_THREAD_STATUS_SUSPENDED,
 		dwMainThreadPriority,
-		(__KERNEL_THREAD_ROUTINE)KMEM_USERAPP_START,
+		(__KERNEL_THREAD_ROUTINE)KMEM_USERAGENT_START,
 		NULL,
 		pProcessObject, /* Own process must be specified. */
 		lpszName);
@@ -408,9 +468,6 @@ static __PROCESS_OBJECT* CreateProcess(__COMMON_OBJECT* lpThis,
 	{
 		goto __TERMINAL;
 	}
-
-	/* How many user thread(s) created yet. */
-	pProcessObject->nKernelThreadNum ++;
 
 	/* 
 	 * Construct user stack frame. 
@@ -456,6 +513,12 @@ __TERMINAL:
 			pProcessObject = NULL;
 		}
 
+		/* Release VMM if created. */
+		if (pvmmgr)
+		{
+			ObjectManager.DestroyObject(&ObjectManager, (__COMMON_OBJECT*)pvmmgr);
+		}
+
 		if(pProcessNode)
 		{
 			KMemFree(pProcessNode,KMEM_SIZE_TYPE_ANY,0);
@@ -466,31 +529,26 @@ __TERMINAL:
 
 /* 
  * Link a kernel thread to it's own process.
- * This kernel thread is created by the own process.
+ * This kernel thread is created by the own process,
+ * so the own process(lpProcess) must be specified.
  */
-static BOOL LinkKernelThread(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpProcess,
+static BOOL LinkKernelThread(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpProcess,
 	__COMMON_OBJECT* lpThread)
 {
 	__PROCESS_MANAGER*       lpProcessManager   = (__PROCESS_MANAGER*)lpThis;
 	__PROCESS_OBJECT*        lpProcessObject    = (__PROCESS_OBJECT*)lpProcess;
 	__KERNEL_THREAD_OBJECT*  lpKernelThread     = (__KERNEL_THREAD_OBJECT*)lpThread;
 	__KOBJ_LIST_NODE*        pListNode          = NULL;
-	DWORD                    dwFlags;
+	cpuflags_t               cpuFlags;
 
-	if((NULL == lpProcessManager) || (NULL == lpProcessObject) || (NULL == lpKernelThread))
-	{
-		return FALSE;
-	}
+	BUG_ON((NULL == lpProcessManager) ||
+		(NULL == lpProcessObject) ||
+		(NULL == lpKernelThread));
 
-	//Check if the objects are valid.
-	if(lpProcessObject->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
-	{
-		return FALSE;
-	}
-	if(lpKernelThread->dwObjectSignature != KERNEL_OBJECT_SIGNATURE)
-	{
-		return FALSE;
-	}
+	/* Validates kernel object's signature. */
+	BUG_ON(lpProcessObject->dwObjectSignature != KERNEL_OBJECT_SIGNATURE);
+	BUG_ON(lpKernelThread->dwObjectSignature != KERNEL_OBJECT_SIGNATURE);
 
 	//Set the own process of kernel thread.
 	lpKernelThread->lpOwnProcess = (__COMMON_OBJECT*)lpProcessObject;
@@ -505,13 +563,14 @@ static BOOL LinkKernelThread(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpProcess
 	pListNode->next = NULL;
 	pListNode->prev = NULL;
 
-	__ENTER_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, cpuFlags);
 	pListNode->prev = lpProcessObject->ThreadObjectList.prev;
 	pListNode->next = &lpProcessObject->ThreadObjectList;
 	lpProcessObject->ThreadObjectList.prev->next = pListNode;
-	lpProcessObject->ThreadObjectList.prev       = pListNode;
-	lpProcessObject->nKernelThreadNum ++;  //Update total thread number.
-	__LEAVE_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
+	lpProcessObject->ThreadObjectList.prev = pListNode;
+	/* Increment the own thread number of process. */
+	lpProcessObject->nKernelThreadNum ++;
+	__LEAVE_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, cpuFlags);
 
 	if(NULL == pListNode->next)
 	{
@@ -523,63 +582,83 @@ static BOOL LinkKernelThread(__COMMON_OBJECT* lpThis, __COMMON_OBJECT* lpProcess
 	return TRUE;
 }
 
-//Detach a kernel thread from the kernel thread list of the specified process.
-static BOOL UnlinkKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpProcess,__COMMON_OBJECT* lpThread)
+/*
+ * Detach a kernel thread from the kernel thread list 
+ * of the owned process.
+ */
+static BOOL UnlinkKernelThread(__COMMON_OBJECT* lpThis,
+	__COMMON_OBJECT* lpProcess,
+	__COMMON_OBJECT* lpThread)
 {
 	__PROCESS_MANAGER*       lpProcessManager   = (__PROCESS_MANAGER*)lpThis;
 	__PROCESS_OBJECT*        lpProcessObject    = (__PROCESS_OBJECT*)lpProcess;
 	__KERNEL_THREAD_OBJECT*  lpKernelThread     = (__KERNEL_THREAD_OBJECT*)lpThread;
 	__KOBJ_LIST_NODE*        pListNode          = NULL;
 	BOOL                     bResult            = FALSE;
-	DWORD                    dwFlags;
+	cpuflags_t               cpuFlags = 0;
 
-	if((NULL == lpProcessManager) || (NULL == lpKernelThread))
-	{
-		return FALSE;
-	}
-	//The own process can be obtained from kernel thread object.
+	BUG_ON(NULL == lpThread);
+
+	/*
+	 * Use process manager's spin lock to protect this
+	 * process since process and thread objects are both
+	 * changed.
+	 */
+	__ACQUIRE_SPIN_LOCK(ProcessManager.spin_lock);
+
+	/* 
+	 * The own process can be obtained from kernel 
+	 * thread object if not specified.
+	 */
 	if(NULL == lpProcessObject)
 	{
 		lpProcessObject = (__PROCESS_OBJECT*)lpKernelThread->lpOwnProcess;
-		if(NULL == lpProcessObject)
+		if (NULL == lpProcessObject)
 		{
+			/* No own process, maybe kernel thread. */
+			__RELEASE_SPIN_LOCK(ProcessManager.spin_lock);
 			return FALSE;
 		}
 	}
 	else
 	{
-		//Should make sure the given process is the exactly one kept in kernel thread object.
-		if(lpProcessObject != (__PROCESS_OBJECT*)lpKernelThread->lpOwnProcess)
-		{
-			return FALSE;
-		}
+		/*
+		 * Make sure the given process is the exactly one kept 
+		 * in kernel thread object.
+		 */
+		BUG_ON(lpProcessObject != (__PROCESS_OBJECT*)lpKernelThread->lpOwnProcess);
 	}
 
-	//Now travel the whole kernel thread list of the process,find the list node and detach it
-	//from list.
-	__ENTER_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
+	/*
+	 * Now travel the whole kernel thread list of the process,
+	 * find the list node and detach it from list.
+	 */
 	pListNode = lpProcessObject->ThreadObjectList.next;
 	while(pListNode != &lpProcessObject->ThreadObjectList)
 	{
-		if(pListNode->pKernelObject == (__COMMON_OBJECT*)lpKernelThread)  //Find.
+		if(pListNode->pKernelObject == (__COMMON_OBJECT*)lpKernelThread)
 		{
+			/* Located. */
 			break;
 		}
 		pListNode = pListNode->next;
 	}
 	if(pListNode != &lpProcessObject->ThreadObjectList)
 	{
-		//Delete the node from list.
+		/* Delete from list. */
 		pListNode->next->prev = pListNode->prev;
 		pListNode->prev->next = pListNode->next;
+
+		/* Decrement the thread number. */
 		lpProcessObject->nKernelThreadNum --;
+		lpKernelThread->lpOwnProcess = NULL;
 		bResult = TRUE;
 	}
 	else
 	{
 		bResult = FALSE;
 	}
-	__LEAVE_CRITICAL_SECTION_SMP(lpProcessManager->spin_lock, dwFlags);
+	__RELEASE_SPIN_LOCK(ProcessManager.spin_lock);
 
 	//Release list node.
 	if(bResult)
@@ -590,10 +669,21 @@ static BOOL UnlinkKernelThread(__COMMON_OBJECT* lpThis,__COMMON_OBJECT* lpProces
 	return bResult;
 }
 
+/*
+ * Allocate a TLS slot and return it.
+ * TO-DO:
+ *   Should clear all thread(s)'s TLS slot
+ *   of the process before return it, since 
+ *   the slot may reused after free, if
+ *   not cleared, the old value of the SLOT
+ *   may affect the later's usage.
+ *   DO it later.
+ */
 static BOOL GetTLSKey(__COMMON_OBJECT* lpThis,DWORD* pTLSKey,LPVOID pReserved)
 {
-	__PROCESS_OBJECT*   pProcessObject = ProcessManager.GetCurrentProcess((__COMMON_OBJECT*)&ProcessManager);
-	DWORD               dwFlags,i;
+	__PROCESS_OBJECT* pProcessObject = ProcessManager.GetCurrentProcess((__COMMON_OBJECT*)&ProcessManager);
+	DWORD i = 0;
+	cpuflags_t cpuFlags = 0;
 
 	if((NULL == pProcessObject) || (NULL == pTLSKey))
 	{
@@ -602,7 +692,7 @@ static BOOL GetTLSKey(__COMMON_OBJECT* lpThis,DWORD* pTLSKey,LPVOID pReserved)
 
 	//Try to find a unused TLS slot,each slot corresponding to the index of
 	//TLS array in Kernel Thread Object.The TLS key is the index value.
-	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
+	__ENTER_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, cpuFlags);
 	for(i = 0;i < MAX_TLS_NUM;i ++)
 	{
 		if((pProcessObject->dwTLSFlags >> i) & 0x01)
@@ -615,7 +705,7 @@ static BOOL GetTLSKey(__COMMON_OBJECT* lpThis,DWORD* pTLSKey,LPVOID pReserved)
 			break;
 		}
 	}
-	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, dwFlags);
+	__LEAVE_CRITICAL_SECTION_SMP(ProcessManager.spin_lock, cpuFlags);
 
 	if(MAX_TLS_NUM == i)  //Can not find free TLS slot.
 	{
@@ -686,11 +776,10 @@ static BOOL SetTLSValue(__COMMON_OBJECT* lpThis,DWORD TLSKey,LPVOID pValue)
 static BOOL PMInitialize(__COMMON_OBJECT* lpThis)
 {
 	__PROCESS_MANAGER*  pProcessManager = (__PROCESS_MANAGER*)lpThis;
+	__PRIORITY_QUEUE* terminal_queue = NULL;
+	BOOL bResult = FALSE;
 
-	if(NULL == pProcessManager)
-	{
-		return FALSE;
-	}
+	BUG_ON(NULL == pProcessManager);
 
 #if defined(__CFG_SYS_SMP)
 	__INIT_SPIN_LOCK(pProcessManager->spin_lock, "processmgr");
@@ -699,7 +788,25 @@ static BOOL PMInitialize(__COMMON_OBJECT* lpThis)
 	pProcessManager->ProcessList.prev = &pProcessManager->ProcessList;
 	pProcessManager->ProcessList.next = &pProcessManager->ProcessList;
 
-	return TRUE;
+	/* Initialize terminal queue. */
+	terminal_queue = (__PRIORITY_QUEUE*)ObjectManager.CreateObject(
+		&ObjectManager,
+		NULL,
+		OBJECT_TYPE_PRIORITY_QUEUE);
+	if (NULL == terminal_queue)
+	{
+		goto __TERMINAL;
+	}
+	if (!terminal_queue->Initialize((__COMMON_OBJECT*)terminal_queue))
+	{
+		goto __TERMINAL;
+	}
+	pProcessManager->terminal_queue = terminal_queue;
+
+	bResult = TRUE;
+
+__TERMINAL:
+	return bResult;
 }
 
 //Get current process from system.
@@ -732,19 +839,177 @@ static BOOL __InitializeCPUTask(__COMMON_OBJECT* pThis)
 	return __InitCPUTask();
 }
 
-//Global process manager object,one and only one in system,to manages all
-//processes.
+/*
+ * Process the terminal process object queue.
+ */
+static BOOL ProcessTerminalQueue(__COMMON_OBJECT* lpThis)
+{
+	__PROCESS_MANAGER* process_mgr = (__PROCESS_MANAGER*)lpThis;
+	BOOL bResult = FALSE;
+	__PRIORITY_QUEUE* terminal_queue = NULL;
+	__PROCESS_OBJECT* pProcessObject = NULL;
+	
+	BUG_ON(NULL == process_mgr);
+	terminal_queue = process_mgr->terminal_queue;
+	pProcessObject = (__PROCESS_OBJECT*)terminal_queue->GetHeaderElement(
+		(__COMMON_OBJECT*)terminal_queue, NULL);
+	while (pProcessObject)
+	{
+		ObjectManager.DestroyObject(&ObjectManager,
+			(__COMMON_OBJECT*)pProcessObject);
+		pProcessObject = (__PROCESS_OBJECT*)terminal_queue->GetHeaderElement(
+			(__COMMON_OBJECT*)terminal_queue, NULL);
+		bResult = TRUE;
+	}
+
+	return bResult;
+}
+
+/* 
+ * Put flash message to a process object. 
+ * If the process's flash message is already set,
+ * then returns FALSE.
+ */
+static BOOL PutFlashMessage(__PROCESS_OBJECT* pProcess, int flash_message_sz,
+	LPVOID flash_message)
+{
+	BOOL bResult = FALSE;
+	LPVOID message_buff = NULL;
+
+	BUG_ON(NULL == pProcess);
+	if ((0 == flash_message_sz) || 
+		(flash_message_sz > PROCESS_MAX_FLASHMESSAGE_LEN) ||
+		(NULL == flash_message))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Allocate buffer to hold the message. */
+	message_buff = _hx_malloc(flash_message_sz);
+	if (NULL == message_buff)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Copy message. */
+	memcpy(message_buff, flash_message, flash_message_sz);
+
+	/* Save to process object, if not set. */
+	__ACQUIRE_SPIN_LOCK(pProcess->spin_lock);
+	if (NULL == pProcess->flash_message)
+	{
+		BUG_ON(pProcess->flash_message_sz != 0);
+		pProcess->flash_message_sz = flash_message_sz;
+		pProcess->flash_message = message_buff;
+		/* Mark as success. */
+		bResult = TRUE;
+	}
+	else {
+		/* Tell the caller using last error. */
+		KernelThreadManager.SetLastError(PROCESS_ERROR_FLASHMESSAGE_ALREADYSET);
+	}
+	__RELEASE_SPIN_LOCK(pProcess->spin_lock);
+
+__TERMINAL:
+	if (!bResult)
+	{
+		/* Release the spectulately created message buffer. */
+		if (message_buff)
+		{
+			_hx_free(message_buff);
+		}
+	}
+	return bResult;
+}
+
+/* 
+ * Get flash message from a process object. 
+ * The flash_message_sz contains the initial length of
+ * the flash message buffer, and will be set the returned
+ * message length:
+ * 1) If flash_message_sz >= process.flash_message_sz, then
+ *    returns the actual message, and flash_message_sz will
+ *    be set to actual message length;
+ * 2) If flash_message_sz < process.flash_message_sz, then
+ *    the FALSE will be returned and the flash_message_sz value
+ *    is set to the requested length, with no message copied
+ *    into flash_message buffer.
+ */
+static BOOL GetFlashMessage(__PROCESS_OBJECT* pProcess, int* flash_message_sz,
+	LPVOID flash_message)
+{
+	BOOL bResult = FALSE;
+
+	BUG_ON(NULL == pProcess);
+	if ((NULL == flash_message_sz) ||
+		(NULL == flash_message))
+	{
+		goto __TERMINAL;
+	}
+
+	__ACQUIRE_SPIN_LOCK(pProcess->spin_lock);
+	/* No flash message yet. */
+	if (NULL == pProcess->flash_message)
+	{
+		BUG_ON(pProcess->flash_message_sz != 0);
+		*flash_message_sz = 0;
+		__RELEASE_SPIN_LOCK(pProcess->spin_lock);
+
+		/* Set error code. */
+		KernelThreadManager.SetLastError(PROCESS_ERROR_FLASHMESSAGE_NOMESSAGE);
+		goto __TERMINAL;
+	}
+
+	/* 
+	 * Copy back the full message if buffer is enough,
+	 * then reset the flash message.
+	 */
+	if (*flash_message_sz >= pProcess->flash_message_sz)
+	{
+		memcpy(flash_message, pProcess->flash_message, pProcess->flash_message_sz);
+		*flash_message_sz = pProcess->flash_message_sz;
+		_hx_free(pProcess->flash_message);
+		pProcess->flash_message = NULL;
+		pProcess->flash_message_sz = 0;
+		__RELEASE_SPIN_LOCK(pProcess->spin_lock);
+		bResult = TRUE;
+		goto __TERMINAL;
+	}
+
+	/* If Buffer is not enough. */
+	if (*flash_message_sz < pProcess->flash_message_sz)
+	{
+		/* 
+		 * Just set the required buffer length, 
+		 * no message returned. 
+		 */
+		*flash_message_sz = pProcess->flash_message_sz;
+		__RELEASE_SPIN_LOCK(pProcess->spin_lock);
+		goto __TERMINAL;
+	}
+
+__TERMINAL:
+	return bResult;
+}
+
+/*
+ * Global process manager object,one and only one in 
+ * system,to manages all processes.
+ */
 __PROCESS_MANAGER ProcessManager = {
 	{0},
 #if defined(__CFG_SYS_SMP)
 	SPIN_LOCK_INIT_VALUE,       //spin_lock.
 #endif
+	1024,                       //Start process id value.
+	NULL,                       //terminal queue.
 	NULL,                       //pUserAgent.
 	//Operation routines.
 	CreateProcess,              //CreateProcess.
 	DestroyProcess,             //DestroyProcess.
 	LinkKernelThread,           //LinkKernelThread.
 	UnlinkKernelThread,         //UnlinkKernelThread.
+	ProcessTerminalQueue,       //ProcessTerminalQueue.
 	GetTLSKey,                  //SetTLSKey routine.
 	ReleaseTLSKey,              //ReleaseTLSKey.
 	GetTLSValue,                //GetTLSValue.
@@ -756,6 +1021,8 @@ __PROCESS_MANAGER ProcessManager = {
 	GetHandle,                  //GetHandle.
 	CloseHandle,                //CloseHandle.
 	GetObjectByHandle,          //GetObjectByHandle.
+	PutFlashMessage,            //PutFlashMessage.
+	GetFlashMessage             //GetFlashMessage.
 };
 
 /*
@@ -766,16 +1033,35 @@ VOID DumpProcess()
 {
 	__KOBJ_LIST_NODE*    pProcessNode   = NULL;
 	__PROCESS_OBJECT*    pProcessObject = NULL;
-	int count = 0;
+	__KERNEL_THREAD_OBJECT* pThread = NULL;
+	__KOBJ_LIST_NODE* pNode = NULL;
 
 	_hx_printf("  All process(es) information as follows:\r\n");
 	pProcessNode = ProcessManager.ProcessList.next;
 	while(pProcessNode != &ProcessManager.ProcessList)
 	{
 		pProcessObject = (__PROCESS_OBJECT*)pProcessNode->pKernelObject;
-		_hx_printf("  Process[%d]: name = [%s],mthread_name = [%s]\r\n",
-			count,pProcessObject->ProcessName,pProcessObject->lpMainThread->KernelThreadName);
-		count ++;
+		_hx_printf("  --------------------------------------------\r\n");
+		_hx_printf("  Process[%llu]: name = [%s]\r\n",
+			pProcessObject->process_id,
+			pProcessObject->ProcessName);
+		_hx_printf("    status:0x%X, thread_count:%d, ref_count:%d\r\n",
+			pProcessObject->dwProcessStatus,
+			pProcessObject->nKernelThreadNum,
+			pProcessObject->refCount);
+		/* List all thread(s) this process owns. */
+		_hx_printf("  Thread(s) list:\r\n");
+		pNode = pProcessObject->ThreadObjectList.next;
+		while (pNode != &pProcessObject->ThreadObjectList)
+		{
+			pThread = (__KERNEL_THREAD_OBJECT*)pNode->pKernelObject;
+			_hx_printf("    thread name: %s\r\n", pThread->KernelThreadName);
+			_hx_printf("    status:0x%X, ref_count:%d\r\n",
+				pThread->dwThreadStatus,
+				pThread->refCount);
+			pNode = pNode->next;
+		}
+
 		pProcessNode = pProcessNode->next;
 	}
 }

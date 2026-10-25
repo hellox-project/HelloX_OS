@@ -21,6 +21,7 @@
 #include <StdAfx.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <process.h>
 #include "idle.h"
 
 #ifdef __I386__
@@ -396,7 +397,7 @@ __TERMINAL:
  */
 DWORD SystemIdle(LPVOID lpData)
 {
-	static DWORD dwIdleCounter = 0;
+	static unsigned long long idle_counter = 0;
 
 	/* Following code is used to test CPU synchronizing functions in SMP. */
 #if 0
@@ -448,10 +449,13 @@ DWORD SystemIdle(LPVOID lpData)
 		/* Scan killed queue and clean up all killed thread(s). */
 		KernelThreadManager.ProcessKilledQueue((__COMMON_OBJECT*)&KernelThreadManager);
 
-		dwIdleCounter ++;
-		if(0xFFFFFFFF == dwIdleCounter)
+		/* Collect all terminal process objects. */
+		ProcessManager.ProcessTerminalQueue((__COMMON_OBJECT*)&ProcessManager);
+
+		idle_counter ++;
+		if(-1 == idle_counter)
 		{
-			dwIdleCounter = 0;
+			idle_counter = 0;
 		}
 		//Halt the current CPU.
 		HaltSystem();

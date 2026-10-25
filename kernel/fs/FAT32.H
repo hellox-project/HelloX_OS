@@ -26,6 +26,9 @@
 /* Only support 512 sector size. */
 #define SECTOR_SIZE 512
 
+/* Switch to control if apply block cache in FAT I/O. */
+#define __FAT_BLOCKCACHE_ENABLE     1
+
 /* Errors FAT32 can raise. */
 /* Invalid file name. */
 #define FAT32_ERROR_INVALIDNAME     (1 << 0)
@@ -200,11 +203,16 @@ typedef struct FAT32_FS{
 	__FAT32_FILE*    pFileList;                  //File list header.
 	__FAT32_PERF_METRIC perf_metric;             //Performance metric counters.
 
+#if 0
 	/* Manage FAT cache. */
 	unsigned char* pFatCache;
 	unsigned long fc_size;
 	BOOL fc_dirty;
 	unsigned long fc_start_sector;
+#endif
+
+	/* Fat block cache. */
+	__BLK_CACHE* pBlockCache;
 }__FAT32_FS;
 
 /*
@@ -242,6 +250,21 @@ BOOL ReadDeviceSector(__COMMON_OBJECT* pPartition, DWORD dwStartSectorNum,
 /* Write one or several sectors into partition. */
 BOOL WriteDeviceSector(__COMMON_OBJECT* pPartition, DWORD dwStartSectorNum,
 	DWORD dwSectorNum, BYTE* pBuffer);
+
+/*
+ * Read/write sector(s) from/into fat, use dedicated APIs
+ * since dedicated block cache policy is applied
+ * to FAT.
+ */
+BOOL ReadFatSector(__FAT32_FS* pFat32Fs,
+	DWORD            dwStartSector,
+	DWORD            dwSectorNum,
+	BYTE*            pBuffer);
+BOOL WriteFatSector(__FAT32_FS* pFat32Fs,
+	DWORD            dwStartSector,
+	DWORD            dwSectorNum,
+	BYTE*            pBuffer);
+
 /* Initializes a fat32 partition given it's first sector. */
 BOOL Fat32Init(__FAT32_FS* pFatFs, BYTE* pSector0);
 
@@ -300,6 +323,20 @@ BOOL DeleteFatFile(__FAT32_FS* pFat32Fs, CHAR* pszFileName);
 BOOL DeleteFatDir(__FAT32_FS* pFat32Fs, CHAR* pszDirName);
 /* Release a cluster chain. */
 BOOL ReleaseClusterChain(__FAT32_FS* pFat32Fs, DWORD dwStartCluster);
+
+/* 
+ * Get the physical cluster number given 
+ * logical cluster of a file. 
+ * dwClusterNum contains the logical cluster number
+ * and returns the physical cluster number when success,
+ * unchanged if fail.
+ */
+BOOL GetPhysicalCluster(__FAT32_FS* pFat32Fs,
+	__FAT32_FILE* pFat32File,
+	DWORD* dwClusterNum);
+
+/* Mark a cluster as EOC. */
+BOOL MarkClusterEOC(__FAT32_FS* pFat32Fs, DWORD dwClusterNum);
 
 /* Set a file's time attribute. */
 #define  FAT32_DATETIME_CREATE     0x1

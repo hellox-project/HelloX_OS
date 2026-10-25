@@ -102,7 +102,10 @@ static VOID OnXferCompletion(struct ehci_ctrl* pUsbCtrl)
 		pIntQueue->dwStatus);
 }
 
-//Interrupt handler of EHCI Controller,it will be called indirectly by USB Manager.
+/*
+ * Interrupt handler of EHCI Controller,
+ * it will be called indirectly by USB Manager.
+ */
 unsigned long EHCIIntHandler(LPVOID pParam)
 {
 	__COMMON_USB_CONTROLLER* pCommCtrl = (__COMMON_USB_CONTROLLER*)pParam;

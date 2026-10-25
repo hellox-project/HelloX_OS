@@ -15,6 +15,49 @@
 //    Lines number              :
 //***********************************************************************/
 
+/*
+ * Principles of memory maping between user
+ * and kernel space:
+ * 1. WHY
+ *    Different process has different virtual
+ *    memory space, i.e, 4G in 32 bits architect.
+ *    But the kernel space is common for all
+ *    processes and is maped into all process's
+ *    space. So when a system call is invoked
+ *    and the memory used to hold result is in
+ *    user space, when switch to another process,
+ *    the kernel may write result to other
+ *    process's memory, it may lead system crash.
+ * 2. When to map
+ *    1) If the system call is run in the same
+ *       thread context of the caller, i.e, no
+ *       kernel thread is used to execute this
+ *       system call, and the user memory block
+ *       offered to API is fixed in physical
+ *       memory, it's no need to map memory;
+ *    2) You must remap the memory from user to
+ *       kernel, if the actual execution is
+ *       happened in kernel thread. For example,
+ *       the socket APIs most execute in tcp/ip
+ *       kernel thread, it's not same with the
+ *       user thread;
+ *    3) Even the system call runs in the same
+ *       thread context with the caller, but
+ *       the memory block offered to system 
+ *       API is not guaranteed fix in memory,
+ *       for example the memory block may
+ *       swaped out into external storage, 
+ *       you MUST remap the memory block in
+ *       user space to kernel space, unless
+ *       you can guarantee the memory block
+ *       is pinned in physical memory. The
+ *       LockMemory routine could be used to
+ *       lock the user memory block in memory.
+ * After the mapping from user to kernel, you
+ * MUST map it back to user from kernel when 
+ * the system call run over.
+ */
+
 #include "StdAfx.h"
 #include "mlayout.h"
 #include "stdlib.h"

@@ -20,7 +20,7 @@
 #define _INC_TYPES
 
 #ifndef _TIME_T_DEFINED
-typedef long time_t;
+typedef long long time_t;
 #define _TIME_T_DEFINED
 #endif  /* _TIME_T_DEFINED */
 
@@ -50,10 +50,14 @@ typedef unsigned int dev_t;
 #define _DEV_T_DEFINED
 #endif  /* _DEV_T_DEFINED */
 
+#ifndef _SSIZE_T_DEFINED
+typedef int ssize_t;
+#endif
 
 #ifndef _OFF_T_DEFINED
 
 typedef long _off_t;                    /* file offset value */
+typedef long long _loff_t;
 
 #if !__STDC__
 /* Non-ANSI name for compatibility */
@@ -62,5 +66,8 @@ typedef long _off_t;                    /* file offset value */
 
 #define _OFF_T_DEFINED
 #endif  /* _OFF_T_DEFINED */
+
+/* mode_t. */
+typedef unsigned long mode_t;
 
 #endif  /* _INC_TYPES */

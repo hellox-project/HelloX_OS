@@ -49,7 +49,7 @@
 #define NVT_CMD_AYT      246
 #define NVT_CMD_EC       247
 #define NVT_CMD_EL       248
-#define NTV_CMD_GA       249
+#define NVT_CMD_GA       249
 #define NVT_CMD_SB       250
 #define NVT_CMD_WILL     251
 #define NVT_CMD_WONT     252
@@ -58,6 +58,7 @@
 
 /* NVT options. */
 #define NVT_OPTION_ECHO            1
+#define NVT_OPTION_SUPPRESS_GA     3
 #define NVT_OPTION_STATUS          5
 #define NVT_OPTION_CLOCKID         6
 #define NVT_OPTION_TERMINAL_TYPE   24
@@ -66,6 +67,38 @@
 #define NVT_OPTION_REMOTE_FCONTROL 33
 #define NVT_OPTION_ROW_MODE        34
 #define NVT_OPTION_ENV             36
+
+/* Escape sequence and control key constants */
+#define ESC_KEY     0x1B  /* Escape character */
+#define DEL_KEY     0x7F  /* Delete key */
+#define BS_KEY      0x08  /* Backspace key */
+#define TAB_KEY     0x09  /* Tab key */
+#define CR_KEY      0x0D  /* Carriage return */
+#define LF_KEY      0x0A  /* Line feed */
+
+/* Escape sequences for common control keys */
+#define ESC_SEQ_UP      "\x1B[A"
+#define ESC_SEQ_DOWN    "\x1B[B"
+#define ESC_SEQ_RIGHT   "\x1B[C"
+#define ESC_SEQ_LEFT    "\x1B[D"
+#define ESC_SEQ_HOME    "\x1B[H"
+#define ESC_SEQ_END     "\x1B[F"
+#define ESC_SEQ_INSERT  "\x1B[2~"
+#define ESC_SEQ_DELETE  "\x1B[3~"
+#define ESC_SEQ_PGUP    "\x1B[5~"
+#define ESC_SEQ_PGDN    "\x1B[6~"
+#define ESC_SEQ_F1      "\x1BOP"
+#define ESC_SEQ_F2      "\x1BOQ"
+#define ESC_SEQ_F3      "\x1BOR"
+#define ESC_SEQ_F4      "\x1BOS"
+#define ESC_SEQ_F5      "\x1B[15~"
+#define ESC_SEQ_F6      "\x1B[17~"
+#define ESC_SEQ_F7      "\x1B[18~"
+#define ESC_SEQ_F8      "\x1B[19~"
+#define ESC_SEQ_F9      "\x1B[20~"
+#define ESC_SEQ_F10     "\x1B[21~"
+#define ESC_SEQ_F11     "\x1B[23~"
+#define ESC_SEQ_F12     "\x1B[24~"
 
 /* 
  * TTY server is the only global object that 

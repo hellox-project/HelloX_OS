@@ -1,0 +1,66 @@
+/**
+  \page cfsversions Version Numbers
+
+  \section cfsversions_s1 Version Number Semantics
+
+  The version number is a sequence of four numbers, generally separated by dots when written. These are, in order,
+  the Major number, the Minor number, the Revision number, and the Mission Revision number.
+
+  It is important to note that version numbers are only updated upon official releases of tagged
+  versions, \b NOT on development builds. We aim to follow the Semantic Versioning v2.0 specification 
+  with our versioning.
+
+  The MAJOR number is incremented on release to indicate when there is a change to an API
+  that may cause existing, correctly-written cFS components to stop working. It may also be incremented for a
+  release that contains changes deemed to be of similar impact, even if there are no actual changes to the API.
+
+  The MINOR number is incremented on release to indicate the addition of features to the API
+  which do not break the existing code.  It may also be incremented for a release that contains changes deemed
+  to be of similar impact, even if there are no actual updates to the API.
+
+  The REVISION number shall be incremented on changes that benefit from unique identification such as
+  bug fixes or major documentation updates.
+  The Revision number may also be updated if there are other changes contained within a release that make
+  it desirable for applications to distinguish one release from another.
+  WARNING: The revision number is set to the number 99 in development builds. To distinguish between development
+  builds refer to the BUILD_NUMBER and BUILD_BASELINE detailed in the section "Identifying Development Builds".
+
+  The Mission Rev Version number is set to zero in all official releases, and is reserved for the mission use.
+
+  \section cfsversions_s2 How and Where Defined
+
+  The version numbers are provided as simple macros defined in the cfe_version.h header file as part of the
+  API definition; these macros must expand to simple integer values, so that they can be used in simple if
+  directives by the macro preprocessor.
+
+  Note the Mission Rev number is provided for missions to be able to identify unique changes they have made to the released software (via clone and own). Specicifally, the values 1-254 are reserved for mission use to denote patches/customizations while 0 and 0xFF are reserved for cFS open-source development use (pending resolution of nasa/cFS#440).
+
+  \section cfsversions_s3 Identifying Development Builds
+
+  In order to distinguish between development versions, we also provide a BUILD_NUMBER.
+
+  The BUILD_NUMBER reflects the number of commits since the BUILD_BASELINE, a baseline git tag, for each particular
+  component. The BUILD_NUMBER integer monotonically increases for a given baseline. The BUILD_BASELINE
+  identifies the current development cycle and is a git tag with format vMAJOR.MINOR.REVISION. The Codename used in the version
+  string also refers to the current development cycle. When a new baseline tag and codename are created, the
+  BUILD_NUMBER resets to zero and begins increasing from a new baseline.
+
+  \section cfsversions_s4 Templates for the short and long version string
+
+  See cfe_version.h for the standard layout and definition of version information.
+  The apps and repositories follow the same pattern by replacing the CFE_ prefix with the appropriate
+  name; for example, osal uses OS_, psp uses CFE_PSP_IMPL, and so on.
+
+  Suggested pattern for development:
+  - CFSCOMPONENT_SRC_VERSION: REFERENCE_GIT_TAG"+dev"BUILD_NUMBER
+    - Example: "v6.8.0-rc1+dev123"
+  - CFSCOMPONENT_VERSION_STRING: "CFSCOMPONENT DEVELOPMENT BUILD "CFSCOMPONENT_SRC_VERSION" (Codename: CFSCONSTELLATION), Last Official Release: MAJOR.MINOR.REVISION"
+    - Example: "cFE DEVELOPMENT BUILD v6.8.0-rc1+dev123 (Codename: Bootes), Last Official Release: cfe v6.7.0"
+
+  Suggested pattern for official releases:
+  - CFSCOMPONENT_SRC_VERSION: OFFICIAL_GIT_TAG
+    - Example: "v7.0.0"
+  - COMPONENT_VERSION_STRING: "CFSCOMPONENT OFFICIAL RELEASE "CFSCOMPONENT_SRC_VERSION" (Codename: CFSCONSTELLATION)"
+    - Example: "cFE OFFICIAL RELEASE v7.0.0 (Codename: Caelum)"
+
+**/

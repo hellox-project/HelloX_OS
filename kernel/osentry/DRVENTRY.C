@@ -23,6 +23,7 @@
 #endif
 
 #ifdef __CFG_FS_FAT32
+#include "../fs/blkcache.h"
 #include "../fs/fat32.h"
 #endif
 

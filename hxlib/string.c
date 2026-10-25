@@ -320,115 +320,6 @@ char * strstr(const char *s1,const char *s2)
 	return (char *) NULL;
 }
 
-
-
-
-//static int isdigit(int x)
-//{
-//    if(x<='9'&&x>='0')
-//        return 1;
-//    else
-//        return 0;
-//}
-
-#ifdef __GCC__
-long atol(const char *nptr)
-{
-	int c; /* current char */
-	long total; /* current total */
-	int sign; /* if ''-'', then negative, otherwise positive */
-
-	/* skip whitespace */
-	while (isspace((int)(unsigned char)*nptr))
-	{
-		++nptr;
-	}
-	c = (int)(unsigned char)*nptr++;
-	sign = c; /* save sign indication */
-	if (c == '-' || c == '+')
-	{
-		c = (int)(unsigned char)*nptr++; /* skip sign */
-	}
-	total = 0;
-
-	while (isdigit(c)) {
-		total = 10 * total + (c - '0'); /* accumulate digit */
-		c = (int)(unsigned char)*nptr++; /* get next char */
-	}
-
-	if (sign == '-')
-		return -total;
-	else
-		return total; /* return result, negated if necessary */
-}
-
-/***
-*int atoi(char *nptr) - Convert string to long
-*
-*Purpose:
-* Converts ASCII string pointed to by nptr to binary.
-* Overflow is not detected. Because of this, we can just use
-* atol().
-*
-*Entry:
-* nptr = ptr to string to convert
-*
-*Exit:
-* return int value of the string
-*
-*Exceptions:
-* None - overflow is not detected.
-*
-*******************************************************************************/
-
-int atoi(const char *nptr)
-{
-	return (int)atol(nptr);
-}
-
-char* itoa(int value, char* string, int radix)
-{
-	char tmp[33];
-	char* tp = tmp;
-	int i;
-	unsigned v;
-	int sign;
-	char* sp;
-
-	if (radix > 36 || radix <= 1)
-	{
-		//__set_errno(EDOM);
-		return 0;
-	}
-	sign = (radix == 10 && value < 0);
-	if (sign)
-		v = -value;
-	else
-		v = (unsigned)value;
-	while (v || tp == tmp)
-	{
-		i = v % radix;
-		v = v / radix;
-		if (i < 10)
-			*tp++ = i+'0';
-		else
-			*tp++ = i + 'a' - 10;
-	}
-
-	if (string == 0)
-		string = (char*)_hx_malloc((tp-tmp)+sign+1);
-	sp = string;
-
-	if (sign)
-		*sp++ = '-';
-	while (tp > tmp)
-		*sp++ = *--tp;
-	*sp = 0;
-	return string;
-}
-
-#endif
-
 char *
 strchr (s, c_in)
      const char *s;
@@ -644,4 +535,25 @@ size_t strcspn(const char* s1, register const char* s2)
 		} while (sc != 0);
 	}
 	/* NOTREACHED */
+}
+
+/* Case in-sensitive comparation. */
+int strcasecmp(const char *s1, const char *s2)
+{
+	int c1, c2;
+	do {
+		c1 = tolower(*s1++);
+		c2 = tolower(*s2++);
+	} while (c1 == c2 && c1 != 0);
+	return c1 - c2;
+}
+
+int strncasecmp(const char *s1, const char *s2, int n)
+{
+	int c1, c2;
+	do {
+		c1 = tolower(*s1++);
+		c2 = tolower(*s2++);
+	} while ((--n > 0) && c1 == c2 && c1 != 0);
+	return c1 - c2;
 }

@@ -1,0 +1,40 @@
+20261011~~:
+1. Expend the system call of condition var, and implement the source code; --OK
+2. Implement the pthread_others file, for pthread_cond_xxx routines; --ok
+3. Time mechanism may need optimized, since pthread_cond use abstime, and system
+   call use million seconds from then; --ok
+4. Write testing code to do full testing; --ok
+5. Timer related system call should implemented in user land;
+6. Test binsem function;--OK
+7. Begin to port OSAL and do full testing;
+   - Implement get_tsc and get_freq in kernel and user to support 
+     high resolution clock, through GetSystemInfo API; --OK, a new API named 
+	 GetCPUInfo is added, since it will lead incompatiable issue;
+   - Implement Nanosleep in kernel and export to user; --OK, implemented in user;
+
+   - Implement pthread_attr_set/get routines to support thread priority leve;
+   - Expose semaphore APIs to user land and make full testing(use AI generate cases);
+   - May implement the SSE support in kernel? or just specify it in user manual;
+   - Let AI evaluate again;
+8. Begin to port cFS;
+9. Debugging the _hx_malloc/free pending issue, use pthread_cond_test.c
+   as testing case;
+10. Put all testing case into a dedicated dir in hxlib;
+11. hxlib's version and new features/changes should be record into a dedicated
+   file, or just put into __hxcommon.h;
+
+Issues pending:
+1. When abort is invoked, the thread object is not deleted in kernel;
+2. Sometimes jump to 0x50000000 range then lead page fault exception;
+3. The _hx_printf routine has issue when using _hx_malloc/_hx_free routines,
+   it will lead the failure of pthread_cond_init and pthread_cond_destroy
+   testing, just pending the issue;
+   May check the VirtualQuery/VirtualFree calls in ptmalloc, since the 
+   printf allocates a big block(512K);
+4. pthread's thread info(saved by TLS) should consider the main thread
+   that created by loader. Now only the thread created by pthread_create
+   routine has thread_info set;
+5. pthread_join and pthread_detach should be revised to fit: 1) join can
+   return the main function's return value; 2) join could release resource
+   of pthread, same as pthread_detch;
+6. 

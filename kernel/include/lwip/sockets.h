@@ -367,6 +367,9 @@ int lwip_fcntl(int s, int cmd, int val);
 
 #endif /* LWIP_COMPAT_SOCKETS */
 
+/* Diagnoistic facilities. */
+void sock_list(int sock_num);
+
 #ifdef __cplusplus
 }
 #endif

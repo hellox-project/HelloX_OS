@@ -85,6 +85,13 @@ END_DEFINE_OBJECT(__VIRTUAL_AREA_DESCRIPTOR)
 #define VIRTUAL_AREA_ACCESS_RW          (VIRTUAL_AREA_ACCESS_READ | VIRTUAL_AREA_ACCESS_WRITE)
 #define VIRTUAL_AREA_ACCESS_EXEC        0x00000008    //Execute only.
 #define VIRTUAL_AREA_ACCESS_NOACCESS    0x00000010    //Access is denied.
+#define VIRTUAL_AREA_ACCESS_USER        0x00000020    //User can access.
+/*
+ * TODO: Flag should be set to PTE/PDE to
+ * separate user and kernel accessing in
+ * future. Now the user could access kernel
+ * space directly if the page is established.
+ */
 
 //
 //Virtual area's cache flags.

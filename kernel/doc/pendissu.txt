@@ -26,7 +26,7 @@ Pending issues:
 5. Interrupt object should be released but not now in DisconnectInterrupt handler;
 6. SetEndOfFile routine may has bug, invoke it after write to file and close the 
    file, will lead to file system crash. Use 'dir' command in root directory, will
-   display 'can not open directory of c:\';
+   display 'can not open directory of c:\'; --Solved(20260820)
 7. BUG_ON(mem_fbl.c, 417line) will be trigger when exit from a thread in shell, such
    as when exit from network command;
 8. tcp/ip thread hang. From the diagnosing information as follows, the root cause

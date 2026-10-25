@@ -30,16 +30,17 @@
  *
  */
 
-
 #ifndef __LWIP_SOCKETS_H__
 #define __LWIP_SOCKETS_H__
 
 #define LWIP_SOCKET 1
 #define LWIP_COMPAT_SOCKETS 1
+#define LWIP_TCP 1
 
 #if LWIP_SOCKET /* don't build if not configured for use in lwipopts.h */
 
 #include "../stddef.h"
+#include "../time.h"      /* for struct timeval. */
 
 #include "sockopt.h"
 #include "ip_addr.h"
@@ -128,13 +129,22 @@ extern "C" {
 #define IPPROTO_UDP     17
 #define IPPROTO_UDPLITE 136
 
-	 /* Flags we can use with send and recv. */
+/* Flags we can use with send and recv. */
 #define MSG_PEEK       0x01    /* Peeks at an incoming message */
 #define MSG_WAITALL    0x02    /* Unimplemented: Requests that the function block until the full amount of data requested can be returned */
 #define MSG_OOB        0x04    /* Unimplemented: Requests out-of-band data. The significance and semantics of out-of-band data are protocol-specific */
 #define MSG_DONTWAIT   0x08    /* Nonblocking i/o for this operation only */
 #define MSG_MORE       0x10    /* Sender will send more */
 
+/* 
+ * Flags to compatible with Linux, HelloX 
+ * does not implement them. 
+ */
+#define MSG_NOSIGNAL   0x20
+#define MSG_CONFIRM    0x21
+#define MSG_DONTROUTE  0x22
+#define MSG_EOR        0x24
+#define MSG_FASTOPEN   0x25
 
 /*
  * Options for level IPPROTO_IP
@@ -306,7 +316,7 @@ extern "C" {
 	/** LWIP_TIMEVAL_PRIVATE: if you want to use the struct timeval provided
 	 * by your system, set this to 0 and include <sys/time.h> in cc.h */
 #ifndef LWIP_TIMEVAL_PRIVATE
-#define LWIP_TIMEVAL_PRIVATE 1
+#define LWIP_TIMEVAL_PRIVATE 0
 #endif
 
 #if LWIP_TIMEVAL_PRIVATE
@@ -315,8 +325,6 @@ extern "C" {
 		long    tv_usec;        /* and microseconds */
 	};
 #endif /* LWIP_TIMEVAL_PRIVATE */
-
-	void lwip_socket_init(void);
 
 	int lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 	int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen);

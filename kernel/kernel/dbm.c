@@ -86,6 +86,35 @@ __TERMINAL:
 	return char_index;
 }
 
+/* 
+ * Delete the rear char from buffer. 
+ * The rear pointer will be returned.
+ */
+static int __DelChar()
+{
+	int char_index = -1;
+	unsigned long ulFlags;
+
+	/* Could not be invoked in process of initiazation. */
+	if (IN_SYSINITIALIZATION())
+	{
+		goto __TERMINAL;
+	}
+
+	BUG_ON(NULL == DispBufferManager.disp_buffer);
+
+	__ENTER_CRITICAL_SECTION_SMP(DispBufferManager.spin_lock, ulFlags);
+	if (DispBufferManager.buffer_rear > 0)
+	{
+		DispBufferManager.buffer_rear--;
+	}
+	char_index = DispBufferManager.buffer_rear;
+	__LEAVE_CRITICAL_SECTION_SMP(DispBufferManager.spin_lock, ulFlags);
+
+__TERMINAL:
+	return char_index;
+}
+
 /* Put a string into display buffer. */
 static int __PutString(const char* disp_string, int length)
 {
@@ -150,7 +179,7 @@ static int __GetBuffer(char* buffer, int buffer_len, int* start)
 		(NULL == start));
 	start_pos = *start;
 
-	if (start_pos > DISPLAY_BUFFER_LENGTH)
+	if ((start_pos > DISPLAY_BUFFER_LENGTH) || (start_pos < 0))
 	{
 		/* Invalid start position. */
 		goto __TERMINAL;
@@ -222,6 +251,7 @@ __DISPLAY_BUFFER_MANAGER DispBufferManager = {
 	/* Operation routines. */
 	__Initialize,                         //Initialize.
 	__PutChar,                            //PutChar.
+	__DelChar,                            //DelChar.
 	__PutString,                          //PutString.
 	__GetBuffer,                          //GetBuffer.
 	__GetBufferBlock,                     //GetBufferBlock.

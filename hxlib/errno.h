@@ -132,6 +132,7 @@
 #define EDQUOT 122 /* Quota exceeded */
 #define ENOMEDIUM 123 /* No medium found */
 #define EMEDIUMTYPE 124 /* Wrong medium type */
+#define ENOTLS 125 /* No TLS index slot. */
 
 //Error number of library.
 extern int errno;

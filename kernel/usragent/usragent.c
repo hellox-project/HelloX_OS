@@ -100,7 +100,8 @@ int __UsrAgent_Entry(int argc, char* argv[])
 	if (argc < 2)
 	{
 		/* No application specfied. */
-		PrintLine("No application specified.");
+		_hx_printf("[%s]Too few argv(argc = %d, argv[0] = %s)\r\n",
+			__func__, argc, argv[0]);
 		goto __TERMINAL;
 	}
 
@@ -137,7 +138,9 @@ int __UsrAgent_Entry(int argc, char* argv[])
 		goto __TERMINAL;
 #endif
 	}
+	_hx_printf("%s:load all modules OK.\r\n", __func__);
 
+#if (!LOADER_FORCE_RUN)
 	/* 
 	 * Carry out binding, since loading process 
 	 * is just load the modules into memory.
@@ -146,10 +149,9 @@ int __UsrAgent_Entry(int argc, char* argv[])
 	if (error)
 	{
 		_hx_printf("Loader error: code = %d\r\n", error);
-#if (!LOADER_FORCE_RUN)
 		goto __TERMINAL;
-#endif
 	}
+#endif
 
 	/* 
 	 * Begin to launch the application, use the
@@ -157,7 +159,9 @@ int __UsrAgent_Entry(int argc, char* argv[])
 	 * PEB maybe the parameter of entry point.
 	 */
 	peEntry = (__PE_ENTRY_POINT)peb->mq[0].entry_point;
-	_hx_printf("Load OK, start at:0x%X\r\n", (unsigned long)peEntry);
+	_hx_printf("[%s]Load OK, start at:0x%X\r\n", 
+		LOADER_VER,
+		(unsigned long)peEntry);
 	main_ret = peEntry(argc - 1, &argv[1]);
 
 __TERMINAL:
@@ -167,6 +171,12 @@ __TERMINAL:
 		UnloadModules(peb);
 		VirtualFree(peb);
 	}
-	ExitThread(0);
+
+	/* 
+	 * Invoke the bottom half of process. 
+	 * It responses for releasing of resources.
+	 */
+	ExitThread(main_ret);
+	/* Should never reach here. */
 	return main_ret;
 }

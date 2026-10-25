@@ -14,6 +14,9 @@
 //***********************************************************************/
 
 #include <StdAfx.h>
+
+#include <blkcache.h>
+#include <fat32.h>
 #include <kapi.h>
 #include <string.h>
 #include <stdio.h>
@@ -46,6 +49,7 @@ static DWORD rd(__CMD_PARA_OBJ*);
 static DWORD ren(__CMD_PARA_OBJ*);
 static DWORD type(__CMD_PARA_OBJ*);
 static DWORD use(__CMD_PARA_OBJ*);
+static DWORD trunc(__CMD_PARA_OBJ*);
 /* Initialize routine of fs command. */
 static DWORD init();
 
@@ -66,6 +70,7 @@ static struct __FDISK_CMD_MAP{
 	{"ren",        ren,               "  ren      : Change file or directory's name."},
 	{"type",       type,              "  type     : Show a specified file's content."},
 	{"copy",       __handler_fs_copy, "  copy     : Copy file to other location,or reverse."},
+	{"trunc",      trunc,             "  trunc    : Truncate a file from the specified position."},
 	{"use",        use,               "  use      : Set current file system."},
 	{"exit",       fs_exit,           "  exit     : Exit the application."},
 	{"help",       help,              "  help     : Print out this screen."},
@@ -196,9 +201,8 @@ static DWORD fslist(__CMD_PARA_OBJ* pcpo)
 {
 	CHAR Buffer[96];
 	int i;
-
-	PrintLine("  fs_id       fs_label     fs_type");
-	PrintLine("  -----       --------     -------");
+	__DEVICE_OBJECT* pFileDevice = NULL;
+	__FAT32_FS* pFileObject = NULL;
 
 	for(i = 0;i < FILE_SYSTEM_NUM;i ++)
 	{
@@ -206,13 +210,24 @@ static DWORD fslist(__CMD_PARA_OBJ* pcpo)
 		{
 			continue;
 		}
-		_hx_sprintf(Buffer,"  %4c:    %11s    %8X",
+
+		/* 
+		 * Get the corresponding file device object, to show out 
+		 * cluster size or other information.
+		 */
+		pFileDevice = (__DEVICE_OBJECT*)FsGlobalData.FsArray[i].pFileSystemObject;
+		BUG_ON(NULL == pFileDevice);
+		pFileObject = (__FAT32_FS*)pFileDevice->lpDevExtension;
+		BUG_ON(NULL == pFileObject);
+
+		_hx_sprintf(Buffer,"  fs_id:[%c:]    label:[%s]    type:[%X]    clus_sz:[%d]",
 			FsGlobalData.FsArray[i].FileSystemIdentifier,
 			FsGlobalData.FsArray[i].VolumeLbl,
-			FsGlobalData.FsArray[i].dwAttribute);
+			FsGlobalData.FsArray[i].dwAttribute,
+			pFileDevice->dwBlockSize);
 		PrintLine(Buffer);
 	}
-	return SHELL_CMD_PARSER_SUCCESS;;
+	return SHELL_CMD_PARSER_SUCCESS;
 }
 
 static DWORD cd(__CMD_PARA_OBJ* pCmdObj)
@@ -538,11 +553,17 @@ static unsigned long type(__CMD_PARA_OBJ* pCmdObj)
 		{
 			if (msg.wCommand == KERNEL_MESSAGE_TERMINAL)
 			{
+				/* Show out how many bytes read. */
+				GotoHome();
+				ChangeLine();
+				_hx_printf("%d byte(s) read.", dwTotalRead);
+
 				goto __TERMINAL;
 			}
 		}
 	}while(dwReadSize == TYPE_READ_BLOCK_LENGTH);
 
+	/* Show out how many bytes read. */
 	GotoHome();
 	ChangeLine();
 	_hx_printf("%d byte(s) read.", dwTotalRead);
@@ -558,10 +579,95 @@ __TERMINAL:
 		/* Release temp file buffer. */
 		_hx_free(pBuffer);
 	}
-	return SHELL_CMD_PARSER_SUCCESS;;
+	return SHELL_CMD_PARSER_SUCCESS;
 #else
 	return FS_CMD_FAILED;
 #endif
+}
+
+/* Truncate a file from the specified position. */
+static unsigned long trunc(__CMD_PARA_OBJ* pCmdObj)
+{
+	HANDLE hFile = NULL;
+	char FullName[MAX_FILE_NAME_LEN];
+	unsigned long start_pos = -1;
+	unsigned long file_sz = 0;
+
+	if (pCmdObj->byParameterNum < 3)
+	{
+		_hx_printf("  No file or start position specified.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* The start position to trunc. */
+	start_pos = atoi(pCmdObj->Parameter[2]);
+
+	/*
+	 * If the target file is not device,
+	 * then append the current opened dir
+	 * in front of file's name.
+	 */
+	if (!__is_device_name(pCmdObj->Parameter[1]))
+	{
+		strcpy(FullName, FsGlobalData.CurrentDir);
+		strcat(FullName, pCmdObj->Parameter[1]);
+	}
+	else {
+		/* Device name. */
+		_hx_printf("  [trunc]only regular file supported.\r\n");
+		goto __TERMINAL;
+	}
+	ToCapital(FullName);
+
+	/* Try to open the target file. */
+	hFile = IOManager.CreateFile((__COMMON_OBJECT*)&IOManager,
+		FullName,
+		FILE_ACCESS_READ | FILE_ACCESS_WRITE,
+		0,
+		NULL);
+	if (NULL == hFile)
+	{
+		_hx_printf("  [trunc]Open file [%s] error [0x%X].\r\n",
+			FullName, GetLastError());
+		goto __TERMINAL;
+	}
+
+	/* Get the file's size. */
+	file_sz = GetFileSize(hFile, NULL);
+	if (-1 == file_sz)
+	{
+		_hx_printf("  [trunc]failed to get file size.\r\n");
+		goto __TERMINAL;
+	}
+	if (start_pos > file_sz)
+	{
+		_hx_printf("  [trunc]start position must less file size.\r\n");
+		goto __TERMINAL;
+	}
+
+	/* Move to target position. */
+	if (SetFilePointer(hFile, &start_pos, NULL, FILE_FROM_BEGIN) == 0)
+	{
+		_hx_printf("  [trunc]move file pointer failed\r\n");
+		goto __TERMINAL;
+	}
+
+	/* Truncate the file. */
+	if (!SetEndOfFile(hFile))
+	{
+		_hx_printf("  [trunc]truncate file failed.\r\n");
+	}
+	else {
+		_hx_printf("  Truncate file[%s] success.\r\n", FullName);
+	}
+
+__TERMINAL:
+	if (NULL != hFile)
+	{
+		IOManager.CloseFile((__COMMON_OBJECT*)&IOManager,
+			hFile);
+	}
+	return SHELL_CMD_PARSER_SUCCESS;
 }
 
 static DWORD use(__CMD_PARA_OBJ* pCmdObj)
@@ -625,7 +731,12 @@ static DWORD init()
 #ifdef __CFG_SYS_DDF
 	if(!FsGlobalData.bInitialized)
 	{
-		memcpy((char*)&FsGlobalData.FsArray[0],(const char*)&IOManager.FsArray[0],sizeof(__FS_ARRAY_ELEMENT) * FILE_SYSTEM_NUM);
+		/* Obtain FS objects from kernel. */
+		memcpy((char*)&FsGlobalData.FsArray[0],
+			(const char*)&IOManager.FsArray[0],
+			sizeof(__FS_ARRAY_ELEMENT) * FILE_SYSTEM_NUM);
+
+		/* Set default current directory. */
 		if(FsGlobalData.FsArray[0].FileSystemIdentifier)
 		{
 			FsGlobalData.CurrentFs     = FsGlobalData.FsArray[0].FileSystemIdentifier;

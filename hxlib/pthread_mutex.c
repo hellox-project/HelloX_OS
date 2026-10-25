@@ -16,192 +16,173 @@
 //    Lines number              :
 //***********************************************************************/
 
-#if 0 //comment off.
 
-#include <StdAfx.h>
-#include <kapi.h>
+#include <hellox.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <errno.h>
 #include <pthread.h>
-#include <time.h>
 
-
-int ptw32_mutex_check_need_init (pthread_mutex_t * mutex)
+int ptw32_mutex_check_need_init(pthread_mutex_t* mutex)
 {
+	if (NULL == mutex)
+	{
+		return EINVAL;
+	}
 	return S_OK;
 }
 
-LONG ptw32_InterlockedExchange (LPLONG location,LONG value)
+LONG ptw32_InterlockedExchange(LPLONG location, LONG value)
 {
 	LONG result = 0;
 
-#ifdef __I386__
-
-#ifdef __GCC__
-	__asm__ __volatile__(
-			".code32					;"
-			"PUSHL 		%%ecx			;"
-			"MOVL 		(%1),	%%ecx	;"
-			"MOVL 		(%2),	%%eax	;"
-			"XCHGL 		%%eax, 	(%%ecx)	;"
-			"MOVL 		%%eax, 	(%0)	;"
-			"POPL 		%%ecx			;"
-			:"=r"(result)
-			:"r"(location), "r"(value)
-			: "memory"
-	);
-#else
+#if defined(_M_IX86) || defined(__i386__)
+#if (defined(__clang__) || (defined(__GNUC__)))
+    __asm__ __volatile__(
+        "xchgl %%eax, (%%ecx)\n\t"  /* XCHG dword ptr[ecx], eax */
+        : "=a" (result)             /* 输出：eax 中的值存入 result */
+        : "c" (location),           /* 输入：location 放入 ecx */
+          "a" (value)               /* 输入：value 放入 eax */
+        : "memory"                  /* 告诉编译器内存被修改 */
+    );
+#elif defined(_MSC_VER)
 	__asm {
 		PUSH         ecx
-		MOV          ecx,dword ptr [location]
-		MOV          eax,dword ptr [value]
-		XCHG         dword ptr [ecx],eax
-		MOV          dword ptr [result], eax
+		MOV          ecx, dword ptr[location]
+		MOV          eax, dword ptr[value]
+		XCHG         dword ptr[ecx], eax
+		MOV          dword ptr[result], eax
 		POP          ecx
 	}
 #endif
-
 #endif
 
 	return result;
 }
 
-PTW32_LONG  ptw32_InterlockedCompareExchange (PTW32_LPLONG location,	PTW32_LONG value,	PTW32_LONG comparand)
+PTW32_LONG  ptw32_InterlockedCompareExchange(PTW32_LPLONG location, PTW32_LONG value, PTW32_LONG comparand)
 {
 	PTW32_LONG result;
 
-
-#ifdef __I386__
-
-#ifdef __GCC__
-	__asm__ __volatile__ (
-			".code32						;"
-			"PUSH %%ecx 					;"
-			"PUSH %%edx 					;"
-			"MOVL 	(%1),  		%%ecx		;"
-			"MOVL 	(%2),		%%edx		;"
-			"MOVL 	(%3),		%%eax		;"
-			"LOCK CMPXCHGL	%%edx, 	(%%ecx)	;"
-			"MOVL 			%%eax,	(%0)	;"
-			"POP 			%%edx			;"
-			"POP 			%%ecx			;"
-			: "=r"(result)
-			: "r"(location), "r"(value), "r"(comparand)
-			: "memory"
-			);
-#else
+#if defined(_M_IX86) || defined(__i386__)
+#if (defined(__clang__) || (defined(__GNUC__)))
+    __asm__ __volatile__(
+        "lock cmpxchgl %%edx, (%%ecx)\n\t"  /* LOCK CMPXCHG dword ptr[ecx], edx */
+        : "=a" (result)                     /* 输出：eax 中的旧值存入 result */
+        : "c" (location),                   /* 输入：location 放入 ecx */
+          "d" (value),                      /* 输入：value 放入 edx */
+          "a" (comparand)                   /* 输入：comparand 放入 eax */
+        : "memory", "cc"                    /* 内存被修改，条件标志被修改 */
+    );
+#elif defined(_MSC_VER)
 	__asm {
 		PUSH         ecx
 		PUSH         edx
-		MOV          ecx,dword ptr [location]
-		MOV          edx,dword ptr [value]
-		MOV          eax,dword ptr [comparand]
-		LOCK CMPXCHG dword ptr [ecx],edx
-		MOV          dword ptr [result], eax
+		MOV          ecx, dword ptr[location]
+		MOV          edx, dword ptr[value]
+		MOV          eax, dword ptr[comparand]
+		LOCK CMPXCHG dword ptr[ecx], edx
+		MOV          dword ptr[result], eax
 		POP          edx
 		POP          ecx
 	}
 #endif
-
 #endif
 
 	return result;
 }
 
-//Just create a mutex object and return it through @mutex.
-int  pthread_mutex_init (pthread_mutex_t* mutex,const pthread_mutexattr_t * attr)
+/*
+ * Create mutex object and return it through
+ * @mutex.
+ */
+int  pthread_mutex_init(pthread_mutex_t* mutex, const pthread_mutexattr_t* attr)
 {
-	__MUTEX* pMutex = NULL;
-
-	pMutex = (__MUTEX*)ObjectManager.CreateObject(&ObjectManager,
-		NULL,
-		OBJECT_TYPE_MUTEX);
-	if(NULL == pMutex)
+	HANDLE hMutex = NULL;
+	
+	hMutex = CreateMutex();
+	if (NULL == hMutex)
 	{
-		return EINVAL;
+		return -S_FALSE;
 	}
 
-	if(!pMutex->Initialize((__COMMON_OBJECT*)pMutex))  //Can not initialize.
+	*mutex = (pthread_mutex_t)malloc(sizeof(struct pthread_mutex_t_));
+	if (NULL == *mutex)
 	{
-		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pMutex);
-		return EINVAL;
+		DestroyMutex(hMutex);
+		return -ENOMEM;
 	}
 
-	*mutex  = (pthread_mutex_t)KMemAlloc(sizeof(struct pthread_mutex_t_),KMEM_SIZE_TYPE_ANY);
-	if(NULL == *mutex)
-	{
-		ObjectManager.DestroyObject(&ObjectManager,(__COMMON_OBJECT*)pMutex);
-		return EINVAL;
-	}
+	(*mutex)->lock_idx = 0;
+	(*mutex)->recursive_count = 0;
+	(*mutex)->kind = PTHREAD_MUTEX_DEFAULT;
+	(*mutex)->ownerThread.p = GetCurrentThread();
+	(*mutex)->event = hMutex;
 
-	(*mutex)->lock_idx         = 0;
-	(*mutex)->recursive_count  = 0;
-	(*mutex)->kind             = PTHREAD_MUTEX_DEFAULT;
-	(*mutex)->ownerThread.p    = KernelThreadManager.lpCurrentKernelThread;
-	(*mutex)->event            = pMutex;
-
-	return S_OK;
+	return 0;
 }
 
-int  pthread_mutex_destroy (pthread_mutex_t* mutex)
+int  pthread_mutex_destroy(pthread_mutex_t* mutex)
 {
-	__MUTEX*    pMutex = NULL;
+	HANDLE hMutex = NULL;
 
-	if(mutex == NULL)
+	if (NULL == mutex)
 	{
-		return -1;
+		return -EINVAL;
 	}
-	if(*mutex == NULL)
-	{
-		return -1;
-	}
-
-	pMutex = (__MUTEX*)(*mutex)->event;
-	ObjectManager.DestroyObject(&ObjectManager,	(__COMMON_OBJECT*)pMutex);
-
-	//Release the memory of *mutex.
-	KMemFree(*mutex,KMEM_SIZE_TYPE_ANY,0);
-
-	return S_OK;
-}
-
-int  pthread_mutex_lock (pthread_mutex_t* mutex)
-{
-	__MUTEX* pMutex  = NULL;
 
 	if (*mutex == NULL)
 	{
-		return EINVAL;
+		return -EINVAL;
 	}
 
-	if((*mutex)->event == NULL)
+	hMutex = (HANDLE)(*mutex)->event;
+	DestroyMutex(hMutex);
+	free(*mutex);
+
+	return 0;
+}
+
+int  pthread_mutex_lock(pthread_mutex_t* mutex)
+{
+	HANDLE hMutex = NULL;
+
+	if (*mutex == NULL)
 	{
-		return EINVAL;
+		return -EINVAL;
 	}
-	pMutex = (__MUTEX*)(*mutex)->event;
 
-	if(OBJECT_WAIT_RESOURCE == pMutex->WaitForThisObject((__COMMON_OBJECT*)pMutex))
+	if ((*mutex)->event == NULL)
 	{
-		return S_OK;
+		return -EINVAL;
+	}
+	hMutex = (HANDLE)(*mutex)->event;
+
+	if (OBJECT_WAIT_RESOURCE == WaitForThisObject(hMutex))
+	{
+		return 0;
 	}
 
-	return EINVAL;
+	return -S_FALSE;
 }
 
 
-int  pthread_mutex_unlock (pthread_mutex_t * mutex)
+int  pthread_mutex_unlock(pthread_mutex_t* mutex)
 {
-	__MUTEX* pMutex = NULL;
+	HANDLE hMutex = NULL;
 
-	if(NULL == mutex)
+	if (NULL == mutex)
 	{
-		return EINVAL;
+		return -EINVAL;
 	}
-	if(NULL == (*mutex)->event)
+	if (NULL == (*mutex)->event)
 	{
-		return EINVAL;
+		return -EINVAL;
 	}
-	pMutex = (__MUTEX*)(*mutex)->event;
-	pMutex->ReleaseMutex((__COMMON_OBJECT*)pMutex);
-	return S_OK;
+	hMutex = (HANDLE)(*mutex)->event;
+	ReleaseMutex(hMutex);
+	return 0;
 }
 
 /****
@@ -226,7 +207,7 @@ int  pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abst
 	pMutex = (__MUTEX*)(*mutex)->event;
 	waitTime  = abstime->tv_sec * 1000;
 	waitTime += abstime->tv_nsec / 1000;
-	
+
 	if(OBJECT_WAIT_RESOURCE == pMutex->WaitForThisObjectEx((__COMMON_OBJECT*)pMutex,waitTime))
 	{
 		return S_OK;
@@ -235,57 +216,78 @@ int  pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abst
 }
 */
 
-int  pthread_mutex_trylock (pthread_mutex_t * mutex)
+/*
+ * Try to acquire mutex, invokes WaitForThisObjectEx
+ * routine of HelloX kernel using time out value as 0.
+ * Please be noted that the mutex support recursive
+ * acquiring, i.e, if the current owner and the caller
+ * is same thread, then it will return RESOURCE.
+ */
+int  pthread_mutex_trylock(pthread_mutex_t * mutex)
 {
-	__MUTEX* pMutex = NULL;
+	HANDLE hMutex = NULL;
+	unsigned long wait_result = 0;
 
-	if(NULL == mutex)
+	if (NULL == mutex)
 	{
-		return EINVAL;
+		return -EINVAL;
 	}
-	if(NULL == (*mutex)->event)
+	if (NULL == (*mutex)->event)
 	{
-		return EINVAL;
+		return -EINVAL;
 	}
-	pMutex = (__MUTEX*)(*mutex)->event;
-	if(OBJECT_WAIT_RESOURCE == pMutex->WaitForThisObjectEx((__COMMON_OBJECT*)pMutex,0))
+
+	hMutex = (HANDLE)(*mutex)->event;
+	wait_result = WaitForThisObjectEx(hMutex, 0);	 
+	switch (wait_result)
 	{
-		return S_OK;
+	case OBJECT_WAIT_TIMEOUT:
+		/* Object is busy, return EBUSY. */
+		return EBUSY;
+	case OBJECT_WAIT_RESOURCE:
+		return 0;
+	case OBJECT_WAIT_DELETED:
+		/*
+		 * Mutex is released, undefined result according
+		 * POSIX, just return EINVAL.
+		 */
+		return -EINVAL;
+	case OBJECT_WAIT_FAILED:
+		return -EINVAL;
 	}
-	return EINVAL;
+
+	return -EINVAL;
 }
 
 /*
 * Mutex Attribute Functions
 */
-int  pthread_mutexattr_init (pthread_mutexattr_t * attr)
+int  pthread_mutexattr_init(pthread_mutexattr_t * attr)
 {
 	return S_OK;
 }
 
-int  pthread_mutexattr_destroy (pthread_mutexattr_t * attr)
+int  pthread_mutexattr_destroy(pthread_mutexattr_t * attr)
 {
 	return S_OK;
 }
 
-int  pthread_mutexattr_getpshared (const pthread_mutexattr_t *attr,int *pshared)
+int  pthread_mutexattr_getpshared(const pthread_mutexattr_t *attr, int *pshared)
 {
 	return S_OK;
 }
 
-int  pthread_mutexattr_setpshared (pthread_mutexattr_t * attr,int pshared)
+int  pthread_mutexattr_setpshared(pthread_mutexattr_t * attr, int pshared)
 {
 	return S_OK;
 }
 
-int  pthread_mutexattr_settype (pthread_mutexattr_t * attr, int kind)
+int  pthread_mutexattr_settype(pthread_mutexattr_t * attr, int kind)
 {
 	return S_OK;
 }
 
-int  pthread_mutexattr_gettype (pthread_mutexattr_t * attr, int *kind)
+int  pthread_mutexattr_gettype(pthread_mutexattr_t * attr, int *kind)
 {
 	return S_OK;
 }
-
-#endif

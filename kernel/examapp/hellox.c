@@ -87,12 +87,189 @@ HANDLE CreateUserThread(
 	return hRet;
 }
 
+/* 
+ * Create a new process and returns the handle. 
+ * The handle must be closed by invoking CloseHandle
+ * routine.
+ */
+HANDLE CreateProcess(
+	unsigned long stack_size, /* Main thread's stack size, 0 as default. */
+	unsigned long priority,   /* Main thread's priority level. */
+	char* pszCmdLine,         /* User input command line. */
+	LPVOID pReserved,         /* Reserved for future. */
+	char* pszProcName         /* Process's name. */
+) {
+	HANDLE hRet = NULL;
+
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push __PARAM_2
+		push __PARAM_3
+		push __PARAM_4
+		push ebp
+		push eax
+		mov __PARAM_0, stack_size
+		mov __PARAM_1, priority
+		mov __PARAM_2, pszCmdLine
+		mov __PARAM_3, pReserved
+		mov __PARAM_4, pszProcName
+		lea eax, hRet
+		mov ebp, eax
+		mov eax, SYSCALL_CREATEPROCESS
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_4
+		pop __PARAM_3
+		pop __PARAM_2
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return hRet;
+}
+
+/* Close a general handle. */
+void CloseHandle(HANDLE _handle)
+{
+	__asm {
+		push __PARAM_0
+		mov __PARAM_0, _handle
+		mov eax, SYSCALL_CLOSEHANDLE
+		int SYSCALL_VECTOR
+		pop __PARAM_0
+	}
+}
+
+/* Get a process's exit code. */
+int GetProcessExitCode(HANDLE hProcess)
+{
+	int exit_code = -2;
+	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
+		mov __PARAM_0, hProcess
+		lea eax, exit_code
+		mov ebp, eax
+		mov eax, SYSCALL_GETPROCESSEXITCODE
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
+	}
+	return exit_code;
+}
+
+/*
+ * Get flash message from a given
+ * process or current proccess.
+ * hProcess is the process that flash
+ * message get from, NULL for current
+ * process.
+ */
+BOOL GetFlashMessage(HANDLE hProcess, int* flash_message_sz,
+	LPVOID flash_message)
+{
+	BOOL bResult = FALSE;
+
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push __PARAM_2
+		push ebp
+		push eax
+		mov __PARAM_0, hProcess
+		mov __PARAM_1, flash_message_sz
+		mov __PARAM_2, flash_message
+		lea eax, bResult
+		mov ebp, eax
+		mov eax, SYSCALL_GETFLASHMESSAGE
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_2
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return bResult;
+}
+
+/*
+ * Put flash message into a process or
+ * current process, if the handle is NULL.
+ */
+BOOL PutFlashMessage(HANDLE hProcess, int flash_message_sz,
+	LPVOID flash_message)
+{
+	BOOL bResult = FALSE;
+
+	__asm {
+		push __PARAM_0
+		push __PARAM_1
+		push __PARAM_2
+		push ebp
+		push eax
+		mov __PARAM_0, hProcess
+		mov __PARAM_1, flash_message_sz
+		mov __PARAM_2, flash_message
+		lea eax, bResult
+		mov ebp, eax
+		mov eax, SYSCALL_PUTFLASHMESSAGE
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_2
+		pop __PARAM_1
+		pop __PARAM_0
+	}
+	return bResult;
+}
+
 VOID DestroyUserThread(HANDLE hThread);
 DWORD SetLastError(DWORD dwNewError);
-DWORD GetLastError(void);
 DWORD GetThreadID(HANDLE hThread);
 DWORD SetThreadPriority(HANDLE hThread, DWORD dwPriority);
 HANDLE GetCurrentThread(void);
+
+/* Get error code of current thread. */
+DWORD GetLastError(void)
+{
+	unsigned long err_code = 0;
+
+	/*
+	 * emit asm instructions to query current thread's
+	 * last error code from OS kernel.
+	 */
+#ifdef _MSC_VER
+	__asm {
+		push ebp
+		push eax
+		lea eax, err_code
+		mov ebp, eax
+		mov eax, SYSCALL_GETLASTERROR
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+	}
+#elif defined(__GNUC__) || defined(__clang__)
+	__asm__ volatile (
+		"push %%ebp\n\t"
+		"push %%eax\n\t"
+		"leal %0, %%eax\n\t"
+		"movl %%eax, %%ebp\n\t"
+		"movl %1, %%eax\n\t"
+		"int %2\n\t"
+		"pop %%eax\n\t"
+		"pop %%ebp\n\t"
+		: "+m"(err_code)
+		: "i"(SYSCALL_GETLASTERROR), "i"(SYSCALL_VECTOR)
+		: "eax", "ebp", "memory"
+		);
+#endif
+
+	return err_code;
+}
 
 /* Get current thread's ID. */
 unsigned long GetCurrentThreadID()
@@ -692,6 +869,36 @@ BOOL GetSystemInfo(SYSTEM_INFO* pSysInfo)
 		pop __PARAM_0
 	}
 	return bRet;
+}
+
+/* Switch to graphic mode. */
+LPVOID SwitchToGraphic(__VBE_INFO* pVbeInfo)
+{
+	LPVOID ret_addr = NULL;
+
+	__asm {
+		push __PARAM_0
+		push ebp
+		push eax
+		mov __PARAM_0, pVbeInfo
+		lea eax, ret_addr
+		mov ebp, eax
+		mov eax, SYSCALL_SWITCHTOGRAPHIC
+		int SYSCALL_VECTOR
+		pop eax
+		pop ebp
+		pop __PARAM_0
+	}
+	return ret_addr;
+}
+
+/* Switch to text mode. */
+void SwitchToText()
+{
+	__asm {
+		mov eax, SYSCALL_SWITCHTOTEXT
+		int SYSCALL_VECTOR
+	}
 }
 
 /* Query virtual memory's basic information. */

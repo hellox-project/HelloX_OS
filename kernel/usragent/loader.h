@@ -41,6 +41,9 @@ unsigned long BindModulesSymbol(__PEB* peb);
 #define WIN_API_SET_PREFIX_API "api-ms-win-"
 #define WIN_API_SET_PREFIX_EXT "ext-ms-win-"
 
+/* Loader version string. */
+#define LOADER_VER "Loader 1.0.0"
+
 /* The the container DLL's name given API SET name. */
 const char* GetContainerDllName(const char* api_name);
 

@@ -28,7 +28,7 @@
 //
 //************************************************************************
 
-#define OS_VERSION   "    HelloX V1.89"
+#define OS_VERSION   "    HelloX V1.90"
 #define HELLOX_VERSION_INFO "HelloX [Version 1.900(Beta),initiated in 2023/09/16,by Garry.Xin]"
 #define HELLOX_SLOGAN_INFO  "HelloX OS,through which you can talk to everything."
 //#define HELLOX_SPECIAL_INFO "Nickname:babygirl,to remark the birth of Sophia,my little girl,in 2016/04/19."
@@ -49,6 +49,9 @@
 //#define __ARM11__
 //#define __STM32__
 
+//Machine word's length.
+#define __MACHINE_WORD_LENGTH 4
+
 /* SMP(Symmentric Multiple Processor support. */
 #define __CFG_SYS_SMP
 
@@ -66,7 +69,7 @@
 #define SYSTEM_BYTE_ALIGN  4   //4 will work under most platforms.
 
 //The maximal TLS(Thread Local Storage) number.
-#define MAX_TLS_NUM        0x04
+#define MAX_TLS_NUM        0x10
 
 /* Maximal logical CPU supported in case of SMP. */
 #if defined(__CFG_SYS_SMP)
@@ -103,7 +106,7 @@
  * Each user thread has it's own user stack which
  * is used in user mode.
  */
-#define DEFAULT_USER_STACK_SIZE 8192
+#define DEFAULT_USER_STACK_SIZE (8192 * 8)
 
  /* 
   * Reboot system when bug encountered,
@@ -210,7 +213,7 @@
 //#define __CFG_DRV_SDIO
 
 //Include MOUSE driver in OS.
-//#define __CFG_DRV_MOUSE
+#define __CFG_DRV_MOUSE
 
 //Include Key board driver in OS.
 #define __CFG_DRV_KEYBOARD

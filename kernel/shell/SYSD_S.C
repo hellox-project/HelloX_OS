@@ -18,6 +18,7 @@
 #include <StdAfx.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <process.h>
 
 #include "shell.h"
 #include "sysd_s.h"
@@ -45,6 +46,7 @@ static DWORD devlist(__CMD_PARA_OBJ*);
 static DWORD showint(__CMD_PARA_OBJ*);
 static DWORD showdev(__CMD_PARA_OBJ*);
 static DWORD kobjshow(__CMD_PARA_OBJ*);
+static DWORD procinfo(__CMD_PARA_OBJ*);
 #ifdef __CFG_SYS_USB
 static DWORD usblist(__CMD_PARA_OBJ*);
 static DWORD usbdev(__CMD_PARA_OBJ*);
@@ -77,6 +79,7 @@ static struct __SHELL_CMD_MAP{
 	{"showint",           showint,          "  showint              : Show interrupt statistics information." },
 	{"showdev",           showdev,          "  showdev              : show device specific information." },
 	{"kobjshow",          kobjshow,         "  kobjshow             : Display kernel object information" },
+	{"procinfo",          procinfo,         "  procinfo             : Show all process(es) information" },
 #if defined(__CFG_APP_SYSLOG)
 	{"syslog",            syslog,           "  syslog               : Turn on or off logging."},
 #endif
@@ -786,6 +789,13 @@ __TERMINAL:
 		/* Release it. */
 		IOManager.ReleaseDevice((__COMMON_OBJECT*)&IOManager, (__COMMON_OBJECT*)pDevice);
 	}
+	return SHELL_CMD_PARSER_SUCCESS;
+}
+
+/* Display process information. */
+static DWORD procinfo(__CMD_PARA_OBJ* pParaObj)
+{
+	DumpProcess();
 	return SHELL_CMD_PARSER_SUCCESS;
 }
 

@@ -85,15 +85,10 @@ static void SC_ReadFile(__SYSCALL_PARAM_BLOCK* pspb)
 		goto __TERMINAL;
 	}
 
-	//SYSCALL_RET = (uint32_t)ReadFile(
-	//	(HANDLE)PARAM(0),
-	//	(DWORD)PARAM(1),
-	//	(LPVOID)PARAM(2),
-	//	(DWORD*)PARAM(3));
 	bResult = ReadFile((HANDLE)PARAM(0), (unsigned long)PARAM(1), out_buffer, &read_sz);
 
 __TERMINAL:
-	if (out_buffer && bResult)
+	if (out_buffer)
 	{
 		map_to_user((LPVOID)PARAM(2), PARAM(1), __OUT, out_buffer);
 	}
@@ -101,6 +96,64 @@ __TERMINAL:
 	{
 		/* Return the read size. */
 		*(unsigned long*)PARAM(3) = read_sz;
+	}
+	SYSCALL_RET = (uint32_t)bResult;
+}
+
+static void SC_GetFileAttributesEx(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	LPVOID pFileInfo = NULL;
+	BOOL bResult = FALSE;
+
+	/* 
+	 * Map the memory hold return result(which
+	 * is a FILE_ATTR_DATA struct) to kernel space. 
+	 */
+	pFileInfo = (LPVOID)map_to_kernel((LPVOID)PARAM(2),
+		sizeof(FILE_ATTRIBUTE_DATA), __OUT);
+	if (NULL == pFileInfo)
+	{
+		/* OOM. */
+		goto __TERMINAL;
+	}
+	bResult = GetFileAttributesEx(
+		(LPCSTR)PARAM(0),
+		(GET_FILEEX_INFO_LEVELS)PARAM(1),
+		pFileInfo);
+
+__TERMINAL:
+	if (pFileInfo)
+	{
+		map_to_user((LPVOID)PARAM(2),
+			sizeof(FILE_ATTRIBUTE_DATA), __OUT, pFileInfo);
+	}
+	SYSCALL_RET = (uint32_t)bResult;
+}
+
+static void SC_GetFileInformationByHandle(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	LPVOID pFileInfoUsr = (LPVOID)PARAM(1);
+	LPVOID pFileInfoKrl = NULL;
+	BOOL bResult = FALSE;
+
+	pFileInfoKrl = map_to_kernel(pFileInfoUsr, sizeof(BY_HANDLE_FILE_INFORMATION), __OUT);
+	if (NULL == pFileInfoKrl)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Issue command to IO Manager. */
+	bResult = IOManager.IOControl((__COMMON_OBJECT*)&IOManager,
+		(__COMMON_OBJECT*)PARAM(0),
+		IOCONTROL_FS_GETINFOBYHANDLE,
+		0, NULL,
+		sizeof(BY_HANDLE_FILE_INFORMATION),
+		pFileInfoKrl, NULL);
+
+__TERMINAL:
+	if (pFileInfoKrl)
+	{
+		map_to_user(pFileInfoUsr, sizeof(BY_HANDLE_FILE_INFORMATION), __OUT, pFileInfoKrl);
 	}
 	SYSCALL_RET = (uint32_t)bResult;
 }
@@ -244,7 +297,9 @@ void RegisterIoEntry(SYSCALL_ENTRY* pSysCallEntry)
 	pSysCallEntry[SYSCALL_FINDCLOSE] = SC_FindClose;
 
 	pSysCallEntry[SYSCALL_GETFILEATTRIBUTES] = SC_GetFileAttributes;
+	pSysCallEntry[SYSCALL_GETFILEATTRIBUTESEX] = SC_GetFileAttributesEx;
 	pSysCallEntry[SYSCALL_GETFILESIZE] = SC_GetFileSize;
+	pSysCallEntry[SYSCALL_GETFILEINFORMATIONBYHANDLE] = SC_GetFileInformationByHandle;
 
 	pSysCallEntry[SYSCALL_SETENDOFFILE] = SC_SetEndOfFile;
 

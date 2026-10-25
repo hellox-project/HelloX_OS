@@ -1,0 +1,46 @@
+                            Thread and process life cycle management
+Start procedure:
+. Process object is created in CreatProcess routine, with mina thread;
+. The thread object's ref counter is increased as 1(total = 2) in CreateThread routine;
+. When the thread is created in __CreateThread routine, it links itself int the
+kernel thread list of process, if the thread is a user one;
+. Then process starts;
+
+Normal run over procedure:
+. Process main thread invokes user code, and invokeds ProcessHalfBottom routine
+at the end of thread;
+. If the thread is not main thread, then just invokes KernelThreadClean routine;
+. If the thread is the main thread, then wait for all thread(s) run over, then
+invokes the KernelThreadClean routine, set the process's status to TERMINAL;
+. KernelThreadClean then set the thread's status as TERMINAL, insert it into
+terminal queue, wake up all thread(s) waiting on this thread object;
+. Then issue a ScheduleFromProc. In this point, the ref counter if the thread is 2,
+and the ref counter of process object is 1;
+. In ScheduleFromProc routine, DestroyObject is invoked on the thread object, so
+the ref counter becomes 1;
+. Then the DestroyObject is invoked by user or by background destroying thread(IDLE)
+on process object;
+. Uninitialize routine is invoked since ref counter is 1(to 0);
+. Unlink it from global process list of ProcessManager;
+. Release handle array of the process, then all kernel object(s) associated with
+handle will be destroyed(ref counter decrement 1);
+. Then destroy all thread(s) belong to this process, the thread's Uninitializ code
+is invoked, all kernel associated resource is released since ref counter as 1(->0);
+. Destroy virtual memory manager object associated with this process;
+. Then the process object is released by ObjectManager.
+
+Exception killed by system:
+. When process executes illegal instructions or other operations, will
+be closed by kernel;
+. Implementation pending, but the execute path should lead to HalfBottom
+of process...
+
+Handles owned by other process:
+. When the process object or thread object return to user through handle,
+no matter to the same process or different process, it's ref counter should
+be increased before associated with a handle;
+. The handle owner should invoked CloseHandle routine before run over, then
+the DestroyObject routine scans the kernel object and decrease it's ref counter;
+. If the ref counter reach 0, then all resources are collected back;
+. If the handle owner forget invoke CloseHandle, no problem, the handle will
+be closed at the end of process, by ProcessHalfBottom routine;

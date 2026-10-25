@@ -189,8 +189,9 @@ static __PHYSICAL_DEVICE* pOldUsbCtrl = NULL;
 
 //The physical device corresponding the USB controller is returned if success,
 //otherwise NULL will return.
-__PHYSICAL_DEVICE* ehci_hcd_init(int index, enum usb_init_type init,struct ehci_hccr **ret_hccr, 
-struct ehci_hcor **ret_hcor)
+__PHYSICAL_DEVICE* ehci_hcd_init(int index, enum usb_init_type init,
+	struct ehci_hccr **ret_hccr, 
+	struct ehci_hcor **ret_hcor)
 {
 	__PHYSICAL_DEVICE* pUsbCtrl = NULL;
 	__IDENTIFIER id;
@@ -203,7 +204,6 @@ struct ehci_hcor **ret_hcor)
 	pUsbCtrl = DeviceManager.GetDevice(&DeviceManager,BUS_TYPE_PCI,
 		&id, pOldUsbCtrl);
 	if (NULL == pUsbCtrl) {
-		//_hx_printf("USB: EHCI host controller [%d] is not found.\r\n",index);
 		return NULL;
 	}
 

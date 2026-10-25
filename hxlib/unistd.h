@@ -1,7 +1,7 @@
 //***********************************************************************/
 //    Author                    : Garry
 //    Original Date             : April 17,2015
-//    Module Name               : signal.h
+//    Module Name               : unistd.h
 //    Module Funciton           : 
 //                                Simulates POSIX unistd.h file.
 //    Last modified Author      :

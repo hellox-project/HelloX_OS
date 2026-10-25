@@ -54,6 +54,7 @@ BEGIN_DEFINE_OBJECT(__SEMAPHORE)
 #endif
 	/* Kernel thread(s) waiting for the semaphore. */
 	__PRIORITY_QUEUE* lpWaitingQueue;
+
 	/*
 	 * Change default sem counters,this routine should 
 	 * be called before any WaitForThisObject or WaitForThisObjectEx
@@ -61,6 +62,7 @@ BEGIN_DEFINE_OBJECT(__SEMAPHORE)
 	 * kernel thread.
 	 */
 	BOOL (*SetSemaphoreCount)(__COMMON_OBJECT*,DWORD,DWORD); 
+
 	/* 
 	 * Release occupied semaphore resource,previous counter
 	 * before this routine called will be returned.
@@ -69,7 +71,15 @@ BEGIN_DEFINE_OBJECT(__SEMAPHORE)
 	 * sections,since rescheduling is not allowed.
 	 */
 	BOOL (*ReleaseSemaphore)(__COMMON_OBJECT*, DWORD* pdwPrevCount, BOOL bNoResched);
-	DWORD (*WaitForThisObjectEx)(__COMMON_OBJECT*,DWORD dwMillionSecond,DWORD* pdwWait);
+
+	/* 
+	 * Time out wait, waited time will be 
+	 * returned in pdwwait if set. 
+	 */
+	DWORD (*WaitForThisObjectEx)(__COMMON_OBJECT*, DWORD dwMillionSecond, DWORD* pdwWait);
+
+	/* Return the current value of semaphore. */
+	unsigned long (*GetSemaphoreValue)(__COMMON_OBJECT*);
 END_DEFINE_OBJECT(__SEMAPHORE)
 
 //Initializer and Uninitializer of semaphore object.
@@ -106,23 +116,19 @@ BEGIN_DEFINE_OBJECT(__MAIL_BOX)
 	//Set mailbox's size,default is 1.This routine should be called before any SendMail or
 	//GetMail operations since it can not wake up any already blocked kernel thread.
 	BOOL           (*SetMailboxSize)(__COMMON_OBJECT*,DWORD);
+	//Send message to mailbox.
 	DWORD          (*SendMail)(__COMMON_OBJECT*,LPVOID pMessage,
-		                      DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait);  //Send message to mailbox.
+		                      DWORD dwPriority,DWORD dwMillionSecond,DWORD* pdwWait);
+	//Get a mail from mail box.
 	DWORD          (*GetMail)(__COMMON_OBJECT*,LPVOID* ppMessage,
-		                     DWORD dwMillionSecond,DWORD* pdwWait);  //Get a mail from mail box.
+		                     DWORD dwMillionSecond,DWORD* pdwWait);
+	//Show out mailbox's internal info, used for debugging.
+	void           (*ShowInfo)(__COMMON_OBJECT*);
 END_DEFINE_OBJECT(__MAIL_BOX)
 
 /* Initializer and Uninitializer of mail box object. */
 BOOL MailboxInitialize(__COMMON_OBJECT* pMailbox);
 BOOL MailboxUninitialize(__COMMON_OBJECT* pMailbox);
-
-/* 
- * Helper routine to show out a mail box's 
- * internal state. This routine is invoked by
- * ShowKernelObject routine of object manager,
- * for kernel's debugging.
- */
-void __ShowMailboxObject(__COMMON_OBJECT* pMailbox);
 
 /* 
  * Definition of __CONDITION object.

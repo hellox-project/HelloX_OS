@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+   NASA Docket No. GSC-18,719-1, and identified as “core Flight System: Bootes”
+
+   Copyright (c) 2020 United States Government as represented by the
+   Administrator of the National Aeronautics and Space Administration.
+   All Rights Reserved.
+
+   Licensed under the Apache License, Version 2.0 (the "License"); you may
+   not use this file except in compliance with the License. You may obtain
+   a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+    This document adheres to the Electronic Data Sheet (EDS) XML schema
+    as prescribed in CCSDS book 876.0.
+
+    Purpose:
+      This describes standard data types used throughout the Core Flight System
+
+-->
+<PackageFile xmlns="http://www.ccsds.org/schema/sois/seds">
+<Package name="BASE_TYPES" shortDescription="Standard type definitions for Core Flight System">
+
+   <!-- Define "base" data types for which all other containers/interfaces/etc will use -->
+   <DataTypeSet>
+
+      <BooleanDataType name="StatusBit" shortDescription="Single true/false status bit">
+        <BooleanDataEncoding sizeInBits="1"/>
+      </BooleanDataType>
+
+      <!-- Fixed width integer types -->
+      <IntegerDataType name="int8" shortDescription="Signed 8 bit integer">
+        <IntegerDataEncoding sizeInBits="8" encoding="${CFE_MISSION/SIGNED_INTEGER_ENCODING}"  byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="127" min="-128" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="uint8" shortDescription="Unsigned 8 bit integer">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"  byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="255" min="0" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="int16" shortDescription="Signed 16 bit integer">
+        <IntegerDataEncoding sizeInBits="16" encoding="${CFE_MISSION/SIGNED_INTEGER_ENCODING}" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="32767" min="-32768" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="uint16" shortDescription="Unsigned 16 bit integer">
+        <IntegerDataEncoding sizeInBits="16" encoding="unsigned" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="65535" min="0" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="int32" shortDescription="Signed 32 bit integer">
+        <IntegerDataEncoding sizeInBits="32" encoding="${CFE_MISSION/SIGNED_INTEGER_ENCODING}" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="2147483647" min="-2147483648" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="uint32" shortDescription="Unsigned 32 bit integer">
+        <IntegerDataEncoding sizeInBits="32" encoding="unsigned" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="4294967295" min="0" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="int64" shortDescription="Signed 64 bit integer">
+        <IntegerDataEncoding sizeInBits="64" encoding="${CFE_MISSION/SIGNED_INTEGER_ENCODING}" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="9223372036854775807" min="-9223372036854775808" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+      <IntegerDataType name="uint64" shortDescription="Unsigned 64 bit integer">
+        <IntegerDataEncoding sizeInBits="64" encoding="unsigned" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" />
+        <Range>
+          <MinMaxRange max="18446744073709551615" min="0" rangeType="inclusiveMinInclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+
+      <!-- Floating point types -->
+      <FloatDataType name="float" shortDescription="Single precision (32 bit) floating point value">
+        <FloatDataEncoding encodingAndPrecision="IEEE754_2008_single" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" sizeInBits="32" />
+        <Range>
+          <PrecisionRange>single</PrecisionRange>
+        </Range>
+      </FloatDataType>
+      <FloatDataType name="double" shortDescription="Double precision (64 bit) floating point value">
+        <FloatDataEncoding encodingAndPrecision="IEEE754_2008_double" byteOrder="${CFE_MISSION/DATA_BYTE_ORDER}" sizeInBits="64" />
+        <Range>
+          <PrecisionRange>double</PrecisionRange>
+        </Range>
+      </FloatDataType>
+
+      <!-- Commonly used string types in all CFE/CFS messages -->
+      <StringDataType name="ApiName" length="${CFE_MISSION/MAX_API_LEN}" />
+      <StringDataType name="PathName" length="${CFE_MISSION/MAX_PATH_LEN}" />
+
+      <!--
+          Memory addresses in CMD/TLM: These are integer types based on the
+          CFE_MISSION/MEM_ADDR_SIZE_BITS configuration setting.  This allows
+          the user to select 32-bit (traditional) or 64-bit (modern) integer
+          values to be used in CMD/TLM fields that store a memory address.
+
+          Note that changing from 32 to 64 will extend all containers that
+          use/reference this type by a proportional amount, so traditional
+          non-EDS 32-bit CMD/TLM definitions will NOT match when this is 64 bits.
+       -->
+      <IntegerDataType name="MemReference" shortDescription="Integer type used for CPU memory addresses, sizes and offsets">
+        <LongDescription>
+          For backward compatibility with existing CFS code this should be uint32,
+          but all telemetry information will be limited to 4GB in size as a result.
+
+          On 64-bit platforms this can be expanded to 64 bits which will allow larger
+          memory objects, but this will break compatibility with existing control
+          systems, and may also change the alignment/padding of some messages.
+
+          In either case this must be an unsigned type, and should be large enough
+          to represent the largest memory address/size in use in the CFS system.
+        </LongDescription>
+        <IntegerDataEncoding sizeInBits="${CFE_MISSION/MEM_REFERENCE_SIZE_BITS}" encoding="unsigned" />
+        <Range>
+          <MinMaxRange max="2 ^ ${CFE_MISSION/MEM_REFERENCE_SIZE_BITS}" min="0" rangeType="inclusiveMinExclusiveMax"/>
+        </Range>
+      </IntegerDataType>
+
+   </DataTypeSet>
+
+</Package>
+</PackageFile>

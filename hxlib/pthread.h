@@ -34,8 +34,10 @@
 #define __PTHREAD_H__
 
 #include "__hxcomm.h"
+#include "string.h"
 #include "time.h"
-/*
+
+ /*
  * See the README file for an explanation of the pthreads-win32 version
  * numbering scheme and how the DLL is named etc.
  */
@@ -45,8 +47,6 @@
 
 //#include <setjmp.h>
 //#include <limits.h>
-
-
 
 /*
  * Boolean values to make us independent of system includes.
@@ -96,7 +96,9 @@ enum {
 
 typedef long   *LPLONG;
 
+#ifndef EINVAL
 #define EINVAL                   -1 
+#endif
 #define EPERM                    1
 #define EBUSY                    16
 #define LONG                     long 
@@ -250,7 +252,6 @@ extern "C"
 #undef _GCC_THREAD_PROCESS_SHARED
 #define _GCC_THREAD_PROCESS_SHARED -1
 
-
 /*
  * POSIX 1003.1-2001 Limits
  * ===========================
@@ -295,8 +296,9 @@ extern "C"
 #undef PTHREAD_KEYS_MAX
 #define PTHREAD_KEYS_MAX                        _GCC_THREAD_KEYS_MAX
 
+/* Minimal stack size, same as kernel's default size. */
 #undef PTHREAD_STACK_MIN
-#define PTHREAD_STACK_MIN                       0
+#define PTHREAD_STACK_MIN                     0x8000
 
 #undef _GCC_THREAD_THREADS_MAX
 #define _GCC_THREAD_THREADS_MAX               64
@@ -316,8 +318,7 @@ extern "C"
 #define _GCC_SEM_VALUE_MAX                    32767
 
 #undef SEM_VALUE_MAX
-#define SEM_VALUE_MAX                           INT_MAX
-
+#define SEM_VALUE_MAX                           32767
 
 /*
  * The Open Watcom C/C++ compiler uses a non-standard calling convention
@@ -367,21 +368,25 @@ struct pthread_mutex_t_
 
 struct pthread_cond_t_
 {
-	void*    cond;
+	ptw32_handle_t ownerThread;
+	void* cond;
+	unsigned long clock_id;
 };
 
-//Thread attributes.
+/* Thread attributes. */
 struct pthread_attr_t_{
 	void*      stack_ptr;
 	size_t     stack_size;
 	int        detach_state;
-	int        priority;
+	char*      thread_name;
+	struct sched_param schedparam;
 };
 
 typedef HANDLE pthread_t;
 typedef struct pthread_attr_t_ * pthread_attr_t;
 typedef struct pthread_once_t_ pthread_once_t;
-typedef DWORD pthread_key_t;  //HelloX use DWORD as TLS key.
+/* HelloX use unsigned long as TLS key. */
+typedef unsigned long pthread_key_t;
 typedef struct pthread_mutex_t_ * pthread_mutex_t;
 typedef struct pthread_mutexattr_t_ * pthread_mutexattr_t;
 typedef struct pthread_cond_t_ * pthread_cond_t;
@@ -525,6 +530,13 @@ struct ptw32_cleanup_t
   struct ptw32_cleanup_t *prev;
 };
 
+ptw32_cleanup_t * ptw32_pop_cleanup(int execute);
+void ptw32_push_cleanup(ptw32_cleanup_t * cleanup,
+	ptw32_cleanup_callback_t routine, void *arg);
+
+/* Use ANSI C cleanup mechanism. */
+#define __CLEANUP_C
+
 #ifdef __CLEANUP_SEH
         /*
          * WIN32 SEH version of cancel cleanup.
@@ -560,9 +572,9 @@ struct ptw32_cleanup_t
 
 #define pthread_cleanup_push( _rout, _arg ) \
         { \
-            ptw32_cleanup_t     _cleanup; \
+            ptw32_cleanup_t _cleanup; \
             \
-            ptw32_push_cleanup( &_cleanup, (ptw32_cleanup_callback_t) (_rout), (_arg) ); \
+            ptw32_push_cleanup(&_cleanup, (ptw32_cleanup_callback_t) (_rout), (_arg) ); \
 
 #define pthread_cleanup_pop( _execute ) \
             (void) ptw32_pop_cleanup( _execute ); \
@@ -776,6 +788,42 @@ struct ptw32_cleanup_t
  int  pthread_mutex_trylock (pthread_mutex_t * mutex);
 
  int  pthread_mutex_unlock (pthread_mutex_t * mutex);
+
+ /*
+  * Semaphore functions.
+  */
+#ifndef SEM_VALUE_MAX
+#define SEM_VALUE_MAX INT_MAX
+#endif
+
+  /*
+   * The POSIX prototypes use the C99 "restrict" qualifier. Some compilers
+   * do not support it, so map it to an empty token on those compilers.
+   */
+#ifndef SEM_RESTRICT
+# if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#  define SEM_RESTRICT restrict
+# else
+#  define SEM_RESTRICT
+# endif
+#endif
+
+#define SEM_FAILED ((sem_t *)0)
+
+ typedef struct {
+	 HANDLE handle;      /* Handle returned by CreateSemaphore. */
+	 int    pshared;     /* 0: thread-shared only. Non-zero: unsupported. */
+	 volatile int valid; /* 1 after sem_init, 0 after sem_destroy. */
+ } sem_t;
+
+ int sem_init(sem_t *sem, int pshared, unsigned int value);
+ int sem_destroy(sem_t *sem);
+ int sem_wait(sem_t *sem);
+ int sem_trywait(sem_t *sem);
+ int sem_timedwait(sem_t *SEM_RESTRICT sem,
+	 const struct timespec *SEM_RESTRICT abstime);
+ int sem_post(sem_t *sem);
+ int sem_getvalue(sem_t *SEM_RESTRICT sem, int *SEM_RESTRICT sval);
 
 /*
  * Spinlock Functions

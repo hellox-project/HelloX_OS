@@ -45,11 +45,29 @@
     <Filter Include="Source Files\wildcard">
       <UniqueIdentifier>{47b12735-6b9f-483f-a9bf-2c2db281f77d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{2c4facf2-de33-4fc7-82d1-2811477b1826}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ftpserver">
+      <UniqueIdentifier>{8536a539-a7ae-43b0-bcf9-28c571ce869d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gnutls">
+      <UniqueIdentifier>{b1f14ee9-046f-45e9-bb94-dc0ff78659e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\guntls">
+      <UniqueIdentifier>{17922f10-3740-4a44-bbed-cf3c7c79516d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{e5f69842-d64b-4096-b3fa-2719f04f718a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
     <Text Include="todo.txt">
       <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="ftp_srv\to_do.txt">
+      <Filter>ftpserver</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
@@ -57,9 +75,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="errno.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inttypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="io.h">
@@ -175,6 +190,36 @@
     </ClInclude>
     <ClInclude Include="wildcard\wildcard.h">
       <Filter>Header Files\wildcard</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wchar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fcntl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gnutls\gnutls.h">
+      <Filter>Header Files\gnutls</Filter>
+    </ClInclude>
+    <ClInclude Include="ftp_srv\cfgparse.h">
+      <Filter>ftpserver</Filter>
+    </ClInclude>
+    <ClInclude Include="ftp_srv\fspathtools.h">
+      <Filter>ftpserver</Filter>
+    </ClInclude>
+    <ClInclude Include="ftp_srv\ftpserv.h">
+      <Filter>ftpserver</Filter>
+    </ClInclude>
+    <ClInclude Include="ftp_srv\x_malloc.h">
+      <Filter>ftpserver</Filter>
+    </ClInclude>
+    <ClInclude Include="bitscan_AI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="binsem.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -309,6 +354,90 @@
     </ClCompile>
     <ClCompile Include="regexp\regexp.c">
       <Filter>Source Files\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="sockaddr.c">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="dirent.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="qsort.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="wchar.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dirlist.c">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="strftime.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="timetest.c">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="stattest.c">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="cleanup.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gnutls\strtoul.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gnutls\gnutls_sim.c">
+      <Filter>Source Files\guntls</Filter>
+    </ClCompile>
+    <ClCompile Include="ftp_srv\cfgparse.c">
+      <Filter>ftpserver</Filter>
+    </ClCompile>
+    <ClCompile Include="ftp_srv\fspathtools.c">
+      <Filter>ftpserver</Filter>
+    </ClCompile>
+    <ClCompile Include="ftp_srv\ftp_main.c">
+      <Filter>ftpserver</Filter>
+    </ClCompile>
+    <ClCompile Include="ftp_srv\ftpconst.c">
+      <Filter>ftpserver</Filter>
+    </ClCompile>
+    <ClCompile Include="ftp_srv\ftpserv.c">
+      <Filter>ftpserver</Filter>
+    </ClCompile>
+    <ClCompile Include="ftp_srv\x_malloc.c">
+      <Filter>ftpserver</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pthread_cond.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="binsem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pthread_sem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test\app_main.c">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\binsem_test.c">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\clock_test.c">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\pthread_cond_test.c">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\semaphore_test.c">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\sleep_test.c">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\timer_test.c">
+      <Filter>test</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

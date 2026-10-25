@@ -40,12 +40,20 @@ BOOL NameIsValid(const CHAR* pFullName)
 		return FALSE;
 	}
 
-	if(':' != pFullName[1])  //File system identifier colon must exist.
+	if((':' != pFullName[1]) && ('\\' != pFullName[1]))
 	{
+		/* 
+		 * Second char must be fs identifier 
+		 * colon, or device name slash.
+		 */
 		return FALSE;
 	}
-	if('\\' != pFullName[2]) //The third character must be splitter.
+	if(('\\' != pFullName[2]) && ('.' != pFullName[2]))
 	{
+		/* 
+		 * The third character must be splitter, or
+		 * dot for device name.
+		 */
 		return FALSE;
 	}
 	return TRUE;

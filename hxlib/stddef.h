@@ -25,7 +25,7 @@ typedef unsigned int size_t;
 
 //Definition of standard offset_t type.
 typedef int offset_t;
-typedef int off_t;
+typedef long long off_t;
 
 //uid_t.
 typedef int uid_t;

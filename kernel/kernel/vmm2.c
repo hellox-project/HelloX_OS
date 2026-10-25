@@ -548,13 +548,19 @@ static LPVOID __SearchVirtualArea_l(__COMMON_OBJECT* lpThis, LPVOID lpDesiredAdd
 }
 #endif
 
-/* Just wrappers of underlay SearchVirtualArea routine. */
-static LPVOID SearchVirtualArea(__COMMON_OBJECT* lpThis, LPVOID lpDesiredAddr, 
+/* 
+ * Search VAD list or tree to find a proper valid space
+ * area to hold the request(start address, size).
+ * Just wrappers of underlay SearchVirtualArea routine. 
+ */
+static LPVOID SearchVirtualArea(__COMMON_OBJECT* lpThis, 
+	LPVOID lpDesiredAddr, 
 	DWORD dwSize,
 	unsigned long ulAllocFlags)
 {
 	__VIRTUAL_MEMORY_MANAGER* pVmmMgr = (__VIRTUAL_MEMORY_MANAGER*)lpThis;
 	unsigned long range_start = 0, range_end = -1;
+	BOOL bMustFit = FALSE;
 
 	BUG_ON(NULL == pVmmMgr);
 	BUG_ON(0 == dwSize);
@@ -571,7 +577,12 @@ static LPVOID SearchVirtualArea(__COMMON_OBJECT* lpThis, LPVOID lpDesiredAddr,
 		/* Allocate from kernel space. */
 		break;
 	case VIRTUAL_AREA_ALLOCATE_IOSPACE:
-		/* Allocate from IO space. */
+		/* 
+		 * Allocate from IO space. 
+		 * The requested address must be satisfied
+		 * since we use ONE to ONE mapping currently.
+		 */
+		bMustFit = TRUE;
 		break;
 	case VIRTUAL_AREA_ALLOCATE_STACK:
 		/* Allocate from stack space. */
@@ -591,10 +602,12 @@ static LPVOID SearchVirtualArea(__COMMON_OBJECT* lpThis, LPVOID lpDesiredAddr,
 		range_end = KMEM_USERAPP_END - 1;
 		break;
 	default:
-		//BUG_ON(TRUE);
 		break;
 	}
-	return __SearchVirtualArea(pVmmMgr, range_start, range_end, lpDesiredAddr, dwSize, FALSE);
+	return __SearchVirtualArea(pVmmMgr, 
+		range_start, range_end, 
+		lpDesiredAddr, dwSize, 
+		bMustFit);
 }
 
 //

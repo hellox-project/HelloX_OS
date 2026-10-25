@@ -56,5 +56,5 @@ __USB_CTRL_DRIVER_ENTRY UsbDriverEntry[] = {
 	{ _ohci_usb_lowlevel_init, _ohci_usb_lowlevel_stop,"USB OHCI"},
 #endif
 	//The last entry must keep NULL to be a sign of array's end.
-	{ NULL, NULL }
+	{ NULL, NULL, NULL }
 };

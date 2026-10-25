@@ -98,6 +98,9 @@ typedef unsigned int size_t;
 //May used by some device drivers,refer to DMA address space.
 typedef __u32 dma_addr_t;
 
+/* CPU flags. */
+typedef unsigned long cpuflags_t;
+
 //Special values for basic data types defined above.
 #define FALSE               0x00000000
 #define TRUE                0x00000001

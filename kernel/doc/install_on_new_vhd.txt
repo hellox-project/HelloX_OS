@@ -1,0 +1,22 @@
+1. Create a new vhd, allocate fixed size file, attach to VM;
+2. Boot using old vhd, make sure all files are on old VHD;
+3. Make sure the new VHD could be identified by HelloX: fdisk->disklist command,
+   new disk could be displayed;
+4. Copy bootsect to new vhd: fs->copy, "copy bootsect \\.\ATADISK1", assume
+   the \\.\ATADISK1 is the new vhd;
+5. Add part into partition table of new VHD: fdisk->partadd command, then reboot;
+6. Partition under new VHD could be identified by HelloX: fdisk->pdevlist command;
+7. Then format the new partition: fdisk->format command, then reboot;
+8. The new formated partition could be identified: fs->fslist command;
+9. Copy osloadr.bin, oskernl.bin, usragent.bin, and ftp/*.* files into
+   new partition, make several mandatory directories:
+   bin, syslog, syscfg, hellox\system32, hellox\system64
+10. Copy files into these directories, from old VHD;
+11. Then detach the old VHD or change sequence of old and new VHD, through
+   the management console of VirtualBox;
+12. Then reload VM, it should boot from NEW VHD.
+
+tips:
+1. When load ftpd.exe, kernelbase.dll may can not found, then copy it
+   using "copy d:\hellox\system32\kernelbase.dll kernelbase.dll /l", it's
+   long name will be copied;

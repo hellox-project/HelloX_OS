@@ -134,7 +134,7 @@ static void SC_Recv(__SYSCALL_PARAM_BLOCK* pspb)
 __TERMINAL:
 	if (buffer)
 	{
-		map_to_user((void*)PARAM(1), PARAM(2), __IN, buffer);
+		map_to_user((void*)PARAM(1), PARAM(2), __OUT, buffer);
 	}
 	SYSCALL_RET = ret;
 }
@@ -439,6 +439,78 @@ __TERMINAL:
 	SYSCALL_RET = ret;
 }
 
+/* Get local socket's address. */
+static void SC_Getsockname(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	int ret = -1;
+	struct sockaddr* local_name = NULL;
+	int name_len = 0;
+
+	if (NULL == (void*)PARAM(1))
+	{
+		goto __TERMINAL;
+	}
+	name_len = sizeof(struct sockaddr);
+	if (name_len != *(int*)PARAM(2))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Map the sock name memory into kernel. */
+	local_name = (struct sockaddr*)map_to_kernel((void*)PARAM(1), name_len, __OUT);
+	if (NULL == local_name)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Invoke the routine. */
+	ret = lwip_getsockname((int)PARAM(0), local_name, &name_len);
+
+__TERMINAL:
+	if (local_name)
+	{
+		map_to_user((void*)PARAM(1), sizeof(struct sockaddr), __OUT, local_name);
+		*(int*)PARAM(2) = name_len;
+	}
+	SYSCALL_RET = ret;
+}
+
+/* Get peer socket's address. */
+static void SC_Getpeername(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	int ret = -1;
+	struct sockaddr* peer_name = NULL;
+	int name_len = 0;
+
+	if (NULL == (void*)PARAM(1))
+	{
+		goto __TERMINAL;
+	}
+	name_len = sizeof(struct sockaddr);
+	if (name_len != *(int*)PARAM(2))
+	{
+		goto __TERMINAL;
+	}
+
+	/* Map the sock name memory into kernel. */
+	peer_name = (struct sockaddr*)map_to_kernel((void*)PARAM(1), name_len, __OUT);
+	if (NULL == peer_name)
+	{
+		goto __TERMINAL;
+	}
+
+	/* Invoke the routine. */
+	ret = lwip_getpeername((int)PARAM(0), peer_name, &name_len);
+
+__TERMINAL:
+	if (peer_name)
+	{
+		map_to_user((void*)PARAM(1), sizeof(struct sockaddr), __OUT, peer_name);
+		*(int*)PARAM(2) = name_len;
+	}
+	SYSCALL_RET = ret;
+}
+
 static void SC_GetHostByName(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	UNIMPLEMENTED_ROUTINE_CALLED;
@@ -496,6 +568,11 @@ static void SC_Listen(__SYSCALL_PARAM_BLOCK* pspb)
 	SYSCALL_RET = (uint32_t)lwip_listen((int)PARAM(0), (int)PARAM(1));
 }
 
+static void SC_Shutdown(__SYSCALL_PARAM_BLOCK* pspb)
+{
+	SYSCALL_RET = (uint32_t)lwip_shutdown((int)PARAM(0), (int)PARAM(1));
+}
+
 static void SC_CloseSocket(__SYSCALL_PARAM_BLOCK* pspb)
 {
 	SYSCALL_RET = (uint32_t)lwip_close((int)PARAM(0));
@@ -512,7 +589,7 @@ static void SC_GetNetworkInfo(__SYSCALL_PARAM_BLOCK* pspb)
 		goto __TERMINAL;
 	}
 	pSysinfo = (__SYSTEM_NETWORK_INFO*)map_to_kernel((void*)PARAM(0), 
-		sizeof(__SYSTEM_NETWORK_INFO), __OUT);
+		sizeof(__SYSTEM_NETWORK_INFO), __INOUT);
 	if (NULL == pSysinfo)
 	{
 		goto __TERMINAL;
@@ -645,7 +722,10 @@ void RegisterSocketEntry(SYSCALL_ENTRY* pSysCallEntry)
 	pSysCallEntry[SYSCALL_GETGENIFINFO] = SC_GetGenifInfo;
 	pSysCallEntry[SYSCALL_ADDGENIFADDRESS] = SC_AddGenifAddress;
 	pSysCallEntry[SYSCALL_GETNETWORKINFO] = SC_GetNetworkInfo;
-	
+	pSysCallEntry[SYSCALL_GETSOCKNAME] = SC_Getsockname;
+	pSysCallEntry[SYSCALL_GETPEERNAME] = SC_Getpeername;
+	pSysCallEntry[SYSCALL_SHUTDOWN] = SC_Shutdown;
+
 	/* Test routine. */
 	pSysCallEntry[SYSCALL_TESTPARAMXFER] = SC_TestParamXfer;
 }

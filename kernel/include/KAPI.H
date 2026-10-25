@@ -320,6 +320,11 @@ VOID FindClose(LPSTR lpszDirName,
 //Return a file's attributes.
 DWORD GetFileAttributes(LPSTR lpszFileName);
 
+/* Return a file's FULL attributes. */
+BOOL GetFileAttributesEx(LPCSTR lpFileName,
+	GET_FILEEX_INFO_LEVELS fInfoLevel,
+	LPVOID lpFileInformation);
+
 //Return a given file's size,lpdwSizeHigh contains the high 32
 //bits of size value,when file's size exceed 4G.
 DWORD GetFileSize(HANDLE hFile,DWORD* lpdwSizeHigh);
